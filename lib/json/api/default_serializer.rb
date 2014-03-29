@@ -1,6 +1,6 @@
 module JSON
   module API
-    class DefualtSerializer
+    class DefaultSerializer
 
     end
   end
