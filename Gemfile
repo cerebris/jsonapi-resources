@@ -27,7 +27,8 @@ gem 'rails', rails
 
 group :test do
   gem 'minitest', '~> 4.7.5'
-  gem 'minitest-rails'
+  #gem 'minitest-rails'
+  gem 'minitest-spec-rails'
   gem 'simplecov', :require => false
 
   gem 'minitest-reporters'
