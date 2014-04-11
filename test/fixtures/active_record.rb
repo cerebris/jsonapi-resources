@@ -74,31 +74,23 @@ end
 class Section < ActiveRecord::Base
 end
 
-class PersonSerializer < JSON::API::Resource
-  attributes :name, :email, :date_joined
+class PersonResource < JSON::API::Resource
+  attributes :id, :name, :email, :date_joined
 end
 
-# class PostSerializer < JSON::API::Serializer
-  #attributes :id, :title, :body
-  #
-  #has_many :comments, :tags
-  #has_one  :section
-  #has_one :author, class_name: 'People'
-# end
+ class CommentResource < JSON::API::Resource
+  attributes :id, :body
+  has_one :post
+  has_many :tags
+ end
 
-# class CommentSerializer < JSON::API::Serializer
-  #attributes :id, :body
-  #has_one :post
-  #has_many :tags
-# end
+ class TagResource < JSON::API::Resource
+  attributes :id, :name
+ end
 
-# class TagSerializer < JSON::API::Serializer
-  #attributes :id, :name
-# end
-
-# class SectionSerializer < JSON::API::Serializer
-  #attributes 'name'
-# end
+class SectionResource < JSON::API::Resource
+  attributes 'name'
+end
 
 class PostsController < JSON::API::Controller
   def index
@@ -115,7 +107,7 @@ class PostResource < JSON::API::Resource
   attribute :body
   attribute :subject
 
-  has_one :author
+  has_one :author, class_name: 'Person'
   has_many :tags
   has_many :comments
   def subject
