@@ -4,6 +4,7 @@ require File.expand_path('../../../fixtures/active_record', __FILE__)
 class SerializerTest < MiniTest::Unit::TestCase
   def setup
     @post = Post.first
+    @fred = Person.find_by(name: 'Fred Reader')
   end
 
   def test_serializer
@@ -34,13 +35,17 @@ class SerializerTest < MiniTest::Unit::TestCase
                       tags: [1,2],
                       comments: [1,2]
                     }
-                    },
+                  },
                   linked: {
                     people: [{
                               id: 1,
                               name: 'Joe Author',
                               email: 'joe@xyz.fake',
-                              date_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00')
+                              date_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00'),
+                              links: {
+                                  comments: [1],
+                                  posts: [1]
+                              }
                              }]
                   }
                  }, PostResource.new(@post, include: 'author').as_json)
@@ -59,7 +64,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               tags: [1,2],
               comments: [1,2]
             }
-            },
+          },
           linked: {
             tags: [
                 {
@@ -80,16 +85,18 @@ class SerializerTest < MiniTest::Unit::TestCase
                     id: 1,
                     body: 'what a dumb post',
                     links: {
-                        post: 1,
-                        tags: [2, 1]
+                      author: 1,
+                      post: 1,
+                      tags: [2, 1]
                     }
                 },
                 {
                     id: 2,
                     body: 'i liked it',
                     links: {
-                        post: 1,
-                        tags: [3, 1]
+                      author: 2,
+                      post: 1,
+                      tags: [3, 1]
                     }
                 }
             ]
@@ -97,7 +104,7 @@ class SerializerTest < MiniTest::Unit::TestCase
          }, PostResource.new(@post, include: 'comments,comments.tags').as_json)
   end
 
-  def test_serializer_include_sub_objects_only
+  def test_serializer_include_has_many_sub_objects_only
     assert_hash_equals(
         {
           posts: {
@@ -128,5 +135,64 @@ class SerializerTest < MiniTest::Unit::TestCase
             ]
           }
          }, PostResource.new(@post, include: 'comments.tags').as_json)
-    end
+  end
+
+  def test_serializer_include_has_one_sub_objects_only
+    assert_hash_equals(
+        {
+          posts: {
+            id: 1,
+            title: 'New post',
+            body: 'A body!!!',
+            subject: 'New post',
+            links: {
+              author: 1,
+              tags: [1,2],
+              comments: [1,2]
+            }
+            },
+          linked: {
+              comments: [
+                  {
+                      id: 1,
+                      body: 'what a dumb post',
+                      links: {
+                        author: 1,
+                        post: 1,
+                        tags: [2, 1]
+                      }
+                  }
+              ]
+          }
+         }, PostResource.new(@post, include: 'author.comments').as_json)
+  end
+
+  def test_serializer_different_foreign_key
+    assert_hash_equals(
+        {
+          people: {
+            id: 2,
+            name: 'Fred Reader',
+            email: 'fred@xyz.fake',
+            date_joined: DateTime.parse('2013-10-31 20:25:00 UTC +00:00'),
+            links: {
+              posts: [],
+              comments: [2]
+            }
+            },
+          linked: {
+              comments: [
+                 {
+                      id: 2,
+                      body: 'i liked it',
+                      links: {
+                        author: 2,
+                        post: 1,
+                        tags: [3, 1]
+                      }
+                  }
+              ]
+          }
+         }, PersonResource.new(@fred, include: 'comments').as_json)
+  end
 end

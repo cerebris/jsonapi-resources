@@ -10,6 +10,7 @@ ActiveRecord::Base.establish_connection(
   :database => ':memory:'
 )
 
+### DATABASE
 ActiveRecord::Schema.define do
   create_table :people, force: true do |t|
     t.string     :name
@@ -29,7 +30,7 @@ ActiveRecord::Schema.define do
   create_table :comments, force: true do |t|
     t.text       :body
     t.belongs_to :post, index: true
-    #t.integer    :author_id
+    t.integer    :author_id
     t.timestamps
   end
 
@@ -50,22 +51,23 @@ ActiveRecord::Schema.define do
   end
 end
 
+### MODELS
 class Person < ActiveRecord::Base
-  has_many :posts, class_name: 'Post'
-  has_many :comments, class_name: 'Comment'
+  has_many :posts, foreign_key: 'author_id'
+  has_many :comments, foreign_key: 'author_id'
 end
 
 class Post < ActiveRecord::Base
   belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
-  has_many :comments, class_name: 'Comment'
-  has_and_belongs_to_many :tags, class_name: 'Tag', join_table: :posts_tags
-  belongs_to :section, class_name: 'Section'
+  has_many :comments
+  has_and_belongs_to_many :tags, join_table: :posts_tags
+  belongs_to :section
 end
 
 class Comment < ActiveRecord::Base
-  #belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
-  belongs_to :post, class_name: 'Post'
-  has_and_belongs_to_many :tags, class_name: 'Tag', join_table: :comments_tags
+  belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
+  belongs_to :post
+  has_and_belongs_to_many :tags, join_table: :comments_tags
 end
 
 class Tag < ActiveRecord::Base
@@ -74,13 +76,27 @@ end
 class Section < ActiveRecord::Base
 end
 
+### CONTROLLERS
+class PostsController < JSON::API::Controller
+  def index
+    render json: resource.model_class.all
+  end
+
+  def show
+  end
+end
+
+### RESOURCES
 class PersonResource < JSON::API::Resource
   attributes :id, :name, :email, :date_joined
+  has_many :comments
+  has_many :posts, foreign_key: 'author_id'
 end
 
  class CommentResource < JSON::API::Resource
   attributes :id, :body
   has_one :post
+  has_one :author, class_name: 'Person'
   has_many :tags
  end
 
@@ -90,15 +106,6 @@ end
 
 class SectionResource < JSON::API::Resource
   attributes 'name'
-end
-
-class PostsController < JSON::API::Controller
-  def index
-    render json: resource.model_class.all
-  end
-
-  def show
-  end
 end
 
 class PostResource < JSON::API::Resource
@@ -115,9 +122,14 @@ class PostResource < JSON::API::Resource
   end
 end
 
+### DATA
 a = Person.create(name: 'Joe Author',
                  email: 'joe@xyz.fake',
                  date_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00'))
+
+b = Person.create(name: 'Fred Reader',
+                 email: 'fred@xyz.fake',
+                 date_joined: DateTime.parse('2013-10-31 20:25:00 UTC +00:00'))
 
 Post.create(title: 'New post',
               body:  'A body!!!',
@@ -128,11 +140,11 @@ Post.create(title: 'New post',
   whiny_tag = post.tags.create(name: 'whiny')
   happy_tag = Tag.create(name: 'happy')
 
-  post.comments.create(body: 'what a dumb post').tap do |comment|
+  post.comments.create(body: 'what a dumb post', author_id: a.id, post_id: post.id).tap do |comment|
     comment.tags.concat whiny_tag, short_tag
   end
 
-  post.comments.create(body: 'i liked it').tap do |comment|
+  post.comments.create(body: 'i liked it', author_id: b.id, post_id: post.id).tap do |comment|
     comment.tags.concat happy_tag, short_tag
   end
 end
