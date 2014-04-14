@@ -149,4 +149,16 @@ Post.create(title: 'New post',
   end
 end
 
+Post.create(title: 'AMS Solves your serialization wows!',
+              body:  'Use AMS',
+              author_id: a.id,
+              section: Section.create(name: 'ruby')).tap do |post|
+
+  ams_tag = post.tags.create(name: 'AMS')
+
+  post.comments.create(body: 'Thanks man. Great post. But what is AMS?', author_id: b.id, post_id: post.id).tap do |comment|
+    comment.tags.concat ams_tag
+  end
+end
+
 

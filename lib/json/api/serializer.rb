@@ -3,7 +3,7 @@ module JSON
     module Serializer
 
       def as_json
-        hash = {self.class.model_name.pluralize.downcase.to_sym => object_hash}
+        hash = {self.class.model_name.pluralize.downcase.to_sym => object_array}
 
         linked_hash = {}
         @linked_objects.each_key do |class_name|
@@ -15,6 +15,20 @@ module JSON
         end
 
         return hash
+      end
+
+      def object_array
+        if @object.respond_to?(:to_ary)
+          options = @options
+          options.merge!({root_resource: self})
+          a = []
+          @object.each do |object|
+            a.push self.class.new(object, options).object_hash
+          end
+          a
+        else
+          [object_hash]
+        end
       end
 
       def object_hash

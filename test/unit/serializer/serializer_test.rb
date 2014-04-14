@@ -9,7 +9,7 @@ class SerializerTest < MiniTest::Unit::TestCase
 
   def test_serializer
     assert_equal({
-                  posts: {
+                  posts: [{
                     id: 1,
                     title: 'New post',
                     body: 'A body!!!',
@@ -19,13 +19,13 @@ class SerializerTest < MiniTest::Unit::TestCase
                       tags: [1,2],
                       comments: [1,2]
                     }
-                  }
+                  }]
                  }, PostResource.new(@post).as_json)
   end
 
   def test_serializer_include
     assert_equal({
-                  posts: {
+                  posts: [{
                     id: 1,
                     title: 'New post',
                     body: 'A body!!!',
@@ -35,7 +35,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                       tags: [1,2],
                       comments: [1,2]
                     }
-                  },
+                  }],
                   linked: {
                     people: [{
                               id: 1,
@@ -44,7 +44,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                               date_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00'),
                               links: {
                                   comments: [1],
-                                  posts: [1]
+                                  posts: [1,2]
                               }
                              }]
                   }
@@ -54,7 +54,7 @@ class SerializerTest < MiniTest::Unit::TestCase
   def test_serializer_include_sub_objects
     assert_hash_equals(
         {
-          posts: {
+          posts: [{
             id: 1,
             title: 'New post',
             body: 'A body!!!',
@@ -64,7 +64,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               tags: [1,2],
               comments: [1,2]
             }
-          },
+          }],
           linked: {
             tags: [
                 {
@@ -107,7 +107,7 @@ class SerializerTest < MiniTest::Unit::TestCase
   def test_serializer_include_has_many_sub_objects_only
     assert_hash_equals(
         {
-          posts: {
+          posts: [{
             id: 1,
             title: 'New post',
             body: 'A body!!!',
@@ -117,7 +117,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               tags: [1,2],
               comments: [1,2]
             }
-            },
+          }],
           linked: {
             tags: [
                 {
@@ -140,7 +140,7 @@ class SerializerTest < MiniTest::Unit::TestCase
   def test_serializer_include_has_one_sub_objects_only
     assert_hash_equals(
         {
-          posts: {
+          posts: [{
             id: 1,
             title: 'New post',
             body: 'A body!!!',
@@ -150,7 +150,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               tags: [1,2],
               comments: [1,2]
             }
-            },
+          }],
           linked: {
               comments: [
                   {
@@ -170,29 +170,114 @@ class SerializerTest < MiniTest::Unit::TestCase
   def test_serializer_different_foreign_key
     assert_hash_equals(
         {
-          people: {
+          people: [{
             id: 2,
             name: 'Fred Reader',
             email: 'fred@xyz.fake',
             date_joined: DateTime.parse('2013-10-31 20:25:00 UTC +00:00'),
             links: {
               posts: [],
-              comments: [2]
+              comments: [2,3]
             }
-            },
+          }],
           linked: {
-              comments: [
-                 {
-                      id: 2,
-                      body: 'i liked it',
-                      links: {
-                        author: 2,
-                        post: 1,
-                        tags: [3, 1]
-                      }
-                  }
+              comments: [{
+                id: 2,
+                body: 'i liked it',
+                links: {
+                  author: 2,
+                  post: 1,
+                  tags: [3, 1]
+                }
+              },
+              {
+                id: 3,
+                body: 'Thanks man. Great post. But what is AMS?',
+                links: {
+                  author: 2,
+                  post: 2,
+                  tags: [4]
+                }
+              }
               ]
           }
          }, PersonResource.new(@fred, include: 'comments').as_json)
+  end
+
+  def test_serializer_array_of_objects
+    assert_hash_equals(
+        {
+          posts: [{
+            id: 1,
+            title: 'New post',
+            body: 'A body!!!',
+            subject: 'New post',
+            links: {
+              author: 1,
+              tags: [1,2],
+              comments: [1,2]
+            }
+          },
+          {
+            id: 2,
+            title: 'AMS Solves your serialization wows!',
+            body: 'Use AMS',
+            subject: 'AMS Solves your serialization wows!',
+            links: {
+              author: 1,
+              tags: [4],
+              comments: [3]
+            }
+          }],
+          linked: {
+            tags: [
+                {
+                  id: 1,
+                  name: 'short'
+                },
+                {
+                  id: 2,
+                  name: 'whiny'
+                },
+                {
+                  id: 3,
+                  name: 'happy'
+                },
+                {
+                  id: 4,
+                  name: 'AMS'
+                }
+            ],
+            comments: [
+                {
+                    id: 1,
+                    body: 'what a dumb post',
+                    links: {
+                      author: 1,
+                      post: 1,
+                      tags: [2, 1]
+                    }
+                },
+                {
+                    id: 2,
+                    body: 'i liked it',
+                    links: {
+                      author: 2,
+                      post: 1,
+                      tags: [3, 1]
+                    }
+                },
+                {
+                    id: 3,
+                    body: 'Thanks man. Great post. But what is AMS?',
+                    links: {
+                      author: 2,
+                      post: 2,
+                      tags: [4]
+                    }
+                }
+            ]
+          }
+         }, PostResource.new(Post.all, include: 'comments,comments.tags').as_json)
   end
 end

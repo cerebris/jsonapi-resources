@@ -8,6 +8,7 @@ module JSON
 
       def initialize(object, options={})
         @object          = object
+        @options         = options
         @root_resource   = options.fetch(:root_resource, self)
 
         @linked_objects  = {}
