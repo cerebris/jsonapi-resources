@@ -1,3 +1,12 @@
+require 'simplecov'
+
+# To run tests with coverage
+# COVERAGE=true rake test
+if ENV['COVERAGE']
+  SimpleCov.start do
+  end
+end
+
 require 'minitest/autorun'
 require 'minitest/spec'
 require 'rails/all'

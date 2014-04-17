@@ -1,5 +1,7 @@
 require File.expand_path('../../../test_helper', __FILE__)
 require File.expand_path('../../../fixtures/active_record', __FILE__)
+require 'json/api/resource_serializer'
+
 
 class SerializerTest < MiniTest::Unit::TestCase
   def setup
@@ -8,7 +10,7 @@ class SerializerTest < MiniTest::Unit::TestCase
   end
 
   def test_serializer
-    assert_equal({
+    assert_hash_equals({
                   posts: [{
                     id: 1,
                     title: 'New post',
@@ -16,15 +18,15 @@ class SerializerTest < MiniTest::Unit::TestCase
                     subject: 'New post',
                     links: {
                       author: 1,
-                      tags: [1,2],
+                      tags: [1,2,3],
                       comments: [1,2]
                     }
                   }]
-                 }, PostResource.new(@post).as_json)
+                 }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post)))
   end
 
   def test_serializer_include
-    assert_equal({
+    assert_hash_equals({
                   posts: [{
                     id: 1,
                     title: 'New post',
@@ -32,7 +34,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                     subject: 'New post',
                     links: {
                       author: 1,
-                      tags: [1,2],
+                      tags: [1,2,3],
                       comments: [1,2]
                     }
                   }],
@@ -48,7 +50,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                               }
                              }]
                   }
-                 }, PostResource.new(@post, include: 'author').as_json)
+                 }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), include: 'author'))
   end
 
   def test_serializer_include_sub_objects
@@ -61,7 +63,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             subject: 'New post',
             links: {
               author: 1,
-              tags: [1,2],
+              tags: [1,2,3],
               comments: [1,2]
             }
           }],
@@ -76,7 +78,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                   name: 'whiny'
                 },
                 {
-                  id: 3,
+                  id: 4,
                   name: 'happy'
                 }
             ],
@@ -96,12 +98,12 @@ class SerializerTest < MiniTest::Unit::TestCase
                     links: {
                       author: 2,
                       post: 1,
-                      tags: [3, 1]
+                      tags: [4, 1]
                     }
                 }
             ]
           }
-         }, PostResource.new(@post, include: 'comments,comments.tags').as_json)
+         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), include: 'comments,comments.tags'))
   end
 
   def test_serializer_include_has_many_sub_objects_only
@@ -114,7 +116,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             subject: 'New post',
             links: {
               author: 1,
-              tags: [1,2],
+              tags: [1,2,3],
               comments: [1,2]
             }
           }],
@@ -129,12 +131,12 @@ class SerializerTest < MiniTest::Unit::TestCase
                   name: 'whiny'
                 },
                 {
-                  id: 3,
+                  id: 4,
                   name: 'happy'
                 }
             ]
           }
-         }, PostResource.new(@post, include: 'comments.tags').as_json)
+         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), include: 'comments.tags'))
   end
 
   def test_serializer_include_has_one_sub_objects_only
@@ -147,7 +149,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             subject: 'New post',
             links: {
               author: 1,
-              tags: [1,2],
+              tags: [1,2,3],
               comments: [1,2]
             }
           }],
@@ -164,7 +166,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                   }
               ]
           }
-         }, PostResource.new(@post, include: 'author.comments').as_json)
+         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), include: 'author.comments'))
   end
 
   def test_serializer_different_foreign_key
@@ -187,7 +189,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                 links: {
                   author: 2,
                   post: 1,
-                  tags: [3, 1]
+                  tags: [4, 1]
                 }
               },
               {
@@ -196,15 +198,21 @@ class SerializerTest < MiniTest::Unit::TestCase
                 links: {
                   author: 2,
                   post: 2,
-                  tags: [4]
+                  tags: [5]
                 }
               }
               ]
           }
-         }, PersonResource.new(@fred, include: 'comments').as_json)
+         }, JSON::API::ResourceSerializer.new.serialize(PersonResource.new(@fred), include: 'comments'))
   end
 
-  def test_serializer_array_of_objects
+  def test_serializer_array_of_resources
+
+    posts = []
+    Post.all.each do |post|
+      posts.push PostResource.new(post)
+    end
+
     assert_hash_equals(
         {
           posts: [{
@@ -214,7 +222,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             subject: 'New post',
             links: {
               author: 1,
-              tags: [1,2],
+              tags: [1,2,3],
               comments: [1,2]
             }
           },
@@ -225,7 +233,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             subject: 'AMS Solves your serialization wows!',
             links: {
               author: 1,
-              tags: [4],
+              tags: [5],
               comments: [3]
             }
           }],
@@ -240,11 +248,11 @@ class SerializerTest < MiniTest::Unit::TestCase
                   name: 'whiny'
                 },
                 {
-                  id: 3,
+                  id: 4,
                   name: 'happy'
                 },
                 {
-                  id: 4,
+                  id: 5,
                   name: 'AMS'
                 }
             ],
@@ -264,7 +272,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                     links: {
                       author: 2,
                       post: 1,
-                      tags: [3, 1]
+                      tags: [4, 1]
                     }
                 },
                 {
@@ -273,11 +281,11 @@ class SerializerTest < MiniTest::Unit::TestCase
                     links: {
                       author: 2,
                       post: 2,
-                      tags: [4]
+                      tags: [5]
                     }
                 }
             ]
           }
-         }, PostResource.new(Post.all, include: 'comments,comments.tags').as_json)
+         }, JSON::API::ResourceSerializer.new.serialize(posts, include: 'comments,comments.tags'))
   end
 end

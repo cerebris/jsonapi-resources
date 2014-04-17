@@ -1,5 +1,4 @@
 require 'active_record'
-require 'json/api/serializer'
 require 'json/api/controller'
 require 'json/api/resource'
 require 'rails'
@@ -138,6 +137,7 @@ Post.create(title: 'New post',
 
   short_tag = post.tags.create(name: 'short')
   whiny_tag = post.tags.create(name: 'whiny')
+  grumpy_tag = post.tags.create(name: 'grumpy')
   happy_tag = Tag.create(name: 'happy')
 
   post.comments.create(body: 'what a dumb post', author_id: a.id, post_id: post.id).tap do |comment|
