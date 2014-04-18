@@ -6,6 +6,7 @@ module JSON
         @linked_objects = {}
         requested_associations = process_includes(options[:include])
 
+
         if source.respond_to?(:to_ary)
           class_name = source[0].class.model.pluralize.downcase.to_sym
         else
@@ -28,19 +29,21 @@ module JSON
 
       def process_includes(includes)
         requested_associations = {}
-        includes.split(/\s*,\s*/).each do |include|
+        includes.each do |include|
+          include = include.to_s  if include.is_a? Symbol
+
           pos = include.index('.')
           if pos
             association_name = include[0, pos].to_sym
             requested_associations[association_name] ||= {}
             requested_associations[association_name].store(:include_children, true)
-            requested_associations[association_name].store(:include_related, process_includes(include[pos+1, include.length]))
+            requested_associations[association_name].store(:include_related, process_includes([include[pos+1, include.length]]))
           else
             association_name = include.to_sym
             requested_associations[association_name] ||= {}
             requested_associations[association_name].store(:include, true)
           end
-        end unless includes.blank?
+        end if includes.is_a?(Array)
         return requested_associations
       end
 
@@ -63,20 +66,41 @@ module JSON
         return obj_hash
       end
 
+      def requested_fields(model)
+        @options[:fields][model.downcase.pluralize.to_sym] if @options[:fields]
+      end
+
       def attribute_hash(source)
-        source._fetchable(source.class._attributes.dup).each_with_object({}) do |name, hash|
+        requested_fields = requested_fields(source.class.model)
+        fields = source.class._attributes.dup
+        unless requested_fields.nil?
+          fields = requested_fields & fields
+        end
+
+        source._fetchable(fields).each_with_object({}) do |name, hash|
           hash[name] = source.send(name)
         end
       end
 
       def links_hash(source, requested_associations)
         associations = source.class._associations
-        included_associations = source._fetchable(associations.keys)
+        requested_fields = requested_fields(source.class.model)
+        fields = associations.keys
+        unless requested_fields.nil?
+          fields = requested_fields & fields
+        end
 
+        field_set = Set.new(fields)
+
+        included_associations = source._fetchable(associations.keys)
         associations.each_with_object({}) do |(name, association), hash|
           if included_associations.include? name
             key = association.key
-            hash[name] = source.send(key)
+
+            if field_set.include?(name)
+              hash[name] = source.send(key)
+            end
+
             ia = requested_associations.is_a?(Hash) ? requested_associations[name] : nil
 
             include_linked_object = ia && ia[:include]

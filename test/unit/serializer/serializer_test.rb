@@ -25,6 +25,19 @@ class SerializerTest < MiniTest::Unit::TestCase
                  }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post)))
   end
 
+  def test_serializer_limited_fieldset
+    assert_hash_equals({
+                   posts: [{
+                     id: 1,
+                     title: 'New post',
+                     links: {
+                       author: 1
+                     }
+                   }]
+                }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post),
+                                                               fields: {posts: [:id, :title, :author]}))
+  end
+
   def test_serializer_include
     assert_hash_equals({
                   posts: [{
@@ -50,7 +63,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                               }
                              }]
                   }
-                 }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), include: 'author'))
+                 }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), include: [:author]))
   end
 
   def test_serializer_include_sub_objects
@@ -103,7 +116,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                 }
             ]
           }
-         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), include: 'comments,comments.tags'))
+         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), include: [:comments,'comments.tags']))
   end
 
   def test_serializer_include_has_many_sub_objects_only
@@ -136,7 +149,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                 }
             ]
           }
-         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), include: 'comments.tags'))
+         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), include: ['comments.tags']))
   end
 
   def test_serializer_include_has_one_sub_objects_only
@@ -166,7 +179,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                   }
               ]
           }
-         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), include: 'author.comments'))
+         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), include: ['author.comments']))
   end
 
   def test_serializer_different_foreign_key
@@ -203,7 +216,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               }
               ]
           }
-         }, JSON::API::ResourceSerializer.new.serialize(PersonResource.new(@fred), include: 'comments'))
+         }, JSON::API::ResourceSerializer.new.serialize(PersonResource.new(@fred), include: ['comments']))
   end
 
   def test_serializer_array_of_resources
@@ -286,6 +299,76 @@ class SerializerTest < MiniTest::Unit::TestCase
                 }
             ]
           }
-         }, JSON::API::ResourceSerializer.new.serialize(posts, include: 'comments,comments.tags'))
+         }, JSON::API::ResourceSerializer.new.serialize(posts, include: ['comments','comments.tags']))
+  end
+
+  def test_serializer_array_of_resources_limited_fields
+
+    posts = []
+    Post.all.each do |post|
+      posts.push PostResource.new(post)
+    end
+
+    assert_hash_equals(
+        {
+            posts: [{
+                        id: 1,
+                        title: 'New post',
+                        links: {
+                            author: 1
+                        }
+                    },
+                    {
+                        id: 2,
+                        title: 'AMS Solves your serialization wows!',
+                        links: {
+                            author: 1
+                        }
+                    }],
+            linked: {
+                tags: [
+                    {
+                        name: 'short'
+                    },
+                    {
+                        name: 'whiny'
+                    },
+                    {
+                        name: 'happy'
+                    },
+                    {
+                        name: 'AMS'
+                    }
+                ],
+                comments: [
+                    {
+                        id: 1,
+                        body: 'what a dumb post',
+                        links: {
+                            post: 1
+                        }
+                    },
+                    {
+                        id: 2,
+                        body: 'i liked it',
+                        links: {
+                            post: 1
+                        }
+                    },
+                    {
+                        id: 3,
+                        body: 'Thanks man. Great post. But what is AMS?',
+                        links: {
+                            post: 2
+                        }
+                    }
+                ]
+            }
+        }, JSON::API::ResourceSerializer.new.serialize(posts, include: ['comments','comments.tags'],
+                                                       fields: {
+                                                           posts: [:id, :title, :author],
+                                                           tags: [:name],
+                                                           comments: [:id, :body, :post]
+                                                        }))
   end
 end
