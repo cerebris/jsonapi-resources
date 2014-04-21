@@ -8,23 +8,36 @@ module JSON
         requested_associations = process_includes(options[:include])
 
         if source.respond_to?(:to_ary)
-          @primary_class_name = source[0].class.model.pluralize.downcase.to_sym
+          @primary_class_name = source[0].class.model.pluralize.downcase
         else
-          @primary_class_name = source.class.model.pluralize.downcase.to_sym
+          @primary_class_name = source.class.model.pluralize.downcase
         end
 
-        hash = {@primary_class_name => object_array(source, requested_associations)}
+        process_primary(source, requested_associations)
+
+        primary_class_name = @primary_class_name.to_sym
+        primary_hash = {primary_class_name => []}
 
         linked_hash = {}
-        @linked_objects.each_key do |class_name|
-          linked_hash[class_name.to_sym] = @linked_objects[class_name].values
+        @linked_objects.each do |class_name, objects|
+          class_name = class_name.to_sym
+
+          linked = []
+          objects.each_value do |object|
+            if object[:primary]
+              primary_hash[primary_class_name].push(object[:object_hash])
+            else
+              linked.push(object[:object_hash])
+            end
+          end
+          linked_hash[class_name] = linked unless linked.empty?
         end
 
         if linked_hash.size > 0
-          hash.merge!({linked: linked_hash})
+          primary_hash.merge!({linked: linked_hash})
         end
 
-        return hash
+        return primary_hash
       end
 
       def process_includes(includes)
@@ -47,15 +60,13 @@ module JSON
         return requested_associations
       end
 
-      def object_array(source, requested_associations)
+      def process_primary(source, requested_associations)
         if source.respond_to?(:to_ary)
-          a = []
           source.each do |object|
-            a.push object_hash(object, requested_associations)
+            add_linked_object(@primary_class_name, object.send(object.class.key), object_hash(object,  requested_associations), true)
           end
-          return a
         else
-          return [object_hash(source, requested_associations)]
+          add_linked_object(@primary_class_name, source.send(source.class.key), object_hash(source,  requested_associations), true)
         end
       end
 
@@ -131,13 +142,17 @@ module JSON
         end
       end
 
-      def add_linked_object(type, id, object_hash)
+      def add_linked_object(type, id, object_hash, primary = false)
         unless @linked_objects.key?(type)
           @linked_objects[type] = {}
         end
 
         unless @linked_objects[type].key?(id)
-          @linked_objects[type].store(id, object_hash)
+          @linked_objects[type].store(id, {primary: primary, object_hash: object_hash})
+        else
+          if primary
+            @linked_objects[type][id][:primary] = true
+          end
         end
       end
 

@@ -52,6 +52,14 @@ module JSON
           @_model_name = model
         end
 
+        def key
+          @_key ||= 'id'
+        end
+
+        def key=(key)
+          @_key = key
+        end
+
         if RUBY_VERSION >= '2.0'
           def resource_for(resource_name)
             begin

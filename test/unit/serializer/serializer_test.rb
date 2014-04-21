@@ -370,21 +370,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                         links: {
                             comments: [1]
                         }
-                    }],
-                posts: [{
-                            id: 1,
-                            title: 'New post',
-                            links: {
-                                author: 1
-                            }
-                        },
-                        {
-                            id: 2,
-                            title: 'AMS Solves your serialization wows!',
-                            links: {
-                                author: 1
-                            }
-                        }]
+                    }]
             }
         }, JSON::API::ResourceSerializer.new.serialize(posts, include: ['comments','author','comments.tags','author.posts'],
                                                        fields: {
