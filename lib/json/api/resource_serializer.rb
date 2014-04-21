@@ -4,16 +4,16 @@ module JSON
       def serialize(source, options = {})
         @options = options
         @linked_objects = {}
+
         requested_associations = process_includes(options[:include])
 
-
         if source.respond_to?(:to_ary)
-          class_name = source[0].class.model.pluralize.downcase.to_sym
+          @primary_class_name = source[0].class.model.pluralize.downcase.to_sym
         else
-          class_name = source.class.model.pluralize.downcase.to_sym
+          @primary_class_name = source.class.model.pluralize.downcase.to_sym
         end
 
-        hash = {class_name => object_array(source, requested_associations)}
+        hash = {@primary_class_name => object_array(source, requested_associations)}
 
         linked_hash = {}
         @linked_objects.each_key do |class_name|
@@ -53,9 +53,9 @@ module JSON
           source.each do |object|
             a.push object_hash(object, requested_associations)
           end
-          a
+          return a
         else
-          [object_hash(source, requested_associations)]
+          return [object_hash(source, requested_associations)]
         end
       end
 
@@ -132,10 +132,13 @@ module JSON
       end
 
       def add_linked_object(type, id, object_hash)
-        hash = @linked_objects[type].nil? ? {} : @linked_objects[type]
-        hash.store(id, object_hash)
-        @linked_objects[type] = hash
-        @linked_objects
+        unless @linked_objects.key?(type)
+          @linked_objects[type] = {}
+        end
+
+        unless @linked_objects[type].key?(id)
+          @linked_objects[type].store(id, object_hash)
+        end
       end
 
     end
