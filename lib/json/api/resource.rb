@@ -52,6 +52,18 @@ module JSON
           @_model_name = model
         end
 
+        def model_plural
+          @_model_name_plural ||= self.model.pluralize
+        end
+
+        def model_plural=(model_plural)
+          @_model_name_plural = model_plural
+        end
+
+        def plural_model_symbol
+          @_plural_model_symbol ||= self.model_plural.downcase.to_sym
+        end
+
         def key
           @_key ||= 'id'
         end
