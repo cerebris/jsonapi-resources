@@ -1,5 +1,5 @@
 require 'active_record'
-require 'json/api/controller'
+require 'json/api/resource_controller'
 require 'json/api/resource'
 require 'rails'
 require 'rails/all'
@@ -76,13 +76,7 @@ class Section < ActiveRecord::Base
 end
 
 ### CONTROLLERS
-class PostsController < JSON::API::Controller
-  def index
-    render json: resource.model_class.all
-  end
-
-  def show
-  end
+class PostsController < JSON::API::ResourceController
 end
 
 ### RESOURCES
@@ -119,6 +113,9 @@ class PostResource < JSON::API::Resource
   def subject
     @object.title
   end
+
+  filter :title
+  filter :id
 end
 
 ### DATA

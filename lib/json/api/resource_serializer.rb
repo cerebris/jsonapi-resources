@@ -112,7 +112,7 @@ module JSON
       # Returns a hash of the requested attributes for a resource, filtered by the resource class's _fetchable method
       def attribute_hash(source)
         requested = requested_fields(source.class.plural_model_symbol)
-        fields = source.class._attributes.dup
+        fields = source.class._attributes.to_a
         unless requested.nil?
           fields = requested & fields
         end

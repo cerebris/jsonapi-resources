@@ -1,8 +1,10 @@
+require 'json/api/resources'
 require 'json/api/association'
 
 module JSON
   module API
     class Resource
+      include Resources
 
       def initialize(object)
         @object          = object
@@ -10,14 +12,15 @@ module JSON
 
       class << self
         def inherited(base)
-          base._attributes = (_attributes || []).dup
+          base._attributes = (_attributes || Set.new).dup
           base._associations = (_associations || {}).dup
+          base._allowed_filters = (_allowed_filters || Set.new).dup
         end
 
-        attr_accessor :_attributes, :_associations, :model
+        attr_accessor :_attributes, :_associations, :model, :_allowed_filters
 
         def attributes(*attrs)
-          @_attributes.concat attrs
+          @_attributes.merge attrs
           attrs.each do |attr|
             define_method attr do
               @object.read_attribute_for_serialization attr
@@ -26,18 +29,18 @@ module JSON
         end
 
         def attribute(attr)
-          @_attributes.push attr
+          @_attributes.add attr
           define_method attr do
             @object.read_attribute_for_serialization attr
           end unless method_defined?(attr)
         end
 
         def has_one(*attrs)
-          associate(Association::HasOne, *attrs)
+          _associate(Association::HasOne, *attrs)
         end
 
         def has_many(*attrs)
-          associate(Association::HasMany, *attrs)
+          _associate(Association::HasMany, *attrs)
         end
 
         def model_name(model)
@@ -65,21 +68,26 @@ module JSON
         end
 
         def key
-          @_key ||= 'id'
+          @_key ||= :id
         end
 
         def key=(key)
           @_key = key
         end
 
+        def filters(*attrs)
+          @_allowed_filters.concat attrs
+        end
+
+        def filter(attr)
+          @_allowed_filters.push attr.to_sym
+        end
+
+        def _allowed_filters
+          !@_allowed_filters.nil? ? @_allowed_filters : [key]
+        end
+
         if RUBY_VERSION >= '2.0'
-          def resource_for(resource_name)
-            begin
-              Object.const_get "#{resource_name}Resource"
-            rescue NameError
-              nil
-            end
-          end
           def model_class
             begin
               @model ||= Object.const_get(model)
@@ -88,17 +96,32 @@ module JSON
             end
           end
         else
-          def resource_for(resource)
-            "#{resource.class.name}Resource".safe_constantize
-          end
           def model_class
             @model ||= model.safe_constantize
           end
         end
 
+        def _verify_filter_params(params)
+          params.permit(*_allowed_filters)
+        end
+
+        # Override this method if you have more complex requirements than this basic find method provides
+        def find(attrs)
+          resources = []
+          model_class.where(attrs[:filters]).each do |object|
+            resources.push self.new(object)
+          end
+
+          return resources
+        end
+
+        def _validate_field(field)
+          _attributes.include?(field) || _associations.key?(field)
+        end
+
         private
 
-        def associate(klass, *attrs)
+        def _associate(klass, *attrs)
           options = attrs.extract_options!
 
           attrs.each do |attr|
@@ -154,6 +177,11 @@ module JSON
       def _creatable(keys)
         keys
       end
+
+      def _filterable(keys)
+        keys
+      end
+
     end
   end
 end

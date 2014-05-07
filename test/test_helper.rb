@@ -13,6 +13,7 @@ require 'rails/all'
 
 require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/hash_helpers', __FILE__)
+require File.expand_path('../helpers/functional_helpers', __FILE__)
 
 JSON::API::Routes = ActionDispatch::Routing::RouteSet.new
 JSON::API::Routes.draw do
@@ -24,6 +25,7 @@ ActionController::Base.send :include, JSON::API::Routes.url_helpers
 class MiniTest::Unit::TestCase
   include Helpers::HashHelpers
   include Helpers::ValueMatchers
+  include Helpers::FunctionalHelpers
 end
 
 class ActiveSupport::TestCase
