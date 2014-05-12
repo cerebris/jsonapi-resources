@@ -56,7 +56,7 @@ module JSON
       def parse_includes(includes)
         requested_associations = {}
         includes.each do |include|
-          include = include.to_s  if include.is_a? Symbol
+          include = include.to_s if include.is_a? Symbol
 
           pos = include.index('.')
           if pos

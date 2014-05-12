@@ -9,16 +9,18 @@ module JSON
 
       module ClassMethods
         if RUBY_VERSION >= '2.0'
-          def resource_for(resource_name)
+          def resource_for(type)
             begin
-              Object.const_get "#{resource_name}Resource"
+              resource_name = JSON::API::Resource.resource_name_from_type(type)
+              Object.const_get resource_name if resource_name
             rescue NameError
               nil
             end
           end
         else
-          def resource_for(resource)
-            "#{resource.class.name}Resource".safe_constantize
+          def resource_for(type)
+            resource_name = JSON::API::Resource.resource_name_from_type(type)
+            resource_name.safe_constantize if resource_name
           end
         end
       end

@@ -11,41 +11,51 @@ module JSON
       def index
         return unless fields = parse_fields(params)
         include = params[:include]
-        filters = find_filters(params, resource.plural_model_symbol)
+        filters = parse_filters(params)
 
         render json: JSON::API::ResourceSerializer.new.serialize(
-            resource.find({#scope: current_user,
+            resource_klass.find({#scope: current_user,
                            filters: filters
                           }
             ),
             include: include,
             fields: fields
         )
-      rescue JSON::API::Errors::InvalidArgument
-        invalid_argument
+      rescue JSON::API::Errors::InvalidFilterValue => e
+        invalid_filter_value(e.filter, e.value)
+      rescue JSON::API::Errors::InvalidArgument => e
+        invalid_argument(e.argument)
+      rescue ActionController::UnpermittedParameters => e
+        invalid_parameter(e.params)
+      rescue JSON::API::Errors::InvalidField => e
+        invalid_field(e.type, e.field)
+      rescue JSON::API::Errors::InvalidFieldFormat
+        invalid_field_format
+      rescue JSON::API::Errors::FilterNotAllowed => e
+        filter_not_allowed(e.filter)
       end
 
       private
       if RUBY_VERSION >= '2.0'
-        def resource
+        def resource_klass
           begin
-            @resource ||= Object.const_get resource_name
+            @resource_klass ||= Object.const_get resource_klass_name
           rescue NameError
             nil
           end
         end
       else
-        def resource
-          @resource ||= resource_name.safe_constantize
+        def resource_klass
+          @resource_klass ||= resource_klass_name.safe_constantize
         end
       end
 
-      def resource_name
-        @resource_name ||= "#{self.class.name.demodulize.sub(/Controller$/, '').singularize}Resource"
+      def resource_klass_name
+        @resource_klass_name ||= "#{self.class.name.demodulize.sub(/Controller$/, '').singularize}Resource"
       end
 
-      def resource_name=(resource)
-        @resource_name = resource
+      def resource_name=(resource_klass_name)
+        @resource_klass_name = resource_klass_name
       end
 
       def respond_with(*resources, &block)
@@ -61,12 +71,7 @@ module JSON
         super(*resources, &block)
       end
 
-      # override this in the controller to apply a different set of rules
-      def verify_filter_params(params)
-        params.permit(*resource._allowed_filters)
-      end
-
-      def find_filters(params, plural_type)
+      def parse_filters(params)
         # Remove non-filter parameters
         params.delete(:include) if params[:include].present?
         params.delete(:fields) if params[:fields].present?
@@ -80,27 +85,23 @@ module JSON
           params[:id] = params[:ids]
           params.delete(:ids)
         end
-        params = resource._verify_filter_params(params)
+
         filters = {}
-        filter = nil
         params.each do |key, value|
           filter = key.to_sym
-          # filters[filter] = verify_filter((filter == resource.key.to_sym ? plural_type : filter), value)
-          filters[filter] = verify_filter(filter, value)
+
+          if resource_klass._allowed_filter?(filter)
+            verified_filter = verify_filter(filter, value)
+            filters[verified_filter[0]] = verified_filter[1]
+          else
+            raise JSON::API::Errors::FilterNotAllowed.new(filter)
+          end
         end
         filters
-      rescue ActiveRecord::RecordNotFound
-        not_found(filter)
-      rescue JSON::API::Errors::InvalidArgument
-        invalid_argument(filter)
-      rescue ActionController::UnpermittedParameters => e
-        invalid_parameter(e.params)
-      rescue ActionController::ParameterMissing
-        missing_parameter
       end
 
       def is_filter_association?(filter)
-        filter == resource.plural_model_symbol || resource._associations.include?(filter)
+        filter == resource_klass.plural_model_symbol || resource_klass._associations.include?(filter)
       end
 
       def parse_fields(params)
@@ -112,7 +113,7 @@ module JSON
           params[:fields].each do |type, values|
             type = type.to_sym
             fields[type] = []
-            type_resource = self.class.resource_for(type.to_s.singularize.capitalize)
+            type_resource = self.class.resource_for(type)
             if type_resource.nil?
               return invalid_resource(type)
             end
@@ -123,45 +124,36 @@ module JSON
                 if type_resource._validate_field(field)
                   fields[type].push field
                 else
-                  return invalid_field(type, field)
+                  raise JSON::API::Errors::InvalidField.new(type, field)
                 end
               end
 
             else
-              return invalid_argument(type)
+              raise JSON::API::Errors::InvalidArgument.new(type)
             end
           end
         else
-          return invalid_argument('fields')
+          raise JSON::API::Errors::InvalidFieldFormat.new
         end
         return fields
       end
 
       def verify_filter(filter, raw)
         if is_filter_association?(filter)
-          # process comma-separated lists of associations
-          return raw.split(/,/).collect do |value|
-            key = association_key_from_filter(filter)
-            if key == :currency_code
-              id = value
-            else
-              id = to_uuid(value.strip, filter)
-            end
-            find_association(key, id)
-          end
+          verify_association_filter(filter, raw)
         else
-          custom_filter_value = verify_custom_filter(filter, raw)
-          if custom_filter_value.nil?
-            raise JSON::API::Errors::InvalidArgument.new
-          else
-            return custom_filter_value
-          end
+          verify_custom_filter(filter, raw)
         end
       end
 
-      # override in individual controllers to allow for custom filters
+      # override to allow for custom filters
       def verify_custom_filter(filter, raw)
-        raw
+        return filter, raw
+      end
+
+      # override to allow for custom association logic, such as uuids, multiple ids or permission checks on ids
+      def verify_association_filter(filter, raw)
+        return resource_klass._associations[filter].primary_key, raw
       end
 
       def deny_access_common(status, msg)
@@ -177,8 +169,24 @@ module JSON
         deny_access_common(:bad_request, "Sorry - #{resource} is not a valid resource.")
       end
 
-      def invalid_field(resource_name, field)
-        deny_access_common(:bad_request, "Sorry - #{field} is not a valid field for #{resource_name}.")
+      def invalid_filter(filter)
+        deny_access_common(:bad_request, "Sorry - #{filter} is not a valid filter.")
+      end
+
+      def filter_not_allowed(filter)
+        deny_access_common(:bad_request, "Sorry - #{filter} is not allowed.")
+      end
+
+      def invalid_filter_value(filter, value)
+        deny_access_common(:bad_request, "Sorry - #{value} is not a valid value for #{filter}.")
+      end
+
+      def invalid_field(type, field)
+        deny_access_common(:bad_request, "Sorry - #{field} is not a valid field for #{type}.")
+      end
+
+      def invalid_field_format
+        deny_access_common(:bad_request, "Sorry - 'fields' must contain a hash.")
       end
 
       def invalid_parameter(param_names = %w(unspecified))

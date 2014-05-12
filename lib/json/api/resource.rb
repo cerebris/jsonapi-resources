@@ -6,6 +6,8 @@ module JSON
     class Resource
       include Resources
 
+      @@resource_types = {}
+
       def initialize(object)
         @object          = object
       end
@@ -15,9 +17,12 @@ module JSON
           base._attributes = (_attributes || Set.new).dup
           base._associations = (_associations || {}).dup
           base._allowed_filters = (_allowed_filters || Set.new).dup
+
+          @type = base.name.demodulize.sub(/Resource$/, '').downcase.pluralize.to_sym
+          @@resource_types[@type] = base.name.demodulize
         end
 
-        attr_accessor :_attributes, :_associations, :model, :_allowed_filters
+        attr_accessor :_attributes, :_associations, :model, :_allowed_filters, :_type
 
         def attributes(*attrs)
           @_attributes.merge attrs
@@ -43,24 +48,24 @@ module JSON
           _associate(Association::HasMany, *attrs)
         end
 
+        def type(type)
+          @_type = type.to_sym
+        end
+
         def model_name(model)
-          @_model_name = model
+          @_model_name = model.to_sym
         end
 
         def model
           @_model_name ||= self.name.demodulize.sub(/Resource$/, '')
         end
 
-        def model=(model)
-          @_model_name = model
-        end
-
         def model_plural
-          @_model_name_plural ||= self.model.pluralize
+          @_model_name_plural ||= self.model.to_s.pluralize.to_sym
         end
 
         def model_plural=(model_plural)
-          @_model_name_plural = model_plural
+          @_model_name_plural = model_plural.to_sym
         end
 
         def plural_model_symbol
@@ -72,19 +77,23 @@ module JSON
         end
 
         def key=(key)
-          @_key = key
+          @_key = key.to_sym
         end
 
         def filters(*attrs)
-          @_allowed_filters.concat attrs
+          @_allowed_filters.merge(*attrs)
         end
 
         def filter(attr)
-          @_allowed_filters.push attr.to_sym
+          @_allowed_filters.add(attr.to_sym)
         end
 
         def _allowed_filters
-          !@_allowed_filters.nil? ? @_allowed_filters : [key]
+          !@_allowed_filters.nil? ? @_allowed_filters : Set.new([key])
+        end
+
+        def resource_name_from_type(type)
+          return @@resource_types[type]
         end
 
         if RUBY_VERSION >= '2.0'
@@ -101,8 +110,8 @@ module JSON
           end
         end
 
-        def _verify_filter_params(params)
-          params.permit(*_allowed_filters)
+        def _allowed_filter?(filter)
+          _allowed_filters.include?(filter.to_sym)
         end
 
         # Override this method if you have more complex requirements than this basic find method provides
@@ -135,8 +144,8 @@ module JSON
               end unless method_defined?(key)
 
               define_method "_#{attr}_object" do
-                class_name = self.class._associations[attr].class_name
-                resource_class = self.class.resource_for(class_name)
+                type_name = self.class._associations[attr].serialize_type_name
+                resource_class = self.class.resource_for(type_name)
                 if resource_class
                   associated_object = @object.send attr
                   return resource_class.new(associated_object)
@@ -150,8 +159,8 @@ module JSON
               end unless method_defined?(key)
 
               define_method "_#{attr}_objects" do
-                class_name = self.class._associations[attr].class_name
-                resource_class = self.class.resource_for(class_name)
+                type_name = self.class._associations[attr].serialize_type_name
+                resource_class = self.class.resource_for(type_name)
                 resources = []
                 if resource_class
                   associated_objects = @object.send attr
@@ -177,11 +186,6 @@ module JSON
       def _creatable(keys)
         keys
       end
-
-      def _filterable(keys)
-        keys
-      end
-
     end
   end
 end

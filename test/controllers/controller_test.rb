@@ -25,6 +25,13 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_index_filter_by_ids_and_include_related
+    get :index, {ids: [2], include: [:comments]}
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+    assert_equal 1, json_response['linked']['comments'].size
+  end
+
+  def test_index_filter_by_ids_and_include_related_different_type
     get :index, {ids: [1,2], include: [:author]}
     assert_response :success
     assert_equal 2, json_response['posts'].size
@@ -62,7 +69,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_malformed_fields_not_hash
     get :index, {ids: [1,2], fields: :posts}
     assert_response :bad_request
-    assert_match /Sorry - not a valid value for fields./, response.body
+    assert_match /Sorry - 'fields' must contain a hash./, response.body
   end
 
   def test_field_not_supported
@@ -77,4 +84,15 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /Sorry - posters is not a valid resource./, response.body
   end
 
+  def test_index_filter_on_association
+    get :index, {author: 1}
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+  end
+
+  # ToDo: test validating the parameter values
+  # def test_index_invalid_filter_value
+  #   get :index, {ids: [1,'asdfg1']}
+  #   assert_response :bad_request
+  # end
 end

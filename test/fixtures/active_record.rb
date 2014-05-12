@@ -99,6 +99,7 @@ end
 
 class SectionResource < JSON::API::Resource
   attributes 'name'
+  type :category
 end
 
 class PostResource < JSON::API::Resource
@@ -114,7 +115,7 @@ class PostResource < JSON::API::Resource
     @object.title
   end
 
-  filter :title
+  filters [:title, :author]
   filter :id
 end
 
