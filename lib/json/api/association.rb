@@ -4,16 +4,12 @@ module JSON
       def initialize(name, options={})
         @name          = name.to_s
         @options       = options
-        @key           = options[:key]
-        @primary_key   = options.fetch(:primary_key, 'id')
+        @key           = options[:key] ? options[:key].to_sym : nil
+        @primary_key   = options.fetch(:primary_key, 'id').to_sym
       end
 
       def key
         @key
-      end
-
-      def class_name
-        @class_name
       end
 
       def serialize_type_name
@@ -27,18 +23,18 @@ module JSON
       class HasOne < Association
         def initialize(name, options={})
           super
-          @class_name           = options.fetch(:class_name, name.to_s.capitalize)
-          @serialize_type_name = @class_name.downcase.pluralize
-          @key ||= "#{name}_id"
+          class_name = options.fetch(:class_name, name.to_s.capitalize)
+          @serialize_type_name = class_name.downcase.pluralize.to_sym
+          @key ||= "#{name}_id".to_sym
         end
       end
 
       class HasMany < Association
         def initialize(name, options={})
           super
-          @class_name           = options.fetch(:class_name, name.to_s.capitalize.singularize)
-          @serialize_type_name = @class_name.downcase.pluralize
-          @key ||= "#{name.to_s.singularize}_ids"
+          class_name           = options.fetch(:class_name, name.to_s.capitalize.singularize).to_sym
+          @serialize_type_name = class_name.to_s.downcase.pluralize.to_sym
+          @key ||= "#{name.to_s.singularize}_ids".to_sym
         end
       end
     end
