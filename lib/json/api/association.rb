@@ -6,6 +6,7 @@ module JSON
         @options       = options
         @key           = options[:key] ? options[:key].to_sym : nil
         @primary_key   = options.fetch(:primary_key, 'id').to_sym
+        @treat_as_set  = options.fetch(:treat_as_set, false) == true
       end
 
       def key
@@ -18,6 +19,14 @@ module JSON
 
       def primary_key
         @primary_key
+      end
+
+      def treat_as_set
+        @treat_as_set
+      end
+
+      def serialize_type_name
+        @serialize_type_name
       end
 
       class HasOne < Association

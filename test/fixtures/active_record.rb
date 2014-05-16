@@ -99,20 +99,29 @@ end
 
 class SectionResource < JSON::API::Resource
   attributes 'name'
-  type :category
 end
 
 class PostResource < JSON::API::Resource
+  type_singular :post
+
   attribute :id
   attribute :title
   attribute :body
   attribute :subject
 
   has_one :author, class_name: 'Person'
-  has_many :tags
-  has_many :comments
+  has_many :tags, treat_as_set: true
+  has_many :comments, treat_as_set: false
   def subject
     @object.title
+  end
+
+  def self._updateable(keys)
+    keys - [:author, :subject]
+  end
+
+  def self._createable(keys)
+    keys - [:subject]
   end
 
   filters [:title, :author]
@@ -127,6 +136,10 @@ a = Person.create(name: 'Joe Author',
 b = Person.create(name: 'Fred Reader',
                  email: 'fred@xyz.fake',
                  date_joined: DateTime.parse('2013-10-31 20:25:00 UTC +00:00'))
+
+c = Person.create(name: 'Lazy Author',
+                  email: 'lazy@xyz.fake',
+                  date_joined: DateTime.parse('2013-10-31 21:25:00 UTC +00:00'))
 
 Post.create(title: 'New post',
               body:  'A body!!!',
@@ -159,4 +172,7 @@ Post.create(title: 'AMS Solves your serialization wows!',
   end
 end
 
-
+Post.create(title: 'Update This Later',
+            body:  'AAAA',
+            author_id: c.id,
+            section: Section.create(name: 'ruby'))

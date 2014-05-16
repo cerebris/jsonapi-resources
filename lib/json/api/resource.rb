@@ -18,11 +18,13 @@ module JSON
           base._associations = (_associations || {}).dup
           base._allowed_filters = (_allowed_filters || Set.new).dup
 
-          @type = base.name.demodulize.sub(/Resource$/, '').downcase.pluralize.to_sym
-          @@resource_types[@type] = base.name.demodulize
+          type = base.name.demodulize.sub(/Resource$/, '').downcase
+          base._type_singular =  type.to_sym
+          base._type = type.pluralize.to_sym
+          @@resource_types[base._type] = base.name.demodulize
         end
 
-        attr_accessor :_attributes, :_associations, :model, :_allowed_filters, :_type
+        attr_accessor :_attributes, :_associations, :_allowed_filters , :_type, :_type_singular
 
         def attributes(*attrs)
           @_attributes.merge attrs
@@ -40,6 +42,17 @@ module JSON
           end unless method_defined?(attr)
         end
 
+        def _updateable_associations
+          associations = []
+
+          @_associations.each do |key, association|
+            if association.is_a?(JSON::API::Association::HasOne) || association.treat_as_set
+              associations.push(key)
+            end
+          end
+          associations
+        end
+
         def has_one(*attrs)
           _associate(Association::HasOne, *attrs)
         end
@@ -48,8 +61,8 @@ module JSON
           _associate(Association::HasMany, *attrs)
         end
 
-        def type(type)
-          @_type = type.to_sym
+        def type_singular(type)
+          @_type_singular = type.to_sym
         end
 
         def model_name(model)
@@ -128,6 +141,14 @@ module JSON
           _attributes.include?(field) || _associations.key?(field)
         end
 
+        def _updateable(keys)
+          keys
+        end
+
+        def _createable(keys)
+          keys
+        end
+
         private
 
         def _associate(klass, *attrs)
@@ -176,14 +197,6 @@ module JSON
       end
 
       def _fetchable(keys)
-        keys
-      end
-
-      def _updateable(keys)
-        keys
-      end
-
-      def _creatable(keys)
         keys
       end
     end

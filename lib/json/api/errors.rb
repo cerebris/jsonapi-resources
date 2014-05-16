@@ -35,6 +35,13 @@ module JSON
 
       class InvalidFieldFormat < Error; end
 
+      class ParamNotAllowed < Error
+        attr_accessor :param
+        def initialize(param)
+          @param = param
+        end
+      end
+
     end
   end
 end

@@ -5,7 +5,7 @@ require 'json/api/resource_serializer'
 
 class SerializerTest < MiniTest::Unit::TestCase
   def setup
-    @post = Post.first
+    @post = Post.find(1)
     @fred = Person.find_by(name: 'Fred Reader')
   end
 
@@ -222,7 +222,7 @@ class SerializerTest < MiniTest::Unit::TestCase
   def test_serializer_array_of_resources
 
     posts = []
-    Post.all.each do |post|
+    Post.find(1,2).each do |post|
       posts.push PostResource.new(post)
     end
 
@@ -305,7 +305,7 @@ class SerializerTest < MiniTest::Unit::TestCase
   def test_serializer_array_of_resources_limited_fields
 
     posts = []
-    Post.all.each do |post|
+    Post.find(1,2).each do |post|
       posts.push PostResource.new(post)
     end
 

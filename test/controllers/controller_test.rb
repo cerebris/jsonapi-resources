@@ -63,8 +63,15 @@ class PostsControllerTest < ActionController::TestCase
   def test_malformed_fields_not_array
     get :index, {ids: [1,2], fields: {posts: :author}}
     assert_response :bad_request
-    assert_match /Sorry - not a valid value for posts./, response.body
+    assert_match /Sorry - post_ids is not allowed./, response.body
   end
+
+  def test_bad_filter
+    get :index, {post_ids: [1,2], fields: :posts}
+    assert_response :bad_request
+    assert_match //, response.body
+  end
+
 
   def test_malformed_fields_not_hash
     get :index, {ids: [1,2], fields: :posts}
@@ -95,4 +102,118 @@ class PostsControllerTest < ActionController::TestCase
   #   get :index, {ids: [1,'asdfg1']}
   #   assert_response :bad_request
   # end
+
+  def test_create_simple
+    post :create, { posts: {
+                      title: 'JAR is Great',
+                      body:  'JSON API Resources is the greatest thing since unsliced bread.',
+                      links: {
+                        author: 3
+                      }
+                    }
+                  }
+
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+    assert_equal 3, json_response['posts'][0]['links']['author']
+    assert_equal 'JAR is Great', json_response['posts'][0]['title']
+    assert_equal 'JSON API Resources is the greatest thing since unsliced bread.', json_response['posts'][0]['body']
+  end
+
+  def test_create_simple_unpermitted_attributes
+    post :create, { posts: {
+        subject: 'JAR is Great',
+        body:  'JSON API Resources is the greatest thing since unsliced bread.',
+        links: {
+            author: 3
+        }
+      }
+    }
+
+    assert_response 400
+    assert_match /subject/, json_response['error']
+  end
+
+  def test_create_with_linked
+    post :create, { posts: {
+                      title: 'JAR is Great',
+                      body:  'JSON API Resources is the greatest thing since unsliced bread.',
+                      links: {
+                        author: 3,
+                        tags: [1,2]
+                      }
+                    }
+                  }
+
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+    assert_equal 3, json_response['posts'][0]['links']['author']
+    assert_equal 'JAR is Great', json_response['posts'][0]['title']
+    assert_equal 'JSON API Resources is the greatest thing since unsliced bread.', json_response['posts'][0]['body']
+    assert_equal [1,2], json_response['posts'][0]['links']['tags']
+  end
+
+  def test_update_with_linked
+    post :update, {id: 3, posts: {
+        title: 'A great new Post',
+        links: {
+            tags: [3,4]
+        }
+      }
+    }
+
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+    assert_equal 3, json_response['posts'][0]['links']['author']
+    assert_equal 'A great new Post', json_response['posts'][0]['title']
+    assert_equal 'AAAA', json_response['posts'][0]['body']
+    assert_equal [3,4], json_response['posts'][0]['links']['tags']
+  end
+
+  def test_update_unpermitted_attributes
+    post :update, {id: 3, posts: {
+        subject: 'A great new Post',
+        links: {
+            author: 1,
+            tags: [3,4]
+        }
+      }
+    }
+
+    assert_response 400
+    assert_match /author/, json_response['error']
+    assert_match /subject/, json_response['error']
+  end
+
+  def test_update_bad_attributes
+    post :update, {id: 3, posts: {
+        subject: 'A great new Post',
+        linked_objects: {
+            author: 1,
+            tags: [3,4]
+        }
+    }
+    }
+
+    assert_response 400
+  end
+
+
+  def test_update_patch
+    put :update, {id: 3, posts: {
+        title: 'A great new Post',
+        links: {
+            tags: [3,4]
+        }
+    }
+    }
+
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+    assert_equal 3, json_response['posts'][0]['links']['author']
+    assert_equal 'A great new Post', json_response['posts'][0]['title']
+    assert_equal 'AAAA', json_response['posts'][0]['body']
+    assert_equal [3,4], json_response['posts'][0]['links']['tags']
+  end
+
 end

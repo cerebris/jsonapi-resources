@@ -21,6 +21,8 @@ module JSON
             include: include,
             fields: fields
         )
+      rescue JSON::API::Errors::FilterNotAllowed => e
+        filter_not_allowed(e.filter)
       rescue JSON::API::Errors::InvalidFilterValue => e
         invalid_filter_value(e.filter, e.value)
       rescue JSON::API::Errors::InvalidArgument => e
@@ -31,8 +33,29 @@ module JSON
         invalid_field(e.type, e.field)
       rescue JSON::API::Errors::InvalidFieldFormat
         invalid_field_format
-      rescue JSON::API::Errors::FilterNotAllowed => e
-        filter_not_allowed(e.filter)
+      end
+
+      def create
+        klass = resource_klass
+        checked_params = verify_params(params, klass, klass._createable(klass._updateable_associations | klass._attributes.to_a))
+        update_and_respond_with(klass.model_class.new, checked_params[0], checked_params[1])
+      rescue JSON::API::Errors::ParamNotAllowed => e
+        invalid_parameter(e.param)
+      rescue ActionController::ParameterMissing => e
+        missing_parameter(e.param)
+      end
+
+      def update
+        klass = resource_klass
+        checked_params = verify_params(params, klass, klass._updateable(klass._updateable_associations | klass._attributes.to_a))
+
+        return unless obj = klass.model_class.find(params[klass.key])
+
+        update_and_respond_with(obj, checked_params[0], checked_params[1])
+      rescue JSON::API::Errors::ParamNotAllowed => e
+        invalid_parameter(e.param)
+      rescue ActionController::ParameterMissing => e
+        missing_parameter(e.param)
       end
 
       private
@@ -58,21 +81,72 @@ module JSON
         @resource_klass_name = resource_klass_name
       end
 
-      def respond_with(*resources, &block)
-        #TODO: Rails is not setting status codes properly for destroy and update actions
-        if @_action_name == 'destroy'
-          resources[1] ||= {}
-          resources[1][:status] ||= 200
-          resources[1][:location] ||= nil #Todo: look into location related to caching
-        elsif @_action_name == 'update'
-          resources[1] ||= {}
-          resources[1][:status] ||= 200
+      def update_and_respond_with(obj, attributes, associated_sets)
+        yield(obj) if block_given?
+        if verify_attributes(attributes)
+          obj.update(attributes)
+
+          if verify_associated_sets(obj, associated_sets)
+            associated_sets.each do |association, values|
+              obj.send "#{association}=", values
+            end
+          end
+
+          render json: JSON::API::ResourceSerializer.new.serialize(
+              resource_klass.new(obj))
         end
-        super(*resources, &block)
+      end
+
+      def verify_attributes(attributes)
+        true
+      end
+
+      def verify_associated_sets(obj, attributes)
+        true
+      end
+
+      def verify_permitted_params(params, allowed_param_set)
+        params_not_allowed = []
+        params.keys.each do |key|
+          param = key.to_sym
+          params_not_allowed.push(param) unless allowed_param_set.include?(param)
+        end
+        raise JSON::API::Errors::ParamNotAllowed.new(params_not_allowed) if params_not_allowed.length > 0
+      end
+
+      def verify_params(params, klass, resource_param_set)
+        object_params = params.require(klass._type)
+
+        # push links into top level param list with attributes
+        if object_params && object_params[:links]
+          object_params[:links].each do |link, value|
+            object_params[link] = value
+          end
+          object_params.delete(:links)
+        end
+
+        checked_params = {}
+        checked_associations = {}
+
+        verify_permitted_params(object_params, resource_param_set)
+
+        object_params.each do |key, value|
+          param = key.to_sym
+
+          if klass._associations[param].is_a?(JSON::API::Association::HasOne)
+            checked_params[klass._associations[param].key] = value
+          elsif klass._associations[param].is_a?(JSON::API::Association::HasMany)
+            checked_associations[klass._associations[param].key] = value
+          else
+            checked_params[param] = value
+          end
+        end
+        return checked_params, checked_associations
       end
 
       def parse_filters(params)
         # Remove non-filter parameters
+        # ToDo: Allow these the be set with a global setting
         params.delete(:include) if params[:include].present?
         params.delete(:fields) if params[:fields].present?
         params.delete(:format) if params[:format].present?
