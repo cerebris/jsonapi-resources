@@ -35,6 +35,36 @@ module JSON
         invalid_field_format
       end
 
+      def show
+        return unless fields = parse_fields(params)
+        include = params[:include]
+
+        klass = resource_klass
+
+        ids = parse_id_array(params[klass.key])
+
+        resources = []
+        klass.transaction do
+          ids.each do |id|
+            resources.push(klass.find_by_id(id))
+          end
+        end
+
+        render json: JSON::API::ResourceSerializer.new.serialize(
+            resources,
+            include: include,
+            fields: fields
+        )
+      rescue JSON::API::Errors::RecordNotFound => e
+        record_not_found(e)
+      rescue JSON::API::Errors::InvalidField => e
+        invalid_field(e.type, e.field)
+      rescue JSON::API::Errors::InvalidFieldFormat
+        invalid_field_format
+      rescue JSON::API::Errors::InvalidArgument => e
+        invalid_argument(e.argument)
+      end
+
       def create
         klass = resource_klass
         checked_params = verify_params(params, klass, klass._createable(klass._updateable_associations | klass._attributes.to_a))
@@ -52,6 +82,25 @@ module JSON
         return unless obj = klass.model_class.find(params[klass.key])
 
         update_and_respond_with(obj, checked_params[0], checked_params[1])
+      rescue JSON::API::Errors::ParamNotAllowed => e
+        invalid_parameter(e.param)
+      rescue ActionController::ParameterMissing => e
+        missing_parameter(e.param)
+      end
+
+      def destroy
+        klass = resource_klass
+
+        ids = parse_id_array(params[klass.key])
+
+        klass.transaction do
+          ids.each do |id|
+            klass.find_by_id(id).destroy
+          end
+        end
+        render json: {}
+      rescue JSON::API::Errors::RecordNotFound => e
+        record_not_found(e)
       rescue JSON::API::Errors::ParamNotAllowed => e
         invalid_parameter(e.param)
       rescue ActionController::ParameterMissing => e
@@ -178,6 +227,14 @@ module JSON
         filter == resource_klass.plural_model_symbol || resource_klass._associations.include?(filter)
       end
 
+      def parse_id_array(raw)
+        ids = []
+        return raw.split(/,/).collect do |id|
+          ids.push id
+        end
+        ids
+      end
+
       def parse_fields(params)
         fields = {}
 
@@ -235,8 +292,20 @@ module JSON
         return false
       end
 
+      def record_not_found(id)
+        deny_access_common(:bad_request, "Sorry - record identified by #{id} could not be found.")
+      end
+
+      def permission_denied(id)
+        deny_access_common(:bad_request, "Sorry - permission denied for record identified by #{id}.")
+      end
+
       def invalid_argument(key = 'key')
         deny_access_common(:bad_request, "Sorry - not a valid value for #{key}.")
+      end
+
+      def missing_parameter(param)
+        deny_access_common(:bad_request, "Sorry - #{param} is required.")
       end
 
       def invalid_resource(resource = 'resource')

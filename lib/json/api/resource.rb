@@ -12,6 +12,10 @@ module JSON
         @object          = object
       end
 
+      def destroy
+        @object.destroy
+      end
+
       class << self
         def inherited(base)
           base._attributes = (_attributes || Set.new).dup
@@ -135,6 +139,20 @@ module JSON
           end
 
           return resources
+        end
+
+        def find_by_id(id)
+          obj = model_class.where({key => id}).first
+          if obj.nil?
+            raise JSON::API::Errors::RecordNotFound.new(id)
+          end
+          self.new(obj)
+        end
+
+        def transaction
+          ActiveRecord::Base.transaction do
+            yield
+          end
         end
 
         def _validate_field(field)

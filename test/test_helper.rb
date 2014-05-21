@@ -15,12 +15,20 @@ require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/hash_helpers', __FILE__)
 require File.expand_path('../helpers/functional_helpers', __FILE__)
 
-JSON::API::Routes = ActionDispatch::Routing::RouteSet.new
-JSON::API::Routes.draw do
-  resources 'posts'
+Rails.env = 'test'
+
+class TestApp < Rails::Application
+  config.eager_load = false
+  config.root = File.dirname(__FILE__)
+  config.session_store :cookie_store, key: 'session'
+  config.secret_key_base = 'secret'
 end
 
-ActionController::Base.send :include, JSON::API::Routes.url_helpers
+TestApp.initialize!
+
+TestApp.routes.draw do
+  resources :posts
+end
 
 class MiniTest::Unit::TestCase
   include Helpers::HashHelpers
@@ -30,6 +38,6 @@ end
 
 class ActiveSupport::TestCase
   setup do
-    @routes = JSON::API::Routes
+    @routes = TestApp.routes
   end
 end

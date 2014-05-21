@@ -2,7 +2,6 @@ require File.expand_path('../../test_helper', __FILE__)
 require File.expand_path('../../fixtures/active_record', __FILE__)
 
 class PostsControllerTest < ActionController::TestCase
-
   def test_index
     get :index
     assert_response :success
@@ -63,15 +62,14 @@ class PostsControllerTest < ActionController::TestCase
   def test_malformed_fields_not_array
     get :index, {ids: [1,2], fields: {posts: :author}}
     assert_response :bad_request
-    assert_match /Sorry - post_ids is not allowed./, response.body
+    assert_match /Sorry - not a valid value for posts./, response.body
   end
 
   def test_bad_filter
     get :index, {post_ids: [1,2], fields: :posts}
     assert_response :bad_request
-    assert_match //, response.body
+    assert_match /must contain a hash/, response.body
   end
-
 
   def test_malformed_fields_not_hash
     get :index, {ids: [1,2], fields: :posts}
@@ -102,6 +100,38 @@ class PostsControllerTest < ActionController::TestCase
   #   get :index, {ids: [1,'asdfg1']}
   #   assert_response :bad_request
   # end
+
+  def test_show_single
+    get :show, {id: 1}
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+    assert_equal 'New post', json_response['posts'][0]['title']
+    assert_equal 'A body!!!', json_response['posts'][0]['body']
+    assert_equal [1,2,3], json_response['posts'][0]['links']['tags']
+    assert_equal [1,2], json_response['posts'][0]['links']['comments']
+    assert_nil json_response['linked']
+  end
+
+  def test_show_single_with_includes
+    get :show, {id: 1, include: [:comments]}
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+    assert_equal 'New post', json_response['posts'][0]['title']
+    assert_equal 'A body!!!', json_response['posts'][0]['body']
+    assert_equal [1,2,3], json_response['posts'][0]['links']['tags']
+    assert_equal [1,2], json_response['posts'][0]['links']['comments']
+    assert_equal 2, json_response['linked']['comments'].size
+    assert_nil json_response['linked']['tags']
+  end
+
+  def test_show_single_with_fields
+    get :show, {id: 1, fields: {posts: [:author]}}
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+    assert_nil json_response['posts'][0]['title']
+    assert_nil json_response['posts'][0]['body']
+    assert_equal 1, json_response['posts'][0]['links']['author']
+  end
 
   def test_create_simple
     post :create, { posts: {
@@ -198,22 +228,24 @@ class PostsControllerTest < ActionController::TestCase
     assert_response 400
   end
 
-
-  def test_update_patch
-    put :update, {id: 3, posts: {
-        title: 'A great new Post',
-        links: {
-            tags: [3,4]
-        }
-    }
-    }
-
+  def test_delete_single
+    initial_count = Post.count
+    post :destroy, {id: 4}
     assert_response :success
-    assert_equal 1, json_response['posts'].size
-    assert_equal 3, json_response['posts'][0]['links']['author']
-    assert_equal 'A great new Post', json_response['posts'][0]['title']
-    assert_equal 'AAAA', json_response['posts'][0]['body']
-    assert_equal [3,4], json_response['posts'][0]['links']['tags']
+    assert_equal initial_count - 1, Post.count
   end
 
+  def test_delete_multiple
+    initial_count = Post.count
+    post :destroy, {id: '5,6'}
+    assert_response :success
+    assert_equal initial_count - 2, Post.count
+  end
+
+  def test_delete_multiple_one_does_not_exist
+    initial_count = Post.count
+    post :destroy, {id: '5,6,99999'}
+    assert_response 400
+    assert_equal initial_count, Post.count
+  end
 end

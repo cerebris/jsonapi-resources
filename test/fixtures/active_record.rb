@@ -4,11 +4,6 @@ require 'json/api/resource'
 require 'rails'
 require 'rails/all'
 
-ActiveRecord::Base.establish_connection(
-  :adapter  => 'sqlite3',
-  :database => ':memory:'
-)
-
 ### DATABASE
 ActiveRecord::Schema.define do
   create_table :people, force: true do |t|
@@ -174,5 +169,29 @@ end
 
 Post.create(title: 'Update This Later',
             body:  'AAAA',
-            author_id: c.id,
-            section: Section.create(name: 'ruby'))
+            author_id: c.id)
+
+
+Post.create(title: 'Delete This Later - Single',
+            body:  'AAAA',
+            author_id: c.id)
+
+Post.create(title: 'Delete This Later - Multiple1',
+            body:  'AAAA',
+            author_id: c.id)
+
+Post.create(title: 'Delete This Later - Multiple2',
+            body:  'AAAA',
+            author_id: c.id)
+
+Post.create(title: 'Delete This Later - Single2',
+            body:  'AAAA',
+            author_id: c.id)
+
+Post.create(title: 'Delete This Later - Multiple2-1',
+            body:  'AAAA',
+            author_id: c.id)
+
+Post.create(title: 'Delete This Later - Multiple2-2',
+            body:  'AAAA',
+            author_id: c.id)

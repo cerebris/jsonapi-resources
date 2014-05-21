@@ -10,6 +10,13 @@ module JSON
         end
       end
 
+      class RecordNotFound < Error
+        attr_accessor :id
+        def initialize(id)
+          @id = id
+        end
+      end
+
       class FilterNotAllowed < Error
         attr_accessor :filter
         def initialize(filter)
