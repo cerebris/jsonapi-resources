@@ -8,12 +8,20 @@ module JSON
 
       @@resource_types = {}
 
-      def initialize(object)
-        @object          = object
+      def initialize(object = new_object)
+        @object = object
+      end
+
+      def new_object
+        self.class.model_class.new
       end
 
       def destroy
         @object.destroy
+      end
+
+      def update(attributes)
+        @object.update(attributes)
       end
 
       class << self
@@ -182,6 +190,10 @@ module JSON
                 @object.read_attribute_for_serialization key
               end unless method_defined?(key)
 
+              define_method "#{key}=" do |values|
+                @object.send "#{key}=", values
+              end unless method_defined?("#{key}=")
+
               define_method "_#{attr}_object" do
                 type_name = self.class._associations[attr].serialize_type_name
                 resource_class = self.class.resource_for(type_name)
@@ -196,6 +208,10 @@ module JSON
               define_method key do
                 @object.read_attribute_for_serialization key
               end unless method_defined?(key)
+
+              define_method "#{key}=" do |values|
+                @object.send "#{key}=", values
+              end unless method_defined?("#{key}=")
 
               define_method "_#{attr}_objects" do
                 type_name = self.class._associations[attr].serialize_type_name
