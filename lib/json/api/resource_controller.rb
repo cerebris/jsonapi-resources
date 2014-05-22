@@ -14,10 +14,7 @@ module JSON
         filters = parse_filters(params)
 
         render json: JSON::API::ResourceSerializer.new.serialize(
-            resource_klass.find({#scope: current_user,
-                           filters: filters
-                          }
-            ),
+            resource_klass.find({filters: filters}),
             include: include,
             fields: fields
         )
@@ -68,7 +65,7 @@ module JSON
       def create
         klass = resource_klass
         checked_params = verify_params(params, klass, klass._createable(klass._updateable_associations | klass._attributes.to_a))
-        update_and_respond_with(klass.model_class.new, checked_params[0], checked_params[1])
+        update_and_respond_with(klass.new, checked_params[0], checked_params[1])
       rescue JSON::API::Errors::ParamNotAllowed => e
         invalid_parameter(e.param)
       rescue ActionController::ParameterMissing => e
@@ -79,7 +76,7 @@ module JSON
         klass = resource_klass
         checked_params = verify_params(params, klass, klass._updateable(klass._updateable_associations | klass._attributes.to_a))
 
-        return unless obj = klass.model_class.find(params[klass.key])
+        return unless obj = klass.find_by_id(params[klass.key])
 
         update_and_respond_with(obj, checked_params[0], checked_params[1])
       rescue JSON::API::Errors::ParamNotAllowed => e
@@ -141,8 +138,7 @@ module JSON
             end
           end
 
-          render json: JSON::API::ResourceSerializer.new.serialize(
-              resource_klass.new(obj))
+          render json: JSON::API::ResourceSerializer.new.serialize(obj)
         end
       end
 
