@@ -17,6 +17,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                     body: 'A body!!!',
                     subject: 'New post',
                     links: {
+                      section: nil,
                       author: 1,
                       tags: [1,2,3],
                       comments: [1,2]
@@ -48,7 +49,8 @@ class SerializerTest < MiniTest::Unit::TestCase
                     links: {
                       author: 1,
                       tags: [1,2,3],
-                      comments: [1,2]
+                      comments: [1,2],
+                      section: nil
                     }
                   }],
                   linked: {
@@ -77,7 +79,8 @@ class SerializerTest < MiniTest::Unit::TestCase
             links: {
               author: 1,
               tags: [1,2,3],
-              comments: [1,2]
+              comments: [1,2],
+              section: nil
             }
           }],
           linked: {
@@ -130,7 +133,8 @@ class SerializerTest < MiniTest::Unit::TestCase
             links: {
               author: 1,
               tags: [1,2,3],
-              comments: [1,2]
+              comments: [1,2],
+              section: nil
             }
           }],
           linked: {
@@ -163,7 +167,8 @@ class SerializerTest < MiniTest::Unit::TestCase
             links: {
               author: 1,
               tags: [1,2,3],
-              comments: [1,2]
+              comments: [1,2],
+              section: nil
             }
           }],
           linked: {
@@ -236,7 +241,8 @@ class SerializerTest < MiniTest::Unit::TestCase
             links: {
               author: 1,
               tags: [1,2,3],
-              comments: [1,2]
+              comments: [1,2],
+              section: nil
             }
           },
           {
@@ -247,7 +253,8 @@ class SerializerTest < MiniTest::Unit::TestCase
             links: {
               author: 1,
               tags: [5],
-              comments: [3]
+              comments: [3],
+              section: 2
             }
           }],
           linked: {

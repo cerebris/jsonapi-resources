@@ -184,9 +184,12 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_update_with_linked
+    javascript = Section.find_by(name: 'javascript')
+
     post :update, {id: 3, posts: {
         title: 'A great new Post',
         links: {
+            section: javascript.id,
             tags: [3,4]
         }
       }
@@ -195,6 +198,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :success
     assert_equal 1, json_response['posts'].size
     assert_equal 3, json_response['posts'][0]['links']['author']
+    assert_equal  javascript.id, json_response['posts'][0]['links']['section']
     assert_equal 'A great new Post', json_response['posts'][0]['title']
     assert_equal 'AAAA', json_response['posts'][0]['body']
     assert_equal [3,4], json_response['posts'][0]['links']['tags']
@@ -247,5 +251,22 @@ class PostsControllerTest < ActionController::TestCase
     post :destroy, {id: '5,6,99999'}
     assert_response 400
     assert_equal initial_count, Post.count
+  end
+end
+
+class TagsControllerTest < ActionController::TestCase
+  def test_tags_index
+    get :index, {include: [:posts]}
+    assert_response :success
+    assert_equal 5, json_response['tags'].size
+    # assert_equal 1, json_response['linked']['posts'].size
+  end
+end
+
+class ExpensesControllerTest < ActionController::TestCase
+  def test_expenses_index
+    get :index
+    assert_response :success
+    assert_equal 1, json_response['expense_entries'].size
   end
 end

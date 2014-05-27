@@ -20,15 +20,15 @@ class ResourceTest < MiniTest::Unit::TestCase
   end
 
   def test_model_name
-    assert_equal(PostResource.model, 'Post')
+    assert_equal(PostResource._model_name, 'Post')
   end
 
   def test_model
-    assert_equal(PostResource.model_class, Post)
+    assert_equal(PostResource._model_class, Post)
   end
 
   def test_model_alternate
-    assert_equal(ArticleResource.model_class, Post)
+    assert_equal(ArticleResource._model_class, Post)
   end
 
   def test_class_attributes

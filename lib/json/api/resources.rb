@@ -11,7 +11,7 @@ module JSON
         if RUBY_VERSION >= '2.0'
           def resource_for(type)
             begin
-              resource_name = JSON::API::Resource.resource_name_from_type(type)
+              resource_name = JSON::API::Resource._resource_name_from_type(type)
               Object.const_get resource_name if resource_name
             rescue NameError
               nil
@@ -19,7 +19,7 @@ module JSON
           end
         else
           def resource_for(type)
-            resource_name = JSON::API::Resource.resource_name_from_type(type)
+            resource_name = JSON::API::Resource._resource_name_from_type(type)
             resource_name.safe_constantize if resource_name
           end
         end

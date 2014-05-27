@@ -38,7 +38,7 @@ module JSON
 
         klass = resource_klass
 
-        ids = parse_id_array(params[klass.key])
+        ids = parse_id_array(params[klass._key])
 
         resources = []
         klass.transaction do
@@ -64,7 +64,7 @@ module JSON
 
       def create
         klass = resource_klass
-        checked_params = verify_params(params, klass, klass._createable(klass._updateable_associations | klass._attributes.to_a))
+        checked_params = verify_params(params, klass, klass.createable(klass._updateable_associations | klass._attributes.to_a))
         update_and_respond_with(klass.new, checked_params[0], checked_params[1])
       rescue JSON::API::Errors::ParamNotAllowed => e
         invalid_parameter(e.param)
@@ -74,9 +74,9 @@ module JSON
 
       def update
         klass = resource_klass
-        checked_params = verify_params(params, klass, klass._updateable(klass._updateable_associations | klass._attributes.to_a))
+        checked_params = verify_params(params, klass, klass.updateable(klass._updateable_associations | klass._attributes.to_a))
 
-        return unless obj = klass.find_by_id(params[klass.key])
+        return unless obj = klass.find_by_id(params[klass._key])
 
         update_and_respond_with(obj, checked_params[0], checked_params[1])
       rescue JSON::API::Errors::ParamNotAllowed => e
@@ -88,7 +88,7 @@ module JSON
       def destroy
         klass = resource_klass
 
-        ids = parse_id_array(params[klass.key])
+        ids = parse_id_array(params[klass._key])
 
         klass.transaction do
           ids.each do |id|
@@ -220,7 +220,7 @@ module JSON
       end
 
       def is_filter_association?(filter)
-        filter == resource_klass.plural_model_symbol || resource_klass._associations.include?(filter)
+        filter == resource_klass._serialize_as || resource_klass._associations.include?(filter)
       end
 
       def parse_id_array(raw)

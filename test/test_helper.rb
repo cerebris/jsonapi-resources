@@ -28,6 +28,9 @@ TestApp.initialize!
 
 TestApp.routes.draw do
   resources :posts
+  resources :tags
+  resources :expenses
+  resources :currencies
 end
 
 class MiniTest::Unit::TestCase

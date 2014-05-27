@@ -43,6 +43,20 @@ ActiveRecord::Schema.define do
   create_table :comments_tags, force: true do |t|
     t.references :comment, :tag, index: true
   end
+
+  create_table :currencies, id: false, force: true do |t|
+    t.string :code, limit: 3, null: false
+    t.string :name
+    t.timestamps
+  end
+  add_index :currencies, :code, unique: true
+
+  create_table :expenses, force: true do |t|
+    t.string :currency_code, limit: 3, null: false
+    t.integer :employee_id, null: false
+    t.decimal :cost, precision: 12, scale: 4, null: false
+    t.date :transaction_date
+  end
 end
 
 ### MODELS
@@ -70,8 +84,26 @@ end
 class Section < ActiveRecord::Base
 end
 
+class Currency < ActiveRecord::Base
+  has_many :expenses, foreign_key: 'currency_code'
+end
+
+class Expense < ActiveRecord::Base
+  belongs_to :employee, class_name: 'Person', foreign_key: 'employee_id'
+  belongs_to :currency, class_name: 'Currency', foreign_key: 'currency_code'
+end
+
 ### CONTROLLERS
 class PostsController < JSON::API::ResourceController
+end
+
+class TagsController < JSON::API::ResourceController
+end
+
+class CurrenciesController < JSON::API::ResourceController
+end
+
+class ExpensesController < JSON::API::ResourceController
 end
 
 ### RESOURCES
@@ -90,6 +122,8 @@ end
 
  class TagResource < JSON::API::Resource
   attributes :id, :name
+
+  # has_many :posts
  end
 
 class SectionResource < JSON::API::Resource
@@ -105,25 +139,42 @@ class PostResource < JSON::API::Resource
   attribute :subject
 
   has_one :author, class_name: 'Person'
+  has_one :section
   has_many :tags, treat_as_set: true
   has_many :comments, treat_as_set: false
   def subject
     @object.title
   end
 
-  def self._updateable(keys)
-    keys - [:author, :subject]
+  def self.updateable(keys)
+    super(keys - [:author, :subject])
   end
 
-  def self._createable(keys)
-    keys - [:subject]
+  def self.createable(keys)
+    super(keys - [:subject])
   end
 
   filters [:title, :author]
   filter :id
 end
 
+class CurrencyResource < JSON::API::Resource
+  key :code
+  attributes :code, :name
+end
+
+class ExpenseResource < JSON::API::Resource
+  serialize_as :expense_entries
+
+  attributes :id, :cost, :transaction_date
+
+  has_one :currency, class_name: 'Currency', key: 'currency_code'
+  has_one :employee
+end
+
 ### DATA
+javascript = Section.create(name: 'javascript')
+
 a = Person.create(name: 'Joe Author',
                  email: 'joe@xyz.fake',
                  date_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00'))
@@ -138,8 +189,7 @@ c = Person.create(name: 'Lazy Author',
 
 Post.create(title: 'New post',
               body:  'A body!!!',
-              author_id: a.id,
-              section: Section.create(name: 'ruby')).tap do |post|
+              author_id: a.id).tap do |post|
 
   short_tag = post.tags.create(name: 'short')
   whiny_tag = post.tags.create(name: 'whiny')
@@ -195,3 +245,13 @@ Post.create(title: 'Delete This Later - Multiple2-1',
 Post.create(title: 'Delete This Later - Multiple2-2',
             body:  'AAAA',
             author_id: c.id)
+
+
+Currency.create(code: 'USD', name: 'United States Dollar')
+Currency.create(code: 'EUR', name: 'Euro Member Countries')
+
+Expense.create(currency_code: 'USD',
+               employee_id: c.id,
+               cost: '12.05',
+               transaction_date: DateTime.parse('2014-04-15 12:13:14 UTC +00:00'))
+

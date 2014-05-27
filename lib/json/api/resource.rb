@@ -13,7 +13,7 @@ module JSON
       end
 
       def new_object
-        self.class.model_class.new
+        self.class._model_class.new
       end
 
       def destroy
@@ -38,6 +38,7 @@ module JSON
 
         attr_accessor :_attributes, :_associations, :_allowed_filters , :_type, :_type_singular
 
+        # Methods used in defining a resource class
         def attributes(*attrs)
           @_attributes.merge attrs
           attrs.each do |attr|
@@ -52,17 +53,6 @@ module JSON
           define_method attr do
             @object.read_attribute_for_serialization attr
           end unless method_defined?(attr)
-        end
-
-        def _updateable_associations
-          associations = []
-
-          @_associations.each do |key, association|
-            if association.is_a?(JSON::API::Association::HasOne) || association.treat_as_set
-              associations.push(key)
-            end
-          end
-          associations
         end
 
         def has_one(*attrs)
@@ -81,28 +71,8 @@ module JSON
           @_model_name = model.to_sym
         end
 
-        def model
-          @_model_name ||= self.name.demodulize.sub(/Resource$/, '')
-        end
-
-        def model_plural
-          @_model_name_plural ||= self.model.to_s.pluralize.to_sym
-        end
-
-        def model_plural=(model_plural)
-          @_model_name_plural = model_plural.to_sym
-        end
-
-        def plural_model_symbol
-          @_plural_model_symbol ||= self.model_plural.downcase.to_sym
-        end
-
-        def key
-          @_key ||= :id
-        end
-
-        def key=(key)
-          @_key = key.to_sym
+        def serialize_as(serialize_as)
+          @_serialize_as = serialize_as.downcase.to_sym
         end
 
         def filters(*attrs)
@@ -113,36 +83,24 @@ module JSON
           @_allowed_filters.add(attr.to_sym)
         end
 
-        def _allowed_filters
-          !@_allowed_filters.nil? ? @_allowed_filters : Set.new([key])
+        def key(key)
+          @_key = key.to_sym
         end
 
-        def resource_name_from_type(type)
-          return @@resource_types[type]
+        # Override in your resource to filter the updateable keys
+        def updateable(keys)
+          keys
         end
 
-        if RUBY_VERSION >= '2.0'
-          def model_class
-            begin
-              @model ||= Object.const_get(model)
-            rescue NameError
-              nil
-            end
-          end
-        else
-          def model_class
-            @model ||= model.safe_constantize
-          end
-        end
-
-        def _allowed_filter?(filter)
-          _allowed_filters.include?(filter.to_sym)
+        # Override in your resource to filter the createable keys
+        def createable(keys)
+          keys
         end
 
         # Override this method if you have more complex requirements than this basic find method provides
         def find(attrs)
           resources = []
-          model_class.where(attrs[:filters]).each do |object|
+          _model_class.where(attrs[:filters]).each do |object|
             resources.push self.new(object)
           end
 
@@ -150,7 +108,7 @@ module JSON
         end
 
         def find_by_id(id)
-          obj = model_class.where({key => id}).first
+          obj = _model_class.where({_key => id}).first
           if obj.nil?
             raise JSON::API::Errors::RecordNotFound.new(id)
           end
@@ -163,16 +121,62 @@ module JSON
           end
         end
 
+        # quasi private class methods
+        def _updateable_associations
+          associations = []
+
+          @_associations.each do |key, association|
+            if association.is_a?(JSON::API::Association::HasOne) || association.treat_as_set
+              associations.push(key)
+            end
+          end
+          associations
+        end
+
+        def _model_name
+          @_model_name ||= self.name.demodulize.sub(/Resource$/, '')
+        end
+
+        def _serialize_as
+          @_serialize_as ||= self._model_name.downcase.to_s.pluralize.to_sym
+        end
+
+        def _plural_model_symbol
+          @_plural_model_symbol ||= self._serialize_as.downcase.to_sym
+        end
+
+        def _key
+          @_key ||= :id
+        end
+
+        def _allowed_filters
+          !@_allowed_filters.nil? ? @_allowed_filters : Set.new([_key])
+        end
+
+        def _resource_name_from_type(type)
+          return @@resource_types[type]
+        end
+
+        if RUBY_VERSION >= '2.0'
+          def _model_class
+            begin
+              @model ||= Object.const_get(_model_name)
+            rescue NameError
+              nil
+            end
+          end
+        else
+          def _model_class
+            @model ||= _model_name.safe_constantize
+          end
+        end
+
+        def _allowed_filter?(filter)
+          _allowed_filters.include?(filter.to_sym)
+        end
+
         def _validate_field(field)
           _attributes.include?(field) || _associations.key?(field)
-        end
-
-        def _updateable(keys)
-          keys
-        end
-
-        def _createable(keys)
-          keys
         end
 
         private
@@ -189,10 +193,6 @@ module JSON
               define_method key do
                 @object.read_attribute_for_serialization key
               end unless method_defined?(key)
-
-              define_method "#{key}=" do |values|
-                @object.send "#{key}=", values
-              end unless method_defined?("#{key}=")
 
               define_method "_#{attr}_object" do
                 type_name = self.class._associations[attr].serialize_type_name
@@ -230,7 +230,8 @@ module JSON
         end
       end
 
-      def _fetchable(keys)
+      # Override this on a resource instance to override the fetchable keys
+      def fetchable(keys)
         keys
       end
     end

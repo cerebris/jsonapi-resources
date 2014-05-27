@@ -18,9 +18,9 @@ module JSON
         requested_associations = parse_includes(options[:include])
 
         if source.respond_to?(:to_ary)
-          @primary_class_name = source[0].class.model_plural.downcase
+          @primary_class_name = source[0].class._serialize_as
         else
-          @primary_class_name = source.class.model_plural.downcase
+          @primary_class_name = source.class._serialize_as
         end
 
         process_primary(source, requested_associations)
@@ -80,7 +80,7 @@ module JSON
       def process_primary(source, requested_associations)
         if source.respond_to?(:to_ary)
           source.each do |object|
-            id = object.send(object.class.key)
+            id = object.send(object.class._key)
             if already_serialized?(@primary_class_name, id)
               set_primary(@primary_class_name, id)
             end
@@ -88,7 +88,7 @@ module JSON
             add_linked_object(@primary_class_name, id, object_hash(object,  requested_associations), true)
           end
         else
-          id = source.send(source.class.key)
+          id = source.send(source.class._key)
           if already_serialized?(@primary_class_name, id)
             set_primary(@primary_class_name, id)
           end
@@ -109,24 +109,24 @@ module JSON
         @options[:fields][model] if @options[:fields]
       end
 
-      # Returns a hash of the requested attributes for a resource, filtered by the resource class's _fetchable method
+      # Returns a hash of the requested attributes for a resource, filtered by the resource class's fetchable method
       def attribute_hash(source)
-        requested = requested_fields(source.class.plural_model_symbol)
+        requested = requested_fields(source.class._plural_model_symbol)
         fields = source.class._attributes.to_a
         unless requested.nil?
           fields = requested & fields
         end
 
-        source._fetchable(fields).each_with_object({}) do |name, hash|
+        source.fetchable(fields).each_with_object({}) do |name, hash|
           hash[name] = source.send(name)
         end
       end
 
       # Returns a hash of links for the requested associations for a resource, filtered by the resource
-      # class's _fetchable method
+      # class's fetchable method
       def links_hash(source, requested_associations)
         associations = source.class._associations
-        requested = requested_fields(source.class.plural_model_symbol)
+        requested = requested_fields(source.class._plural_model_symbol)
         fields = associations.keys
         unless requested.nil?
           fields = requested & fields
@@ -134,7 +134,7 @@ module JSON
 
         field_set = Set.new(fields)
 
-        included_associations = source._fetchable(associations.keys)
+        included_associations = source.fetchable(associations.keys)
         associations.each_with_object({}) do |(name, association), hash|
           if included_associations.include? name
             key = association.key
