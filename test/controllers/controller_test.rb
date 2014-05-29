@@ -212,7 +212,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /subject/, json_response['error']
   end
 
-  def test_create_with_linked
+  def test_create_with_links
     post :create, { posts: {
                       title: 'JAR is Great',
                       body:  'JSON API Resources is the greatest thing since unsliced bread.',
@@ -231,7 +231,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal [1,2], json_response['posts'][0]['links']['tags']
   end
 
-  def test_create_with_linked_include_and_fields
+  def test_create_with_links_include_and_fields
     post :create, { posts: {
         title: 'JAR is Great!',
         body:  'JSON API Resources is the greatest thing since unsliced bread!',
@@ -255,7 +255,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_nil json_response['linked']['tags']
   end
 
-  def test_update_with_linked
+  def test_update_with_links
     javascript = Section.find_by(name: 'javascript')
 
     post :update, {id: 3, posts: {
