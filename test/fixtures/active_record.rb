@@ -140,7 +140,7 @@ end
 class PersonResource < JSON::API::Resource
   attributes :id, :name, :email, :date_joined
   has_many :comments
-  has_many :posts, foreign_key: 'author_id'
+  has_many :posts
 end
 
  class CommentResource < JSON::API::Resource
