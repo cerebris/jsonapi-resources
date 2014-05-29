@@ -132,10 +132,6 @@ module JSON
           @_serialize_as ||= self._model_name.downcase.to_s.pluralize.to_sym
         end
 
-        def _plural_model_symbol
-          @_plural_model_symbol ||= self._serialize_as.downcase.to_sym
-        end
-
         def _key
           @_key ||= :id
         end

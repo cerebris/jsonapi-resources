@@ -113,7 +113,7 @@ module JSON
 
       # Returns a hash of the requested attributes for a resource, filtered by the resource class's fetchable method
       def attribute_hash(source)
-        requested = requested_fields(source.class._plural_model_symbol)
+        requested = requested_fields(source.class._serialize_as)
         fields = source.class._attributes.to_a
         unless requested.nil?
           fields = requested & fields
@@ -128,7 +128,7 @@ module JSON
       # class's fetchable method
       def links_hash(source, requested_associations)
         associations = source.class._associations
-        requested = requested_fields(source.class._plural_model_symbol)
+        requested = requested_fields(source.class._serialize_as)
         fields = associations.keys
         unless requested.nil?
           fields = requested & fields
