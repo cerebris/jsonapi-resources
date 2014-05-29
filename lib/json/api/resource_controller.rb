@@ -164,15 +164,6 @@ module JSON
       end
 
       def parse_filters(params)
-        # Remove non-filter parameters
-        # ToDo: Allow these the be set with a global setting
-        params.delete(:include) if params[:include].present?
-        params.delete(:fields) if params[:fields].present?
-        params.delete(:format) if params[:format].present?
-        params.delete(:controller) if params[:controller].present?
-        params.delete(:action) if params[:action].present?
-        params.delete(:sort) if params[:sort].present?
-
         # Coerce :ids -> :id
         if params[:ids]
           params[:id] = params[:ids]
@@ -183,7 +174,9 @@ module JSON
         params.each do |key, value|
           filter = key.to_sym
 
-          if resource_klass._allowed_filter?(filter)
+          if [:include, :fields, :format, :controller, :action, :sort].include?(filter)
+            # Ignore non-filter parameters
+          elsif resource_klass._allowed_filter?(filter)
             verified_filter = verify_filter(filter, value)
             filters[verified_filter[0]] = verified_filter[1]
           else
