@@ -31,12 +31,11 @@ module JSON
           base._allowed_filters = (_allowed_filters || Set.new).dup
 
           type = base.name.demodulize.sub(/Resource$/, '').downcase
-          base._type_singular =  type.to_sym
           base._type = type.pluralize.to_sym
           @@resource_types[base._type] = base.name.demodulize
         end
 
-        attr_accessor :_attributes, :_associations, :_allowed_filters , :_type, :_type_singular
+        attr_accessor :_attributes, :_associations, :_allowed_filters , :_type
 
         # Methods used in defining a resource class
         def attributes(*attrs)
@@ -61,10 +60,6 @@ module JSON
 
         def has_many(*attrs)
           _associate(Association::HasMany, *attrs)
-        end
-
-        def type_singular(type)
-          @_type_singular = type.to_sym
         end
 
         def model_name(model)

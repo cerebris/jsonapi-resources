@@ -161,8 +161,6 @@ class SectionResource < JSON::API::Resource
 end
 
 class PostResource < JSON::API::Resource
-  type_singular :post
-
   attribute :id
   attribute :title
   attribute :body
