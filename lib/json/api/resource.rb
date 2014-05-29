@@ -71,10 +71,6 @@ module JSON
           @_model_name = model.to_sym
         end
 
-        def serialize_as(serialize_as)
-          @_serialize_as = serialize_as.downcase.to_sym
-        end
-
         def filters(*attrs)
           @_allowed_filters.merge(*attrs)
         end
@@ -159,15 +155,11 @@ module JSON
 
         if RUBY_VERSION >= '2.0'
           def _model_class
-            begin
-              @model ||= Object.const_get(_model_name)
-            rescue NameError
-              nil
-            end
+            @model ||= Object.const_get(_model_name)
           end
         else
           def _model_class
-            @model ||= _model_name.safe_constantize
+            @model ||= _model_name.to_s.safe_constantize
           end
         end
 

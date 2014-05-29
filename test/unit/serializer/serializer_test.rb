@@ -86,16 +86,25 @@ class SerializerTest < MiniTest::Unit::TestCase
           linked: {
             tags: [
                 {
-                  id: 1,
-                  name: 'short'
+                    id: 1,
+                    name: 'short',
+                    links: {
+                        posts: :not_nil
+                    }
                 },
                 {
-                  id: 2,
-                  name: 'whiny'
+                    id: 2,
+                    name: 'whiny',
+                    links: {
+                        posts: :not_nil
+                    }
                 },
                 {
-                  id: 4,
-                  name: 'happy'
+                    id: 4,
+                    name: 'happy',
+                    links: {
+                        posts: :not_nil
+                    }
                 }
             ],
             comments: [
@@ -141,15 +150,24 @@ class SerializerTest < MiniTest::Unit::TestCase
             tags: [
                 {
                   id: 1,
-                  name: 'short'
+                  name: 'short',
+                  links: {
+                    posts: :not_nil
+                  }
                 },
                 {
                   id: 2,
-                  name: 'whiny'
+                  name: 'whiny',
+                  links: {
+                      posts: :not_nil
+                  }
                 },
                 {
                   id: 4,
-                  name: 'happy'
+                  name: 'happy',
+                  links: {
+                      posts: :not_nil
+                  }
                 }
             ]
           }
@@ -261,19 +279,31 @@ class SerializerTest < MiniTest::Unit::TestCase
             tags: [
                 {
                   id: 1,
-                  name: 'short'
+                  name: 'short',
+                  links: {
+                      posts: :not_nil
+                  }
                 },
                 {
                   id: 2,
-                  name: 'whiny'
+                  name: 'whiny',
+                  links: {
+                      posts: :not_nil
+                  }
                 },
                 {
                   id: 4,
-                  name: 'happy'
+                  name: 'happy',
+                  links: {
+                      posts: :not_nil
+                  }
                 },
                 {
                   id: 5,
-                  name: 'AMS'
+                  name: 'AMS',
+                  links: {
+                      posts: [2]
+                  }
                 }
             ],
             comments: [

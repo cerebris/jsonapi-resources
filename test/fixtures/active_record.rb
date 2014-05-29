@@ -1,6 +1,7 @@
 require 'active_record'
 require 'json/api/resource_controller'
 require 'json/api/resource'
+require 'json/api/errors'
 require 'rails'
 require 'rails/all'
 
@@ -79,12 +80,14 @@ class Comment < ActiveRecord::Base
 end
 
 class Tag < ActiveRecord::Base
+  has_and_belongs_to_many :posts, join_table: :posts_tags
 end
 
 class Section < ActiveRecord::Base
 end
 
 class Currency < ActiveRecord::Base
+  self.primary_key = :code
   has_many :expenses, foreign_key: 'currency_code'
 end
 
@@ -95,6 +98,33 @@ end
 
 ### CONTROLLERS
 class PostsController < JSON::API::ResourceController
+  def is_num?(str)
+    begin
+      !!Integer(str)
+    rescue ArgumentError, TypeError
+      false
+    end
+  end
+
+  def verify_id(resource, id)
+    raise JSON::API::Errors::InvalidFieldValue.new(:id, id) unless is_num?(id)
+    raise JSON::API::Errors::RecordNotFound.new(id) unless resource.find_by_id(id)
+    return id
+  end
+
+  def verify_custom_filter(resource, filter, raw)
+    case filter
+      when :id
+        if raw.is_a?(Array)
+          raw.each do |id|
+            verify_id(resource, id)
+          end
+        else
+          verify_id(resource, raw)
+        end
+    end
+    return filter, raw
+  end
 end
 
 class TagsController < JSON::API::ResourceController
@@ -123,7 +153,7 @@ end
  class TagResource < JSON::API::Resource
   attributes :id, :name
 
-  # has_many :posts
+  has_many :posts
  end
 
 class SectionResource < JSON::API::Resource
@@ -161,11 +191,11 @@ end
 class CurrencyResource < JSON::API::Resource
   key :code
   attributes :code, :name
+
+  has_many :expenses
 end
 
 class ExpenseResource < JSON::API::Resource
-  serialize_as :expense_entries
-
   attributes :id, :cost, :transaction_date
 
   has_one :currency, class_name: 'Currency', key: 'currency_code'
@@ -186,6 +216,10 @@ b = Person.create(name: 'Fred Reader',
 c = Person.create(name: 'Lazy Author',
                   email: 'lazy@xyz.fake',
                   date_joined: DateTime.parse('2013-10-31 21:25:00 UTC +00:00'))
+
+d = Person.create(name: 'Tag Crazy Author',
+                  email: 'taggy@xyz.fake',
+                  date_joined: DateTime.parse('2013-11-30 4:20:00 UTC +00:00'))
 
 Post.create(title: 'New post',
               body:  'A body!!!',
@@ -255,3 +289,24 @@ Expense.create(currency_code: 'USD',
                cost: '12.05',
                transaction_date: DateTime.parse('2014-04-15 12:13:14 UTC +00:00'))
 
+Expense.create(currency_code: 'USD',
+               employee_id: c.id,
+               cost: '12.06',
+               transaction_date: DateTime.parse('2014-04-15 12:13:15 UTC +00:00'))
+
+silly_tag = Tag.create(name: 'silly')
+sleepy_tag = Tag.create(name: 'sleepy')
+goofy_tag = Tag.create(name: 'goofy')
+wacky_tag = Tag.create(name: 'wacky')
+
+Post.create(title: 'Tagged up post 1',
+            body:  'AAAA',
+            author_id: d.id,
+            tag_ids: [6,7,8,9]
+            )
+
+Post.create(title: 'Tagged up post 2',
+            body:  'BBBB',
+            author_id: d.id,
+            tag_ids: [6,7,8,9]
+)

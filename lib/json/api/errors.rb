@@ -3,6 +3,13 @@ module JSON
     module Errors
       class Error < RuntimeError; end
 
+      class InvalidResource < Error
+        attr_accessor :resource
+        def initialize(resource)
+          @resource = resource
+        end
+      end
+
       class InvalidArgument < Error
         attr_accessor :argument
         def initialize(argument)
@@ -24,10 +31,10 @@ module JSON
         end
       end
 
-      class InvalidFilterValue < Error
+      class InvalidFieldValue < Error
         attr_accessor :field, :value
-        def initialize(filter, value)
-          @filter = filter
+        def initialize(field, value)
+          @field = field
           @value = value
         end
       end
@@ -43,9 +50,9 @@ module JSON
       class InvalidFieldFormat < Error; end
 
       class ParamNotAllowed < Error
-        attr_accessor :param
-        def initialize(param)
-          @param = param
+        attr_accessor :params
+        def initialize(params)
+          @params = params
         end
       end
 

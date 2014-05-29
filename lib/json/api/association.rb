@@ -13,10 +13,6 @@ module JSON
         @key
       end
 
-      def serialize_type_name
-        @serialize_type_name
-      end
-
       def primary_key
         @primary_key
       end

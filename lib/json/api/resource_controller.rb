@@ -9,7 +9,7 @@ module JSON
       include Resources
 
       def index
-        return unless fields = parse_fields(params)
+        fields = parse_fields(params)
         include = params[:include]
         filters = parse_filters(params)
 
@@ -18,22 +18,12 @@ module JSON
             include: include,
             fields: fields
         )
-      rescue JSON::API::Errors::FilterNotAllowed => e
-        filter_not_allowed(e.filter)
-      rescue JSON::API::Errors::InvalidFilterValue => e
-        invalid_filter_value(e.filter, e.value)
-      rescue JSON::API::Errors::InvalidArgument => e
-        invalid_argument(e.argument)
-      rescue ActionController::UnpermittedParameters => e
-        invalid_parameter(e.params)
-      rescue JSON::API::Errors::InvalidField => e
-        invalid_field(e.type, e.field)
-      rescue JSON::API::Errors::InvalidFieldFormat
-        invalid_field_format
+      rescue JSON::API::Errors::Error => e
+        handle_json_api_error(e)
       end
 
       def show
-        return unless fields = parse_fields(params)
+        fields = parse_fields(params)
         include = params[:include]
 
         klass = resource_klass
@@ -52,37 +42,33 @@ module JSON
             include: include,
             fields: fields
         )
-      rescue JSON::API::Errors::RecordNotFound => e
-        record_not_found(e)
-      rescue JSON::API::Errors::InvalidField => e
-        invalid_field(e.type, e.field)
-      rescue JSON::API::Errors::InvalidFieldFormat
-        invalid_field_format
-      rescue JSON::API::Errors::InvalidArgument => e
-        invalid_argument(e.argument)
+      rescue JSON::API::Errors::Error => e
+        handle_json_api_error(e)
       end
 
       def create
+        fields = parse_fields(params)
+        include = params[:include]
+
         klass = resource_klass
         checked_params = verify_params(params, klass, klass.createable(klass._updateable_associations | klass._attributes.to_a))
-        update_and_respond_with(klass.new, checked_params[0], checked_params[1])
-      rescue JSON::API::Errors::ParamNotAllowed => e
-        invalid_parameter(e.param)
-      rescue ActionController::ParameterMissing => e
-        missing_parameter(e.param)
+        update_and_respond_with(klass.new, checked_params[0], checked_params[1], include: include, fields: fields)
+      rescue JSON::API::Errors::Error => e
+        handle_json_api_error(e)
       end
 
       def update
+        fields = parse_fields(params)
+        include = params[:include]
+
         klass = resource_klass
         checked_params = verify_params(params, klass, klass.updateable(klass._updateable_associations | klass._attributes.to_a))
 
         return unless obj = klass.find_by_id(params[klass._key])
 
-        update_and_respond_with(obj, checked_params[0], checked_params[1])
-      rescue JSON::API::Errors::ParamNotAllowed => e
-        invalid_parameter(e.param)
-      rescue ActionController::ParameterMissing => e
-        missing_parameter(e.param)
+        update_and_respond_with(obj, checked_params[0], checked_params[1], include: include, fields: fields)
+      rescue JSON::API::Errors::Error => e
+        handle_json_api_error(e)
       end
 
       def destroy
@@ -96,22 +82,14 @@ module JSON
           end
         end
         render json: {}
-      rescue JSON::API::Errors::RecordNotFound => e
-        record_not_found(e)
-      rescue JSON::API::Errors::ParamNotAllowed => e
-        invalid_parameter(e.param)
-      rescue ActionController::ParameterMissing => e
-        missing_parameter(e.param)
+      rescue JSON::API::Errors::Error => e
+        handle_json_api_error(e)
       end
 
       private
       if RUBY_VERSION >= '2.0'
         def resource_klass
-          begin
-            @resource_klass ||= Object.const_get resource_klass_name
-          rescue NameError
-            nil
-          end
+          @resource_klass ||= Object.const_get resource_klass_name
         end
       else
         def resource_klass
@@ -123,11 +101,7 @@ module JSON
         @resource_klass_name ||= "#{self.class.name.demodulize.sub(/Controller$/, '').singularize}Resource"
       end
 
-      def resource_name=(resource_klass_name)
-        @resource_klass_name = resource_klass_name
-      end
-
-      def update_and_respond_with(obj, attributes, associated_sets)
+      def update_and_respond_with(obj, attributes, associated_sets, options = {})
         yield(obj) if block_given?
         if verify_attributes(attributes)
           obj.update(attributes)
@@ -138,7 +112,7 @@ module JSON
             end
           end
 
-          render json: JSON::API::ResourceSerializer.new.serialize(obj)
+          render json: JSON::API::ResourceSerializer.new.serialize(obj, options)
         end
       end
 
@@ -226,9 +200,8 @@ module JSON
       def parse_id_array(raw)
         ids = []
         return raw.split(/,/).collect do |id|
-          ids.push id
+          ids.push verify_id(resource_klass, id)
         end
-        ids
       end
 
       def parse_fields(params)
@@ -242,7 +215,7 @@ module JSON
             fields[type] = []
             type_resource = self.class.resource_for(type)
             if type_resource.nil?
-              return invalid_resource(type)
+              raise JSON::API::Errors::InvalidResource.new(type)
             end
 
             if values.respond_to?(:to_ary)
@@ -269,12 +242,17 @@ module JSON
         if is_filter_association?(filter)
           verify_association_filter(filter, raw)
         else
-          verify_custom_filter(filter, raw)
+          verify_custom_filter(resource_klass, filter, raw)
         end
       end
 
+      # override to allow for id processing and checking
+      def verify_id(resource_klass, id)
+        return id
+      end
+
       # override to allow for custom filters
-      def verify_custom_filter(filter, raw)
+      def verify_custom_filter(resource_klass, filter, raw)
         return filter, raw
       end
 
@@ -288,51 +266,26 @@ module JSON
         return false
       end
 
-      def record_not_found(id)
-        deny_access_common(:bad_request, "Sorry - record identified by #{id} could not be found.")
+      def handle_json_api_error(e)
+        case e
+          when JSON::API::Errors::InvalidResource
+            deny_access_common(:bad_request, "Sorry - #{e.resource} is not a valid resource.")
+          when JSON::API::Errors::RecordNotFound
+            deny_access_common(:bad_request, "Sorry - record identified by #{e.id} could not be found.")
+          when JSON::API::Errors::FilterNotAllowed
+            deny_access_common(:bad_request, "Sorry - #{e.filter} is not allowed.")
+          when JSON::API::Errors::InvalidFieldValue
+            deny_access_common(:bad_request, "Sorry - #{e.value} is not a valid value for #{e.field}.")
+          when JSON::API::Errors::InvalidArgument
+            deny_access_common(:bad_request, "Sorry - not a valid value for #{e.argument}.")
+          when JSON::API::Errors::InvalidField
+            deny_access_common(:bad_request, "Sorry - #{e.field} is not a valid field for #{e.type}.")
+          when JSON::API::Errors::InvalidFieldFormat
+            deny_access_common(:bad_request, "Sorry - 'fields' must contain a hash.")
+          when JSON::API::Errors::ParamNotAllowed
+            deny_access_common(:bad_request, "Sorry - The following parameters are not allowed here: #{e.params.join(', ')}.")
+        end
       end
-
-      def permission_denied(id)
-        deny_access_common(:bad_request, "Sorry - permission denied for record identified by #{id}.")
-      end
-
-      def invalid_argument(key = 'key')
-        deny_access_common(:bad_request, "Sorry - not a valid value for #{key}.")
-      end
-
-      def missing_parameter(param)
-        deny_access_common(:bad_request, "Sorry - #{param} is required.")
-      end
-
-      def invalid_resource(resource = 'resource')
-        deny_access_common(:bad_request, "Sorry - #{resource} is not a valid resource.")
-      end
-
-      def invalid_filter(filter)
-        deny_access_common(:bad_request, "Sorry - #{filter} is not a valid filter.")
-      end
-
-      def filter_not_allowed(filter)
-        deny_access_common(:bad_request, "Sorry - #{filter} is not allowed.")
-      end
-
-      def invalid_filter_value(filter, value)
-        deny_access_common(:bad_request, "Sorry - #{value} is not a valid value for #{filter}.")
-      end
-
-      def invalid_field(type, field)
-        deny_access_common(:bad_request, "Sorry - #{field} is not a valid field for #{type}.")
-      end
-
-      def invalid_field_format
-        deny_access_common(:bad_request, "Sorry - 'fields' must contain a hash.")
-      end
-
-      def invalid_parameter(param_names = %w(unspecified))
-        deny_access_common(:bad_request, "Sorry - The following parameters are not allowed here: #{param_names.join(', ')}.")
-      end
-
-
     end
   end
 end

@@ -18,6 +18,7 @@ module JSON
         requested_associations = parse_includes(options[:include])
 
         if source.respond_to?(:to_ary)
+          return {} if source.size == 0
           @primary_class_name = source[0].class._serialize_as
         else
           @primary_class_name = source.class._serialize_as
@@ -89,9 +90,10 @@ module JSON
           end
         else
           id = source.send(source.class._key)
-          if already_serialized?(@primary_class_name, id)
-            set_primary(@primary_class_name, id)
-          end
+          # ToDo: See if this is actually needed
+          # if already_serialized?(@primary_class_name, id)
+          #   set_primary(@primary_class_name, id)
+          # end
 
           add_linked_object(@primary_class_name, id, object_hash(source,  requested_associations), true)
         end

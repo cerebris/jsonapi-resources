@@ -66,12 +66,36 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_bad_filter
-    get :index, {post_ids: [1,2], fields: :posts}
+    get :index, {post_ids: [1,2]}
     assert_response :bad_request
-    assert_match /must contain a hash/, response.body
+    assert_match /post_ids is not allowed/, response.body
   end
 
-  def test_malformed_fields_not_hash
+  def test_bad_filter_value_not_integer_array
+    get :index, {ids: ['asdfg']}
+    assert_response :bad_request
+    assert_match /asdfg is not a valid value for id/, response.body
+  end
+
+  def test_bad_filter_value_not_integer
+    get :index, {id: 'asdfg'}
+    assert_response :bad_request
+    assert_match /asdfg is not a valid value for id/, response.body
+  end
+
+  def test_bad_filter_value_not_found_array
+    get :index, {ids: ['5412333']}
+    assert_response :bad_request
+    assert_match /5412333 could not be found/, response.body
+  end
+
+  def test_bad_filter_value_not_found
+    get :index, {id: '5412333'}
+    assert_response :bad_request
+    assert_match /5412333 could not be found/, response.body
+  end
+
+  def test_index_malformed_fields_not_hash
     get :index, {ids: [1,2], fields: :posts}
     assert_response :bad_request
     assert_match /Sorry - 'fields' must contain a hash./, response.body
@@ -133,6 +157,30 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 1, json_response['posts'][0]['links']['author']
   end
 
+  def test_show_single_invalid_id_format
+    get :show, {id: 'asdfg'}
+    assert_response :bad_request
+    assert_match /asdfg is not a valid value for id/, response.body
+  end
+
+  def test_show_single_missing_record
+    get :show, {id: '5412333'}
+    assert_response :bad_request
+    assert_match /record identified by 5412333 could not be found/, response.body
+  end
+
+  def test_show_malformed_fields_not_hash
+    get :show, {id: 1, fields: :posts}
+    assert_response :bad_request
+    assert_match /Sorry - 'fields' must contain a hash./, response.body
+  end
+
+  def test_show_malformed_fields_not_array
+    get :show, {id: 1, fields: {posts: :author}}
+    assert_response :bad_request
+    assert_match /Sorry - not a valid value for posts./, response.body
+  end
+
   def test_create_simple
     post :create, { posts: {
                       title: 'JAR is Great',
@@ -181,6 +229,30 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 'JAR is Great', json_response['posts'][0]['title']
     assert_equal 'JSON API Resources is the greatest thing since unsliced bread.', json_response['posts'][0]['body']
     assert_equal [1,2], json_response['posts'][0]['links']['tags']
+  end
+
+  def test_create_with_linked_include_and_fields
+    post :create, { posts: {
+        title: 'JAR is Great!',
+        body:  'JSON API Resources is the greatest thing since unsliced bread!',
+        links: {
+            author: 3,
+            tags: [1,2]
+        }
+      },
+      include: [:author, 'author.posts'],
+      fields: {posts: [:id, :title, :author]}
+    }
+
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+    assert_equal 3, json_response['posts'][0]['links']['author']
+    assert_equal 'JAR is Great!', json_response['posts'][0]['title']
+    assert_equal nil, json_response['posts'][0]['body']
+    assert_equal nil, json_response['posts'][0]['links']['tags']
+    assert_not_nil json_response['linked']['posts']
+    assert_not_nil json_response['linked']['people']
+    assert_nil json_response['linked']['tags']
   end
 
   def test_update_with_linked
@@ -256,10 +328,10 @@ end
 
 class TagsControllerTest < ActionController::TestCase
   def test_tags_index
-    get :index, {include: [:posts]}
+    get :index, {ids: [6,7,8,9], include: [:posts, 'posts.tags', 'posts.author.posts']}
     assert_response :success
-    assert_equal 5, json_response['tags'].size
-    # assert_equal 1, json_response['linked']['posts'].size
+    assert_equal 4, json_response['tags'].size
+    assert_equal 2, json_response['linked']['posts'].size
   end
 end
 
@@ -267,6 +339,22 @@ class ExpensesControllerTest < ActionController::TestCase
   def test_expenses_index
     get :index
     assert_response :success
-    assert_equal 1, json_response['expense_entries'].size
+    assert_equal 2, json_response['expenses'].size
   end
+end
+
+class CurrenciesControllerTest < ActionController::TestCase
+  def test_currencies_index
+    get :index
+    assert_response :success
+    assert_equal 2, json_response['currencies'].size
+  end
+
+  def test_currencies_show
+    get :show, {code: 'USD', include: [:expenses, 'expenses.currency_codes']}
+    assert_response :success
+    assert_equal 1, json_response['currencies'].size
+    assert_equal 2, json_response['linked']['expenses'].size
+  end
+
 end

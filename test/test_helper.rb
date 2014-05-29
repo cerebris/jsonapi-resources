@@ -30,7 +30,7 @@ TestApp.routes.draw do
   resources :posts
   resources :tags
   resources :expenses
-  resources :currencies
+  resources :currencies, :param => :code
 end
 
 class MiniTest::Unit::TestCase
