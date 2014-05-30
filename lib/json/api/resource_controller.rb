@@ -81,7 +81,7 @@ module JSON
             klass.find_by_id(id).destroy
           end
         end
-        render json: {}
+        render status: :no_content, json: nil
       rescue JSON::API::Errors::Error => e
         handle_json_api_error(e)
       end
@@ -112,7 +112,7 @@ module JSON
             end
           end
 
-          render json: JSON::API::ResourceSerializer.new.serialize(obj, options)
+          render :status => :created, json: JSON::API::ResourceSerializer.new.serialize(obj, options)
         end
       end
 

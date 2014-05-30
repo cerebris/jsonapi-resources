@@ -191,7 +191,7 @@ class PostsControllerTest < ActionController::TestCase
                     }
                   }
 
-    assert_response :success
+    assert_response :created
     assert_equal 1, json_response['posts'].size
     assert_equal 3, json_response['posts'][0]['links']['author']
     assert_equal 'JAR is Great', json_response['posts'][0]['title']
@@ -223,7 +223,7 @@ class PostsControllerTest < ActionController::TestCase
                     }
                   }
 
-    assert_response :success
+    assert_response :created
     assert_equal 1, json_response['posts'].size
     assert_equal 3, json_response['posts'][0]['links']['author']
     assert_equal 'JAR is Great', json_response['posts'][0]['title']
@@ -244,7 +244,7 @@ class PostsControllerTest < ActionController::TestCase
       fields: {posts: [:id, :title, :author]}
     }
 
-    assert_response :success
+    assert_response :created
     assert_equal 1, json_response['posts'].size
     assert_equal 3, json_response['posts'][0]['links']['author']
     assert_equal 'JAR is Great!', json_response['posts'][0]['title']
@@ -307,14 +307,14 @@ class PostsControllerTest < ActionController::TestCase
   def test_delete_single
     initial_count = Post.count
     post :destroy, {id: 4}
-    assert_response :success
+    assert_response :no_content
     assert_equal initial_count - 1, Post.count
   end
 
   def test_delete_multiple
     initial_count = Post.count
     post :destroy, {id: '5,6'}
-    assert_response :success
+    assert_response :no_content
     assert_equal initial_count - 2, Post.count
   end
 
