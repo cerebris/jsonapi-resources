@@ -52,7 +52,7 @@ ActiveRecord::Schema.define do
   end
   add_index :currencies, :code, unique: true
 
-  create_table :expenses, force: true do |t|
+  create_table :expense_entries, force: true do |t|
     t.string :currency_code, limit: 3, null: false
     t.integer :employee_id, null: false
     t.decimal :cost, precision: 12, scale: 4, null: false
@@ -88,10 +88,10 @@ end
 
 class Currency < ActiveRecord::Base
   self.primary_key = :code
-  has_many :expenses, foreign_key: 'currency_code'
+  has_many :expense_entries, foreign_key: 'currency_code'
 end
 
-class Expense < ActiveRecord::Base
+class ExpenseEntry < ActiveRecord::Base
   belongs_to :employee, class_name: 'Person', foreign_key: 'employee_id'
   belongs_to :currency, class_name: 'Currency', foreign_key: 'currency_code'
 end
@@ -133,7 +133,7 @@ end
 class CurrenciesController < JSON::API::ResourceController
 end
 
-class ExpensesController < JSON::API::ResourceController
+class ExpenseEntriesController < JSON::API::ResourceController
 end
 
 ### RESOURCES
@@ -190,10 +190,10 @@ class CurrencyResource < JSON::API::Resource
   key :code
   attributes :code, :name
 
-  has_many :expenses
+  has_many :expense_entries
 end
 
-class ExpenseResource < JSON::API::Resource
+class ExpenseEntryResource < JSON::API::Resource
   attributes :id, :cost, :transaction_date
 
   has_one :currency, class_name: 'Currency', key: 'currency_code'
@@ -282,12 +282,12 @@ Post.create(title: 'Delete This Later - Multiple2-2',
 Currency.create(code: 'USD', name: 'United States Dollar')
 Currency.create(code: 'EUR', name: 'Euro Member Countries')
 
-Expense.create(currency_code: 'USD',
+ExpenseEntry.create(currency_code: 'USD',
                employee_id: c.id,
                cost: '12.05',
                transaction_date: DateTime.parse('2014-04-15 12:13:14 UTC +00:00'))
 
-Expense.create(currency_code: 'USD',
+ExpenseEntry.create(currency_code: 'USD',
                employee_id: c.id,
                cost: '12.06',
                transaction_date: DateTime.parse('2014-04-15 12:13:15 UTC +00:00'))

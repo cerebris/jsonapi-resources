@@ -30,7 +30,7 @@ module JSON
           base._associations = (_associations || {}).dup
           base._allowed_filters = (_allowed_filters || Set.new).dup
 
-          type = base.name.demodulize.sub(/Resource$/, '').downcase
+          type = base.name.demodulize.sub(/Resource$/, '').underscore
           base._type = type.pluralize.to_sym
           @@resource_types[base._type] = base.name.demodulize
         end
@@ -129,7 +129,7 @@ module JSON
         end
 
         def _serialize_as
-          @_serialize_as ||= self._model_name.downcase.to_s.pluralize.to_sym
+          @_serialize_as ||= self._model_name.underscore.pluralize.to_sym
         end
 
         def _key
