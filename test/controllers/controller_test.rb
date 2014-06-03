@@ -335,11 +335,11 @@ class TagsControllerTest < ActionController::TestCase
   end
 end
 
-class ExpensesControllerTest < ActionController::TestCase
-  def test_expenses_index
+class ExpenseEntriesControllerTest < ActionController::TestCase
+  def test_expense_entries_index
     get :index
     assert_response :success
-    assert_equal 2, json_response['expenses'].size
+    assert_equal 2, json_response['expense_entries'].size
   end
 end
 
@@ -351,10 +351,10 @@ class CurrenciesControllerTest < ActionController::TestCase
   end
 
   def test_currencies_show
-    get :show, {code: 'USD', include: [:expenses, 'expenses.currency_codes']}
+    get :show, {code: 'USD', include: [:expense_entries, 'expense_entries.currency_codes']}
     assert_response :success
     assert_equal 1, json_response['currencies'].size
-    assert_equal 2, json_response['linked']['expenses'].size
+    assert_equal 2, json_response['linked']['expense_entries'].size
   end
 
 end

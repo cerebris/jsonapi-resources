@@ -29,7 +29,7 @@ module JSON
         def initialize(name, options={})
           super
           class_name = options.fetch(:class_name, name.to_s.capitalize)
-          @serialize_type_name = class_name.downcase.pluralize.to_sym
+          @serialize_type_name = class_name.underscore.pluralize.to_sym
           @key ||= "#{name}_id".to_sym
         end
       end
@@ -38,7 +38,7 @@ module JSON
         def initialize(name, options={})
           super
           class_name           = options.fetch(:class_name, name.to_s.capitalize.singularize).to_sym
-          @serialize_type_name = class_name.to_s.downcase.pluralize.to_sym
+          @serialize_type_name = class_name.to_s.underscore.pluralize.to_sym
           @key ||= "#{name.to_s.singularize}_ids".to_sym
         end
       end

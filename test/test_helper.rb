@@ -29,7 +29,7 @@ TestApp.initialize!
 TestApp.routes.draw do
   resources :posts
   resources :tags
-  resources :expenses
+  resources :expense_entries
   resources :currencies, :param => :code
 end
 
