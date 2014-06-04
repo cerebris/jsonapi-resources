@@ -124,12 +124,16 @@ module JSON
           associations
         end
 
+        def _has_association?(type)
+          @_associations.has_key?(type)
+        end
+
         def _model_name
           @_model_name ||= self.name.demodulize.sub(/Resource$/, '')
         end
 
         def _serialize_as
-          @_serialize_as ||= self._model_name.underscore.pluralize.to_sym
+          @_serialize_as ||= self._type
         end
 
         def _key

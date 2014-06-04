@@ -8,7 +8,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_index_filter_by_id
-    get :index, {id: 1}
+    get :index, {id: '1'}
     assert_response :success
   end
 
@@ -18,27 +18,27 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_index_filter_by_ids
-    get :index, {ids: [1,2]}
+    get :index, {ids: '1,2'}
     assert_response :success
     assert_equal 2, json_response['posts'].size
   end
 
   def test_index_filter_by_ids_and_include_related
-    get :index, {ids: [2], include: [:comments]}
+    get :index, ids: '2', include: 'comments'
     assert_response :success
     assert_equal 1, json_response['posts'].size
     assert_equal 1, json_response['linked']['comments'].size
   end
 
   def test_index_filter_by_ids_and_include_related_different_type
-    get :index, {ids: [1,2], include: [:author]}
+    get :index, {ids: '1,2', include: 'author'}
     assert_response :success
     assert_equal 2, json_response['posts'].size
     assert_equal 1, json_response['linked']['people'].size
   end
 
   def test_index_filter_by_ids_and_fields
-    get :index, {ids: [1,2], fields: {posts: [:id, :title, :author]}}
+    get :index, {ids: '1,2', 'fields' => 'id,title,author'}
     assert_response :success
     assert_equal 2, json_response['posts'].size
 
@@ -49,8 +49,26 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['posts'][0].has_key?('links')
   end
 
+  def test_index_filter_by_ids_and_fields_specify_type
+    get :index, {ids: '1,2', 'fields[posts]' => 'id,title,author'}
+    assert_response :success
+    assert_equal 2, json_response['posts'].size
+
+    # id, title, links
+    assert_equal 3, json_response['posts'][0].size
+    assert json_response['posts'][0].has_key?('id')
+    assert json_response['posts'][0].has_key?('title')
+    assert json_response['posts'][0].has_key?('links')
+  end
+
+  def test_index_filter_by_ids_and_fields_specify_unrelated_type
+    get :index, {ids: '1,2', 'fields[currencies]' => 'code'}
+    assert_response :bad_request
+    assert_match /Sorry - currencies is not a valid resource./, response.body
+  end
+
   def test_index_filter_by_ids_and_fields_2
-    get :index, {ids: [1,2], fields: {posts: [:author]}}
+    get :index, {ids: '1,2', 'fields' => 'author'}
     assert_response :success
     assert_equal 2, json_response['posts'].size
 
@@ -59,20 +77,14 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['posts'][0].has_key?('links')
   end
 
-  def test_malformed_fields_not_array
-    get :index, {ids: [1,2], fields: {posts: :author}}
-    assert_response :bad_request
-    assert_match /Sorry - not a valid value for posts./, response.body
-  end
-
   def test_bad_filter
-    get :index, {post_ids: [1,2]}
+    get :index, {post_ids: '1,2'}
     assert_response :bad_request
     assert_match /post_ids is not allowed/, response.body
   end
 
   def test_bad_filter_value_not_integer_array
-    get :index, {ids: ['asdfg']}
+    get :index, {ids: 'asdfg'}
     assert_response :bad_request
     assert_match /asdfg is not a valid value for id/, response.body
   end
@@ -84,7 +96,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_bad_filter_value_not_found_array
-    get :index, {ids: ['5412333']}
+    get :index, {ids: '5412333'}
     assert_response :bad_request
     assert_match /5412333 could not be found/, response.body
   end
@@ -95,26 +107,32 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /5412333 could not be found/, response.body
   end
 
-  def test_index_malformed_fields_not_hash
-    get :index, {ids: [1,2], fields: :posts}
+  def test_index_malformed_fields
+    get :index, {ids: '1,2', 'fields' => 'posts'}
     assert_response :bad_request
-    assert_match /Sorry - 'fields' must contain a hash./, response.body
+    assert_match /Sorry - posts is not a valid field for posts./, response.body
   end
 
   def test_field_not_supported
-    get :index, {ids: [1,2], fields: {posts: [:id, :title, :rank, :author]}}
+    get :index, {ids: '1,2', 'fields[posts]' => 'id,title,rank,author'}
     assert_response :bad_request
     assert_match /Sorry - rank is not a valid field for posts./, response.body
   end
 
+  def test_field_duplicate_field
+    get :index, {ids: '1,2', 'fields[posts]' => 'id,title,author', 'fields' => 'id,title,author'}
+    assert_response :bad_request
+    assert_match /Sorry - posts has been specified more than once./, response.body
+  end
+
   def test_resource_not_supported
-    get :index, {ids: [1,2], fields: {posters: [:id, :title]}}
+    get :index, {ids: '1,2', 'fields[posters]' => 'id,title'}
     assert_response :bad_request
     assert_match /Sorry - posters is not a valid resource./, response.body
   end
 
   def test_index_filter_on_association
-    get :index, {author: 1}
+    get :index, {author: '1'}
     assert_response :success
     assert_equal 1, json_response['posts'].size
   end
@@ -126,7 +144,7 @@ class PostsControllerTest < ActionController::TestCase
   # end
 
   def test_show_single
-    get :show, {id: 1}
+    get :show, {id: '1'}
     assert_response :success
     assert_equal 1, json_response['posts'].size
     assert_equal 'New post', json_response['posts'][0]['title']
@@ -137,7 +155,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_show_single_with_includes
-    get :show, {id: 1, include: [:comments]}
+    get :show, {id: '1', include: 'comments'}
     assert_response :success
     assert_equal 1, json_response['posts'].size
     assert_equal 'New post', json_response['posts'][0]['title']
@@ -149,7 +167,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_show_single_with_fields
-    get :show, {id: 1, fields: {posts: [:author]}}
+    get :show, {id: '1', fields: 'author'}
     assert_response :success
     assert_equal 1, json_response['posts'].size
     assert_nil json_response['posts'][0]['title']
@@ -169,16 +187,16 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /record identified by 5412333 could not be found/, response.body
   end
 
-  def test_show_malformed_fields_not_hash
-    get :show, {id: 1, fields: :posts}
+  def test_show_malformed_fields_not_list
+    get :show, {id: '1', 'fields' => ''}
     assert_response :bad_request
-    assert_match /Sorry - 'fields' must contain a hash./, response.body
+    assert_match /Sorry - nil is not a valid field for posts./, response.body
   end
 
-  def test_show_malformed_fields_not_array
-    get :show, {id: 1, fields: {posts: :author}}
+  def test_show_malformed_fields_type_not_list
+    get :show, {id: '1', 'fields[posts]' => ''}
     assert_response :bad_request
-    assert_match /Sorry - not a valid value for posts./, response.body
+    assert_match /Sorry - nil is not a valid field for posts./, response.body
   end
 
   def test_create_simple
@@ -240,8 +258,8 @@ class PostsControllerTest < ActionController::TestCase
             tags: [1,2]
         }
       },
-      include: [:author, 'author.posts'],
-      fields: {posts: [:id, :title, :author]}
+      include: 'author,author.posts',
+      fields: 'id,title,author'
     }
 
     assert_response :created
@@ -306,7 +324,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_delete_single
     initial_count = Post.count
-    post :destroy, {id: 4}
+    post :destroy, {id: '4'}
     assert_response :no_content
     assert_equal initial_count - 1, Post.count
   end
@@ -328,7 +346,7 @@ end
 
 class TagsControllerTest < ActionController::TestCase
   def test_tags_index
-    get :index, {ids: [6,7,8,9], include: [:posts, 'posts.tags', 'posts.author.posts']}
+    get :index, {ids: '6,7,8,9', include: 'posts,posts.tags,posts.author.posts'}
     assert_response :success
     assert_equal 4, json_response['tags'].size
     assert_equal 2, json_response['linked']['posts'].size
@@ -351,7 +369,7 @@ class CurrenciesControllerTest < ActionController::TestCase
   end
 
   def test_currencies_show
-    get :show, {code: 'USD', include: [:expense_entries, 'expense_entries.currency_codes']}
+    get :show, {code: 'USD', include: 'expense_entries,expense_entries.currency_codes'}
     assert_response :success
     assert_equal 1, json_response['currencies'].size
     assert_equal 2, json_response['linked']['expense_entries'].size

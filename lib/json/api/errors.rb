@@ -10,13 +10,6 @@ module JSON
         end
       end
 
-      class InvalidArgument < Error
-        attr_accessor :argument
-        def initialize(argument)
-          @argument = argument
-        end
-      end
-
       class RecordNotFound < Error
         attr_accessor :id
         def initialize(id)
@@ -47,7 +40,12 @@ module JSON
         end
       end
 
-      class InvalidFieldFormat < Error; end
+      class DuplicateFieldSpecified < Error
+        attr_accessor :type
+        def initialize(type)
+          @type = type
+        end
+      end
 
       class ParamNotAllowed < Error
         attr_accessor :params

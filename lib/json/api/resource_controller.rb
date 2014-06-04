@@ -2,6 +2,7 @@ require 'json/api/resources'
 require 'json/api/resource_serializer'
 require 'action_controller'
 require 'json/api/errors'
+require 'csv'
 
 module JSON
   module API
@@ -10,7 +11,7 @@ module JSON
 
       def index
         fields = parse_fields(params)
-        include = params[:include]
+        include = parse_includes(params[:include])
         filters = parse_filters(params)
 
         render json: JSON::API::ResourceSerializer.new.serialize(
@@ -24,7 +25,7 @@ module JSON
 
       def show
         fields = parse_fields(params)
-        include = params[:include]
+        include = parse_includes(params[:include])
 
         klass = resource_klass
 
@@ -48,7 +49,7 @@ module JSON
 
       def create
         fields = parse_fields(params)
-        include = params[:include]
+        include = parse_includes(params[:include])
 
         klass = resource_klass
         checked_params = verify_params(params, klass, klass.createable(klass._updateable_associations | klass._attributes.to_a))
@@ -59,7 +60,7 @@ module JSON
 
       def update
         fields = parse_fields(params)
-        include = params[:include]
+        include = parse_includes(params[:include])
 
         klass = resource_klass
         checked_params = verify_params(params, klass, klass.updateable(klass._updateable_associations | klass._attributes.to_a))
@@ -163,6 +164,12 @@ module JSON
         return checked_params, checked_associations
       end
 
+      def parse_includes(includes)
+        included_resources = []
+        included_resources += CSV.parse_line(includes) unless includes.nil? || includes.empty?
+        included_resources
+      end
+
       def parse_filters(params)
         # Coerce :ids -> :id
         if params[:ids]
@@ -200,42 +207,54 @@ module JSON
       def parse_fields(params)
         fields = {}
 
-        return fields if params[:fields].nil?
-
-        if params[:fields].is_a?(Hash)
-          params[:fields].each do |type, values|
-            type = type.to_sym
-            fields[type] = []
-            type_resource = self.class.resource_for(type)
-            if type_resource.nil?
-              raise JSON::API::Errors::InvalidResource.new(type)
-            end
-
-            if values.respond_to?(:to_ary)
-              values.each do |field|
-                field = field.to_sym
-                if type_resource._validate_field(field)
-                  fields[type].push field
-                else
-                  raise JSON::API::Errors::InvalidField.new(type, field)
-                end
-              end
-
-            else
-              raise JSON::API::Errors::InvalidArgument.new(type)
-            end
+        # Extract the fields for each type from the fields parameters
+        params.each do |param, value|
+          if param.match(/^fields$/)
+            resource_fields = CSV.parse_line(value, { :converters => [lambda{|s|s.to_sym}]}) unless value.nil? || value.empty?
+            type = resource_klass._serialize_as
+            raise JSON::API::Errors::DuplicateFieldSpecified.new(type) if fields.include?(type)
+            fields[type] = resource_fields
+            params.delete(param)
+          elsif param.match(/^fields\[.+\]$/)
+            resource_fields = CSV.parse_line(value, { :converters => [lambda{|s|s.to_sym}]}) unless value.nil? || value.empty?
+            type = param.split(/^fields\[(.+)\]$/)[1].to_sym
+            raise JSON::API::Errors::DuplicateFieldSpecified.new(type) if fields.include?(type)
+            fields[type] = resource_fields
+            params.delete(param)
           end
-        else
-          raise JSON::API::Errors::InvalidFieldFormat.new
         end
-        return fields
+
+        # Validate the fields
+        fields.each do |type, values|
+          fields[type] = []
+          type_resource = self.class.resource_for(type)
+          if type_resource.nil? || !(resource_klass._type == type || resource_klass._has_association?(type))
+            raise JSON::API::Errors::InvalidResource.new(type)
+          end
+
+          unless values.nil?
+            values.each do |field|
+              if type_resource._validate_field(field)
+                fields[type].push field
+              else
+                raise JSON::API::Errors::InvalidField.new(type, field)
+              end
+            end
+          else
+            raise JSON::API::Errors::InvalidField.new(type, 'nil')
+          end
+        end
+        fields
       end
 
       def verify_filter(filter, raw)
+        filter_values = []
+        filter_values += CSV.parse_line(raw) unless raw.nil? || raw.empty?
+
         if is_filter_association?(filter)
-          verify_association_filter(filter, raw)
+          verify_association_filter(filter, filter_values)
         else
-          verify_custom_filter(resource_klass, filter, raw)
+          verify_custom_filter(resource_klass, filter, filter_values)
         end
       end
 
@@ -245,8 +264,8 @@ module JSON
       end
 
       # override to allow for custom filters
-      def verify_custom_filter(resource_klass, filter, raw)
-        return filter, raw
+      def verify_custom_filter(resource_klass, filter, values)
+        return filter, values
       end
 
       # override to allow for custom association logic, such as uuids, multiple ids or permission checks on ids
@@ -269,12 +288,10 @@ module JSON
             deny_access_common(:bad_request, "Sorry - #{e.filter} is not allowed.")
           when JSON::API::Errors::InvalidFieldValue
             deny_access_common(:bad_request, "Sorry - #{e.value} is not a valid value for #{e.field}.")
-          when JSON::API::Errors::InvalidArgument
-            deny_access_common(:bad_request, "Sorry - not a valid value for #{e.argument}.")
           when JSON::API::Errors::InvalidField
             deny_access_common(:bad_request, "Sorry - #{e.field} is not a valid field for #{e.type}.")
-          when JSON::API::Errors::InvalidFieldFormat
-            deny_access_common(:bad_request, "Sorry - 'fields' must contain a hash.")
+          when JSON::API::Errors::DuplicateFieldSpecified
+            deny_access_common(:bad_request, "Sorry - #{e.type} has been specified more than once.")
           when JSON::API::Errors::ParamNotAllowed
             deny_access_common(:bad_request, "Sorry - The following parameters are not allowed here: #{e.params.join(', ')}.")
         end

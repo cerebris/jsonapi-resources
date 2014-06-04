@@ -112,18 +112,14 @@ class PostsController < JSON::API::ResourceController
     return id
   end
 
-  def verify_custom_filter(resource, filter, raw)
+  def verify_custom_filter(resource, filter, values)
     case filter
       when :id
-        if raw.is_a?(Array)
-          raw.each do |id|
-            verify_id(resource, id)
-          end
-        else
-          verify_id(resource, raw)
+        values.each do |id|
+          verify_id(resource, id)
         end
     end
-    return filter, raw
+    return filter, values
   end
 end
 
