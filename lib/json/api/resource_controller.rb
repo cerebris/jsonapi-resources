@@ -212,12 +212,12 @@ module JSON
           return fields
         elsif params[:fields].is_a?(String)
           value = params[:fields]
-          resource_fields = CSV.parse_line(value, { :converters => [lambda{|s|s.to_sym}]})
+          resource_fields = value.split(',').map {|s| s.to_sym } unless value.nil? || value.empty?
           type = resource_klass._serialize_as
           fields[type] = resource_fields
         elsif params[:fields].is_a?(ActionController::Parameters)
           params[:fields].each do |param, value|
-            resource_fields = CSV.parse_line(value, { :converters => [lambda{|s|s.to_sym}]}) unless value.nil? || value.empty?
+            resource_fields = value.split(',').map {|s| s.to_sym } unless value.nil? || value.empty?
             type = param.to_sym
             fields[type] = resource_fields
           end
