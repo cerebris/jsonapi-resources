@@ -1,10 +1,10 @@
-require 'json/api/resources'
+require 'json/api/resource_for'
 require 'json/api/association'
 
 module JSON
   module API
     class Resource
-      include Resources
+      include ResourceFor
 
       @@resource_types = {}
 
@@ -32,7 +32,10 @@ module JSON
 
           type = base.name.demodulize.sub(/Resource$/, '').underscore
           base._type = type.pluralize.to_sym
-          @@resource_types[base._type] = base.name.demodulize
+          # If eager loading is on this is how all the resource types are setup
+          # If eager loading is off some resource types will be initialized in
+          # _resource_name_from_type
+          @@resource_types[base._type] ||= base.name.demodulize
         end
 
         attr_accessor :_attributes, :_associations, :_allowed_filters , :_type
@@ -145,7 +148,12 @@ module JSON
         end
 
         def _resource_name_from_type(type)
-          return @@resource_types[type]
+          class_name = @@resource_types[type]
+          if class_name.nil?
+            class_name = type.to_s.singularize.camelize + 'Resource'
+            @@resource_types[type] = class_name
+          end
+          return class_name
         end
 
         if RUBY_VERSION >= '2.0'

@@ -50,7 +50,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_index_filter_by_ids_and_fields_specify_type
-    get :index, {ids: '1,2', 'fields[posts]' => 'id,title,author'}
+    get :index, {ids: '1,2', 'fields' => {'posts' => 'id,title,author'}}
     assert_response :success
     assert_equal 2, json_response['posts'].size
 
@@ -62,7 +62,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_index_filter_by_ids_and_fields_specify_unrelated_type
-    get :index, {ids: '1,2', 'fields[currencies]' => 'code'}
+    get :index, {ids: '1,2', 'fields' => {'currencies' => 'code'}}
     assert_response :bad_request
     assert_match /Sorry - currencies is not a valid resource./, response.body
   end
@@ -114,19 +114,13 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_field_not_supported
-    get :index, {ids: '1,2', 'fields[posts]' => 'id,title,rank,author'}
+    get :index, {ids: '1,2', 'fields' => {'posts' => 'id,title,rank,author'}}
     assert_response :bad_request
     assert_match /Sorry - rank is not a valid field for posts./, response.body
   end
 
-  def test_field_duplicate_field
-    get :index, {ids: '1,2', 'fields[posts]' => 'id,title,author', 'fields' => 'id,title,author'}
-    assert_response :bad_request
-    assert_match /Sorry - posts has been specified more than once./, response.body
-  end
-
   def test_resource_not_supported
-    get :index, {ids: '1,2', 'fields[posters]' => 'id,title'}
+    get :index, {ids: '1,2', 'fields' => {'posters' => 'id,title'}}
     assert_response :bad_request
     assert_match /Sorry - posters is not a valid resource./, response.body
   end
@@ -194,7 +188,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_show_malformed_fields_type_not_list
-    get :show, {id: '1', 'fields[posts]' => ''}
+    get :show, {id: '1', 'fields' => {'posts' => ''}}
     assert_response :bad_request
     assert_match /Sorry - nil is not a valid field for posts./, response.body
   end

@@ -1,4 +1,4 @@
-require 'json/api/resources'
+require 'json/api/resource_for'
 require 'json/api/resource_serializer'
 require 'action_controller'
 require 'json/api/errors'
@@ -7,7 +7,7 @@ require 'csv'
 module JSON
   module API
     class ResourceController < ActionController::Base
-      include Resources
+      include ResourceFor
 
       def index
         fields = parse_fields(params)
@@ -208,19 +208,18 @@ module JSON
         fields = {}
 
         # Extract the fields for each type from the fields parameters
-        params.each do |param, value|
-          if param.match(/^fields$/)
+        if params[:fields].nil?
+          return fields
+        elsif params[:fields].is_a?(String)
+          value = params[:fields]
+          resource_fields = CSV.parse_line(value, { :converters => [lambda{|s|s.to_sym}]})
+          type = resource_klass._serialize_as
+          fields[type] = resource_fields
+        elsif params[:fields].is_a?(ActionController::Parameters)
+          params[:fields].each do |param, value|
             resource_fields = CSV.parse_line(value, { :converters => [lambda{|s|s.to_sym}]}) unless value.nil? || value.empty?
-            type = resource_klass._serialize_as
-            raise JSON::API::Errors::DuplicateFieldSpecified.new(type) if fields.include?(type)
+            type = param.to_sym
             fields[type] = resource_fields
-            params.delete(param)
-          elsif param.match(/^fields\[.+\]$/)
-            resource_fields = CSV.parse_line(value, { :converters => [lambda{|s|s.to_sym}]}) unless value.nil? || value.empty?
-            type = param.split(/^fields\[(.+)\]$/)[1].to_sym
-            raise JSON::API::Errors::DuplicateFieldSpecified.new(type) if fields.include?(type)
-            fields[type] = resource_fields
-            params.delete(param)
           end
         end
 
@@ -290,8 +289,6 @@ module JSON
             deny_access_common(:bad_request, "Sorry - #{e.value} is not a valid value for #{e.field}.")
           when JSON::API::Errors::InvalidField
             deny_access_common(:bad_request, "Sorry - #{e.field} is not a valid field for #{e.type}.")
-          when JSON::API::Errors::DuplicateFieldSpecified
-            deny_access_common(:bad_request, "Sorry - #{e.type} has been specified more than once.")
           when JSON::API::Errors::ParamNotAllowed
             deny_access_common(:bad_request, "Sorry - The following parameters are not allowed here: #{e.params.join(', ')}.")
         end

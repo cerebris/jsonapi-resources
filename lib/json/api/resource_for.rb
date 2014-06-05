@@ -1,8 +1,6 @@
-require "json/api/resources/version"
-
 module JSON
   module API
-    module Resources
+    module ResourceFor
       def self.included base
         base.extend ClassMethods
       end

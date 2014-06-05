@@ -40,13 +40,6 @@ module JSON
         end
       end
 
-      class DuplicateFieldSpecified < Error
-        attr_accessor :type
-        def initialize(type)
-          @type = type
-        end
-      end
-
       class ParamNotAllowed < Error
         attr_accessor :params
         def initialize(params)
