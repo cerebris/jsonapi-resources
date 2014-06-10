@@ -64,6 +64,10 @@ end
 class Person < ActiveRecord::Base
   has_many :posts, foreign_key: 'author_id'
   has_many :comments, foreign_key: 'author_id'
+
+  ### Validations
+  validates :name, presence: true
+  validates :date_joined, presence: true
 end
 
 class Post < ActiveRecord::Base
@@ -97,6 +101,10 @@ class ExpenseEntry < ActiveRecord::Base
 end
 
 ### CONTROLLERS
+class PeopleController < JSON::API::ResourceController
+
+end
+
 class PostsController < JSON::API::ResourceController
   def is_num?(str)
     begin

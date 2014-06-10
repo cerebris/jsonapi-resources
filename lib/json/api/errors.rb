@@ -47,6 +47,13 @@ module JSON
         end
       end
 
+      class ValidationErrors < Error
+        attr_accessor :errors
+        def initialize(errors)
+          @errors = errors
+        end
+      end
+
     end
   end
 end

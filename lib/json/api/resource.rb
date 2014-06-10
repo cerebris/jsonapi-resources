@@ -21,7 +21,7 @@ module JSON
       end
 
       def update(attributes)
-        @object.update(attributes)
+        @object.update!(attributes)
       end
 
       class << self
