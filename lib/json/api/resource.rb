@@ -70,7 +70,7 @@ module JSON
         end
 
         def filters(*attrs)
-          @_allowed_filters.merge(*attrs)
+          @_allowed_filters.merge(attrs)
         end
 
         def filter(attr)

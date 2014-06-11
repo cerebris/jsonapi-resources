@@ -186,7 +186,7 @@ class PostResource < JSON::API::Resource
     super(keys - [:subject])
   end
 
-  filters [:title, :author]
+  filters :title, :author
   filter :id
 end
 
