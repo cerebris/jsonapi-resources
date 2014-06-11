@@ -2,6 +2,8 @@ require 'json/api/resource_for'
 require 'json/api/resource_serializer'
 require 'action_controller'
 require 'json/api/errors'
+require 'json/api/error'
+require 'json/api/error_codes'
 require 'csv'
 
 module JSON
@@ -19,7 +21,7 @@ module JSON
             include: include,
             fields: fields
         )
-      rescue JSON::API::Errors::Error => e
+      rescue Exception => e
         handle_json_api_error(e)
       end
 
@@ -43,7 +45,7 @@ module JSON
             include: include,
             fields: fields
         )
-      rescue JSON::API::Errors::Error => e
+      rescue Exception => e
         handle_json_api_error(e)
       end
 
@@ -54,7 +56,7 @@ module JSON
         klass = resource_klass
         checked_params = verify_params(params, klass, klass.createable(klass._updateable_associations | klass._attributes.to_a))
         update_and_respond_with(klass.new, checked_params[0], checked_params[1], include: include, fields: fields)
-      rescue JSON::API::Errors::Error => e
+      rescue Exception => e
         handle_json_api_error(e)
       end
 
@@ -68,7 +70,7 @@ module JSON
         return unless obj = klass.find_by_id(params[klass._key])
 
         update_and_respond_with(obj, checked_params[0], checked_params[1], include: include, fields: fields)
-      rescue JSON::API::Errors::Error => e
+      rescue Exception => e
         handle_json_api_error(e)
       end
 
@@ -83,7 +85,7 @@ module JSON
           end
         end
         render status: :no_content, json: nil
-      rescue JSON::API::Errors::Error => e
+      rescue Exception => e
         handle_json_api_error(e)
       end
 
@@ -115,6 +117,20 @@ module JSON
 
           render :status => :created, json: JSON::API::ResourceSerializer.new.serialize(obj, options)
         end
+
+      rescue ActiveRecord::RecordInvalid => e
+        errors = []
+        e.record.errors.messages.each do |element|
+          element[1].each do |message|
+            errors.push(JSON::API::Error.new(
+                            code: JSON::API::VALIDATION_ERROR,
+                            title: "#{element[0]} - #{message}",
+                            detail: "can't be blank",
+                            path: "\\#{element[0]}",
+                            links: JSON::API::ResourceSerializer.new.serialize(obj)))
+          end
+        end
+        raise JSON::API::Errors::ValidationErrors.new(errors)
       end
 
       def verify_attributes(attributes)
@@ -273,24 +289,50 @@ module JSON
       end
 
       def deny_access_common(status, msg)
-        render(json: {error: msg}, status: status)
+        render(json: {errors: [{error: msg, status: status}]}, status: status)
         return false
+      end
+
+      def render_errors(status, errors)
+        render(json: {errors: errors}, status: status)
       end
 
       def handle_json_api_error(e)
         case e
           when JSON::API::Errors::InvalidResource
-            deny_access_common(:bad_request, "Sorry - #{e.resource} is not a valid resource.")
+            render_errors(:not_found, [JSON::API::Error.new(
+                                             code: JSON::API::INVALID_RESOURCE,
+                                             title: 'Invalid resource',
+                                             detail: "#{e.resource} is not a valid resource.")])
           when JSON::API::Errors::RecordNotFound
-            deny_access_common(:bad_request, "Sorry - record identified by #{e.id} could not be found.")
+            render_errors(:not_found, [JSON::API::Error.new(
+                                             code: JSON::API::RECORD_NOT_FOUND,
+                                             title: 'Record not found',
+                                             detail: "The record identified by #{e.id} could not be found.")])
           when JSON::API::Errors::FilterNotAllowed
-            deny_access_common(:bad_request, "Sorry - #{e.filter} is not allowed.")
+            render_errors(:bad_request, [JSON::API::Error.new(
+                                             code: JSON::API::FILTER_NOT_ALLOWED,
+                                             title: 'Filter not allowed',
+                                             detail: "#{e.filter} is not allowed.")])
           when JSON::API::Errors::InvalidFieldValue
-            deny_access_common(:bad_request, "Sorry - #{e.value} is not a valid value for #{e.field}.")
+            render_errors(:bad_request, [JSON::API::Error.new(
+                                             code: JSON::API::INVALID_FIELD_VALUE,
+                                             title: 'Invalid field value',
+                                             detail: "#{e.value} is not a valid value for #{e.field}.")])
           when JSON::API::Errors::InvalidField
-            deny_access_common(:bad_request, "Sorry - #{e.field} is not a valid field for #{e.type}.")
+            render_errors(:bad_request, [JSON::API::Error.new(
+                                             code: JSON::API::INVALID_FIELD,
+                                             title: 'Invalid field',
+                                             detail: "#{e.field} is not a valid field for #{e.type}.")])
           when JSON::API::Errors::ParamNotAllowed
-            deny_access_common(:bad_request, "Sorry - The following parameters are not allowed here: #{e.params.join(', ')}.")
+            render_errors(:bad_request, [JSON::API::Error.new(
+                                             code: JSON::API::PARAM_NOT_ALLOWED,
+                                             title: 'Param not allowed',
+                                             detail: "The following parameters are not allowed here: #{e.params.join(', ')}.")])
+          when JSON::API::Errors::ValidationErrors
+            render_errors(:bad_request, e.errors)
+          else
+            raise e
         end
       end
     end

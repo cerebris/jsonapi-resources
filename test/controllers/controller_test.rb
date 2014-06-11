@@ -63,8 +63,8 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_index_filter_by_ids_and_fields_specify_unrelated_type
     get :index, {ids: '1,2', 'fields' => {'currencies' => 'code'}}
-    assert_response :bad_request
-    assert_match /Sorry - currencies is not a valid resource./, response.body
+    assert_response :not_found
+    assert_match /currencies is not a valid resource./, json_response['errors'][0]['detail']
   end
 
   def test_index_filter_by_ids_and_fields_2
@@ -97,32 +97,32 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_bad_filter_value_not_found_array
     get :index, {ids: '5412333'}
-    assert_response :bad_request
+    assert_response :not_found
     assert_match /5412333 could not be found/, response.body
   end
 
   def test_bad_filter_value_not_found
     get :index, {id: '5412333'}
-    assert_response :bad_request
-    assert_match /5412333 could not be found/, response.body
+    assert_response :not_found
+    assert_match /5412333 could not be found/, json_response['errors'][0]['detail']
   end
 
   def test_index_malformed_fields
     get :index, {ids: '1,2', 'fields' => 'posts'}
     assert_response :bad_request
-    assert_match /Sorry - posts is not a valid field for posts./, response.body
+    assert_match /posts is not a valid field for posts./, json_response['errors'][0]['detail']
   end
 
   def test_field_not_supported
     get :index, {ids: '1,2', 'fields' => {'posts' => 'id,title,rank,author'}}
     assert_response :bad_request
-    assert_match /Sorry - rank is not a valid field for posts./, response.body
+    assert_match /rank is not a valid field for posts./, json_response['errors'][0]['detail']
   end
 
   def test_resource_not_supported
     get :index, {ids: '1,2', 'fields' => {'posters' => 'id,title'}}
-    assert_response :bad_request
-    assert_match /Sorry - posters is not a valid resource./, response.body
+    assert_response :not_found
+    assert_match /posters is not a valid resource./, json_response['errors'][0]['detail']
   end
 
   def test_index_filter_on_association
@@ -177,20 +177,20 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_show_single_missing_record
     get :show, {id: '5412333'}
-    assert_response :bad_request
+    assert_response :not_found
     assert_match /record identified by 5412333 could not be found/, response.body
   end
 
   def test_show_malformed_fields_not_list
     get :show, {id: '1', 'fields' => ''}
     assert_response :bad_request
-    assert_match /Sorry - nil is not a valid field for posts./, response.body
+    assert_match /nil is not a valid field for posts./, json_response['errors'][0]['detail']
   end
 
   def test_show_malformed_fields_type_not_list
     get :show, {id: '1', 'fields' => {'posts' => ''}}
     assert_response :bad_request
-    assert_match /Sorry - nil is not a valid field for posts./, response.body
+    assert_match /nil is not a valid field for posts./, json_response['errors'][0]['detail']
   end
 
   def test_create_simple
@@ -220,8 +220,8 @@ class PostsControllerTest < ActionController::TestCase
       }
     }
 
-    assert_response 400
-    assert_match /subject/, json_response['error']
+    assert_response :bad_request
+    assert_match /subject/, json_response['errors'][0]['detail']
   end
 
   def test_create_with_links
@@ -298,9 +298,9 @@ class PostsControllerTest < ActionController::TestCase
       }
     }
 
-    assert_response 400
-    assert_match /author/, json_response['error']
-    assert_match /subject/, json_response['error']
+    assert_response :bad_request
+    assert_match /author/, json_response['errors'][0]['detail']
+    assert_match /subject/, json_response['errors'][0]['detail']
   end
 
   def test_update_bad_attributes
@@ -313,7 +313,7 @@ class PostsControllerTest < ActionController::TestCase
     }
     }
 
-    assert_response 400
+    assert_response :bad_request
   end
 
   def test_delete_single
@@ -333,7 +333,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_delete_multiple_one_does_not_exist
     initial_count = Post.count
     post :destroy, {id: '5,6,99999'}
-    assert_response 400
+    assert_response :not_found
     assert_equal initial_count, Post.count
   end
 end
@@ -369,4 +369,31 @@ class CurrenciesControllerTest < ActionController::TestCase
     assert_equal 2, json_response['linked']['expense_entries'].size
   end
 
+end
+
+class PeopleControllerTest < ActionController::TestCase
+  def test_create_validations
+    post :create, { people: {
+        name: 'Steve Jobs',
+        email:  'sj@email.zzz',
+        date_joined: DateTime.parse('2014-1-30 4:20:00 UTC +00:00')
+      }
+    }
+
+    assert_response :success
+  end
+
+  def test_create_validations_missing_attribute
+    post :create, { people: {
+        email:  'sj@email.zzz'
+      }
+    }
+
+    assert_response :bad_request
+    assert_equal 2, json_response['errors'].size
+    assert_equal JSON::API::VALIDATION_ERROR, json_response['errors'][0]['code']
+    assert_equal JSON::API::VALIDATION_ERROR, json_response['errors'][1]['code']
+    assert_match /date_joined - can't be blank/, response.body
+    assert_match /name - can't be blank/, response.body
+  end
 end
