@@ -51,6 +51,7 @@ module JSON
         return primary_hash
       end
 
+      private
       # Convert an array of associated objects to include along with the primary document in the form of
       # ['comments','author','comments.tags','author.posts'] into a structure that tells what we need to include
       # from each association.
