@@ -82,12 +82,12 @@ module JSON
         end
 
         # Override in your resource to filter the updateable keys
-        def updateable(keys)
+        def updateable(keys, options = {})
           keys
         end
 
         # Override in your resource to filter the createable keys
-        def createable(keys)
+        def createable(keys, options = {})
           keys
         end
 

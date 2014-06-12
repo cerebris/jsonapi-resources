@@ -101,6 +101,10 @@ class ExpenseEntry < ActiveRecord::Base
 end
 
 ### CONTROLLERS
+class AuthorController < JSON::API::ResourceController
+
+end
+
 class PeopleController < JSON::API::ResourceController
 
 end
@@ -116,7 +120,7 @@ class PostsController < JSON::API::ResourceController
 
   def verify_id(resource, id)
     raise JSON::API::Errors::InvalidFieldValue.new(:id, id) unless is_num?(id)
-    raise JSON::API::Errors::RecordNotFound.new(id) unless resource.find_by_id(id)
+    raise JSON::API::Errors::RecordNotFound.new(id) unless resource.find_by_key(id)
     return id
   end
 
@@ -147,18 +151,45 @@ class PersonResource < JSON::API::Resource
   has_many :posts
 end
 
- class CommentResource < JSON::API::Resource
+class AuthorResource < JSON::API::Resource
+  attributes :id, :name, :email
+  model_name 'Person'
+  has_many :posts
+
+  filter :name
+
+  def self.find(attrs)
+    resources = []
+
+    attrs[:filters].each do |attr, filter|
+      _model_class.where("\"#{attr}\" LIKE \"%#{filter[0]}%\"").each do |object|
+        resources.push self.new(object)
+      end
+    end
+    return resources
+  end
+
+  def fetchable(keys, options = {})
+    if (@object.id % 2) == 1
+      super(keys - [:email])
+    else
+      super(keys)
+    end
+  end
+end
+
+class CommentResource < JSON::API::Resource
   attributes :id, :body
   has_one :post
   has_one :author, class_name: 'Person'
   has_many :tags
- end
+end
 
- class TagResource < JSON::API::Resource
+class TagResource < JSON::API::Resource
   attributes :id, :name
 
   has_many :posts
- end
+end
 
 class SectionResource < JSON::API::Resource
   attributes 'name'
@@ -178,11 +209,11 @@ class PostResource < JSON::API::Resource
     @object.title
   end
 
-  def self.updateable(keys)
+  def self.updateable(keys, options = {})
     super(keys - [:author, :subject])
   end
 
-  def self.createable(keys)
+  def self.createable(keys, options = {})
     super(keys - [:subject])
   end
 
