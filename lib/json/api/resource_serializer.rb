@@ -119,7 +119,7 @@ module JSON
           fields = requested & fields
         end
 
-        source.fetchable(fields).each_with_object({}) do |name, hash|
+        source.fetchable(fields, @options).each_with_object({}) do |name, hash|
           hash[name] = source.send(name)
         end
       end
@@ -136,7 +136,7 @@ module JSON
 
         field_set = Set.new(fields)
 
-        included_associations = source.fetchable(associations.keys)
+        included_associations = source.fetchable(associations.keys, @options)
         associations.each_with_object({}) do |(name, association), hash|
           if included_associations.include? name
             key = association.key

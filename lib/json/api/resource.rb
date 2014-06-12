@@ -226,7 +226,7 @@ module JSON
       end
 
       # Override this on a resource instance to override the fetchable keys
-      def fetchable(keys)
+      def fetchable(keys, options = {})
         keys
       end
     end
