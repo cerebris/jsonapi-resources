@@ -36,7 +36,7 @@ module JSON
         resources = []
         klass.transaction do
           ids.each do |id|
-            resources.push(klass.find_by_id(id))
+            resources.push(klass.find_by_key(id))
           end
         end
 
@@ -67,7 +67,7 @@ module JSON
         klass = resource_klass
         checked_params = verify_params(params, klass, klass.updateable(klass._updateable_associations | klass._attributes.to_a))
 
-        return unless obj = klass.find_by_id(params[klass._key])
+        return unless obj = klass.find_by_key(params[klass._key])
 
         update_and_respond_with(obj, checked_params[0], checked_params[1], include: include, fields: fields)
       rescue Exception => e
@@ -81,7 +81,7 @@ module JSON
 
         klass.transaction do
           ids.each do |id|
-            klass.find_by_id(id).destroy
+            klass.find_by_key(id).destroy
           end
         end
         render status: :no_content, json: nil

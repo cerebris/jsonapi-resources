@@ -101,7 +101,7 @@ module JSON
           return resources
         end
 
-        def find_by_id(id)
+        def find_by_key(id)
           obj = _model_class.where({_key => id}).first
           if obj.nil?
             raise JSON::API::Errors::RecordNotFound.new(id)
