@@ -397,3 +397,37 @@ class PeopleControllerTest < ActionController::TestCase
     assert_match /name - can't be blank/, response.body
   end
 end
+
+class AuthorControllerTest < ActionController::TestCase
+  def test_get_person_as_author
+    get :index, {id: '1'}
+    assert_response :success
+    assert_equal 1, json_response['authors'].size
+    assert_equal 1, json_response['authors'][0]['id']
+    assert_equal 'Joe Author', json_response['authors'][0]['name']
+    assert_equal nil, json_response['authors'][0]['email']
+    assert_equal 1, json_response['authors'][0]['links'].size
+    assert_equal 2, json_response['authors'][0]['links']['posts'].size
+  end
+
+  def test_get_person_as_author_variable_email
+    get :index, {id: '4'}
+    assert_response :success
+    assert_equal 1, json_response['authors'].size
+    assert_equal 4, json_response['authors'][0]['id']
+    assert_equal 'Tag Crazy Author', json_response['authors'][0]['name']
+    assert_equal 'taggy@xyz.fake', json_response['authors'][0]['email']
+    assert_equal 1, json_response['authors'][0]['links'].size
+    assert_equal 2, json_response['authors'][0]['links']['posts'].size
+  end
+
+  def test_get_person_as_author_by_name_filter
+    get :index, {name: 'thor'}
+    assert_response :success
+    assert_equal 3, json_response['authors'].size
+    assert_equal 1, json_response['authors'][0]['id']
+    assert_equal 'Joe Author', json_response['authors'][0]['name']
+    assert_equal 1, json_response['authors'][0]['links'].size
+    assert_equal 2, json_response['authors'][0]['links']['posts'].size
+  end
+end

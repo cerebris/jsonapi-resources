@@ -27,6 +27,7 @@ end
 TestApp.initialize!
 
 TestApp.routes.draw do
+  resources :author
   resources :people
   resources :posts
   resources :tags

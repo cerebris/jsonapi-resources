@@ -70,7 +70,7 @@ module JSON
         end
 
         def filters(*attrs)
-          @_allowed_filters.merge(*attrs)
+          @_allowed_filters.merge(attrs)
         end
 
         def filter(attr)
@@ -82,12 +82,12 @@ module JSON
         end
 
         # Override in your resource to filter the updateable keys
-        def updateable(keys)
+        def updateable(keys, options = {})
           keys
         end
 
         # Override in your resource to filter the createable keys
-        def createable(keys)
+        def createable(keys, options = {})
           keys
         end
 
@@ -101,7 +101,7 @@ module JSON
           return resources
         end
 
-        def find_by_id(id)
+        def find_by_key(id)
           obj = _model_class.where({_key => id}).first
           if obj.nil?
             raise JSON::API::Errors::RecordNotFound.new(id)
@@ -226,7 +226,7 @@ module JSON
       end
 
       # Override this on a resource instance to override the fetchable keys
-      def fetchable(keys)
+      def fetchable(keys, options = {})
         keys
       end
     end
