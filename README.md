@@ -345,7 +345,7 @@ JSON::API::ResourceSerializer.new.serialize(post, include: ['comments','author',
                                                              people: [:id, :email, :comments],
                                                              posts: [:id, :title, :author],
                                                              tags: [:name],
-                                                             comments: [:id, :body, :post]}))
+                                                             comments: [:id, :body, :post]})
 ```
 
 ##### Other fields
@@ -363,3 +363,7 @@ called. This can be used to filter the fields based on scope or other criteria.
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
+
+## License
+
+JSON::API::Resources is released under the [MIT License](http://www.opensource.org/licenses/MIT).
