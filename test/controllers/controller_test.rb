@@ -431,3 +431,68 @@ class AuthorControllerTest < ActionController::TestCase
     assert_equal 2, json_response['authors'][0]['links']['posts'].size
   end
 end
+
+class BreedsControllerTest < ActionController::TestCase
+  def test_poro_index
+    get :index
+    assert_response :success
+    assert_equal 0, json_response['breeds'][0]['id']
+    assert_equal 'persian', json_response['breeds'][0]['name']
+  end
+
+  def test_poro_show
+    get :show, {id: '0'}
+    assert_response :success
+    assert_equal 1, json_response['breeds'].size
+    assert_equal 0, json_response['breeds'][0]['id']
+    assert_equal 'persian', json_response['breeds'][0]['name']
+  end
+
+  def test_poro_show_multiple
+    get :show, {id: '0,2'}
+    assert_response :success
+    assert_equal 2, json_response['breeds'].size
+    assert_equal 0, json_response['breeds'][0]['id']
+    assert_equal 'persian', json_response['breeds'][0]['name']
+    assert_equal 2, json_response['breeds'][1]['id']
+    assert_equal 'sphinx', json_response['breeds'][1]['name']
+  end
+
+  def test_poro_create_simple
+    post :create, { breeds: {
+        name: 'tabby'
+      }
+    }
+
+    assert_response :created
+    assert_equal 1, json_response['breeds'].size
+    assert_equal 'tabby', json_response['breeds'][0]['name']
+  end
+
+  def test_poro_create_update
+    post :create, { breeds: {
+        name: 'calic'
+    }
+    }
+
+    assert_response :created
+    assert_equal 1, json_response['breeds'].size
+    assert_equal 'calic', json_response['breeds'][0]['name']
+
+    post :update, {id: json_response['breeds'][0]['id'], breeds: {
+        name: 'calico'
+    }
+    }
+    assert_response :success
+    assert_equal 1, json_response['breeds'].size
+    assert_equal 'calico', json_response['breeds'][0]['name']
+  end
+
+  def test_poro_delete
+    initial_count = $breed_data.breeds.keys.count
+    post :destroy, {id: '3'}
+    assert_response :no_content
+    assert_equal initial_count - 1, $breed_data.breeds.keys.count
+  end
+
+end

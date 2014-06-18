@@ -33,6 +33,7 @@ TestApp.routes.draw do
   resources :tags
   resources :expense_entries
   resources :currencies, :param => :code
+  resources :breeds
 end
 
 class MiniTest::Unit::TestCase

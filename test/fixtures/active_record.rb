@@ -100,6 +100,61 @@ class ExpenseEntry < ActiveRecord::Base
   belongs_to :currency, class_name: 'Currency', foreign_key: 'currency_code'
 end
 
+class Breed
+
+  def initialize(id = nil, name = nil)
+    if id.nil?
+      @id = $breed_data.new_id
+      $breed_data.add(self)
+    else
+      @id = id
+    end
+    @name = name
+  end
+
+  attr_accessor :id, :name
+
+  def update!(attributes)
+    # For production code it would be better to have a method that loops over attributes and sets local variables as appropriate
+    @name = attributes[:name] if attributes[:name]
+  end
+
+  def destroy
+    $breed_data.remove(@id)
+  end
+
+end
+
+class BreedData
+  def initialize
+    @breeds = {}
+  end
+
+  def breeds
+    @breeds
+  end
+
+  def new_id
+    @breeds.keys.max + 1
+  end
+
+  def add(breed)
+    @breeds[breed.id] = breed
+  end
+
+  def remove(id)
+    @breeds.delete(id)
+  end
+
+end
+
+### PORO Data - don't do this in a production app
+$breed_data = BreedData.new
+$breed_data.add(Breed.new(0, 'persian'))
+$breed_data.add(Breed.new(1, 'siamese'))
+$breed_data.add(Breed.new(2, 'sphinx'))
+$breed_data.add(Breed.new(3, 'to_delete'))
+
 ### CONTROLLERS
 class AuthorController < JSON::API::ResourceController
 
@@ -142,6 +197,9 @@ class CurrenciesController < JSON::API::ResourceController
 end
 
 class ExpenseEntriesController < JSON::API::ResourceController
+end
+
+class BreedsController < JSON::API::ResourceController
 end
 
 ### RESOURCES
@@ -233,6 +291,26 @@ class ExpenseEntryResource < JSON::API::Resource
 
   has_one :currency, class_name: 'Currency', key: 'currency_code'
   has_one :employee
+end
+
+class BreedResource < JSON::API::Resource
+  attributes :id, :name
+
+  def self.find(attrs)
+    breeds = []
+    $breed_data.breeds.values.each do |breed|
+      breeds.push(BreedResource.new(breed))
+    end
+    breeds
+  end
+
+  def self.find_by_key(id)
+    BreedResource.new($breed_data.breeds[id.to_i])
+  end
+
+  def self.transaction
+    yield
+  end
 end
 
 ### DATA
