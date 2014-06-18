@@ -11,77 +11,64 @@ module JSON
     class ResourceController < ActionController::Base
       include ResourceFor
 
-      def index
-        fields = parse_fields(params)
-        include = parse_includes(params[:include])
-        filters = parse_filters(params)
+      before_filter :parse_fields, except: [:destroy]
+      before_filter :parse_includes, except: [:destroy]
+      before_filter :parse_filters, only: [:index]
 
+      def index
         render json: JSON::API::ResourceSerializer.new.serialize(
-            resource_klass.find({filters: filters}),
-            include: include,
-            fields: fields
+            resource_klass.find({filters: @filters}),
+            include: @includes,
+            fields: @fields
         )
       rescue Exception => e
         handle_json_api_error(e)
       end
 
       def show
-        fields = parse_fields(params)
-        include = parse_includes(params[:include])
-
-        klass = resource_klass
-
-        ids = parse_id_array(params[klass._key])
+        ids = parse_id_array(params[resource_klass._key])
 
         resources = []
-        klass.transaction do
-          ids.each do |id|
-            resources.push(klass.find_by_key(id))
-          end
+        ids.each do |id|
+          resources.push(resource_klass.find_by_key(id))
         end
 
         render json: JSON::API::ResourceSerializer.new.serialize(
             resources,
-            include: include,
-            fields: fields
+            include: @includes,
+            fields: @fields
         )
       rescue Exception => e
         handle_json_api_error(e)
       end
 
       def create
-        fields = parse_fields(params)
-        include = parse_includes(params[:include])
-
-        klass = resource_klass
-        checked_params = verify_params(params, klass, klass.createable(klass._updateable_associations | klass._attributes.to_a))
-        update_and_respond_with(klass.new, checked_params[0], checked_params[1], include: include, fields: fields)
+        checked_params = verify_params(params,
+                                       resource_klass,
+                                       resource_klass.createable(resource_klass._updateable_associations | resource_klass._attributes.to_a))
+        update_and_respond_with(resource_klass.new, checked_params[0], checked_params[1], include: @includes, fields: @fields)
       rescue Exception => e
         handle_json_api_error(e)
       end
 
       def update
-        fields = parse_fields(params)
-        include = parse_includes(params[:include])
+        checked_params = verify_params(params,
+                                       resource_klass,
+                                       resource_klass.updateable(resource_klass._updateable_associations | resource_klass._attributes.to_a))
 
-        klass = resource_klass
-        checked_params = verify_params(params, klass, klass.updateable(klass._updateable_associations | klass._attributes.to_a))
+        return unless obj = resource_klass.find_by_key(params[resource_klass._key])
 
-        return unless obj = klass.find_by_key(params[klass._key])
-
-        update_and_respond_with(obj, checked_params[0], checked_params[1], include: include, fields: fields)
+        update_and_respond_with(obj, checked_params[0], checked_params[1], include: @include, fields: @fields)
       rescue Exception => e
         handle_json_api_error(e)
       end
 
       def destroy
-        klass = resource_klass
+        ids = parse_id_array(params[resource_klass._key])
 
-        ids = parse_id_array(params[klass._key])
-
-        klass.transaction do
+        resource_klass.transaction do
           ids.each do |id|
-            klass.find_by_key(id).destroy
+            resource_klass.find_by_key(id).destroy
           end
         end
         render status: :no_content, json: nil
@@ -180,13 +167,16 @@ module JSON
         return checked_params, checked_associations
       end
 
-      def parse_includes(includes)
+      def parse_includes
+        includes = params[:include]
         included_resources = []
         included_resources += CSV.parse_line(includes) unless includes.nil? || includes.empty?
-        included_resources
+        @includes = included_resources
+      rescue Exception => e
+        handle_json_api_error(e)
       end
 
-      def parse_filters(params)
+      def parse_filters
         # Coerce :ids -> :id
         if params[:ids]
           params[:id] = params[:ids]
@@ -206,7 +196,9 @@ module JSON
             raise JSON::API::Errors::FilterNotAllowed.new(filter)
           end
         end
-        filters
+        @filters = filters
+      rescue Exception => e
+        handle_json_api_error(e)
       end
 
       def is_filter_association?(filter)
@@ -215,12 +207,13 @@ module JSON
 
       def parse_id_array(raw)
         ids = []
-        return raw.split(/,/).collect do |id|
+        raw.split(/,/).collect do |id|
           ids.push verify_id(resource_klass, id)
         end
+        return ids
       end
 
-      def parse_fields(params)
+      def parse_fields
         fields = {}
 
         # Extract the fields for each type from the fields parameters
@@ -259,7 +252,9 @@ module JSON
             raise JSON::API::Errors::InvalidField.new(type, 'nil')
           end
         end
-        fields
+        @fields = fields
+      rescue Exception => e
+        handle_json_api_error(e)
       end
 
       def verify_filter(filter, raw)
