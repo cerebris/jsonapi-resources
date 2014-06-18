@@ -45,7 +45,7 @@ module JSON
           @_attributes.merge attrs
           attrs.each do |attr|
             define_method attr do
-              @object.read_attribute_for_serialization attr
+              @object.method(attr).call
             end unless method_defined?(attr)
           end
         end
@@ -53,7 +53,7 @@ module JSON
         def attribute(attr)
           @_attributes.add attr
           define_method attr do
-            @object.read_attribute_for_serialization attr
+            @object.method(attr).call
           end unless method_defined?(attr)
         end
 
@@ -186,7 +186,7 @@ module JSON
               key = @_associations[attr].key
 
               define_method key do
-                @object.read_attribute_for_serialization key
+                @object.method(key).call
               end unless method_defined?(key)
 
               define_method "_#{attr}_object" do
@@ -201,7 +201,7 @@ module JSON
               key = @_associations[attr].key
 
               define_method key do
-                @object.read_attribute_for_serialization key
+                @object.method(key).call
               end unless method_defined?(key)
 
               define_method "#{key}=" do |values|
