@@ -92,16 +92,32 @@ module JSON
         end
 
         # Override this method if you have more complex requirements than this basic find method provides
-        def find(attrs)
+        def find(attrs, options = {})
+          includes = []
+          where_filters = {}
+
+          attrs[:filters].each do |filter, value|
+            if _associations.include?(filter)
+              if _associations[filter].is_a?(JSON::API::Association::HasMany)
+                includes.push(filter.to_sym)
+                where_filters["#{filter}.#{_associations[filter].primary_key}"] = value
+              else
+                where_filters["#{_associations[filter].key}"] = value
+              end
+            else
+              where_filters[filter] = value
+            end
+          end
+
           resources = []
-          _model_class.where(attrs[:filters]).each do |object|
+          _model_class.where(where_filters).includes(includes).each do |object|
             resources.push self.new(object)
           end
 
           return resources
         end
 
-        def find_by_key(id)
+        def find_by_key(id, options = {})
           obj = _model_class.where({_key => id}).first
           if obj.nil?
             raise JSON::API::Errors::RecordNotFound.new(id)

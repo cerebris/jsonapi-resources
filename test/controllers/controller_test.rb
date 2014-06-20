@@ -83,6 +83,28 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /post_ids is not allowed/, response.body
   end
 
+  def test_filter_association_single
+    get :index, {tags: '5,1'}
+    assert_response :success
+    assert_equal 3, json_response['posts'].size
+    assert_match /New post/, response.body
+    assert_match /JAR Solves your serialization woes!/, response.body
+    assert_match /JAR How To/, response.body
+  end
+
+  def test_filter_associations_multiple
+    get :index, {tags: '5,1', comments: '3'}
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+    assert_match /JAR Solves your serialization woes!/, response.body
+  end
+
+  def test_filter_associations_multiple_not_found
+    get :index, {tags: '1', comments: '3'}
+    assert_response :success
+    assert_equal 0, json_response.size
+  end
+
   def test_bad_filter_value_not_integer_array
     get :index, {ids: 'asdfg'}
     assert_response :bad_request
@@ -128,7 +150,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_index_filter_on_association
     get :index, {author: '1'}
     assert_response :success
-    assert_equal 1, json_response['posts'].size
+    assert_equal 3, json_response['posts'].size
   end
 
   # ToDo: test validating the parameter values
@@ -230,7 +252,7 @@ class PostsControllerTest < ActionController::TestCase
                       body:  'JSON API Resources is the greatest thing since unsliced bread.',
                       links: {
                         author: 3,
-                        tags: [1,2]
+                        tags: [3,4]
                       }
                     }
                   }
@@ -240,7 +262,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 3, json_response['posts'][0]['links']['author']
     assert_equal 'JAR is Great', json_response['posts'][0]['title']
     assert_equal 'JSON API Resources is the greatest thing since unsliced bread.', json_response['posts'][0]['body']
-    assert_equal [1,2], json_response['posts'][0]['links']['tags']
+    assert_equal [3,4], json_response['posts'][0]['links']['tags']
   end
 
   def test_create_with_links_include_and_fields
@@ -249,7 +271,7 @@ class PostsControllerTest < ActionController::TestCase
         body:  'JSON API Resources is the greatest thing since unsliced bread!',
         links: {
             author: 3,
-            tags: [1,2]
+            tags: [3,4]
         }
       },
       include: 'author,author.posts',
@@ -407,7 +429,7 @@ class AuthorControllerTest < ActionController::TestCase
     assert_equal 'Joe Author', json_response['authors'][0]['name']
     assert_equal nil, json_response['authors'][0]['email']
     assert_equal 1, json_response['authors'][0]['links'].size
-    assert_equal 2, json_response['authors'][0]['links']['posts'].size
+    assert_equal 3, json_response['authors'][0]['links']['posts'].size
   end
 
   def test_get_person_as_author_variable_email
@@ -428,7 +450,7 @@ class AuthorControllerTest < ActionController::TestCase
     assert_equal 1, json_response['authors'][0]['id']
     assert_equal 'Joe Author', json_response['authors'][0]['name']
     assert_equal 1, json_response['authors'][0]['links'].size
-    assert_equal 2, json_response['authors'][0]['links']['posts'].size
+    assert_equal 3, json_response['authors'][0]['links']['posts'].size
   end
 end
 

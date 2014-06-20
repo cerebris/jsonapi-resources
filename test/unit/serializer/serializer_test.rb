@@ -61,7 +61,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                               date_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00'),
                               links: {
                                   comments: [1],
-                                  posts: [1,2]
+                                  posts: [1,2,12]
                               }
                              }]
                   }
@@ -230,7 +230,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               },
               {
                 id: 3,
-                body: 'Thanks man. Great post. But what is AMS?',
+                body: 'Thanks man. Great post. But what is JAR?',
                 links: {
                   author: 2,
                   post: 2,
@@ -265,9 +265,9 @@ class SerializerTest < MiniTest::Unit::TestCase
           },
           {
             id: 2,
-            title: 'AMS Solves your serialization wows!',
-            body: 'Use AMS',
-            subject: 'AMS Solves your serialization wows!',
+            title: 'JAR Solves your serialization woes!',
+            body: 'Use JAR',
+            subject: 'JAR Solves your serialization woes!',
             links: {
               author: 1,
               tags: [5],
@@ -300,9 +300,9 @@ class SerializerTest < MiniTest::Unit::TestCase
                 },
                 {
                   id: 5,
-                  name: 'AMS',
+                  name: 'JAR',
                   links: {
-                      posts: [2]
+                      posts: [2,12]
                   }
                 }
             ],
@@ -327,7 +327,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                 },
                 {
                     id: 3,
-                    body: 'Thanks man. Great post. But what is AMS?',
+                    body: 'Thanks man. Great post. But what is JAR?',
                     links: {
                       author: 2,
                       post: 2,
@@ -357,7 +357,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                     },
                     {
                         id: 2,
-                        title: 'AMS Solves your serialization wows!',
+                        title: 'JAR Solves your serialization woes!',
                         links: {
                             author: 1
                         }
@@ -374,7 +374,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                         name: 'happy'
                     },
                     {
-                        name: 'AMS'
+                        name: 'JAR'
                     }
                 ],
                 comments: [
@@ -394,7 +394,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                     },
                     {
                         id: 3,
-                        body: 'Thanks man. Great post. But what is AMS?',
+                        body: 'Thanks man. Great post. But what is JAR?',
                         links: {
                             post: 2
                         }
@@ -407,6 +407,14 @@ class SerializerTest < MiniTest::Unit::TestCase
                         links: {
                             comments: [1]
                         }
+                    }],
+                posts: [
+                    {
+                       id: 12,
+                       title: 'JAR How To',
+                       links: {
+                          author: 1
+                       }
                     }]
             }
         }, JSON::API::ResourceSerializer.new.serialize(posts, include: ['comments','author','comments.tags','author.posts'],

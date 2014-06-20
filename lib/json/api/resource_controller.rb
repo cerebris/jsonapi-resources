@@ -17,7 +17,7 @@ module JSON
 
       def index
         render json: JSON::API::ResourceSerializer.new.serialize(
-            resource_klass.find({filters: @filters}),
+            resource_klass.find({filters: @filters}, find_options),
             include: @includes,
             fields: @fields
         )
@@ -30,7 +30,7 @@ module JSON
 
         resources = []
         ids.each do |id|
-          resources.push(resource_klass.find_by_key(id))
+          resources.push(resource_klass.find_by_key(id, find_options))
         end
 
         render json: JSON::API::ResourceSerializer.new.serialize(
@@ -56,7 +56,7 @@ module JSON
                                        resource_klass,
                                        resource_klass.updateable(resource_klass._updateable_associations | resource_klass._attributes.to_a))
 
-        return unless obj = resource_klass.find_by_key(params[resource_klass._key])
+        return unless obj = resource_klass.find_by_key(params[resource_klass._key], find_options)
 
         update_and_respond_with(obj, checked_params[0], checked_params[1], include: @include, fields: @fields)
       rescue Exception => e
@@ -68,7 +68,7 @@ module JSON
 
         resource_klass.transaction do
           ids.each do |id|
-            resource_klass.find_by_key(id).destroy
+            resource_klass.find_by_key(id, find_options).destroy
           end
         end
         render status: :no_content, json: nil
@@ -280,7 +280,12 @@ module JSON
 
       # override to allow for custom association logic, such as uuids, multiple ids or permission checks on ids
       def verify_association_filter(filter, raw)
-        return resource_klass._associations[filter].primary_key, raw
+        return filter, raw
+      end
+
+      # override to set find options
+      def find_options
+        return {}
       end
 
       def deny_access_common(status, msg)
@@ -309,6 +314,11 @@ module JSON
                                              code: JSON::API::FILTER_NOT_ALLOWED,
                                              title: 'Filter not allowed',
                                              detail: "#{e.filter} is not allowed.")])
+          when JSON::API::Errors::InvalidFilterValue
+            render_errors(:bad_request, [JSON::API::Error.new(
+                                             code: JSON::API::INVALID_FILTER_VALUE,
+                                             title: 'Invalid filter value',
+                                             detail: "#{e.value} is not a valid value for #{e.filter}.")])
           when JSON::API::Errors::InvalidFieldValue
             render_errors(:bad_request, [JSON::API::Error.new(
                                              code: JSON::API::INVALID_FIELD_VALUE,

@@ -216,7 +216,7 @@ class AuthorResource < JSON::API::Resource
 
   filter :name
 
-  def self.find(attrs)
+  def self.find(attrs, options = {})
     resources = []
 
     attrs[:filters].each do |attr, filter|
@@ -275,7 +275,7 @@ class PostResource < JSON::API::Resource
     super(keys - [:subject])
   end
 
-  filters :title, :author
+  filters :title, :author, :tags, :comments
   filter :id
 end
 
@@ -296,7 +296,7 @@ end
 class BreedResource < JSON::API::Resource
   attributes :id, :name
 
-  def self.find(attrs)
+  def self.find(attrs, options = {})
     breeds = []
     $breed_data.breeds.values.each do |breed|
       breeds.push(BreedResource.new(breed))
@@ -304,7 +304,7 @@ class BreedResource < JSON::API::Resource
     breeds
   end
 
-  def self.find_by_key(id)
+  def self.find_by_key(id, options = {})
     BreedResource.new($breed_data.breeds[id.to_i])
   end
 
@@ -332,14 +332,22 @@ d = Person.create(name: 'Tag Crazy Author',
                   email: 'taggy@xyz.fake',
                   date_joined: DateTime.parse('2013-11-30 4:20:00 UTC +00:00'))
 
+short_tag = Tag.create(name: 'short')
+whiny_tag = Tag.create(name: 'whiny')
+grumpy_tag = Tag.create(name: 'grumpy')
+happy_tag = Tag.create(name: 'happy')
+jar_tag = Tag.create(name: 'JAR')
+
+silly_tag = Tag.create(name: 'silly')
+sleepy_tag = Tag.create(name: 'sleepy')
+goofy_tag = Tag.create(name: 'goofy')
+wacky_tag = Tag.create(name: 'wacky')
+
 Post.create(title: 'New post',
               body:  'A body!!!',
               author_id: a.id).tap do |post|
 
-  short_tag = post.tags.create(name: 'short')
-  whiny_tag = post.tags.create(name: 'whiny')
-  grumpy_tag = post.tags.create(name: 'grumpy')
-  happy_tag = Tag.create(name: 'happy')
+  post.tags.concat short_tag, whiny_tag, grumpy_tag
 
   post.comments.create(body: 'what a dumb post', author_id: a.id, post_id: post.id).tap do |comment|
     comment.tags.concat whiny_tag, short_tag
@@ -350,15 +358,15 @@ Post.create(title: 'New post',
   end
 end
 
-Post.create(title: 'AMS Solves your serialization wows!',
-              body:  'Use AMS',
+Post.create(title: 'JAR Solves your serialization woes!',
+              body:  'Use JAR',
               author_id: a.id,
               section: Section.create(name: 'ruby')).tap do |post|
 
-  ams_tag = post.tags.create(name: 'AMS')
+  post.tags.concat jar_tag
 
-  post.comments.create(body: 'Thanks man. Great post. But what is AMS?', author_id: b.id, post_id: post.id).tap do |comment|
-    comment.tags.concat ams_tag
+  post.comments.create(body: 'Thanks man. Great post. But what is JAR?', author_id: b.id, post_id: post.id).tap do |comment|
+    comment.tags.concat jar_tag
   end
 end
 
@@ -405,11 +413,6 @@ ExpenseEntry.create(currency_code: 'USD',
                cost: '12.06',
                transaction_date: DateTime.parse('2014-04-15 12:13:15 UTC +00:00'))
 
-silly_tag = Tag.create(name: 'silly')
-sleepy_tag = Tag.create(name: 'sleepy')
-goofy_tag = Tag.create(name: 'goofy')
-wacky_tag = Tag.create(name: 'wacky')
-
 Post.create(title: 'Tagged up post 1',
             body:  'AAAA',
             author_id: d.id,
@@ -421,3 +424,11 @@ Post.create(title: 'Tagged up post 2',
             author_id: d.id,
             tag_ids: [6,7,8,9]
 )
+
+Post.create(title: 'JAR How To',
+            body:  'Use JAR to write API apps',
+            author_id: a.id).tap do |post|
+
+  post.tags.concat jar_tag
+end
+
