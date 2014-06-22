@@ -248,7 +248,7 @@ class AuthorResource < JSON::API::Resource
 
   filter :name
 
-  def self.find(attrs)
+  def self.find(attrs, options = {})
     resources = []
 
     attrs[:filters].each do |attr, filter|
@@ -340,12 +340,13 @@ A hash of resource types and arrays of fields for each resource type.
 
 ```
 post = Post.find(1)
-JSON::API::ResourceSerializer.new.serialize(post, include: ['comments','author','comments.tags','author.posts'],
-                                                  fields: {
-                                                             people: [:id, :email, :comments],
-                                                             posts: [:id, :title, :author],
-                                                             tags: [:name],
-                                                             comments: [:id, :body, :post]})
+JSON::API::ResourceSerializer.new.serialize(PostResource.new(post),
+        include: ['comments','author','comments.tags','author.posts'],
+        fields: {
+                 people: [:id, :email, :comments],
+                 posts: [:id, :title, :author],
+                 tags: [:name],
+                 comments: [:id, :body, :post]})
 ```
 
 ##### Other fields

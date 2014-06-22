@@ -24,6 +24,14 @@ module JSON
         end
       end
 
+      class InvalidFilterValue < Error
+        attr_accessor :filter, :value
+        def initialize(filter, value)
+          @filter = filter
+          @value = value
+        end
+      end
+
       class InvalidFieldValue < Error
         attr_accessor :field, :value
         def initialize(field, value)
