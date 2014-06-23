@@ -323,21 +323,21 @@ This returns results like this:
 
 Options can be specified to control a serializer's output. Serializers take the following options:
 
-##### include
+##### `include`
 
 An array of resources. Nested resources can be specified with dot notation.
 
-  **Purpose**: determines which objects will be side loaded with the source objects in a linked section
+  *Purpose*: determines which objects will be side loaded with the source objects in a linked section
 
-  **Example**: ```include: ['comments','author','comments.tags','author.posts']```
+  *Example*: ```include: ['comments','author','comments.tags','author.posts']```
   
-##### fields
+##### `fields`
 
 A hash of resource types and arrays of fields for each resource type.
 
-  **Purpose**: determines which fields are serialized for a resource type. This encompasses both attributes and association ids in the links section for a resource. Fields are global for a resource type.
+  *Purpose*: determines which fields are serialized for a resource type. This encompasses both attributes and association ids in the links section for a resource. Fields are global for a resource type.
 
-  **Example**: ```fields: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}```
+  *Example*: ```fields: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}```
 
 ```
 post = Post.find(1)
