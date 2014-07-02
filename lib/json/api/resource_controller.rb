@@ -11,11 +11,11 @@ module JSON
     class ResourceController < ActionController::Base
       include ResourceFor
 
-      before_filter :parse_fields, except: [:destroy]
-      before_filter :parse_includes, except: [:destroy]
-      before_filter :parse_filters, only: [:index]
-
       def index
+        parse_fields
+        parse_includes
+        parse_filters
+
         render json: JSON::API::ResourceSerializer.new.serialize(
             resource_klass.find({filters: @filters}),
             include: @includes,
@@ -26,6 +26,9 @@ module JSON
       end
 
       def show
+        parse_fields
+        parse_includes
+
         ids = parse_id_array(params[resource_klass._key])
 
         resources = []
@@ -43,6 +46,9 @@ module JSON
       end
 
       def create
+        parse_fields
+        parse_includes
+
         checked_params = verify_params(params,
                                        resource_klass,
                                        resource_klass.createable(resource_klass._updateable_associations | resource_klass._attributes.to_a))
@@ -52,6 +58,9 @@ module JSON
       end
 
       def update
+        parse_fields
+        parse_includes
+
         checked_params = verify_params(params,
                                        resource_klass,
                                        resource_klass.updateable(resource_klass._updateable_associations | resource_klass._attributes.to_a))
@@ -172,8 +181,6 @@ module JSON
         included_resources = []
         included_resources += CSV.parse_line(includes) unless includes.nil? || includes.empty?
         @includes = included_resources
-      rescue Exception => e
-        handle_json_api_error(e)
       end
 
       def parse_filters
@@ -197,8 +204,6 @@ module JSON
           end
         end
         @filters = filters
-      rescue Exception => e
-        handle_json_api_error(e)
       end
 
       def is_filter_association?(filter)
@@ -217,18 +222,18 @@ module JSON
         fields = {}
 
         # Extract the fields for each type from the fields parameters
-        if params[:fields].nil?
-          return fields
-        elsif params[:fields].is_a?(String)
-          value = params[:fields]
-          resource_fields = value.split(',').map {|s| s.to_sym } unless value.nil? || value.empty?
-          type = resource_klass._serialize_as
-          fields[type] = resource_fields
-        elsif params[:fields].is_a?(ActionController::Parameters)
-          params[:fields].each do |param, value|
+        unless params[:fields].nil?
+          if params[:fields].is_a?(String)
+            value = params[:fields]
             resource_fields = value.split(',').map {|s| s.to_sym } unless value.nil? || value.empty?
-            type = param.to_sym
+            type = resource_klass._serialize_as
             fields[type] = resource_fields
+          elsif params[:fields].is_a?(ActionController::Parameters)
+            params[:fields].each do |param, value|
+              resource_fields = value.split(',').map {|s| s.to_sym } unless value.nil? || value.empty?
+              type = param.to_sym
+              fields[type] = resource_fields
+            end
           end
         end
 
@@ -252,9 +257,8 @@ module JSON
             raise JSON::API::Errors::InvalidField.new(type, 'nil')
           end
         end
+
         @fields = fields
-      rescue Exception => e
-        handle_json_api_error(e)
       end
 
       def verify_filter(filter, raw)
