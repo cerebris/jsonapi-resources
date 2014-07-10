@@ -1,7 +1,7 @@
 require 'json/api/resource_for'
 require 'json/api/resource_serializer'
 require 'action_controller'
-require 'json/api/errors'
+require 'json/api/exceptions'
 require 'json/api/error'
 require 'json/api/error_codes'
 require 'json/api/request'
@@ -127,13 +127,14 @@ module JSON
           element[1].each do |message|
             errors.push(JSON::API::Error.new(
                             code: JSON::API::VALIDATION_ERROR,
+                            status: :bad_request,
                             title: "#{element[0]} - #{message}",
                             detail: "can't be blank",
                             path: "\\#{element[0]}",
                             links: JSON::API::ResourceSerializer.new.serialize(obj)))
           end
         end
-        raise JSON::API::Errors::ValidationErrors.new(errors)
+        raise JSON::API::Exceptions::ValidationErrors.new(errors)
       end
 
       def verify_attributes(attributes)
@@ -150,7 +151,7 @@ module JSON
           param = key.to_sym
           params_not_allowed.push(param) unless allowed_param_set.include?(param)
         end
-        raise JSON::API::Errors::ParamNotAllowed.new(params_not_allowed) if params_not_allowed.length > 0
+        raise JSON::API::Exceptions::ParametersNotAllowed.new(params_not_allowed) if params_not_allowed.length > 0
       end
 
       def verify_params(params, klass, resource_param_set)
@@ -239,46 +240,22 @@ module JSON
         return false
       end
 
-      def render_errors(status, errors)
-        render(json: {errors: errors}, status: status)
+      def render_errors(errors, status = :bad_request)
+        render(json: {errors: errors}, status: errors.count == 1 ? errors[0].status : status)
       end
 
       def handle_json_api_error(e)
         case e
-          when JSON::API::Errors::InvalidResource
-            render_errors(:not_found, [JSON::API::Error.new(
-                                             code: JSON::API::INVALID_RESOURCE,
-                                             title: 'Invalid resource',
-                                             detail: "#{e.resource} is not a valid resource.")])
-          when JSON::API::Errors::RecordNotFound
-            render_errors(:not_found, [JSON::API::Error.new(
-                                             code: JSON::API::RECORD_NOT_FOUND,
-                                             title: 'Record not found',
-                                             detail: "The record identified by #{e.id} could not be found.")])
-          when JSON::API::Errors::FilterNotAllowed
-            render_errors(:bad_request, [JSON::API::Error.new(
-                                             code: JSON::API::FILTER_NOT_ALLOWED,
-                                             title: 'Filter not allowed',
-                                             detail: "#{e.filter} is not allowed.")])
-          when JSON::API::Errors::InvalidFieldValue
-            render_errors(:bad_request, [JSON::API::Error.new(
-                                             code: JSON::API::INVALID_FIELD_VALUE,
-                                             title: 'Invalid field value',
-                                             detail: "#{e.value} is not a valid value for #{e.field}.")])
-          when JSON::API::Errors::InvalidField
-            render_errors(:bad_request, [JSON::API::Error.new(
-                                             code: JSON::API::INVALID_FIELD,
-                                             title: 'Invalid field',
-                                             detail: "#{e.field} is not a valid field for #{e.type}.")])
-          when JSON::API::Errors::ParamNotAllowed
-            render_errors(:bad_request, [JSON::API::Error.new(
-                                             code: JSON::API::PARAM_NOT_ALLOWED,
-                                             title: 'Param not allowed',
-                                             detail: "The following parameters are not allowed here: #{e.params.join(', ')}.")])
-          when JSON::API::Errors::ValidationErrors
-            render_errors(:bad_request, e.errors)
-          else
-            raise e
+        when ActionController::UnpermittedParameters
+          handle_json_api_error(JSON::API::Exceptions::ParametersNotAllowed.new(e.params).errors)
+        when ActiveRecord::DeleteRestrictionError
+          handle_json_api_error(JSON::API::Exceptions::RecordLocked.new(e.message).errors)
+        when ActionController::ParameterMissing
+          handle_json_api_error(JSON::API::Exceptions::ParameterMissing.new(e.param).errors)
+        when JSON::API::Exceptions::Error
+          render_errors(e.errors)
+        else
+          raise e
         end
       end
     end

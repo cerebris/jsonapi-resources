@@ -90,7 +90,7 @@ module JSON
         end
       end
 
-      class ParamsNotAllowed < Error
+      class ParametersNotAllowed < Error
         attr_accessor :params
         def initialize(params)
           @params = params
@@ -107,7 +107,7 @@ module JSON
         end
       end
 
-      class ParamMissing < Error
+      class ParameterMissing < Error
         attr_accessor :param
         def initialize(param)
           @param = param
@@ -116,8 +116,8 @@ module JSON
         def errors
           [JSON::API::Error.new(code: JSON::API::PARAM_MISSING,
                                status: :bad_request,
-                               title: 'Missing Param',
-                               detail: "The required param, #{param}, is missing.")]
+                               title: 'Missing Parameter',
+                               detail: "The required parameter, #{param}, is missing.")]
         end
       end
 

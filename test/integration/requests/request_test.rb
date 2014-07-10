@@ -10,7 +10,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_put_single
     put '/posts/3', {"posts" => {"title" => "A great new Post", "links" => { "tags" => [3,4] }}}
-    assert_equal 201, status
+    assert_equal 200, status
   end
 
   # def test_patch_create

@@ -63,7 +63,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_index_filter_by_ids_and_fields_specify_unrelated_type
     get :index, {ids: '1,2', 'fields' => {'currencies' => 'code'}}
-    assert_response :not_found
+    assert_response :bad_request
     assert_match /currencies is not a valid resource./, json_response['errors'][0]['detail']
   end
 
@@ -121,7 +121,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_resource_not_supported
     get :index, {ids: '1,2', 'fields' => {'posters' => 'id,title'}}
-    assert_response :not_found
+    assert_response :bad_request
     assert_match /posters is not a valid resource./, json_response['errors'][0]['detail']
   end
 
@@ -208,6 +208,20 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 3, json_response['posts'][0]['links']['author']
     assert_equal 'JAR is Great', json_response['posts'][0]['title']
     assert_equal 'JSON API Resources is the greatest thing since unsliced bread.', json_response['posts'][0]['body']
+  end
+
+  def test_create_simple_missing_posts
+    post :create, { posts_spelled_wrong: {
+        title: 'JAR is Great',
+        body:  'JSON API Resources is the greatest thing since unsliced bread.',
+        links: {
+            author: 3
+        }
+      }
+    }
+
+    assert_response :bad_request
+    assert_match /The required parameter, posts, is missing./, json_response['errors'][0]['detail']
   end
 
   def test_create_simple_unpermitted_attributes
@@ -299,8 +313,8 @@ class PostsControllerTest < ActionController::TestCase
     }
 
     assert_response :bad_request
-    assert_match /author/, json_response['errors'][0]['detail']
-    assert_match /subject/, json_response['errors'][0]['detail']
+    assert_match /author is not allowed./, response.body
+    assert_match /subject is not allowed./, response.body
   end
 
   def test_update_bad_attributes
