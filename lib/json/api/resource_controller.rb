@@ -12,10 +12,6 @@ module JSON
     class ResourceController < ActionController::Base
       include ResourceFor
 
-      def index
-        parse_fields
-        parse_includes
-        parse_filters
       before_filter {
         @request = JSON::API::Request.new(resource_klass, params)
         render_errors(@request.errors) unless @request.errors.empty?
@@ -23,9 +19,6 @@ module JSON
 
       def index
         render json: JSON::API::ResourceSerializer.new.serialize(
-            resource_klass.find({filters: @filters}),
-            include: @includes,
-            fields: @fields
             resource_klass.find({filters: verify_filters(@request.filters)}, find_options),
             {include: @request.includes,
             fields: @request.fields}.merge(serialize_options)
@@ -35,9 +28,6 @@ module JSON
       end
 
       def show
-        parse_fields
-        parse_includes
-
         ids = parse_id_array(params[resource_klass._key])
 
         resources = []
@@ -47,8 +37,6 @@ module JSON
 
         render json: JSON::API::ResourceSerializer.new.serialize(
             resources,
-            include: @includes,
-            fields: @fields
             {include: @request.includes,
              fields: @request.fields}.merge(serialize_options)
         )
@@ -57,9 +45,6 @@ module JSON
       end
 
       def create
-        parse_fields
-        parse_includes
-
         checked_params = verify_params(params,
                                        resource_klass,
                                        resource_klass.createable(resource_klass._updateable_associations | resource_klass._attributes.to_a))
@@ -76,9 +61,6 @@ module JSON
       end
 
       def update
-        parse_fields
-        parse_includes
-
         checked_params = verify_params(params,
                                        resource_klass,
                                        resource_klass.updateable(resource_klass._updateable_associations | resource_klass._attributes.to_a))
