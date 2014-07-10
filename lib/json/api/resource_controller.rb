@@ -124,7 +124,7 @@ module JSON
             end
           end
 
-          render :status => :created, json: JSON::API::ResourceSerializer.new.serialize(obj, options)
+          render :status => (new_record ? :created : :ok), json: JSON::API::ResourceSerializer.new.serialize(obj, options)
         end
 
       rescue ActiveRecord::RecordInvalid => e
