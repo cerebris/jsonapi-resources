@@ -20,7 +20,7 @@ module JSON
         @object.destroy
       end
 
-      def update(attributes)
+      def update(attributes, options = {})
         @object.update!(attributes)
       end
 
@@ -92,7 +92,7 @@ module JSON
         end
 
         # Override this method if you have more complex requirements than this basic find method provides
-        def find(attrs)
+        def find(attrs, options = {})
           resources = []
           _model_class.where(attrs[:filters]).each do |object|
             resources.push self.new(object)
@@ -101,7 +101,7 @@ module JSON
           return resources
         end
 
-        def find_by_key(id)
+        def find_by_key(id, options = {})
           obj = _model_class.where({_key => id}).first
           if obj.nil?
             raise JSON::API::Exceptions::RecordNotFound.new(id)

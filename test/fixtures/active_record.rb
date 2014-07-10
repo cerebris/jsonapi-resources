@@ -1,7 +1,7 @@
 require 'active_record'
 require 'json/api/resource_controller'
 require 'json/api/resource'
-require 'json/api/errors'
+require 'json/api/exceptions'
 require 'rails'
 require 'rails/all'
 
@@ -174,8 +174,8 @@ class PostsController < JSON::API::ResourceController
   end
 
   def verify_id(resource, id)
-    raise JSON::API::Errors::InvalidFieldValue.new(:id, id) unless is_num?(id)
-    raise JSON::API::Errors::RecordNotFound.new(id) unless resource.find_by_key(id)
+    raise JSON::API::Exceptions::InvalidFieldValue.new(:id, id) unless is_num?(id)
+    raise JSON::API::Exceptions::RecordNotFound.new(id) unless resource.find_by_key(id)
     return id
   end
 
@@ -216,7 +216,7 @@ class AuthorResource < JSON::API::Resource
 
   filter :name
 
-  def self.find(attrs)
+  def self.find(attrs, options = {})
     resources = []
 
     attrs[:filters].each do |attr, filter|
@@ -296,7 +296,7 @@ end
 class BreedResource < JSON::API::Resource
   attributes :id, :name
 
-  def self.find(attrs)
+  def self.find(attrs, options = {})
     breeds = []
     $breed_data.breeds.values.each do |breed|
       breeds.push(BreedResource.new(breed))
@@ -304,7 +304,7 @@ class BreedResource < JSON::API::Resource
     breeds
   end
 
-  def self.find_by_key(id)
+  def self.find_by_key(id, options = {})
     BreedResource.new($breed_data.breeds[id.to_i])
   end
 

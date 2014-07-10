@@ -32,7 +32,7 @@ module JSON
 
         resources = []
         ids.each do |id|
-          resources.push(resource_klass.find_by_key(id))
+          resources.push(resource_klass.find_by_key(id, find_options))
         end
 
         render json: JSON::API::ResourceSerializer.new.serialize(
@@ -65,7 +65,7 @@ module JSON
                                        resource_klass,
                                        resource_klass.updateable(resource_klass._updateable_associations | resource_klass._attributes.to_a))
 
-        return unless obj = resource_klass.find_by_key(params[resource_klass._key])
+        return unless obj = resource_klass.find_by_key(params[resource_klass._key], find_options)
 
         update_and_respond_with(obj, checked_params[0], checked_params[1], include: @include, fields: @fields)
         update_and_respond_with(obj,
@@ -84,7 +84,7 @@ module JSON
 
         resource_klass.transaction do
           ids.each do |id|
-            resource_klass.find_by_key(id).destroy
+            obj = resource_klass.find_by_key(id, find_options)
           end
         end
         render status: :no_content, json: nil
@@ -107,10 +107,11 @@ module JSON
         @resource_klass_name ||= "#{self.class.name.demodulize.sub(/Controller$/, '').singularize}Resource"
       end
 
-      def update_and_respond_with(obj, attributes, associated_sets, options = {})
+      def update_and_respond_with(obj, attributes, associated_sets, new_record, options = {})
         yield(obj) if block_given?
         if verify_attributes(attributes)
-          obj.update(attributes)
+
+          obj.update(attributes, options)
 
           if verify_associated_sets(obj, associated_sets)
             associated_sets.each do |association, values|
@@ -233,6 +234,21 @@ module JSON
       # override to allow for custom association logic, such as uuids, multiple ids or permission checks on ids
       def verify_association_filter(filter, raw)
         return resource_klass._associations[filter].primary_key, raw
+      end
+
+      # override to set standard serializer options
+      def serialize_options
+        {}
+      end
+
+      # override to set standard update options
+      def update_options
+        {}
+      end
+
+      # override to set standard find options
+      def find_options
+        {}
       end
 
       def deny_access_common(status, msg)
