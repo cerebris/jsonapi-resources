@@ -4,6 +4,7 @@ require 'action_controller'
 require 'json/api/errors'
 require 'json/api/error'
 require 'json/api/error_codes'
+require 'json/api/request'
 require 'csv'
 
 module JSON
@@ -15,11 +16,19 @@ module JSON
         parse_fields
         parse_includes
         parse_filters
+      before_filter {
+        @request = JSON::API::Request.new(resource_klass, params)
+        render_errors(@request.errors) unless @request.errors.empty?
+      }
 
+      def index
         render json: JSON::API::ResourceSerializer.new.serialize(
             resource_klass.find({filters: @filters}),
             include: @includes,
             fields: @fields
+            resource_klass.find({filters: verify_filters(@request.filters)}, find_options),
+            {include: @request.includes,
+            fields: @request.fields}.merge(serialize_options)
         )
       rescue Exception => e
         handle_json_api_error(e)
@@ -40,6 +49,8 @@ module JSON
             resources,
             include: @includes,
             fields: @fields
+            {include: @request.includes,
+             fields: @request.fields}.merge(serialize_options)
         )
       rescue Exception => e
         handle_json_api_error(e)
@@ -53,6 +64,13 @@ module JSON
                                        resource_klass,
                                        resource_klass.createable(resource_klass._updateable_associations | resource_klass._attributes.to_a))
         update_and_respond_with(resource_klass.new, checked_params[0], checked_params[1], include: @includes, fields: @fields)
+        update_and_respond_with(resource_klass.new,
+                                checked_params[0],
+                                checked_params[1],
+                                true,
+                                {include: @request.includes,
+                                 fields: @request.fields}.merge(serialize_options).merge(update_options)
+        )
       rescue Exception => e
         handle_json_api_error(e)
       end
@@ -68,6 +86,13 @@ module JSON
         return unless obj = resource_klass.find_by_key(params[resource_klass._key])
 
         update_and_respond_with(obj, checked_params[0], checked_params[1], include: @include, fields: @fields)
+        update_and_respond_with(obj,
+                                checked_params[0],
+                                checked_params[1],
+                                false,
+                                {include: @request.includes,
+                                 fields: @request.fields}.merge(serialize_options).merge(update_options)
+        )
       rescue Exception => e
         handle_json_api_error(e)
       end
@@ -174,36 +199,19 @@ module JSON
           end
         end
         return checked_params, checked_associations
+
+      rescue ActionController::ParameterMissing => e
+        raise JSON::API::Exceptions::ParameterMissing.new(e.param)
+
       end
 
-      def parse_includes
-        includes = params[:include]
-        included_resources = []
-        included_resources += CSV.parse_line(includes) unless includes.nil? || includes.empty?
-        @includes = included_resources
-      end
-
-      def parse_filters
-        # Coerce :ids -> :id
-        if params[:ids]
-          params[:id] = params[:ids]
-          params.delete(:ids)
+      def verify_filters(filters)
+        verified_filters = {}
+        filters.each do |filter, raw_value|
+          verified_filter = verify_filter(filter, raw_value)
+          verified_filters[verified_filter[0]] = verified_filter[1]
         end
-
-        filters = {}
-        params.each do |key, value|
-          filter = key.to_sym
-
-          if [:include, :fields, :format, :controller, :action, :sort].include?(filter)
-            # Ignore non-filter parameters
-          elsif resource_klass._allowed_filter?(filter)
-            verified_filter = verify_filter(filter, value)
-            filters[verified_filter[0]] = verified_filter[1]
-          else
-            raise JSON::API::Errors::FilterNotAllowed.new(filter)
-          end
-        end
-        @filters = filters
+        verified_filters
       end
 
       def is_filter_association?(filter)
@@ -216,49 +224,6 @@ module JSON
           ids.push verify_id(resource_klass, id)
         end
         return ids
-      end
-
-      def parse_fields
-        fields = {}
-
-        # Extract the fields for each type from the fields parameters
-        unless params[:fields].nil?
-          if params[:fields].is_a?(String)
-            value = params[:fields]
-            resource_fields = value.split(',').map {|s| s.to_sym } unless value.nil? || value.empty?
-            type = resource_klass._serialize_as
-            fields[type] = resource_fields
-          elsif params[:fields].is_a?(ActionController::Parameters)
-            params[:fields].each do |param, value|
-              resource_fields = value.split(',').map {|s| s.to_sym } unless value.nil? || value.empty?
-              type = param.to_sym
-              fields[type] = resource_fields
-            end
-          end
-        end
-
-        # Validate the fields
-        fields.each do |type, values|
-          fields[type] = []
-          type_resource = self.class.resource_for(type)
-          if type_resource.nil? || !(resource_klass._type == type || resource_klass._has_association?(type))
-            raise JSON::API::Errors::InvalidResource.new(type)
-          end
-
-          unless values.nil?
-            values.each do |field|
-              if type_resource._validate_field(field)
-                fields[type].push field
-              else
-                raise JSON::API::Errors::InvalidField.new(type, field)
-              end
-            end
-          else
-            raise JSON::API::Errors::InvalidField.new(type, 'nil')
-          end
-        end
-
-        @fields = fields
       end
 
       def verify_filter(filter, raw)
