@@ -48,7 +48,9 @@ module JSON
         checked_params = verify_params(params,
                                        resource_klass,
                                        resource_klass.createable(resource_klass._updateable_associations | resource_klass._attributes.to_a))
-        update_and_respond_with(resource_klass.new, checked_params[0], checked_params[1], include: @includes, fields: @fields)
+
+        before_create(checked_params[0], checked_params[1])
+
         update_and_respond_with(resource_klass.new,
                                 checked_params[0],
                                 checked_params[1],
@@ -67,7 +69,8 @@ module JSON
 
         return unless obj = resource_klass.find_by_key(params[resource_klass._key], find_options)
 
-        update_and_respond_with(obj, checked_params[0], checked_params[1], include: @include, fields: @fields)
+        before_update(obj, checked_params[0], checked_params[1])
+
         update_and_respond_with(obj,
                                 checked_params[0],
                                 checked_params[1],
@@ -80,11 +83,13 @@ module JSON
       end
 
       def destroy
-        ids = parse_id_array(params[resource_klass._key])
+        ids = parse_id_array(params.permit(resource_klass._key)[resource_klass._key])
 
         resource_klass.transaction do
           ids.each do |id|
             obj = resource_klass.find_by_key(id, find_options)
+            before_destroy(obj)
+            obj.destroy
           end
         end
         render status: :no_content, json: nil
@@ -249,6 +254,15 @@ module JSON
       # override to set standard find options
       def find_options
         {}
+      end
+
+      def before_create(checked_params, checked_associations)
+      end
+
+      def before_update(obj, checked_params, checked_associations)
+      end
+
+      def before_destroy(obj)
       end
 
       def deny_access_common(status, msg)
