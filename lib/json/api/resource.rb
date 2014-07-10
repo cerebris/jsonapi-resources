@@ -24,6 +24,14 @@ module JSON
         @object.update!(attributes)
       end
 
+      def new_record?
+        @object.new_record?
+      end
+
+      def object
+        @object
+      end
+
       class << self
         def inherited(base)
           base._attributes = (_attributes || Set.new).dup
