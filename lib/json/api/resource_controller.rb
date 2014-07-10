@@ -232,8 +232,8 @@ module JSON
       end
 
       # override to allow for custom filters
-      def verify_custom_filter(resource_klass, filter, values)
-        return filter, values
+      def verify_custom_filter(resource_klass, filter, value)
+        return filter, value
       end
 
       # override to allow for custom association logic, such as uuids, multiple ids or permission checks on ids
