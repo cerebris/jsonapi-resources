@@ -39,6 +39,9 @@ module JSON
         raise JSON::API::Exceptions::ValidationErrors.new(errors)
       end
 
+      # Override this on a resource instance to override the fetchable keys
+      def fetchable(keys, options = {})
+        keys
       end
 
       class << self
@@ -113,7 +116,7 @@ module JSON
         # Override this method if you have more complex requirements than this basic find method provides
         def find(attrs, options = {})
           resources = []
-          _model_class.where(attrs[:filters]).each do |object|
+          _model_class.where(verify_filters(attrs[:filters])).each do |object|
             resources.push self.new(object)
           end
 
@@ -131,7 +134,77 @@ module JSON
         def transaction
           ActiveRecord::Base.transaction do
             yield
+        def verify_params(object_params, create) #ToDo find better method of indicating create
+          if create
+            allowed_params = createable(_updateable_associations | _attributes.to_a)
+          else
+            allowed_params = updateable(_updateable_associations | _attributes.to_a)
           end
+
+          # push links into top level param list with attributes
+          if object_params && object_params[:links]
+            object_params[:links].each do |link, value|
+              object_params[link] = value
+            end
+            object_params.delete(:links)
+          end
+
+          checked_params = {}
+          checked_associations = {}
+
+          verify_permitted_params(object_params, allowed_params)
+
+          object_params.each do |key, value|
+            param = key.to_sym
+
+            if _associations[param].is_a?(JSON::API::Association::HasOne)
+              checked_params[_associations[param].key] = value
+            elsif _associations[param].is_a?(JSON::API::Association::HasMany)
+              checked_associations[_associations[param].key] = value
+            else
+              checked_params[param] = value
+            end
+          end
+          return checked_params.merge(checked_associations)
+        end
+
+        def verify_filters(filters)
+          verified_filters = {}
+          filters.each do |filter, raw_value|
+            verified_filter = verify_filter(filter, raw_value)
+            verified_filters[verified_filter[0]] = verified_filter[1]
+          end
+          verified_filters
+        end
+
+        def is_filter_association?(filter)
+          filter == _serialize_as || _associations.include?(filter)
+        end
+
+        def verify_filter(filter, raw)
+          filter_values = []
+          filter_values += CSV.parse_line(raw) unless raw.nil? || raw.empty?
+
+          if is_filter_association?(filter)
+            verify_association_filter(filter, filter_values)
+          else
+            verify_custom_filter(filter, filter_values)
+          end
+        end
+
+        # override to allow for id processing and checking
+        def verify_id(id)
+          return id
+        end
+
+        # override to allow for custom filters
+        def verify_custom_filter(filter, value)
+          return filter, value
+        end
+
+        # override to allow for custom association logic, such as uuids, multiple ids or permission checks on ids
+        def verify_association_filter(filter, raw)
+          return _associations[filter].primary_key, raw
         end
 
         # quasi private class methods
@@ -211,6 +284,7 @@ module JSON
               define_method "#{key}=" do |values|
                 @object.send "#{key}=", values
               end unless method_defined?("#{key}=")
+
               define_method "_#{attr}_object" do
                 type_name = self.class._associations[attr].serialize_type_name
                 resource_class = self.class.resource_for(type_name)
@@ -245,11 +319,15 @@ module JSON
             end
           end
         end
-      end
 
-      # Override this on a resource instance to override the fetchable keys
-      def fetchable(keys, options = {})
-        keys
+        def verify_permitted_params(params, allowed_param_set)
+          params_not_allowed = []
+          params.keys.each do |key|
+            param = key.to_sym
+            params_not_allowed.push(param) unless allowed_param_set.include?(param)
+          end
+          raise JSON::API::Exceptions::ParametersNotAllowed.new(params_not_allowed) if params_not_allowed.length > 0
+        end
       end
     end
   end
