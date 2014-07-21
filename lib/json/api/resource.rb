@@ -9,11 +9,11 @@ module JSON
       @@resource_types = {}
 
       attr_reader :object
+
       def initialize(object = create_new_object)
         @object = object
       end
 
-      def new_object
       def create_new_object
         self.class._model_class.new
       end
@@ -22,6 +22,21 @@ module JSON
         @object.destroy
       end
 
+      def save
+        @object.save!
+      rescue ActiveRecord::RecordInvalid => e
+        errors = []
+        e.record.errors.messages.each do |element|
+          element[1].each do |message|
+            errors.push(JSON::API::Error.new(
+                            code: JSON::API::VALIDATION_ERROR,
+                            status: :bad_request,
+                            title: "#{element[0]} - #{message}",
+                            detail: "can't be blank",
+                            path: "\\#{element[0]}"))
+          end
+        end
+        raise JSON::API::Exceptions::ValidationErrors.new(errors)
       end
 
       end
