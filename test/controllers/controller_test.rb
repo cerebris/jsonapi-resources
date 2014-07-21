@@ -210,6 +210,32 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 'JSON API Resources is the greatest thing since unsliced bread.', json_response['posts'][0]['body']
   end
 
+  def test_create_multiple
+    post :create, { posts: [
+      {
+          title: 'JAR is Great',
+          body:  'JSON API Resources is the greatest thing since unsliced bread.',
+          links: {
+              author: 3
+          }
+      },
+      {
+          title: 'Ember is Great',
+          body:  'Ember is the greatest thing since unsliced bread.',
+          links: {
+              author: 3
+          }
+      }
+    ]
+  }
+
+    assert_response :created
+    assert_equal json_response['posts'].size, 2
+    assert_equal json_response['posts'][0]['links']['author'], 3
+    assert_match /JAR is Great/, response.body
+    assert_match /Ember is Great/, response.body
+  end
+
   def test_create_simple_missing_posts
     post :create, { posts_spelled_wrong: {
         title: 'JAR is Great',
@@ -302,6 +328,41 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal [3,4], json_response['posts'][0]['links']['tags']
   end
 
+  def test_update_multiple
+    javascript = Section.find_by(name: 'javascript')
+
+    post :update, {id: [3,9], posts: [
+      {
+        title: 'A great new Post QWERTY',
+        links: {
+            section: javascript.id,
+            tags: [3,4]
+        }
+      },
+      {
+          title: 'A great new Post ASDFG',
+          links: {
+              section: javascript.id,
+              tags: [3,4]
+          }
+      }
+    ]}
+
+    assert_response :success
+    assert_equal json_response['posts'].size, 2
+    assert_equal json_response['posts'][0]['links']['author'], 3
+    assert_equal json_response['posts'][0]['links']['section'], javascript.id
+    assert_equal json_response['posts'][0]['title'], 'A great new Post QWERTY'
+    assert_equal json_response['posts'][0]['body'], 'AAAA'
+    assert_equal json_response['posts'][0]['links']['tags'], [3,4]
+
+    assert_equal json_response['posts'][1]['links']['author'], 3
+    assert_equal json_response['posts'][1]['links']['section'], javascript.id
+    assert_equal json_response['posts'][1]['title'], 'A great new Post ASDFG'
+    assert_equal json_response['posts'][1]['body'], 'AAAA'
+    assert_equal json_response['posts'][1]['links']['tags'], [3,4]
+  end
+
   def test_update_multiple_count_mismatch
     javascript = Section.find_by(name: 'javascript')
 
@@ -383,6 +444,19 @@ class TagsControllerTest < ActionController::TestCase
     assert_equal 4, json_response['tags'].size
     assert_equal 2, json_response['linked']['posts'].size
   end
+
+  def test_tags_show_multiple
+    get :show, {id: '6,7,8,9'}
+    assert_response :success
+    assert_equal 4, json_response['tags'].size
+  end
+
+  def test_tags_show_multiple_with_include
+    get :show, {id: '6,7,8,9', include: 'posts,posts.tags,posts.author.posts'}
+    assert_response :success
+    assert_equal 4, json_response['tags'].size
+    assert_equal 2, json_response['linked']['posts'].size
+  end
 end
 
 class ExpenseEntriesControllerTest < ActionController::TestCase
@@ -433,6 +507,38 @@ class PeopleControllerTest < ActionController::TestCase
     assert_equal JSON::API::VALIDATION_ERROR, json_response['errors'][1]['code']
     assert_match /date_joined - can't be blank/, response.body
     assert_match /name - can't be blank/, response.body
+  end
+
+  def test_update_validations_missing_attribute
+    post :update, { id: 3, people: {
+        name:  ''
+    }
+    }
+
+    assert_response :bad_request
+    assert_equal 1, json_response['errors'].size
+    assert_equal JSON::API::VALIDATION_ERROR, json_response['errors'][0]['code']
+    assert_match /name - can't be blank/, response.body
+  end
+
+  def test_delete_locked
+    initial_count = Person.count
+    post :destroy, {id: '3'}
+    assert_response :locked
+    assert_equal initial_count, Person.count
+  end
+
+  def test_invalid_filter_value
+    get :index, {name: 'L'}
+    assert_response :bad_request
+  end
+
+  def test_valid_filter_value
+    get :index, {name: 'Joe Author'}
+    assert_response :success
+    assert_equal json_response['people'].size, 1
+    assert_equal json_response['people'][0]['id'], 1
+    assert_equal json_response['people'][0]['name'], 'Joe Author'
   end
 end
 

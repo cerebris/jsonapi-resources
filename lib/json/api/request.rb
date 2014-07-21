@@ -1,24 +1,36 @@
 require 'json/api/resource_for'
+require 'json/api/operation'
 
 module JSON
   module API
     class Request
       include ResourceFor
 
-      attr_accessor :fields, :includes, :filters, :errors
+      attr_accessor :fields, :includes, :filters, :errors, :operations
 
       def initialize(resource_klass, params)
         @errors = []
         @resource_klass = resource_klass
+        @operations = []
 
         case params[:action]
           when 'index'
             parse_fields(params)
             parse_includes(params)
             parse_filters(params)
-          when 'show', 'create', 'update'
+          when 'show'
             parse_fields(params)
             parse_includes(params)
+          when 'create'
+            parse_fields(params)
+            parse_includes(params)
+            parse_add_operation(params)
+          when 'update'
+            parse_fields(params)
+            parse_includes(params)
+            parse_replace_operation(params)
+          when 'destroy'
+            parse_remove_operation(params)
           else
             return
         end
@@ -94,6 +106,64 @@ module JSON
           end
         end
         @filters = filters
+      end
+
+      def parse_add_operation(params)
+        object_params_raw = params.require(@resource_klass._type)
+
+        if object_params_raw.is_a?(Array)
+          object_params_raw.each do |p|
+            @operations.push JSON::API::Operation.new(@resource_klass, :add, nil, '', @resource_klass.verify_params(p, true))
+          end
+        else
+          @operations.push JSON::API::Operation.new(@resource_klass, :add, nil, '', @resource_klass.verify_params(object_params_raw, true))
+        end
+
+      rescue ActionController::ParameterMissing => e
+        @errors.concat(JSON::API::Exceptions::ParameterMissing.new(e.param).errors)
+      rescue JSON::API::Exceptions::Error => e
+        @errors.concat(e.errors)
+      end
+
+      def parse_replace_operation(params)
+        object_params_raw = params.require(@resource_klass._type)
+
+        if object_params_raw.is_a?(Array)
+
+          ids = params[@resource_klass._key]
+          if ids.count != object_params_raw.count
+            raise JSON::API::Exceptions::CountMismatch
+          end
+
+          object_params_raw.each_index do |i|
+            id = ids[i]
+            p = object_params_raw[i]
+            @operations.push JSON::API::Operation.new(@resource_klass, :replace, id, '', @resource_klass.verify_params(p, false))
+          end
+        else
+          @operations.push JSON::API::Operation.new(@resource_klass, :replace, params[@resource_klass._key], '', @resource_klass.verify_params(object_params_raw, false))
+        end
+
+      rescue JSON::API::Exceptions::Error => e
+        @errors.concat(e.errors)
+      end
+
+      def parse_remove_operation(params)
+        ids = parse_id_array(params.permit(@resource_klass._key)[@resource_klass._key])
+
+        ids.each do |id|
+          @operations.push JSON::API::Operation.new(@resource_klass, :remove, id, '', '')
+        end
+      rescue JSON::API::Exceptions::Error => e
+        @errors.concat(e.errors)
+      end
+
+      def parse_id_array(raw)
+        ids = []
+        raw.split(/,/).collect do |id|
+          ids.push @resource_klass.verify_id(id)
+        end
+        return ids
       end
     end
   end
