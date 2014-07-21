@@ -22,10 +22,6 @@ module JSON
         @object.destroy
       end
 
-      def update(attributes, options = {})
-        @object.update!(attributes)
-      end
-
       end
 
       end
@@ -50,9 +46,7 @@ module JSON
         def attributes(*attrs)
           @_attributes.merge attrs
           attrs.each do |attr|
-            define_method attr do
-              @object.method(attr).call
-            end unless method_defined?(attr)
+            attribute(attr)
           end
         end
 
@@ -61,6 +55,10 @@ module JSON
           define_method attr do
             @object.method(attr).call
           end unless method_defined?(attr)
+
+          define_method "#{attr}=" do |value|
+            @object.send "#{attr}=", value
+          end unless method_defined?("#{attr}=")
         end
 
         def has_one(*attrs)
