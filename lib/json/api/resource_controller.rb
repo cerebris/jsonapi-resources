@@ -1,9 +1,12 @@
 require 'json/api/resource_for'
 require 'json/api/resource_serializer'
 require 'action_controller'
-require 'json/api/errors'
+require 'json/api/exceptions'
 require 'json/api/error'
 require 'json/api/error_codes'
+require 'json/api/request'
+require 'json/api/operations_processor'
+require 'json/api/active_record_operations_processor'
 require 'csv'
 
 module JSON
@@ -11,78 +14,78 @@ module JSON
     class ResourceController < ActionController::Base
       include ResourceFor
 
-      def index
-        parse_fields
-        parse_includes
-        parse_filters
+      before_filter {
+        begin
+          @request = JSON::API::Request.new(context, params)
+          render_errors(@request.errors) unless @request.errors.empty?
+        rescue => e
+          handle_exceptions(e)
+        end
+      }
 
+      def index
         render json: JSON::API::ResourceSerializer.new.serialize(
-            resource_klass.find({filters: @filters}, find_options),
-            include: @includes,
-            fields: @fields
-        )
-      rescue Exception => e
-        handle_json_api_error(e)
+            resource_klass.find(resource_klass.verify_filters(@request.filters, context), context),
+            @request.includes,
+            @request.fields,
+            context)
+      rescue => e
+        handle_exceptions(e)
       end
 
       def show
-        parse_fields
-        parse_includes
-
-        ids = parse_id_array(params[resource_klass._key])
+        keys = parse_key_array(params[resource_klass._key])
 
         resources = []
-        ids.each do |id|
-          resources.push(resource_klass.find_by_key(id, find_options))
+        keys.each do |key|
+          resources.push(resource_klass.find_by_key(key, context))
         end
 
         render json: JSON::API::ResourceSerializer.new.serialize(
             resources,
-            include: @includes,
-            fields: @fields
-        )
-      rescue Exception => e
-        handle_json_api_error(e)
+            @request.includes,
+            @request.fields,
+            context)
+      rescue => e
+        handle_exceptions(e)
+      end
+
+      def show_association
+        association_type = params[:association]
+
+        parent_key = params[resource_klass._as_parent_key]
+
+        parent_resource = resource_klass.find_by_key(parent_key, context)
+
+        association = resource_klass._association(association_type)
+        render json: { association_type => parent_resource.send(association.key)}
+      rescue => e
+        handle_exceptions(e)
       end
 
       def create
-        parse_fields
-        parse_includes
+        process_request_operations
+      end
 
-        checked_params = verify_params(params,
-                                       resource_klass,
-                                       resource_klass.createable(resource_klass._updateable_associations | resource_klass._attributes.to_a))
-        update_and_respond_with(resource_klass.new, checked_params[0], checked_params[1], include: @includes, fields: @fields)
-      rescue Exception => e
-        handle_json_api_error(e)
+      def create_association
+        process_request_operations
       end
 
       def update
-        parse_fields
-        parse_includes
-
-        checked_params = verify_params(params,
-                                       resource_klass,
-                                       resource_klass.updateable(resource_klass._updateable_associations | resource_klass._attributes.to_a))
-
-        return unless obj = resource_klass.find_by_key(params[resource_klass._key], find_options)
-
-        update_and_respond_with(obj, checked_params[0], checked_params[1], include: @include, fields: @fields)
-      rescue Exception => e
-        handle_json_api_error(e)
+        process_request_operations
       end
 
       def destroy
-        ids = parse_id_array(params[resource_klass._key])
+        process_request_operations
+      end
 
-        resource_klass.transaction do
-          ids.each do |id|
-            resource_klass.find_by_key(id, find_options).destroy
-          end
-        end
-        render status: :no_content, json: nil
-      rescue Exception => e
-        handle_json_api_error(e)
+      def destroy_association
+        process_request_operations
+      end
+
+      # Override this to use another operations processor
+      def create_operations_processor
+        JSON::API::ActiveRecordOperationsProcessor.new
       end
 
       private
@@ -100,247 +103,66 @@ module JSON
         @resource_klass_name ||= "#{self.class.name.demodulize.sub(/Controller$/, '').singularize}Resource"
       end
 
-      def update_and_respond_with(obj, attributes, associated_sets, options = {})
-        yield(obj) if block_given?
-        if verify_attributes(attributes)
-          obj.update(attributes)
-
-          if verify_associated_sets(obj, associated_sets)
-            associated_sets.each do |association, values|
-              obj.send "#{association}=", values
-            end
-          end
-
-          render :status => :created, json: JSON::API::ResourceSerializer.new.serialize(obj, options)
+      def parse_key_array(raw)
+        keys = []
+        raw.split(/,/).collect do |key|
+          keys.push resource_klass.verify_key(key, context)
         end
+        return keys
+      end
 
-      rescue ActiveRecord::RecordInvalid => e
+      # override to set context
+      def context
+        {}
+      end
+
+      def render_errors(errors, status = :bad_request)
+        render(json: {errors: errors}, status: errors.count == 1 ? errors[0].status : status)
+      end
+
+      def process_request_operations
+        op = create_operations_processor
+
+        results = op.process(@request)
+
         errors = []
-        e.record.errors.messages.each do |element|
-          element[1].each do |message|
-            errors.push(JSON::API::Error.new(
-                            code: JSON::API::VALIDATION_ERROR,
-                            title: "#{element[0]} - #{message}",
-                            detail: "can't be blank",
-                            path: "\\#{element[0]}",
-                            links: JSON::API::ResourceSerializer.new.serialize(obj)))
-          end
-        end
-        raise JSON::API::Errors::ValidationErrors.new(errors)
-      end
+        resources = []
 
-      def verify_attributes(attributes)
-        true
-      end
-
-      def verify_associated_sets(obj, attributes)
-        true
-      end
-
-      def verify_permitted_params(params, allowed_param_set)
-        params_not_allowed = []
-        params.keys.each do |key|
-          param = key.to_sym
-          params_not_allowed.push(param) unless allowed_param_set.include?(param)
-        end
-        raise JSON::API::Errors::ParamNotAllowed.new(params_not_allowed) if params_not_allowed.length > 0
-      end
-
-      def verify_params(params, klass, resource_param_set)
-        object_params = params.require(klass._type)
-
-        # push links into top level param list with attributes
-        if object_params && object_params[:links]
-          object_params[:links].each do |link, value|
-            object_params[link] = value
-          end
-          object_params.delete(:links)
-        end
-
-        checked_params = {}
-        checked_associations = {}
-
-        verify_permitted_params(object_params, resource_param_set)
-
-        object_params.each do |key, value|
-          param = key.to_sym
-
-          if klass._associations[param].is_a?(JSON::API::Association::HasOne)
-            checked_params[klass._associations[param].key] = value
-          elsif klass._associations[param].is_a?(JSON::API::Association::HasMany)
-            checked_associations[klass._associations[param].key] = value
+        results.each do |result|
+          if result.has_errors?
+            errors.concat(result.errors)
           else
-            checked_params[param] = value
-          end
-        end
-        return checked_params, checked_associations
-      end
-
-      def parse_includes
-        includes = params[:include]
-        included_resources = []
-        included_resources += CSV.parse_line(includes) unless includes.nil? || includes.empty?
-        @includes = included_resources
-      end
-
-      def parse_filters
-        # Coerce :ids -> :id
-        if params[:ids]
-          params[:id] = params[:ids]
-          params.delete(:ids)
-        end
-
-        filters = {}
-        params.each do |key, value|
-          filter = key.to_sym
-
-          if [:include, :fields, :format, :controller, :action, :sort].include?(filter)
-            # Ignore non-filter parameters
-          elsif resource_klass._allowed_filter?(filter)
-            verified_filter = verify_filter(filter, value)
-            filters[verified_filter[0]] = verified_filter[1]
-          else
-            raise JSON::API::Errors::FilterNotAllowed.new(filter)
-          end
-        end
-        @filters = filters
-      end
-
-      def is_filter_association?(filter)
-        filter == resource_klass._serialize_as || resource_klass._associations.include?(filter)
-      end
-
-      def parse_id_array(raw)
-        ids = []
-        raw.split(/,/).collect do |id|
-          ids.push verify_id(resource_klass, id)
-        end
-        return ids
-      end
-
-      def parse_fields
-        fields = {}
-
-        # Extract the fields for each type from the fields parameters
-        unless params[:fields].nil?
-          if params[:fields].is_a?(String)
-            value = params[:fields]
-            resource_fields = value.split(',').map {|s| s.to_sym } unless value.nil? || value.empty?
-            type = resource_klass._serialize_as
-            fields[type] = resource_fields
-          elsif params[:fields].is_a?(ActionController::Parameters)
-            params[:fields].each do |param, value|
-              resource_fields = value.split(',').map {|s| s.to_sym } unless value.nil? || value.empty?
-              type = param.to_sym
-              fields[type] = resource_fields
-            end
+            resources.push(result.resource) unless result.resource.nil?
           end
         end
 
-        # Validate the fields
-        fields.each do |type, values|
-          fields[type] = []
-          type_resource = self.class.resource_for(type)
-          if type_resource.nil? || !(resource_klass._type == type || resource_klass._has_association?(type))
-            raise JSON::API::Errors::InvalidResource.new(type)
-          end
-
-          unless values.nil?
-            values.each do |field|
-              if type_resource._validate_field(field)
-                fields[type].push field
-              else
-                raise JSON::API::Errors::InvalidField.new(type, field)
-              end
-            end
-          else
-            raise JSON::API::Errors::InvalidField.new(type, 'nil')
-          end
-        end
-
-        @fields = fields
-      end
-
-      def verify_filter(filter, raw)
-        filter_values = []
-        filter_values += CSV.parse_line(raw) unless raw.nil? || raw.empty?
-
-        if is_filter_association?(filter)
-          verify_association_filter(filter, filter_values)
+        if errors.count > 0
+          render :status => errors.count == 1 ? errors[0].status : :bad_request, json: {errors: errors}
         else
-          verify_custom_filter(resource_klass, filter, filter_values)
+          # if patch
+            render :status => results[0].code, json: JSON::API::ResourceSerializer.new.serialize(resources,
+                                                                                                 @request.includes,
+                                                                                                 @request.fields,
+                                                                                                 context)
+          # else
+          #   result_hash = {}
+          #   resources.each do |resource|
+          #     result_hash.merge!(JSON::API::ResourceSerializer.new.serialize(resource, @request.includes, @request.fields, context))
+          #   end
+          #   render :status => results.count == 1 ? results[0].code : :ok, json: result_hash
+          # end
         end
+      rescue => e
+        handle_exceptions(e)
       end
 
-      # override to allow for id processing and checking
-      def verify_id(resource_klass, id)
-        return id
-      end
-
-      # override to allow for custom filters
-      def verify_custom_filter(resource_klass, filter, values)
-        return filter, values
-      end
-
-      # override to allow for custom association logic, such as uuids, multiple ids or permission checks on ids
-      def verify_association_filter(filter, raw)
-        return filter, raw
-      end
-
-      # override to set find options
-      def find_options
-        return {}
-      end
-
-      def deny_access_common(status, msg)
-        render(json: {errors: [{error: msg, status: status}]}, status: status)
-        return false
-      end
-
-      def render_errors(status, errors)
-        render(json: {errors: errors}, status: status)
-      end
-
-      def handle_json_api_error(e)
+      # override this to process other exceptions
+      # Note: Be sure to either call super(e) or handle JSON::API::Exceptions::Error and raise unhandled exceptions
+      def handle_exceptions(e)
         case e
-          when JSON::API::Errors::InvalidResource
-            render_errors(:not_found, [JSON::API::Error.new(
-                                             code: JSON::API::INVALID_RESOURCE,
-                                             title: 'Invalid resource',
-                                             detail: "#{e.resource} is not a valid resource.")])
-          when JSON::API::Errors::RecordNotFound
-            render_errors(:not_found, [JSON::API::Error.new(
-                                             code: JSON::API::RECORD_NOT_FOUND,
-                                             title: 'Record not found',
-                                             detail: "The record identified by #{e.id} could not be found.")])
-          when JSON::API::Errors::FilterNotAllowed
-            render_errors(:bad_request, [JSON::API::Error.new(
-                                             code: JSON::API::FILTER_NOT_ALLOWED,
-                                             title: 'Filter not allowed',
-                                             detail: "#{e.filter} is not allowed.")])
-          when JSON::API::Errors::InvalidFilterValue
-            render_errors(:bad_request, [JSON::API::Error.new(
-                                             code: JSON::API::INVALID_FILTER_VALUE,
-                                             title: 'Invalid filter value',
-                                             detail: "#{e.value} is not a valid value for #{e.filter}.")])
-          when JSON::API::Errors::InvalidFieldValue
-            render_errors(:bad_request, [JSON::API::Error.new(
-                                             code: JSON::API::INVALID_FIELD_VALUE,
-                                             title: 'Invalid field value',
-                                             detail: "#{e.value} is not a valid value for #{e.field}.")])
-          when JSON::API::Errors::InvalidField
-            render_errors(:bad_request, [JSON::API::Error.new(
-                                             code: JSON::API::INVALID_FIELD,
-                                             title: 'Invalid field',
-                                             detail: "#{e.field} is not a valid field for #{e.type}.")])
-          when JSON::API::Errors::ParamNotAllowed
-            render_errors(:bad_request, [JSON::API::Error.new(
-                                             code: JSON::API::PARAM_NOT_ALLOWED,
-                                             title: 'Param not allowed',
-                                             detail: "The following parameters are not allowed here: #{e.params.join(', ')}.")])
-          when JSON::API::Errors::ValidationErrors
-            render_errors(:bad_request, e.errors)
-          else
+          when JSON::API::Exceptions::Error
+            render_errors(e.errors)
+          else # raise all other exceptions
             raise e
         end
       end

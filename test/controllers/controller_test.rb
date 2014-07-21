@@ -63,7 +63,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_index_filter_by_ids_and_fields_specify_unrelated_type
     get :index, {ids: '1,2', 'fields' => {'currencies' => 'code'}}
-    assert_response :not_found
+    assert_response :bad_request
     assert_match /currencies is not a valid resource./, json_response['errors'][0]['detail']
   end
 
@@ -77,32 +77,32 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['posts'][0].has_key?('links')
   end
 
-  def test_bad_filter
-    get :index, {post_ids: '1,2'}
-    assert_response :bad_request
-    assert_match /post_ids is not allowed/, response.body
-  end
-
   def test_filter_association_single
     get :index, {tags: '5,1'}
     assert_response :success
     assert_equal 3, json_response['posts'].size
     assert_match /New post/, response.body
-    assert_match /JAR Solves your serialization woes!/, response.body
-    assert_match /JAR How To/, response.body
+    assert_match /JR Solves your serialization woes!/, response.body
+    assert_match /JR How To/, response.body
   end
 
   def test_filter_associations_multiple
     get :index, {tags: '5,1', comments: '3'}
     assert_response :success
     assert_equal 1, json_response['posts'].size
-    assert_match /JAR Solves your serialization woes!/, response.body
+    assert_match /JR Solves your serialization woes!/, response.body
   end
 
   def test_filter_associations_multiple_not_found
     get :index, {tags: '1', comments: '3'}
     assert_response :success
     assert_equal 0, json_response.size
+  end
+
+  def test_bad_filter
+    get :index, {post_ids: '1,2'}
+    assert_response :bad_request
+    assert_match /post_ids is not allowed/, response.body
   end
 
   def test_bad_filter_value_not_integer_array
@@ -143,7 +143,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_resource_not_supported
     get :index, {ids: '1,2', 'fields' => {'posters' => 'id,title'}}
-    assert_response :not_found
+    assert_response :bad_request
     assert_match /posters is not a valid resource./, json_response['errors'][0]['detail']
   end
 
@@ -217,8 +217,8 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_create_simple
     post :create, { posts: {
-                      title: 'JAR is Great',
-                      body:  'JSON API Resources is the greatest thing since unsliced bread.',
+                      title: 'JR is Great',
+                      body:  'JSONAPIResources is the greatest thing since unsliced bread.',
                       links: {
                         author: 3
                       }
@@ -228,14 +228,84 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :created
     assert_equal 1, json_response['posts'].size
     assert_equal 3, json_response['posts'][0]['links']['author']
-    assert_equal 'JAR is Great', json_response['posts'][0]['title']
-    assert_equal 'JSON API Resources is the greatest thing since unsliced bread.', json_response['posts'][0]['body']
+    assert_equal 'JR is Great', json_response['posts'][0]['title']
+    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['posts'][0]['body']
+  end
+
+  def test_create_link_to_missing_object
+    post :create, { posts: {
+        title: 'JR is Great',
+        body:  'JSONAPIResources is the greatest thing since unsliced bread.',
+        links: {
+            author: 304567
+        }
+    }
+    }
+
+    assert_response :bad_request
+    # Todo: check if this validation is working
+    assert_match /author - can't be blank/, response.body
+  end
+
+  def test_create_extra_param
+    post :create, { posts: {
+        asdfg: 'aaaa',
+        title: 'JR is Great',
+        body:  'JSONAPIResources is the greatest thing since unsliced bread.',
+        links: {
+            author: 3
+        }
+    }
+    }
+
+    assert_response :bad_request
+    assert_match /asdfg is not allowed/, response.body
+  end
+
+  def test_create_multiple
+    post :create, { posts: [
+      {
+          title: 'JR is Great',
+          body:  'JSONAPIResources is the greatest thing since unsliced bread.',
+          links: {
+              author: 3
+          }
+      },
+      {
+          title: 'Ember is Great',
+          body:  'Ember is the greatest thing since unsliced bread.',
+          links: {
+              author: 3
+          }
+      }
+    ]
+  }
+
+    assert_response :created
+    assert_equal json_response['posts'].size, 2
+    assert_equal json_response['posts'][0]['links']['author'], 3
+    assert_match /JR is Great/, response.body
+    assert_match /Ember is Great/, response.body
+  end
+
+  def test_create_simple_missing_posts
+    post :create, { posts_spelled_wrong: {
+        title: 'JR is Great',
+        body:  'JSONAPIResources is the greatest thing since unsliced bread.',
+        links: {
+            author: 3
+        }
+      }
+    }
+
+    assert_response :bad_request
+    assert_match /The required parameter, posts, is missing./, json_response['errors'][0]['detail']
   end
 
   def test_create_simple_unpermitted_attributes
     post :create, { posts: {
-        subject: 'JAR is Great',
-        body:  'JSON API Resources is the greatest thing since unsliced bread.',
+        subject: 'JR is Great',
+        body:  'JSONAPIResources is the greatest thing since unsliced bread.',
         links: {
             author: 3
         }
@@ -248,8 +318,8 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_create_with_links
     post :create, { posts: {
-                      title: 'JAR is Great',
-                      body:  'JSON API Resources is the greatest thing since unsliced bread.',
+                      title: 'JR is Great',
+                      body:  'JSONAPIResources is the greatest thing since unsliced bread.',
                       links: {
                         author: 3,
                         tags: [3,4]
@@ -260,15 +330,15 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :created
     assert_equal 1, json_response['posts'].size
     assert_equal 3, json_response['posts'][0]['links']['author']
-    assert_equal 'JAR is Great', json_response['posts'][0]['title']
-    assert_equal 'JSON API Resources is the greatest thing since unsliced bread.', json_response['posts'][0]['body']
+    assert_equal 'JR is Great', json_response['posts'][0]['title']
+    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['posts'][0]['body']
     assert_equal [3,4], json_response['posts'][0]['links']['tags']
   end
 
   def test_create_with_links_include_and_fields
     post :create, { posts: {
-        title: 'JAR is Great!',
-        body:  'JSON API Resources is the greatest thing since unsliced bread!',
+        title: 'JR is Great!',
+        body:  'JSONAPIResources is the greatest thing since unsliced bread!',
         links: {
             author: 3,
             tags: [3,4]
@@ -281,7 +351,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :created
     assert_equal 1, json_response['posts'].size
     assert_equal 3, json_response['posts'][0]['links']['author']
-    assert_equal 'JAR is Great!', json_response['posts'][0]['title']
+    assert_equal 'JR is Great!', json_response['posts'][0]['title']
     assert_equal nil, json_response['posts'][0]['body']
     assert_equal nil, json_response['posts'][0]['links']['tags']
     assert_not_nil json_response['linked']['posts']
@@ -307,7 +377,294 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal  javascript.id, json_response['posts'][0]['links']['section']
     assert_equal 'A great new Post', json_response['posts'][0]['title']
     assert_equal 'AAAA', json_response['posts'][0]['body']
-    assert_equal [3,4], json_response['posts'][0]['links']['tags']
+    assert matches_array?([3,4], json_response['posts'][0]['links']['tags'])
+  end
+
+  def test_update_remove_links
+    post :update, {id: 3, posts: {
+        title: 'A great new Post',
+        links: {
+            section: nil,
+            tags: []
+        }
+    }
+    }
+
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+    assert_equal 3, json_response['posts'][0]['links']['author']
+    assert_equal  nil, json_response['posts'][0]['links']['section']
+    assert_equal 'A great new Post', json_response['posts'][0]['title']
+    assert_equal 'AAAA', json_response['posts'][0]['body']
+    assert matches_array?([], json_response['posts'][0]['links']['tags'])
+  end
+
+  def test_update_relationship_has_one
+    ruby = Section.find_by(name: 'ruby')
+
+    post :create_association, {post_id: 3, association: 'section',
+                   section: ruby.id }
+
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+    assert_equal 3, json_response['posts'][0]['links']['author']
+    assert_equal  ruby.id, json_response['posts'][0]['links']['section']
+    assert_equal 'AAAA', json_response['posts'][0]['body']
+  end
+
+  def test_update_relationship_has_many_single
+    post :create_association, {post_id: 3, association: 'tags',
+                   tags: [3] }
+
+    assert_response :success
+    post :create_association, {post_id: 3, association: 'tags',
+                               tags: [2] }
+
+    assert_response :success
+    post :create_association, {post_id: 3, association: 'tags',
+                               tags: [5] }
+
+    assert_response :success
+    post :create_association, {post_id: 3, association: 'tags',
+                               tags: [5] }
+
+    assert_response :success
+
+    assert_equal 1, json_response['posts'].size
+    assert_equal 3, json_response['posts'][0]['links']['author']
+    assert matches_array? [2,3,5], json_response['posts'][0]['links']['tags']
+    assert_equal 'AAAA', json_response['posts'][0]['body']
+  end
+
+  def test_update_relationship_has_many
+    post :create_association, {post_id: 3, association: 'tags',
+                               tags: [2,3] }
+
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+    assert_equal 3, json_response['posts'][0]['links']['author']
+    assert matches_array? [2,3], json_response['posts'][0]['links']['tags']
+    assert_equal 'AAAA', json_response['posts'][0]['body']
+  end
+
+  def test_update_relationship_has_one_mismatch_params
+    ruby = Section.find_by(name: 'ruby')
+
+    post :create_association, {post_id: 3, association: 'section',
+                   author: 1 }
+
+    assert_response :bad_request
+    assert_match /The required parameter, section, is missing./, response.body
+  end
+
+  def test_delete_relationship_has_one
+    ruby = Section.find_by(name: 'ruby')
+
+    post :create_association, {post_id: 9, association: 'section',
+                   section: ruby.id }
+
+    assert_response :success
+    assert_equal  ruby.id, json_response['posts'][0]['links']['section']
+
+    post :destroy_association, {post_id: 9, association: 'section'}
+
+    assert_response :no_content
+    post = Post.find(9)
+    assert_nil post.section
+  end
+
+  def test_delete_relationship_has_many
+    post :create_association, {post_id: 9, association: 'tags',
+                   tags: [2,3] }
+    assert_response :success
+    p = Post.find(9)
+    assert_equal [2,3], p.tag_ids
+
+    post :destroy_association, {post_id: 9, association: 'tags', keys: '3'}
+
+    assert_response :no_content
+    assert_equal [2], p.tag_ids
+  end
+
+
+  def test_update_mismatched_keys
+    javascript = Section.find_by(name: 'javascript')
+
+    post :update, {id: 3, posts: {
+        id: 2,
+        title: 'A great new Post',
+        links: {
+            section: javascript.id,
+            tags: [3,4]
+        }
+    }
+    }
+
+    assert_response :bad_request
+    assert_match /The URL does not support the key 2/, response.body
+  end
+
+  def test_update_extra_param
+    javascript = Section.find_by(name: 'javascript')
+
+    post :update, {id: 3, posts: {
+        asdfg: 'aaaa',
+        title: 'A great new Post',
+        links: {
+            section: javascript.id,
+            tags: [3,4]
+        }
+    }
+    }
+
+    assert_response :bad_request
+    assert_match /asdfg is not allowed/, response.body
+  end
+
+  def test_update_extra_param_in_links
+    javascript = Section.find_by(name: 'javascript')
+
+    post :update, {id: 3, posts: {
+        title: 'A great new Post',
+        links: {
+            asdfg: 'aaaa',
+            section: javascript.id,
+            tags: [3,4]
+        }
+    }
+    }
+
+    assert_response :bad_request
+    assert_match /asdfg is not allowed/, response.body
+  end
+
+  def test_update_missing_param
+    javascript = Section.find_by(name: 'javascript')
+
+    post :update, {id: 3, posts_spelled_wrong: {
+        title: 'A great new Post',
+        links: {
+            section: javascript.id,
+            tags: [3,4]
+        }
+    }
+    }
+
+    assert_response :bad_request
+    assert_match /The required parameter, posts, is missing./, response.body
+  end
+
+  def test_update_multiple
+    javascript = Section.find_by(name: 'javascript')
+
+    post :update, {id: [3,9], posts: [
+      {
+        id: 3,
+        title: 'A great new Post QWERTY',
+        links: {
+            section: javascript.id,
+            tags: [3,4]
+        }
+      },
+      {
+          id: 9,
+          title: 'A great new Post ASDFG',
+          links: {
+              section: javascript.id,
+              tags: [3,4]
+          }
+      }
+    ]}
+
+    assert_response :success
+    assert_equal json_response['posts'].size, 2
+    assert_equal json_response['posts'][0]['links']['author'], 3
+    assert_equal json_response['posts'][0]['links']['section'], javascript.id
+    assert_equal json_response['posts'][0]['title'], 'A great new Post QWERTY'
+    assert_equal json_response['posts'][0]['body'], 'AAAA'
+    assert_equal json_response['posts'][0]['links']['tags'], [3,4]
+
+    assert_equal json_response['posts'][1]['links']['author'], 3
+    assert_equal json_response['posts'][1]['links']['section'], javascript.id
+    assert_equal json_response['posts'][1]['title'], 'A great new Post ASDFG'
+    assert_equal json_response['posts'][1]['body'], 'AAAA'
+    assert_equal json_response['posts'][1]['links']['tags'], [3,4]
+  end
+
+  def test_update_multiple_missing_keys
+    javascript = Section.find_by(name: 'javascript')
+
+    post :update, {id: [3,9], posts: [
+        {
+            title: 'A great new Post ASDFG',
+            links: {
+                section: javascript.id,
+                tags: [3,4]
+            }
+        },
+        {
+            title: 'A great new Post QWERTY',
+            links: {
+                section: javascript.id,
+                tags: [3,4]
+            }
+        }
+    ]}
+
+    assert_response :bad_request
+    assert_match /A key is required/, response.body
+  end
+
+  def test_update_mismatch_keys
+    javascript = Section.find_by(name: 'javascript')
+
+    post :update, {id: [3,9], posts: [
+        {
+            id: 3,
+            title: 'A great new Post ASDFG',
+            links: {
+                section: javascript.id,
+                tags: [3,4]
+            }
+        },
+        {
+            id: 8,
+            title: 'A great new Post QWERTY',
+            links: {
+                section: javascript.id,
+                tags: [3,4]
+            }
+        }
+    ]}
+
+    assert_response :bad_request
+    assert_match /The URL does not support the key 8/, response.body
+  end
+
+  def test_update_multiple_count_mismatch
+    javascript = Section.find_by(name: 'javascript')
+
+    post :update, {id: [3,9,2], posts: [
+        {
+            id: 3,
+            title: 'A great new Post QWERTY',
+            links: {
+                section: javascript.id,
+                tags: [3,4]
+            }
+        },
+        {
+            id: 9,
+            title: 'A great new Post ASDFG',
+            links: {
+                section: javascript.id,
+                tags: [3,4]
+            }
+        }
+    ]}
+
+    assert_response :bad_request
+    assert_match /Count to key mismatch/, response.body
   end
 
   def test_update_unpermitted_attributes
@@ -321,8 +678,8 @@ class PostsControllerTest < ActionController::TestCase
     }
 
     assert_response :bad_request
-    assert_match /author/, json_response['errors'][0]['detail']
-    assert_match /subject/, json_response['errors'][0]['detail']
+    assert_match /author is not allowed./, response.body
+    assert_match /subject is not allowed./, response.body
   end
 
   def test_update_bad_attributes
@@ -358,11 +715,43 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :not_found
     assert_equal initial_count, Post.count
   end
+
+  def test_delete_extra_param
+    initial_count = Post.count
+    post :destroy, {id: '4', asdfg: 'aaaa'}
+    assert_response :bad_request
+    assert_equal initial_count, Post.count
+  end
+
+  def test_show_has_one_relationship
+    get :show_association, {post_id: '1', association: 'author'}
+    assert_response :success
+    assert_equal 1, json_response['author']
+  end
+
+  def test_show_has_many_relationship
+    get :show_association, {post_id: '1', association: 'tags'}
+    assert_response :success
+    assert_equal [1,2,3], json_response['tags']
+  end
 end
 
 class TagsControllerTest < ActionController::TestCase
   def test_tags_index
     get :index, {ids: '6,7,8,9', include: 'posts,posts.tags,posts.author.posts'}
+    assert_response :success
+    assert_equal 4, json_response['tags'].size
+    assert_equal 2, json_response['linked']['posts'].size
+  end
+
+  def test_tags_show_multiple
+    get :show, {id: '6,7,8,9'}
+    assert_response :success
+    assert_equal 4, json_response['tags'].size
+  end
+
+  def test_tags_show_multiple_with_include
+    get :show, {id: '6,7,8,9', include: 'posts,posts.tags,posts.author.posts'}
     assert_response :success
     assert_equal 4, json_response['tags'].size
     assert_equal 2, json_response['linked']['posts'].size
@@ -390,7 +779,6 @@ class CurrenciesControllerTest < ActionController::TestCase
     assert_equal 1, json_response['currencies'].size
     assert_equal 2, json_response['linked']['expense_entries'].size
   end
-
 end
 
 class PeopleControllerTest < ActionController::TestCase
@@ -418,9 +806,41 @@ class PeopleControllerTest < ActionController::TestCase
     assert_match /date_joined - can't be blank/, response.body
     assert_match /name - can't be blank/, response.body
   end
+
+  def test_update_validations_missing_attribute
+    post :update, { id: 3, people: {
+        name:  ''
+    }
+    }
+
+    assert_response :bad_request
+    assert_equal 1, json_response['errors'].size
+    assert_equal JSON::API::VALIDATION_ERROR, json_response['errors'][0]['code']
+    assert_match /name - can't be blank/, response.body
+  end
+
+  def test_delete_locked
+    initial_count = Person.count
+    post :destroy, {id: '3'}
+    assert_response :locked
+    assert_equal initial_count, Person.count
+  end
+
+  def test_invalid_filter_value
+    get :index, {name: 'L'}
+    assert_response :bad_request
+  end
+
+  def test_valid_filter_value
+    get :index, {name: 'Joe Author'}
+    assert_response :success
+    assert_equal json_response['people'].size, 1
+    assert_equal json_response['people'][0]['id'], 1
+    assert_equal json_response['people'][0]['name'], 'Joe Author'
+  end
 end
 
-class AuthorControllerTest < ActionController::TestCase
+class AuthorsControllerTest < ActionController::TestCase
   def test_get_person_as_author
     get :index, {id: '1'}
     assert_response :success

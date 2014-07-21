@@ -23,7 +23,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                       comments: [1,2]
                     }
                   }]
-                 }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post)))
+                 }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), nil, nil))
   end
 
   def test_serializer_limited_fieldset
@@ -35,8 +35,8 @@ class SerializerTest < MiniTest::Unit::TestCase
                        author: 1
                      }
                    }]
-                }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post),
-                                                               fields: {posts: [:id, :title, :author]}))
+                }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), nil,
+                                                               {posts: [:id, :title, :author]}))
   end
 
   def test_serializer_include
@@ -61,11 +61,11 @@ class SerializerTest < MiniTest::Unit::TestCase
                               date_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00'),
                               links: {
                                   comments: [1],
-                                  posts: [1,2,12]
+                                  posts: [1,2,11]
                               }
                              }]
                   }
-                 }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), include: [:author]))
+                 }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), [:author], nil))
   end
 
   def test_serializer_include_sub_objects
@@ -128,7 +128,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                 }
             ]
           }
-         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), include: [:comments,'comments.tags']))
+         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), [:comments,'comments.tags'], nil))
   end
 
   def test_serializer_include_has_many_sub_objects_only
@@ -171,7 +171,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                 }
             ]
           }
-         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), include: ['comments.tags']))
+         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), ['comments.tags'], nil))
   end
 
   def test_serializer_include_has_one_sub_objects_only
@@ -202,7 +202,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                   }
               ]
           }
-         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), include: ['author.comments']))
+         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), ['author.comments'], nil))
   end
 
   def test_serializer_different_foreign_key
@@ -230,7 +230,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               },
               {
                 id: 3,
-                body: 'Thanks man. Great post. But what is JAR?',
+                body: 'Thanks man. Great post. But what is JR?',
                 links: {
                   author: 2,
                   post: 2,
@@ -239,7 +239,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               }
               ]
           }
-         }, JSON::API::ResourceSerializer.new.serialize(PersonResource.new(@fred), include: ['comments']))
+         }, JSON::API::ResourceSerializer.new.serialize(PersonResource.new(@fred), ['comments'], nil))
   end
 
   def test_serializer_array_of_resources
@@ -265,14 +265,14 @@ class SerializerTest < MiniTest::Unit::TestCase
           },
           {
             id: 2,
-            title: 'JAR Solves your serialization woes!',
-            body: 'Use JAR',
-            subject: 'JAR Solves your serialization woes!',
+            title: 'JR Solves your serialization woes!',
+            body: 'Use JR',
+            subject: 'JR Solves your serialization woes!',
             links: {
               author: 1,
               tags: [5],
               comments: [3],
-              section: 2
+              section: 3
             }
           }],
           linked: {
@@ -300,9 +300,9 @@ class SerializerTest < MiniTest::Unit::TestCase
                 },
                 {
                   id: 5,
-                  name: 'JAR',
+                  name: 'JR',
                   links: {
-                      posts: [2,12]
+                      posts: [2,11]
                   }
                 }
             ],
@@ -327,7 +327,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                 },
                 {
                     id: 3,
-                    body: 'Thanks man. Great post. But what is JAR?',
+                    body: 'Thanks man. Great post. But what is JR?',
                     links: {
                       author: 2,
                       post: 2,
@@ -336,7 +336,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                 }
             ]
           }
-         }, JSON::API::ResourceSerializer.new.serialize(posts, include: ['comments','comments.tags']))
+         }, JSON::API::ResourceSerializer.new.serialize(posts, ['comments','comments.tags'], nil))
   end
 
   def test_serializer_array_of_resources_limited_fields
@@ -357,7 +357,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                     },
                     {
                         id: 2,
-                        title: 'JAR Solves your serialization woes!',
+                        title: 'JR Solves your serialization woes!',
                         links: {
                             author: 1
                         }
@@ -374,7 +374,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                         name: 'happy'
                     },
                     {
-                        name: 'JAR'
+                        name: 'JR'
                     }
                 ],
                 comments: [
@@ -394,9 +394,18 @@ class SerializerTest < MiniTest::Unit::TestCase
                     },
                     {
                         id: 3,
-                        body: 'Thanks man. Great post. But what is JAR?',
+                        body: 'Thanks man. Great post. But what is JR?',
                         links: {
                             post: 2
+                        }
+                    }
+                ],
+                posts: [
+                    {
+                        id: 11,
+                        title: 'JR How To',
+                        links: {
+                            author: 1
                         }
                     }
                 ],
@@ -407,18 +416,10 @@ class SerializerTest < MiniTest::Unit::TestCase
                         links: {
                             comments: [1]
                         }
-                    }],
-                posts: [
-                    {
-                       id: 12,
-                       title: 'JAR How To',
-                       links: {
-                          author: 1
-                       }
                     }]
             }
-        }, JSON::API::ResourceSerializer.new.serialize(posts, include: ['comments','author','comments.tags','author.posts'],
-                                                       fields: {
+        }, JSON::API::ResourceSerializer.new.serialize(posts, ['comments','author','comments.tags','author.posts'],
+                                                       {
                                                            people: [:id, :email, :comments],
                                                            posts: [:id, :title, :author],
                                                            tags: [:name],

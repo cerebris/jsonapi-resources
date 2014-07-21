@@ -11,6 +11,8 @@ require 'minitest/autorun'
 require 'minitest/spec'
 require 'rails/all'
 
+require 'json/api/routing_ext'
+
 require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/hash_helpers', __FILE__)
 require File.expand_path('../helpers/functional_helpers', __FILE__)
@@ -22,18 +24,65 @@ class TestApp < Rails::Application
   config.root = File.dirname(__FILE__)
   config.session_store :cookie_store, key: 'session'
   config.secret_key_base = 'secret'
+
+  #Raise errors on unsupported parameters
+  config.action_controller.action_on_unpermitted_parameters = :raise
 end
 
 TestApp.initialize!
 
+require File.expand_path('../fixtures/active_record', __FILE__)
+
 TestApp.routes.draw do
-  resources :author
-  resources :people
-  resources :posts
-  resources :tags
-  resources :expense_entries
-  resources :currencies, :param => :code
-  resources :breeds
+  jsonapi_resources :authors
+  jsonapi_resources :people
+  jsonapi_resources :comments
+  jsonapi_resources :tags
+  jsonapi_resources :posts
+  jsonapi_resources :sections
+  jsonapi_resources :currencies
+  jsonapi_resources :expense_entries
+  jsonapi_resources :breeds
+  jsonapi_resources :planets
+  jsonapi_resources :planet_types
+  jsonapi_resources :moons
+  jsonapi_resources :preferences
+
+
+  namespace :api do
+    namespace :v1 do
+      jsonapi_resources :authors
+      jsonapi_resources :people
+      jsonapi_resources :comments
+      jsonapi_resources :tags
+      jsonapi_resources :posts
+      jsonapi_resources :sections
+      jsonapi_resources :currencies
+      jsonapi_resources :expense_entries
+      jsonapi_resources :breeds
+      jsonapi_resources :planets
+      jsonapi_resources :planet_types
+      jsonapi_resources :moons
+      jsonapi_resources :preferences
+    end
+
+    namespace :v2 do
+      jsonapi_resources :authors
+      jsonapi_resources :posts
+      jsonapi_resource :preferences
+    end
+
+    namespace :v3 do
+      jsonapi_resource :preferences do
+      #   Intentionally empty block to skip association urls
+      end
+
+      jsonapi_resources :posts, except: [:destroy] do
+        jsonapi_link :author, except: [:destroy]
+        jsonapi_links :tags, only: [:show, :create]
+      end
+    end
+  end
 end
 
 class MiniTest::Unit::TestCase

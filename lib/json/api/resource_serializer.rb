@@ -3,19 +3,19 @@ module JSON
     class ResourceSerializer
 
       # Serializes a single resource, or an array of resources
-      # Valid options are:
-      # - include:
+      # include:
       #     Purpose: determines which objects will be side loaded with the source objects in a linked section
       #     Example: ['comments','author','comments.tags','author.posts']
-      # - fields:
+      # fields:
       #     Purpose: determines which fields are serialized for a resource type. This encompasses both attributes and
       #              association ids in the links section for a resource. Fields are global for a resource type.
       #     Example: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}
-      def serialize(source, options = {})
-        @options = options
+      def serialize(source, include, fields, context = {})
+        @fields = fields
+        @context = context
         @linked_objects = {}
 
-        requested_associations = parse_includes(options[:include])
+        requested_associations = parse_includes(include)
 
         if source.respond_to?(:to_ary)
           return {} if source.size == 0
@@ -109,10 +109,9 @@ module JSON
       end
 
       def requested_fields(model)
-        @options[:fields][model] if @options[:fields]
+        @fields[model] if @fields
       end
 
-      # Returns a hash of the requested attributes for a resource, filtered by the resource class's fetchable method
       def attribute_hash(source)
         requested = requested_fields(source.class._serialize_as)
         fields = source.class._attributes.to_a
@@ -120,7 +119,7 @@ module JSON
           fields = requested & fields
         end
 
-        source.fetchable(fields, @options).each_with_object({}) do |name, hash|
+        source.fetchable(fields, @context).each_with_object({}) do |name, hash|
           hash[name] = source.send(name)
         end
       end
@@ -137,7 +136,7 @@ module JSON
 
         field_set = Set.new(fields)
 
-        included_associations = source.fetchable(associations.keys, @options)
+        included_associations = source.fetchable(associations.keys, @context)
         associations.each_with_object({}) do |(name, association), hash|
           if included_associations.include? name
             key = association.key
