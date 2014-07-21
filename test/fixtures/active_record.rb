@@ -1,7 +1,7 @@
 require 'active_record'
 require 'json/api/resource_controller'
 require 'json/api/resource'
-require 'json/api/errors'
+require 'json/api/exceptions'
 require 'rails'
 require 'rails/all'
 
@@ -58,12 +58,24 @@ ActiveRecord::Schema.define do
     t.decimal :cost, precision: 12, scale: 4, null: false
     t.date :transaction_date
   end
+
+  create_table :planets, force: true do |t|
+    t.string :name
+    t.string :description
+  end
+
+  create_table :moons, force: true do |t|
+    t.string  :name
+    t.string  :description
+    t.integer :planet_id
+  end
 end
 
 ### MODELS
 class Person < ActiveRecord::Base
   has_many :posts, foreign_key: 'author_id'
   has_many :comments, foreign_key: 'author_id'
+  has_many :expense_entries, foreign_key: 'employee_id', dependent: :restrict_with_exception
 
   ### Validations
   validates :name, presence: true
@@ -100,6 +112,14 @@ class ExpenseEntry < ActiveRecord::Base
   belongs_to :currency, class_name: 'Currency', foreign_key: 'currency_code'
 end
 
+class Planet < ActiveRecord::Base
+  has_many :moons
+end
+
+class Moon < ActiveRecord::Base
+  belongs_to :planet
+end
+
 class Breed
 
   def initialize(id = nil, name = nil)
@@ -114,15 +134,12 @@ class Breed
 
   attr_accessor :id, :name
 
-  def update!(attributes)
-    # For production code it would be better to have a method that loops over attributes and sets local variables as appropriate
-    @name = attributes[:name] if attributes[:name]
-  end
-
   def destroy
     $breed_data.remove(@id)
   end
 
+  def save!
+  end
 end
 
 class BreedData
@@ -165,29 +182,6 @@ class PeopleController < JSON::API::ResourceController
 end
 
 class PostsController < JSON::API::ResourceController
-  def is_num?(str)
-    begin
-      !!Integer(str)
-    rescue ArgumentError, TypeError
-      false
-    end
-  end
-
-  def verify_id(resource, id)
-    raise JSON::API::Errors::InvalidFieldValue.new(:id, id) unless is_num?(id)
-    raise JSON::API::Errors::RecordNotFound.new(id) unless resource.find_by_key(id)
-    return id
-  end
-
-  def verify_custom_filter(resource, filter, values)
-    case filter
-      when :id
-        values.each do |id|
-          verify_id(resource, id)
-        end
-    end
-    return filter, values
-  end
 end
 
 class TagsController < JSON::API::ResourceController
@@ -207,6 +201,20 @@ class PersonResource < JSON::API::Resource
   attributes :id, :name, :email, :date_joined
   has_many :comments
   has_many :posts
+
+  filter :name
+
+  def self.verify_custom_filter(filter, values, options = {})
+    case filter
+      when :name
+        values.each do |value|
+          if value.length < 3
+            raise JSON::API::Exceptions::InvalidFilterValue.new(filter, value)
+          end
+        end
+    end
+    return filter, values
+  end
 end
 
 class AuthorResource < JSON::API::Resource
@@ -216,10 +224,10 @@ class AuthorResource < JSON::API::Resource
 
   filter :name
 
-  def self.find(attrs, options = {})
+  def self.find(filters, options = {})
     resources = []
 
-    attrs[:filters].each do |attr, filter|
+    filters.each do |attr, filter|
       _model_class.where("\"#{attr}\" LIKE \"%#{filter[0]}%\"").each do |object|
         resources.push self.new(object)
       end
@@ -267,6 +275,9 @@ class PostResource < JSON::API::Resource
     @object.title
   end
 
+  filters :title, :author, :tags, :comments
+  filter :id
+
   def self.updateable(keys, options = {})
     super(keys - [:author, :subject])
   end
@@ -275,8 +286,29 @@ class PostResource < JSON::API::Resource
     super(keys - [:subject])
   end
 
-  filters :title, :author, :tags, :comments
-  filter :id
+  def self.verify_custom_filter(filter, values, options = {})
+    case filter
+      when :id
+        values.each do |id|
+          verify_id(id, options)
+        end
+    end
+    return filter, values
+  end
+
+  def self.is_num?(str)
+    begin
+      !!Integer(str)
+    rescue ArgumentError, TypeError
+      false
+    end
+  end
+
+  def self.verify_id(id, options = {})
+    raise JSON::API::Exceptions::InvalidFieldValue.new(:id, id) unless is_num?(id)
+    raise JSON::API::Exceptions::RecordNotFound.new(id) unless find_by_key(id)
+    return id
+  end
 end
 
 class CurrencyResource < JSON::API::Resource
@@ -307,11 +339,24 @@ class BreedResource < JSON::API::Resource
   def self.find_by_key(id, options = {})
     BreedResource.new($breed_data.breeds[id.to_i])
   end
-
-  def self.transaction
-    yield
-  end
 end
+
+class PlanetResource < JSON::API::Resource
+  attribute :id
+  attribute :name
+  attribute :description
+
+  has_many :moons
+end
+
+class MoonResource < JSON::API::Resource
+  attribute :id
+  attribute :name
+  attribute :description
+
+  has_one :planet
+end
+
 
 ### DATA
 javascript = Section.create(name: 'javascript')
@@ -336,13 +381,14 @@ short_tag = Tag.create(name: 'short')
 whiny_tag = Tag.create(name: 'whiny')
 grumpy_tag = Tag.create(name: 'grumpy')
 happy_tag = Tag.create(name: 'happy')
-jar_tag = Tag.create(name: 'JAR')
+jr_tag = Tag.create(name: 'JR')
 
 silly_tag = Tag.create(name: 'silly')
 sleepy_tag = Tag.create(name: 'sleepy')
 goofy_tag = Tag.create(name: 'goofy')
 wacky_tag = Tag.create(name: 'wacky')
 
+# id:1
 Post.create(title: 'New post',
               body:  'A body!!!',
               author_id: a.id).tap do |post|
@@ -358,47 +404,65 @@ Post.create(title: 'New post',
   end
 end
 
-Post.create(title: 'JAR Solves your serialization woes!',
-              body:  'Use JAR',
+# id:2
+Post.create(title: 'JR Solves your serialization woes!',
+              body:  'Use JR',
               author_id: a.id,
               section: Section.create(name: 'ruby')).tap do |post|
 
-  post.tags.concat jar_tag
+  post.tags.concat jr_tag
 
-  post.comments.create(body: 'Thanks man. Great post. But what is JAR?', author_id: b.id, post_id: post.id).tap do |comment|
-    comment.tags.concat jar_tag
+  post.comments.create(body: 'Thanks man. Great post. But what is JR?', author_id: b.id, post_id: post.id).tap do |comment|
+    comment.tags.concat jr_tag
   end
 end
 
+# id:3
 Post.create(title: 'Update This Later',
             body:  'AAAA',
             author_id: c.id)
 
-
+# id:4
 Post.create(title: 'Delete This Later - Single',
             body:  'AAAA',
             author_id: c.id)
 
+# id:5
 Post.create(title: 'Delete This Later - Multiple1',
             body:  'AAAA',
             author_id: c.id)
 
+# id:6
 Post.create(title: 'Delete This Later - Multiple2',
             body:  'AAAA',
             author_id: c.id)
 
+# id:7
 Post.create(title: 'Delete This Later - Single2',
             body:  'AAAA',
             author_id: c.id)
 
+# id:8
 Post.create(title: 'Delete This Later - Multiple2-1',
             body:  'AAAA',
             author_id: c.id)
 
+# id:9
 Post.create(title: 'Delete This Later - Multiple2-2',
             body:  'AAAA',
             author_id: c.id)
 
+# id:9
+Post.create(title: 'Update This Later - Multiple',
+            body:  'AAAA',
+            author_id: c.id)
+
+
+Post.create(title: 'JR How To',
+            body:  'Use JR to write API apps',
+            author_id: a.id).tap do |post|
+  post.tags.concat jr_tag
+end
 
 Currency.create(code: 'USD', name: 'United States Dollar')
 Currency.create(code: 'EUR', name: 'Euro Member Countries')
@@ -425,10 +489,8 @@ Post.create(title: 'Tagged up post 2',
             tag_ids: [6,7,8,9]
 )
 
-Post.create(title: 'JAR How To',
-            body:  'Use JAR to write API apps',
-            author_id: a.id).tap do |post|
-
-  post.tags.concat jar_tag
-end
-
+saturn = Planet.create(name: 'Satern', description: 'Saturn is the sixth planet from the Sun and the second largest planet in the Solar System, after Jupiter.')
+titan = Moon.create(name:'Titan', description: 'Best known of the Saturn moons.', planet_id: saturn.id)
+pluto = Planet.create(name: 'Pluto', description: 'Pluto is the smallest planet.')
+uranus = Planet.create(name: 'Uranus', description: 'Insert adolescent jokes here.')
+jupiter = Planet.create(name: 'Jupiter', description: 'A gas giant.')

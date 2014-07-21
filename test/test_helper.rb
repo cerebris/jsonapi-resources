@@ -22,6 +22,9 @@ class TestApp < Rails::Application
   config.root = File.dirname(__FILE__)
   config.session_store :cookie_store, key: 'session'
   config.secret_key_base = 'secret'
+
+  #Raise errors on unsupported parameters
+  config.action_controller.action_on_unpermitted_parameters = :raise
 end
 
 TestApp.initialize!

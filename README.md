@@ -271,6 +271,31 @@ end
 
 Of course you are free to extend this as needed.
 
+##### find_options
+
+The ResourceController has an overridable method called ```find_options```. This gives you a place to set options to be 
+passed into the finder calls made by the ResourceController. For example:
+
+```
+  def find_options
+    {current_user: current_user}
+  end
+```
+
+find_options are not used by the default ```find``` method, however they are available in ```find``` and the
+```find_by_key``` overrides.
+
+##### serialize_options
+
+The ResourceController has an overridable method called ```serialize_options```. This gives you a place to set options to be 
+passed into the serializer calls made by the ResourceController. For example:
+
+```
+  def serialize_options
+    {current_user: current_user}
+  end
+```
+
 #### Error codes
 
 Error codes are provided for each error object returned, based on the error. These errors are:
@@ -284,6 +309,7 @@ module JSON
     INVALID_FIELD_VALUE = 103
     INVALID_FIELD = 104
     PARAM_NOT_ALLOWED = 105
+    INVALID_FILTER_VALUE = 106
 
     RECORD_NOT_FOUND = 404
   end
