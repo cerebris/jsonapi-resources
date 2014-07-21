@@ -8,11 +8,12 @@ module JSON
 
       @@resource_types = {}
 
-      def initialize(object = new_object)
+      def initialize(object = create_new_object)
         @object = object
       end
 
       def new_object
+      def create_new_object
         self.class._model_class.new
       end
 
