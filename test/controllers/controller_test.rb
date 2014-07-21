@@ -302,6 +302,30 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal [3,4], json_response['posts'][0]['links']['tags']
   end
 
+  def test_update_multiple_count_mismatch
+    javascript = Section.find_by(name: 'javascript')
+
+    post :update, {id: [3,9,2], posts: [
+        {
+            title: 'A great new Post QWERTY',
+            links: {
+                section: javascript.id,
+                tags: [3,4]
+            }
+        },
+        {
+            title: 'A great new Post ASDFG',
+            links: {
+                section: javascript.id,
+                tags: [3,4]
+            }
+        }
+    ]}
+
+    assert_response :bad_request
+    assert_match /Count to id mismatch/, response.body
+  end
+
   def test_update_unpermitted_attributes
     post :update, {id: 3, posts: {
         subject: 'A great new Post',

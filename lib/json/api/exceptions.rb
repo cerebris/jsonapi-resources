@@ -121,6 +121,15 @@ module JSON
         end
       end
 
+      class CountMismatch < Error
+        def errors
+          [JSON::API::Error.new(code: JSON::API::COUNT_MISMATCH,
+                                status: :bad_request,
+                                title: 'Count to id mismatch',
+                                detail: 'The resource collection does not contain the same number of objects as the ids.')]
+        end
+      end
+
       class RecordLocked < Error
         attr_accessor :message
         def initialize(message)
