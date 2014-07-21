@@ -8,6 +8,7 @@ module JSON
 
       @@resource_types = {}
 
+      attr_reader :object
       def initialize(object = create_new_object)
         @object = object
       end
@@ -29,8 +30,6 @@ module JSON
         @object.new_record?
       end
 
-      def object
-        @object
       end
 
       class << self
