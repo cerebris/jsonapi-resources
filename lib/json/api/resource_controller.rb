@@ -112,6 +112,14 @@ module JSON
       def before_destroy(obj)
       end
 
+      def transaction
+        ActiveRecord::Base.transaction do
+          yield
+        end
+      end
+
+      def transaction_rollback
+        raise ActiveRecord::Rollback
       end
 
       def render_errors(errors, status = :bad_request)

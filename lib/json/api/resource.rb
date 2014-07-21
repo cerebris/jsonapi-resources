@@ -131,9 +131,6 @@ module JSON
           self.new(obj)
         end
 
-        def transaction
-          ActiveRecord::Base.transaction do
-            yield
         def verify_params(object_params, create) #ToDo find better method of indicating create
           if create
             allowed_params = createable(_updateable_associations | _attributes.to_a)
