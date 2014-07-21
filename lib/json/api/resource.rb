@@ -208,6 +208,9 @@ module JSON
                 @object.method(key).call
               end unless method_defined?(key)
 
+              define_method "#{key}=" do |values|
+                @object.send "#{key}=", values
+              end unless method_defined?("#{key}=")
               define_method "_#{attr}_object" do
                 type_name = self.class._associations[attr].serialize_type_name
                 resource_class = self.class.resource_for(type_name)
