@@ -26,8 +26,6 @@ module JSON
         @object.update!(attributes)
       end
 
-      def new_record?
-        @object.new_record?
       end
 
       end
