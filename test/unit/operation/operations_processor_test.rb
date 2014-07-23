@@ -18,7 +18,7 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
       JSON::API::Operation.new(PlanetResource, :add, nil, '/-', {'name' => 'earth', 'description' => 'The best planet ever.'})
     ]
 
-    request = JSON::API::Request.new(PlanetResource, nil)
+    request = JSON::API::Request.new
     request.operations = operations
 
     results = op.process(request)
@@ -41,7 +41,7 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
         JSON::API::Operation.new(PlanetResource, :add, nil, '/-', {'name' => 'venus', 'description' => 'A very hot planet.'})
     ]
 
-    request = JSON::API::Request.new(PlanetResource, nil)
+    request = JSON::API::Request.new
     request.operations = operations
 
     results = op.process(request)
@@ -62,7 +62,7 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
         JSON::API::Operation.new(PlanetResource, :replace, 1, '/-', {'name' => 'saturn'}),
     ]
 
-    request = JSON::API::Request.new(PlanetResource, nil)
+    request = JSON::API::Request.new
     request.operations = operations
 
     results = op.process(request)
@@ -81,7 +81,7 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
   end
 
   def test_remove
-    op = JSON::API::OperationsProcessor.new()
+    op = JSON::API::OperationsProcessor.new
 
     count = Planet.count
     pluto = Planet.find(2)
@@ -91,7 +91,7 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
         JSON::API::Operation.new(PlanetResource, :remove, 2, '/-'),
     ]
 
-    request = JSON::API::Request.new(PlanetResource, nil)
+    request = JSON::API::Request.new
     request.operations = operations
 
     results = op.process(request)
@@ -115,7 +115,7 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
         JSON::API::Operation.new(PlanetResource, :remove, 4, '/-'),
     ]
 
-    request = JSON::API::Request.new(PlanetResource, nil)
+    request = JSON::API::Request.new
     request.operations = operations
 
     results = op.process(request)

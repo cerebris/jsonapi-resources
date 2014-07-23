@@ -6,13 +6,19 @@ module JSON
     class Request
       include ResourceFor
 
-      attr_accessor :fields, :includes, :filters, :errors, :operations
+      attr_accessor :fields, :includes, :filters, :errors, :operations, :resource_klass, :context
 
-      def initialize(resource_klass, params, context = {})
-        @errors = []
-        @resource_klass = resource_klass
+      def initialize(context = {})
         @context = context
+        @errors = []
         @operations = []
+        @fields = {}
+        @includes = []
+        @filters = {}
+      end
+
+      def parse(params)
+        @resource_klass ||= self.class.resource_for(params[:controller]) if params[:controller]
 
         unless params.nil?
           case params[:action]
@@ -33,8 +39,6 @@ module JSON
               parse_replace_operation(params)
             when 'destroy'
               parse_remove_operation(params)
-            else
-              return
           end
         end
       end
