@@ -1,13 +1,12 @@
 module JSON
   module API
     class OperationResult
-      attr_accessor(:code, :result, :errors, :resource)
+      attr_accessor :code, :errors, :resource
 
-      def initialize(code, resource = nil, result = {} , errors = [])
+      def initialize(code, resource = nil, errors = [])
         @code = code
-        @result = result
-        @errors = errors
         @resource = resource
+        @errors = errors
       end
 
       def has_errors?

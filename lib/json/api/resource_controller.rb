@@ -52,23 +52,24 @@ module JSON
       end
 
       def create
-        process_operations(:batch)
+        process_request_operations(:batch)
       rescue => e
         handle_exceptions(e)
       end
 
       def update
-        process_operations(:batch)
+        process_request_operations(:batch)
       rescue => e
         handle_exceptions(e)
       end
 
       def destroy
-        process_operations(:batch)
+        process_request_operations(:batch)
       rescue => e
         handle_exceptions(e)
       end
 
+      # Override this to use another operations processor
       def create_operations_processor
         JSON::API::ActiveRecordOperationsProcessor.new
       end
@@ -105,10 +106,10 @@ module JSON
         render(json: {errors: errors}, status: errors.count == 1 ? errors[0].status : status)
       end
 
-      def process_operations(batch = true)
+      def process_request_operations(batch = true)
         op = create_operations_processor
 
-        results = op.process(@request, context)
+        results = op.process(@request)
 
         errors = []
         resources = []

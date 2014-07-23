@@ -4,10 +4,11 @@ module JSON
   module API
     class OperationsProcessor
 
-      def process(request, context = {})
+      def process(request)
         @results = []
         @resources = []
-        @request = request
+
+        context = request.context
 
         transaction {
           request.operations.each do |operation|
@@ -30,6 +31,10 @@ module JSON
       end
 
       private
+
+      # The base OperationsProcessor provides no transaction support
+      # Override the transaction and rollback methods to provide transaction support.
+      # For ActiveRecord transactions you can use the ActiveRecordOperationsProcessor
       def transaction
         yield
       end
@@ -37,7 +42,8 @@ module JSON
       def rollback
       end
 
-      def add(operation, context = {})
+      #  Process an add operation
+      def add(operation, context)
         resource = operation.resource_klass.new
 
         resource.before_create(context, operation.values)
@@ -52,10 +58,11 @@ module JSON
 
         return JSON::API::OperationResult.new(:created, resource)
       rescue JSON::API::Exceptions::Error => e
-        return JSON::API::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, {}, e.errors)
+        return JSON::API::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, e.errors)
       end
 
-      def replace(operation, context = {})
+      #  Process a replace operation
+      def replace(operation, context)
         resource = operation.resource_klass.find_by_key(operation.resource_id, context)
 
         resource.before_replace(context, operation.values)
@@ -70,10 +77,11 @@ module JSON
 
         return JSON::API::OperationResult.new(:ok, resource)
       rescue JSON::API::Exceptions::Error => e
-        return JSON::API::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, {}, e.errors)
+        return JSON::API::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, e.errors)
       end
 
-      def remove(operation, context = {})
+      # Process a remove operation
+      def remove(operation, context)
         resource = operation.resource_klass.find_by_key(operation.resource_id, context)
 
         resource.before_remove(context)
@@ -86,11 +94,12 @@ module JSON
 
       rescue ActiveRecord::DeleteRestrictionError => e
         record_locked_error = JSON::API::Exceptions::RecordLocked.new(e.message)
-        return JSON::API::OperationResult.new(record_locked_error.errors[0].code, nil, {}, record_locked_error.errors)
+        return JSON::API::OperationResult.new(record_locked_error.errors[0].code, nil, record_locked_error.errors)
       rescue JSON::API::Exceptions::Error => e
-        return JSON::API::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, {}, e.errors)
+        return JSON::API::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, e.errors)
       end
 
+      # Updates each value on the resource with the new values provided
       def update_resource_values(resource, values)
         values.each do |property, value|
           resource.send "#{property}=", value
