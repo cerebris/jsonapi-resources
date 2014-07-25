@@ -52,19 +52,19 @@ module JSON
       end
 
       def create
-        process_request_operations(:batch)
+        process_request_operations
       rescue => e
         handle_exceptions(e)
       end
 
       def update
-        process_request_operations(:batch)
+        process_request_operations
       rescue => e
         handle_exceptions(e)
       end
 
       def destroy
-        process_request_operations(:batch)
+        process_request_operations
       rescue => e
         handle_exceptions(e)
       end
@@ -106,7 +106,7 @@ module JSON
         render(json: {errors: errors}, status: errors.count == 1 ? errors[0].status : status)
       end
 
-      def process_request_operations(batch = true)
+      def process_request_operations
         op = create_operations_processor
 
         results = op.process(@request)
@@ -125,7 +125,7 @@ module JSON
         if errors.count > 0
           render :status => errors.count == 1 ? errors[0].status : :bad_request, json: {errors: errors}
         else
-          # if batch
+          # if patch
             render :status => results[0].code, json: JSON::API::ResourceSerializer.new.serialize(resources, @request.includes, @request.fields, context)
           # else
           #   result_hash = {}
