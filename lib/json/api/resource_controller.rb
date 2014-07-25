@@ -35,11 +35,11 @@ module JSON
       end
 
       def show
-        ids = parse_id_array(params[resource_klass._key])
+        keys = parse_key_array(params[resource_klass._key])
 
         resources = []
-        ids.each do |id|
-          resources.push(resource_klass.find_by_key(id, context))
+        keys.each do |key|
+          resources.push(resource_klass.find_by_key(key, context))
         end
 
         render json: JSON::API::ResourceSerializer.new.serialize(
@@ -89,12 +89,12 @@ module JSON
         @resource_klass_name ||= "#{self.class.name.demodulize.sub(/Controller$/, '').singularize}Resource"
       end
 
-      def parse_id_array(raw)
-        ids = []
-        raw.split(/,/).collect do |id|
-          ids.push resource_klass.verify_id(id)
+      def parse_key_array(raw)
+        keys = []
+        raw.split(/,/).collect do |key|
+          keys.push resource_klass.verify_key(key, context)
         end
-        return ids
+        return keys
       end
 
       # override to set context

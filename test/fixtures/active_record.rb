@@ -286,11 +286,11 @@ class PostResource < JSON::API::Resource
     super(keys - [:subject])
   end
 
-  def self.verify_custom_filter(filter, values, options = {})
+  def self.verify_custom_filter(filter, values, context = {})
     case filter
       when :id
-        values.each do |id|
-          verify_id(id, options)
+        values.each do |key|
+          verify_key(key, context)
         end
     end
     return filter, values
@@ -304,10 +304,10 @@ class PostResource < JSON::API::Resource
     end
   end
 
-  def self.verify_id(id, options = {})
-    raise JSON::API::Exceptions::InvalidFieldValue.new(:id, id) unless is_num?(id)
-    raise JSON::API::Exceptions::RecordNotFound.new(id) unless find_by_key(id)
-    return id
+  def self.verify_key(key, context = {})
+    raise JSON::API::Exceptions::InvalidFieldValue.new(:id, key) unless is_num?(key)
+    raise JSON::API::Exceptions::RecordNotFound.new(key) unless find_by_key(key)
+    return key
   end
 end
 

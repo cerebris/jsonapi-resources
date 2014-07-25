@@ -136,16 +136,16 @@ module JSON
         object_params_raw = params.require(@resource_klass._type)
 
         if object_params_raw.is_a?(Array)
+          keys = params[@resource_klass._key]
 
-          ids = params[@resource_klass._key]
-          if ids.count != object_params_raw.count
+          if keys.count != object_params_raw.count
             raise JSON::API::Exceptions::CountMismatch
           end
 
           object_params_raw.each_index do |i|
-            id = ids[i]
+            key = keys[i]
             p = object_params_raw[i]
-            @operations.push JSON::API::Operation.new(@resource_klass, :replace, id, '', @resource_klass.verify_params(p, :replace, @context))
+            @operations.push JSON::API::Operation.new(@resource_klass, :replace, key, '', @resource_klass.verify_params(p, :replace, @context))
           end
         else
           @operations.push JSON::API::Operation.new(@resource_klass, :replace, params[@resource_klass._key], '', @resource_klass.verify_params(object_params_raw, :replace, @context))
@@ -158,10 +158,10 @@ module JSON
       end
 
       def parse_remove_operation(params)
-        ids = parse_id_array(params.permit(@resource_klass._key)[@resource_klass._key])
+        keys = parse_key_array(params.permit(@resource_klass._key)[@resource_klass._key])
 
-        ids.each do |id|
-          @operations.push JSON::API::Operation.new(@resource_klass, :remove, id, '', '')
+        keys.each do |key|
+          @operations.push JSON::API::Operation.new(@resource_klass, :remove, key, '', '')
         end
       rescue ActionController::UnpermittedParameters => e
         @errors.concat(JSON::API::Exceptions::ParametersNotAllowed.new(e.params).errors)
@@ -169,12 +169,12 @@ module JSON
         @errors.concat(e.errors)
       end
 
-      def parse_id_array(raw)
-        ids = []
-        raw.split(/,/).collect do |id|
-          ids.push @resource_klass.verify_id(id)
+      def parse_key_array(raw)
+        keys = []
+        raw.split(/,/).collect do |key|
+          keys.push @resource_klass.verify_key(key, context)
         end
-        return ids
+        return keys
       end
     end
   end

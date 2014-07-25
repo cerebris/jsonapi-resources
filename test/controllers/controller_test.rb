@@ -232,6 +232,20 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['posts'][0]['body']
   end
 
+  def test_create_link_to_missing_object
+    post :create, { posts: {
+        title: 'JR is Great',
+        body:  'JSONAPIResources is the greatest thing since unsliced bread.',
+        links: {
+            author: 304567
+        }
+    }
+    }
+
+    assert_response :not_found
+    assert_match /The record identified by 304567 could not be found./, response.body
+  end
+
   def test_create_extra_param
     post :create, { posts: {
         asdfg: 'aaaa',

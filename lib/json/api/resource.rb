@@ -192,9 +192,13 @@ module JSON
             param = key.to_sym
 
             if _associations[param].is_a?(JSON::API::Association::HasOne)
-              checked_params[_associations[param].key] = value
+              checked_params[_associations[param].key] = resource_for(_associations[param].serialize_type_name).verify_key(value, context)
             elsif _associations[param].is_a?(JSON::API::Association::HasMany)
-              checked_associations[_associations[param].key] = value
+              keys = []
+              value.each do |value|
+                keys.push(resource_for(_associations[param].serialize_type_name).verify_key(value, context))
+              end
+              checked_associations[_associations[param].key] = keys
             else
               checked_params[param] = value
             end
@@ -226,9 +230,10 @@ module JSON
           end
         end
 
-        # override to allow for id processing and checking
-        def verify_id(id)
-          return id
+        # override to allow for key processing and checking
+        def verify_key(key, context = {})
+          find_by_key(key, context)
+          return key
         end
 
         # override to allow for custom filters
@@ -236,7 +241,7 @@ module JSON
           return filter, value
         end
 
-        # override to allow for custom association logic, such as uuids, multiple ids or permission checks on ids
+        # override to allow for custom association logic, such as uuids, multiple keys or permission checks on keys
         def verify_association_filter(filter, raw, context = {})
           return filter, raw
         end
