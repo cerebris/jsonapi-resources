@@ -53,20 +53,14 @@ module JSON
 
       def create
         process_request_operations
-      rescue => e
-        handle_exceptions(e)
       end
 
       def update
         process_request_operations
-      rescue => e
-        handle_exceptions(e)
       end
 
       def destroy
         process_request_operations
-      rescue => e
-        handle_exceptions(e)
       end
 
       # Override this to use another operations processor
@@ -135,6 +129,8 @@ module JSON
           #   render :status => results.count == 1 ? results[0].code : :ok, json: result_hash
           # end
         end
+      rescue => e
+        handle_exceptions(e)
       end
 
       # override this to process other exceptions
