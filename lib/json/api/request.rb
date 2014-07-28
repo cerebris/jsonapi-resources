@@ -135,19 +135,27 @@ module JSON
       def parse_replace_operation(params)
         object_params_raw = params.require(@resource_klass._type)
 
+        keys = params[@resource_klass._key]
         if object_params_raw.is_a?(Array)
-          keys = params[@resource_klass._key]
-
           if keys.count != object_params_raw.count
             raise JSON::API::Exceptions::CountMismatch
           end
 
-          object_params_raw.each_index do |i|
-            key = keys[i]
-            p = object_params_raw[i]
-            @operations.push JSON::API::Operation.new(@resource_klass, :replace, key, '', @resource_klass.verify_params(p, :replace, @context))
+          object_params_raw.each do |object_params|
+            if object_params[@resource_klass._key].nil?
+              raise JSON::API::Exceptions::MissingKey.new
+            end
+
+            if !keys.include?(object_params[@resource_klass._key])
+              raise JSON::API::Exceptions::KeyNotIncludedInURL.new(object_params[@resource_klass._key])
+            end
+            @operations.push JSON::API::Operation.new(@resource_klass, :replace, object_params[@resource_klass._key], '', @resource_klass.verify_params(object_params, :replace, @context))
           end
         else
+          if !object_params_raw[@resource_klass._key].nil? && keys != object_params_raw[@resource_klass._key]
+            raise JSON::API::Exceptions::KeyNotIncludedInURL.new(object_params_raw[@resource_klass._key])
+          end
+
           @operations.push JSON::API::Operation.new(@resource_klass, :replace, params[@resource_klass._key], '', @resource_klass.verify_params(object_params_raw, :replace, @context))
         end
 

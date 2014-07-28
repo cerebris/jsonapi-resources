@@ -242,8 +242,9 @@ class PostsControllerTest < ActionController::TestCase
     }
     }
 
-    assert_response :not_found
-    assert_match /The record identified by 304567 could not be found./, response.body
+    assert_response :bad_request
+    # Todo: check if this validation is working
+    assert_match /author - can't be blank/, response.body
   end
 
   def test_create_extra_param
@@ -379,6 +380,23 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal [3,4], json_response['posts'][0]['links']['tags']
   end
 
+  def test_update_mismatched_keys
+    javascript = Section.find_by(name: 'javascript')
+
+    post :update, {id: 3, posts: {
+        id: 2,
+        title: 'A great new Post',
+        links: {
+            section: javascript.id,
+            tags: [3,4]
+        }
+    }
+    }
+
+    assert_response :bad_request
+    assert_match /The URL does not support the key 2/, response.body
+  end
+
   def test_update_extra_param
     javascript = Section.find_by(name: 'javascript')
 
@@ -434,6 +452,7 @@ class PostsControllerTest < ActionController::TestCase
 
     post :update, {id: [3,9], posts: [
       {
+        id: 3,
         title: 'A great new Post QWERTY',
         links: {
             section: javascript.id,
@@ -441,6 +460,7 @@ class PostsControllerTest < ActionController::TestCase
         }
       },
       {
+          id: 9,
           title: 'A great new Post ASDFG',
           links: {
               section: javascript.id,
@@ -464,11 +484,36 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal json_response['posts'][1]['links']['tags'], [3,4]
   end
 
+  def test_update_multiple_missing_keys
+    javascript = Section.find_by(name: 'javascript')
+
+    post :update, {id: [3,9], posts: [
+        {
+            title: 'A great new Post ASDFG',
+            links: {
+                section: javascript.id,
+                tags: [3,4]
+            }
+        },
+        {
+            title: 'A great new Post QWERTY',
+            links: {
+                section: javascript.id,
+                tags: [3,4]
+            }
+        }
+    ]}
+
+    assert_response :bad_request
+    assert_match /A key is required/, response.body
+  end
+
   def test_update_multiple_count_mismatch
     javascript = Section.find_by(name: 'javascript')
 
     post :update, {id: [3,9,2], posts: [
         {
+            id: 3,
             title: 'A great new Post QWERTY',
             links: {
                 section: javascript.id,
@@ -476,6 +521,7 @@ class PostsControllerTest < ActionController::TestCase
             }
         },
         {
+            id: 9,
             title: 'A great new Post ASDFG',
             links: {
                 section: javascript.id,
@@ -485,7 +531,7 @@ class PostsControllerTest < ActionController::TestCase
     ]}
 
     assert_response :bad_request
-    assert_match /Count to id mismatch/, response.body
+    assert_match /Count to key mismatch/, response.body
   end
 
   def test_update_unpermitted_attributes

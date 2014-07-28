@@ -125,8 +125,31 @@ module JSON
         def errors
           [JSON::API::Error.new(code: JSON::API::COUNT_MISMATCH,
                                 status: :bad_request,
-                                title: 'Count to id mismatch',
-                                detail: 'The resource collection does not contain the same number of objects as the ids.')]
+                                title: 'Count to key mismatch',
+                                detail: 'The resource collection does not contain the same number of objects as the number of keys.')]
+        end
+      end
+
+      class KeyNotIncludedInURL < Error
+        attr_accessor :key
+        def initialize(key)
+          @key = key
+        end
+
+        def errors
+          [JSON::API::Error.new(code: JSON::API::KEY_NOT_INCLUDED_IN_URL,
+                                status: :bad_request,
+                                title: 'Key is not included in URL',
+                                detail: "The URL does not support the key #{key}")]
+        end
+      end
+
+      class MissingKey < Error
+        def errors
+          [JSON::API::Error.new(code: JSON::API::KEY_ORDER_MISMATCH,
+                                status: :bad_request,
+                                title: 'A key is required',
+                                detail: 'The resource object does not contain a key.')]
         end
       end
 
