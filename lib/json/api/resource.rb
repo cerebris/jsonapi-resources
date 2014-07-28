@@ -160,10 +160,10 @@ module JSON
           return resources
         end
 
-        def find_by_key(id, context = {})
-          obj = _model_class.where({_key => id}).first
+        def find_by_key(key, context = {})
+          obj = _model_class.where({_key => key}).first
           if obj.nil?
-            raise JSON::API::Exceptions::RecordNotFound.new(id)
+            raise JSON::API::Exceptions::RecordNotFound.new(key)
           end
           self.new(obj)
         end
@@ -232,7 +232,6 @@ module JSON
 
         # override to allow for key processing and checking
         def verify_key(key, context = {})
-          find_by_key(key, context)
           return key
         end
 
