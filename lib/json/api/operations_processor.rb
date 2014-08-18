@@ -20,6 +20,8 @@ module JSON
                 result = replace(operation, context)
               when :remove
                 result = remove(operation, context)
+              when :remove_association
+                result = remove_association(operation, context)
             end
             @results.push(result)
             if result.has_errors?
@@ -97,6 +99,25 @@ module JSON
         return JSON::API::OperationResult.new(record_locked_error.errors[0].code, nil, record_locked_error.errors)
       rescue JSON::API::Exceptions::Error => e
         return JSON::API::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, e.errors)
+      end
+
+      # Process a remove_association operation
+      def remove_association(operation, context)
+        resource = operation.resource_klass.find_by_key(operation.resource_id, context)
+
+        key = operation.values[:associated_key]
+
+        resource.before_remove_association(context, key)
+
+        if key
+          resource.remove_has_many_link(operation.values[:association], key)
+        else
+          resource.remove_has_one_link(operation.values[:association])
+        end
+
+        resource.after_remove_association(context)
+
+        return JSON::API::OperationResult.new(:no_content)
       end
 
       # Updates each value on the resource with the new values provided

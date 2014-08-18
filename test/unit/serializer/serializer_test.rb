@@ -272,7 +272,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               author: 1,
               tags: [5],
               comments: [3],
-              section: 2
+              section: 3
             }
           }],
           linked: {

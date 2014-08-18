@@ -35,18 +35,29 @@ module JSON
       end
 
       def show
-        keys = parse_key_array(params[resource_klass._key])
+        association_type = params[:association]
 
-        resources = []
-        keys.each do |key|
-          resources.push(resource_klass.find_by_key(key, context))
+        if association_type
+          parent_key = params[resource_klass._as_parent_key]
+
+          parent_resource = resource_klass.find_by_key(parent_key, context)
+
+          association = resource_klass._association(association_type)
+          render json: { association_type => parent_resource.send(association.key)}
+        else
+          keys = parse_key_array(params[resource_klass._key])
+
+          resources = []
+          keys.each do |key|
+            resources.push(resource_klass.find_by_key(key, context))
+          end
+
+          render json: JSON::API::ResourceSerializer.new.serialize(
+              resources,
+              @request.includes,
+              @request.fields,
+              context)
         end
-
-        render json: JSON::API::ResourceSerializer.new.serialize(
-            resources,
-            @request.includes,
-            @request.fields,
-            context)
       rescue => e
         handle_exceptions(e)
       end

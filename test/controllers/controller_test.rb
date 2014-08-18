@@ -377,8 +377,72 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal  javascript.id, json_response['posts'][0]['links']['section']
     assert_equal 'A great new Post', json_response['posts'][0]['title']
     assert_equal 'AAAA', json_response['posts'][0]['body']
-    assert_equal [3,4], json_response['posts'][0]['links']['tags']
+    assert matches_array?([3,4], json_response['posts'][0]['links']['tags'])
   end
+
+  def test_update_relationship_has_one
+    ruby = Section.find_by(name: 'ruby')
+
+    post :create, {post_id: 3, association: 'section',
+                   section: ruby.id }
+
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+    assert_equal 3, json_response['posts'][0]['links']['author']
+    assert_equal  ruby.id, json_response['posts'][0]['links']['section']
+    assert_equal 'AAAA', json_response['posts'][0]['body']
+  end
+
+  def test_update_relationship_has_many
+    post :create, {post_id: 3, association: 'tags',
+                   tags: [2,3] }
+
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+    assert_equal 3, json_response['posts'][0]['links']['author']
+    assert matches_array? [2,3], json_response['posts'][0]['links']['tags']
+    assert_equal 'AAAA', json_response['posts'][0]['body']
+  end
+
+  def test_update_relationship_has_one_mismatch_params
+    ruby = Section.find_by(name: 'ruby')
+
+    post :create, {post_id: 3, association: 'section',
+                   author: 1 }
+
+    assert_response :bad_request
+    assert_match /The required parameter, section, is missing./, response.body
+  end
+
+  def test_delete_relationship_has_one
+    ruby = Section.find_by(name: 'ruby')
+
+    post :create, {post_id: 9, association: 'section',
+                   section: ruby.id }
+
+    assert_response :success
+    assert_equal  ruby.id, json_response['posts'][0]['links']['section']
+
+    post :destroy, {post_id: 9, association: 'section'}
+
+    assert_response :no_content
+    post = Post.find(9)
+    assert_nil post.section
+  end
+
+  def test_delete_relationship_has_many
+    post :create, {post_id: 9, association: 'tags',
+                   tags: [2,3] }
+    assert_response :success
+    p = Post.find(9)
+    assert_equal [2,3], p.tag_ids
+
+    post :destroy, {post_id: 9, association: 'tags', keys: '3'}
+
+    assert_response :no_content
+    assert_equal [2], p.tag_ids
+  end
+
 
   def test_update_mismatched_keys
     javascript = Section.find_by(name: 'javascript')
@@ -508,6 +572,32 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /A key is required/, response.body
   end
 
+  def test_update_mismatch_keys
+    javascript = Section.find_by(name: 'javascript')
+
+    post :update, {id: [3,9], posts: [
+        {
+            id: 3,
+            title: 'A great new Post ASDFG',
+            links: {
+                section: javascript.id,
+                tags: [3,4]
+            }
+        },
+        {
+            id: 8,
+            title: 'A great new Post QWERTY',
+            links: {
+                section: javascript.id,
+                tags: [3,4]
+            }
+        }
+    ]}
+
+    assert_response :bad_request
+    assert_match /The URL does not support the key 8/, response.body
+  end
+
   def test_update_multiple_count_mismatch
     javascript = Section.find_by(name: 'javascript')
 
@@ -588,6 +678,18 @@ class PostsControllerTest < ActionController::TestCase
     post :destroy, {id: '4', asdfg: 'aaaa'}
     assert_response :bad_request
     assert_equal initial_count, Post.count
+  end
+
+  def test_show_has_one_relationship
+    get :show, {post_id: '1', association: 'author'}
+    assert_response :success
+    assert_equal 1, json_response['author']
+  end
+
+  def test_show_has_many_relationship
+    get :show, {post_id: '1', association: 'tags'}
+    assert_response :success
+    assert_equal [1,2,3], json_response['tags']
   end
 end
 

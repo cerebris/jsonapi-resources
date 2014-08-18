@@ -317,6 +317,8 @@ class CurrencyResource < JSON::API::Resource
   key :code
   attributes :code, :name
 
+  routing_options :param => :code
+
   has_many :expense_entries
 end
 
@@ -362,6 +364,7 @@ end
 
 ### DATA
 javascript = Section.create(name: 'javascript')
+ruby = Section.create(name: 'ruby')
 
 a = Person.create(name: 'Joe Author',
                  email: 'joe@xyz.fake',
@@ -459,7 +462,7 @@ Post.create(title: 'Update This Later - Multiple',
             body:  'AAAA',
             author_id: c.id)
 
-
+# id:10
 Post.create(title: 'JR How To',
             body:  'Use JR to write API apps',
             author_id: a.id).tap do |post|

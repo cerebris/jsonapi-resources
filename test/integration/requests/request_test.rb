@@ -9,9 +9,14 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_put_single
-    put '/posts/3', {"posts" => {"title" => "A great new Post", "links" => { "tags" => [3,4] }}}
+    put '/posts/3', {"posts" => {"id" => "3", "title" => "A great new Post", "links" => { "tags" => [3,4] }}}
     assert_equal 200, status
   end
+
+  # def test_put_links
+  #   put '/posts/3/links/tags', {"tags" => [1,4] }
+  #   assert_equal 200, status
+  # end
 
   # def test_patch_create
   #   patch '/posts',

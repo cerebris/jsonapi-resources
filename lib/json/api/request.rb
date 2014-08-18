@@ -27,8 +27,10 @@ module JSON
               parse_includes(params)
               parse_filters(params)
             when 'show'
-              parse_fields(params)
-              parse_includes(params)
+              unless params[:association]
+                parse_fields(params)
+                parse_includes(params)
+              end
             when 'create'
               parse_fields(params)
               parse_includes(params)
@@ -116,16 +118,29 @@ module JSON
       end
 
       def parse_add_operation(params)
-        object_params_raw = params.require(@resource_klass._type)
+        association_type = params[:association]
 
-        if object_params_raw.is_a?(Array)
-          object_params_raw.each do |p|
-            @operations.push JSON::API::Operation.new(@resource_klass, :add, nil, '', @resource_klass.verify_params(p, :create, @context))
+        if association_type
+          parent_key = params[resource_klass._as_parent_key]
+
+          if params[association_type].nil?
+            raise ActionController::ParameterMissing.new(association_type)
           end
-        else
-          @operations.push JSON::API::Operation.new(@resource_klass, :add, nil, '', @resource_klass.verify_params(object_params_raw, :create, @context))
-        end
 
+          object_params = {links: {association_type => params[association_type]}}
+
+          @operations.push JSON::API::Operation.new(resource_klass, :replace, parent_key, '', @resource_klass.verify_params(object_params, :replace, @context))
+        else
+          object_params_raw = params.require(@resource_klass._type)
+
+          if object_params_raw.is_a?(Array)
+            object_params_raw.each do |p|
+              @operations.push JSON::API::Operation.new(@resource_klass, :add, nil, '', @resource_klass.verify_params(p, :create, @context))
+            end
+          else
+            @operations.push JSON::API::Operation.new(@resource_klass, :add, nil, '', @resource_klass.verify_params(object_params_raw, :create, @context))
+          end
+        end
       rescue ActionController::ParameterMissing => e
         @errors.concat(JSON::API::Exceptions::ParameterMissing.new(e.param).errors)
       rescue JSON::API::Exceptions::Error => e
@@ -166,10 +181,28 @@ module JSON
       end
 
       def parse_remove_operation(params)
-        keys = parse_key_array(params.permit(@resource_klass._key)[@resource_klass._key])
+        association_type = params[:association]
 
-        keys.each do |key|
-          @operations.push JSON::API::Operation.new(@resource_klass, :remove, key, '', '')
+        if association_type
+          parent_key = params[resource_klass._as_parent_key]
+
+          association = resource_klass._association(association_type)
+          if association.is_a?(JSON::API::Association::HasMany)
+            keys = parse_key_array(params[:keys])
+            keys.each do |key|
+              @operations.push JSON::API::Operation.new(resource_klass, :remove_association, parent_key, '',
+                                                        {association: association_type,
+                                                         associated_key: key})
+            end
+          else
+            @operations.push JSON::API::Operation.new(resource_klass, :remove_association, parent_key, '', {association: association_type})
+          end
+        else
+          keys = parse_key_array(params.permit(@resource_klass._key)[@resource_klass._key])
+
+          keys.each do |key|
+            @operations.push JSON::API::Operation.new(@resource_klass, :remove, key, '', '')
+          end
         end
       rescue ActionController::UnpermittedParameters => e
         @errors.concat(JSON::API::Exceptions::ParametersNotAllowed.new(e.params).errors)

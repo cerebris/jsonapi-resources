@@ -29,15 +29,44 @@ end
 
 TestApp.initialize!
 
+require File.expand_path('../fixtures/active_record', __FILE__)
+
+# TestApp.routes.finalize!
+
 TestApp.routes.draw do
   resources :author
-  resources :people
-  resources :posts
-  resources :tags
-  resources :expense_entries
-  resources :currencies, :param => :code
-  resources :breeds
 end
+
+# TestApp.routes.draw do
+#   JSON::API::Resource._resource_types.each do |resource_type|
+#     resource = JSON::API::Resource.resource_for(resource_type)
+#     resources resource_type, resource.routing_resource_options
+#   end
+#   resources :author
+# end
+
+# TestApp.routes.draw do
+#   resources :author
+#   resources :people
+#   # resources :posts
+#   resources :posts do
+#     match 'links/:relation', controller: 'posts', action: 'show', via: [:get]
+#     match 'links/:relation', controller: 'posts', action: 'update', via: [:put]
+#     match 'links/:relation', controller: 'posts', action: 'destroy', via: [:delete]
+#   end
+#
+#   resources :tags
+#   resources :expense_entries
+#   resources :currencies, :param => :code
+#   resources :breeds
+#
+#
+#   namespace :api, defaults: {format: 'json'}  do
+#     namespace :v1 do
+#
+#     end
+#   end
+# end
 
 class MiniTest::Unit::TestCase
   include Helpers::HashHelpers

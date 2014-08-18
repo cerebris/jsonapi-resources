@@ -1,5 +1,6 @@
 require 'json/api/resource_for'
 require 'json/api/association'
+require 'action_dispatch/routing/mapper'
 
 module JSON
   module API
@@ -20,6 +21,16 @@ module JSON
 
       def remove
         @object.destroy
+      end
+
+      def remove_has_many_link(association, key)
+        @object.send(association).delete(key)
+        save
+      end
+
+      def remove_has_one_link(association)
+        @object.send("#{association}=", nil)
+        save
       end
 
       def save
@@ -65,6 +76,12 @@ module JSON
       def after_remove(context)
       end
 
+      def before_remove_association(context, key)
+      end
+
+      def after_remove_association(context)
+      end
+
       class << self
         def inherited(base)
           base._attributes = (_attributes || Set.new).dup
@@ -77,9 +94,35 @@ module JSON
           # If eager loading is off some resource types will be initialized in
           # _resource_name_from_type
           @@resource_types[base._type] ||= base.name.demodulize
+
+          # Setup routing
+          Rails.application.routes.append do
+            resources base._type, base.routing_resource_options do
+                res = JSON::API::Resource.resource_for(base._type)
+                res._associations.each do |association_name, association|
+                if association.is_a?(JSON::API::Association::HasMany)
+                  match "links/#{association_name}", controller: res._type.to_s, action: 'show', association: association_name.to_s, via: [:get]
+                  match "links/#{association_name}", controller: res._type.to_s, action: 'create', association: association_name.to_s, via: [:post]
+                  match "links/#{association_name}/:keys", controller: res._type.to_s, action: 'destroy', association: association_name.to_s, via: [:delete]
+                else
+                  match "links/#{association_name}", controller: res._type.to_s, action: 'show', association: association_name.to_s, via: [:get]
+                  match "links/#{association_name}", controller: res._type.to_s, action: 'create', association: association_name.to_s, via: [:post]
+                  match "links/#{association_name}", controller: res._type.to_s, action: 'destroy', association: association_name.to_s, via: [:delete]
+                end
+              end
+            end
+          end
         end
 
         attr_accessor :_attributes, :_associations, :_allowed_filters , :_type
+
+        def routing_options(options)
+          @_routing_resource_options = options
+        end
+
+        def routing_resource_options
+          @_routing_resource_options ||= {}
+        end
 
         # Methods used in defining a resource class
         def attributes(*attrs)
@@ -261,6 +304,11 @@ module JSON
           @_associations.has_key?(type)
         end
 
+        def _association(type)
+          type = type.to_sym unless type.is_a?(Symbol)
+          @_associations[type]
+        end
+
         def _model_name
           @_model_name ||= self.name.demodulize.sub(/Resource$/, '')
         end
@@ -271,6 +319,10 @@ module JSON
 
         def _key
           @_key ||= :id
+        end
+
+        def _as_parent_key
+          @_as_parent_key ||= "#{_serialize_as.to_s.singularize}_#{_key}"
         end
 
         def _allowed_filters
