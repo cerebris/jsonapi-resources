@@ -152,8 +152,6 @@ module JSON
         @operations.push JSON::API::Operation.new(resource_klass, :replace, parent_key, '', @resource_klass.verify_params(object_params, :replace, @context))
       rescue ActionController::ParameterMissing => e
         @errors.concat(JSON::API::Exceptions::ParameterMissing.new(e.param).errors)
-      rescue JSON::API::Exceptions::Error => e
-        @errors.concat(e.errors)
       end
 
       def parse_replace_operation(params)
@@ -217,10 +215,6 @@ module JSON
         else
           @operations.push JSON::API::Operation.new(resource_klass, :remove_association, parent_key, '', {association: association_type})
         end
-      rescue ActionController::UnpermittedParameters => e
-        @errors.concat(JSON::API::Exceptions::ParametersNotAllowed.new(e.params).errors)
-      rescue JSON::API::Exceptions::Error => e
-        @errors.concat(e.errors)
       end
 
       def parse_key_array(raw)
