@@ -35,29 +35,31 @@ module JSON
       end
 
       def show
+        keys = parse_key_array(params[resource_klass._key])
+
+        resources = []
+        keys.each do |key|
+          resources.push(resource_klass.find_by_key(key, context))
+        end
+
+        render json: JSON::API::ResourceSerializer.new.serialize(
+            resources,
+            @request.includes,
+            @request.fields,
+            context)
+      rescue => e
+        handle_exceptions(e)
+      end
+
+      def show_association
         association_type = params[:association]
 
-        if association_type
-          parent_key = params[resource_klass._as_parent_key]
+        parent_key = params[resource_klass._as_parent_key]
 
-          parent_resource = resource_klass.find_by_key(parent_key, context)
+        parent_resource = resource_klass.find_by_key(parent_key, context)
 
-          association = resource_klass._association(association_type)
-          render json: { association_type => parent_resource.send(association.key)}
-        else
-          keys = parse_key_array(params[resource_klass._key])
-
-          resources = []
-          keys.each do |key|
-            resources.push(resource_klass.find_by_key(key, context))
-          end
-
-          render json: JSON::API::ResourceSerializer.new.serialize(
-              resources,
-              @request.includes,
-              @request.fields,
-              context)
-        end
+        association = resource_klass._association(association_type)
+        render json: { association_type => parent_resource.send(association.key)}
       rescue => e
         handle_exceptions(e)
       end
@@ -66,11 +68,19 @@ module JSON
         process_request_operations
       end
 
+      def create_association
+        process_request_operations
+      end
+
       def update
         process_request_operations
       end
 
       def destroy
+        process_request_operations
+      end
+
+      def destroy_association
         process_request_operations
       end
 

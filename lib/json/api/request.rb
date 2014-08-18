@@ -26,21 +26,26 @@ module JSON
               parse_fields(params)
               parse_includes(params)
               parse_filters(params)
+            when 'show_associations'
             when 'show'
-              unless params[:association]
-                parse_fields(params)
-                parse_includes(params)
-              end
+              parse_fields(params)
+              parse_includes(params)
             when 'create'
               parse_fields(params)
               parse_includes(params)
               parse_add_operation(params)
+            when 'create_association'
+              parse_fields(params)
+              parse_includes(params)
+              parse_add_association_operation(params)
             when 'update'
               parse_fields(params)
               parse_includes(params)
               parse_replace_operation(params)
             when 'destroy'
               parse_remove_operation(params)
+            when 'destroy_association'
+              parse_remove_association_operation(params)
           end
         end
       end
@@ -118,29 +123,33 @@ module JSON
       end
 
       def parse_add_operation(params)
+        object_params_raw = params.require(@resource_klass._type)
+
+        if object_params_raw.is_a?(Array)
+          object_params_raw.each do |p|
+            @operations.push JSON::API::Operation.new(@resource_klass, :add, nil, '', @resource_klass.verify_params(p, :create, @context))
+          end
+        else
+          @operations.push JSON::API::Operation.new(@resource_klass, :add, nil, '', @resource_klass.verify_params(object_params_raw, :create, @context))
+        end
+      rescue ActionController::ParameterMissing => e
+        @errors.concat(JSON::API::Exceptions::ParameterMissing.new(e.param).errors)
+      rescue JSON::API::Exceptions::Error => e
+        @errors.concat(e.errors)
+      end
+
+      def parse_add_association_operation(params)
         association_type = params[:association]
 
-        if association_type
-          parent_key = params[resource_klass._as_parent_key]
+        parent_key = params[resource_klass._as_parent_key]
 
-          if params[association_type].nil?
-            raise ActionController::ParameterMissing.new(association_type)
-          end
-
-          object_params = {links: {association_type => params[association_type]}}
-
-          @operations.push JSON::API::Operation.new(resource_klass, :replace, parent_key, '', @resource_klass.verify_params(object_params, :replace, @context))
-        else
-          object_params_raw = params.require(@resource_klass._type)
-
-          if object_params_raw.is_a?(Array)
-            object_params_raw.each do |p|
-              @operations.push JSON::API::Operation.new(@resource_klass, :add, nil, '', @resource_klass.verify_params(p, :create, @context))
-            end
-          else
-            @operations.push JSON::API::Operation.new(@resource_klass, :add, nil, '', @resource_klass.verify_params(object_params_raw, :create, @context))
-          end
+        if params[association_type].nil?
+          raise ActionController::ParameterMissing.new(association_type)
         end
+
+        object_params = {links: {association_type => params[association_type]}}
+
+        @operations.push JSON::API::Operation.new(resource_klass, :replace, parent_key, '', @resource_klass.verify_params(object_params, :replace, @context))
       rescue ActionController::ParameterMissing => e
         @errors.concat(JSON::API::Exceptions::ParameterMissing.new(e.param).errors)
       rescue JSON::API::Exceptions::Error => e
@@ -181,28 +190,32 @@ module JSON
       end
 
       def parse_remove_operation(params)
+        keys = parse_key_array(params.permit(@resource_klass._key)[@resource_klass._key])
+
+        keys.each do |key|
+          @operations.push JSON::API::Operation.new(@resource_klass, :remove, key, '', '')
+        end
+      rescue ActionController::UnpermittedParameters => e
+        @errors.concat(JSON::API::Exceptions::ParametersNotAllowed.new(e.params).errors)
+      rescue JSON::API::Exceptions::Error => e
+        @errors.concat(e.errors)
+      end
+
+      def parse_remove_association_operation(params)
         association_type = params[:association]
 
-        if association_type
-          parent_key = params[resource_klass._as_parent_key]
+        parent_key = params[resource_klass._as_parent_key]
 
-          association = resource_klass._association(association_type)
-          if association.is_a?(JSON::API::Association::HasMany)
-            keys = parse_key_array(params[:keys])
-            keys.each do |key|
-              @operations.push JSON::API::Operation.new(resource_klass, :remove_association, parent_key, '',
-                                                        {association: association_type,
-                                                         associated_key: key})
-            end
-          else
-            @operations.push JSON::API::Operation.new(resource_klass, :remove_association, parent_key, '', {association: association_type})
+        association = resource_klass._association(association_type)
+        if association.is_a?(JSON::API::Association::HasMany)
+          keys = parse_key_array(params[:keys])
+          keys.each do |key|
+            @operations.push JSON::API::Operation.new(resource_klass, :remove_association, parent_key, '',
+                                                      {association: association_type,
+                                                       associated_key: key})
           end
         else
-          keys = parse_key_array(params.permit(@resource_klass._key)[@resource_klass._key])
-
-          keys.each do |key|
-            @operations.push JSON::API::Operation.new(@resource_klass, :remove, key, '', '')
-          end
+          @operations.push JSON::API::Operation.new(resource_klass, :remove_association, parent_key, '', {association: association_type})
         end
       rescue ActionController::UnpermittedParameters => e
         @errors.concat(JSON::API::Exceptions::ParametersNotAllowed.new(e.params).errors)

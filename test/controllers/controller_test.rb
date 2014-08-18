@@ -383,7 +383,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_update_relationship_has_one
     ruby = Section.find_by(name: 'ruby')
 
-    post :create, {post_id: 3, association: 'section',
+    post :create_association, {post_id: 3, association: 'section',
                    section: ruby.id }
 
     assert_response :success
@@ -394,7 +394,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_update_relationship_has_many
-    post :create, {post_id: 3, association: 'tags',
+    post :create_association, {post_id: 3, association: 'tags',
                    tags: [2,3] }
 
     assert_response :success
@@ -407,7 +407,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_update_relationship_has_one_mismatch_params
     ruby = Section.find_by(name: 'ruby')
 
-    post :create, {post_id: 3, association: 'section',
+    post :create_association, {post_id: 3, association: 'section',
                    author: 1 }
 
     assert_response :bad_request
@@ -417,13 +417,13 @@ class PostsControllerTest < ActionController::TestCase
   def test_delete_relationship_has_one
     ruby = Section.find_by(name: 'ruby')
 
-    post :create, {post_id: 9, association: 'section',
+    post :create_association, {post_id: 9, association: 'section',
                    section: ruby.id }
 
     assert_response :success
     assert_equal  ruby.id, json_response['posts'][0]['links']['section']
 
-    post :destroy, {post_id: 9, association: 'section'}
+    post :destroy_association, {post_id: 9, association: 'section'}
 
     assert_response :no_content
     post = Post.find(9)
@@ -431,13 +431,13 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_delete_relationship_has_many
-    post :create, {post_id: 9, association: 'tags',
+    post :create_association, {post_id: 9, association: 'tags',
                    tags: [2,3] }
     assert_response :success
     p = Post.find(9)
     assert_equal [2,3], p.tag_ids
 
-    post :destroy, {post_id: 9, association: 'tags', keys: '3'}
+    post :destroy_association, {post_id: 9, association: 'tags', keys: '3'}
 
     assert_response :no_content
     assert_equal [2], p.tag_ids
@@ -681,13 +681,13 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_show_has_one_relationship
-    get :show, {post_id: '1', association: 'author'}
+    get :show_association, {post_id: '1', association: 'author'}
     assert_response :success
     assert_equal 1, json_response['author']
   end
 
   def test_show_has_many_relationship
-    get :show, {post_id: '1', association: 'tags'}
+    get :show_association, {post_id: '1', association: 'tags'}
     assert_response :success
     assert_equal [1,2,3], json_response['tags']
   end
