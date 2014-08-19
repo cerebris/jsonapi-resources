@@ -74,5 +74,12 @@ class RoutesTest < ActionDispatch::IntegrationTest
   #   assert_routing({ path: '/api/v3/posts/1', method: :delete }, {action: 'destroy', controller: 'api/v3/posts', id: '1'})
   # end
 
+  # def test_routing_posts_links_author_except_destroy
+  #   assert_routing({ path: '/api/v3/posts/1/links/author', method: :delete }, { controller: 'api/v3/posts', action: 'destroy_association', post_id: '1', association: 'author' })
+  # end
+  #
+  # def test_routing_posts_links_tags_only_create_show
+  #   assert_routing({ path: '/api/v3/posts/1/links/tags/1,2', method: :delete }, { controller: 'api/v3/posts', action: 'destroy_association', post_id: '1', keys: '1,2', association: 'tags' })
+  # end
 end
 

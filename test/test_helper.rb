@@ -35,11 +35,33 @@ require File.expand_path('../fixtures/active_record', __FILE__)
 
 TestApp.routes.draw do
   jsonapi_resources :authors
-  jsonapi_all_resources
+  jsonapi_resources :people
+  jsonapi_resources :comments
+  jsonapi_resources :tags
+  jsonapi_resources :posts
+  jsonapi_resources :sections
+  jsonapi_resources :currencies
+  jsonapi_resources :expense_entries
+  jsonapi_resources :breeds
+  jsonapi_resources :planets
+  jsonapi_resources :moons
+  jsonapi_resources :preferences
+
 
   namespace :api do
     namespace :v1 do
-      jsonapi_all_resources
+      jsonapi_resources :authors
+      jsonapi_resources :people
+      jsonapi_resources :comments
+      jsonapi_resources :tags
+      jsonapi_resources :posts
+      jsonapi_resources :sections
+      jsonapi_resources :currencies
+      jsonapi_resources :expense_entries
+      jsonapi_resources :breeds
+      jsonapi_resources :planets
+      jsonapi_resources :moons
+      jsonapi_resources :preferences
     end
 
     namespace :v2 do
@@ -49,7 +71,14 @@ TestApp.routes.draw do
     end
 
     namespace :v3 do
-      jsonapi_resources :posts, except: [:destroy]
+      jsonapi_resource :preferences do
+
+      end
+
+      jsonapi_resources :posts, except: [:destroy] do
+        jsonapi_link :author, except: [:destroy]
+        jsonapi_links :tags, only: [:show, :create]
+      end
     end
   end
 end

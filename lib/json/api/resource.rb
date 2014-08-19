@@ -320,10 +320,6 @@ module JSON
           return class_name
         end
 
-        def _resource_types
-          @@resource_types.keys
-        end
-
         if RUBY_VERSION >= '2.0'
           def _model_class
             @model ||= Object.const_get(_model_name)
