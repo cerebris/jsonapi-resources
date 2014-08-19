@@ -798,7 +798,7 @@ class PeopleControllerTest < ActionController::TestCase
   end
 end
 
-class AuthorControllerTest < ActionController::TestCase
+class AuthorsControllerTest < ActionController::TestCase
   def test_get_person_as_author
     get :index, {id: '1'}
     assert_response :success

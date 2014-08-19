@@ -69,6 +69,11 @@ ActiveRecord::Schema.define do
     t.string  :description
     t.integer :planet_id
   end
+
+  create_table :preferences, force: true do |t|
+    t.integer :person_id
+    t.boolean :advanced_mode, default: false
+  end
 end
 
 ### MODELS
@@ -175,7 +180,7 @@ $breed_data.add(Breed.new(2, 'sphinx'))
 $breed_data.add(Breed.new(3, 'to_delete'))
 
 ### CONTROLLERS
-class AuthorController < JSON::API::ResourceController
+class AuthorsController < JSON::API::ResourceController
 
 end
 
@@ -198,6 +203,50 @@ end
 class BreedsController < JSON::API::ResourceController
 end
 
+### CONTROLLERS
+module Api
+  module V1
+    class AuthorsController < JSON::API::ResourceController
+    end
+
+    class PeopleController < JSON::API::ResourceController
+    end
+
+    class PostsController < JSON::API::ResourceController
+    end
+
+    class TagsController < JSON::API::ResourceController
+    end
+
+    class CurrenciesController < JSON::API::ResourceController
+    end
+
+    class ExpenseEntriesController < JSON::API::ResourceController
+    end
+
+    class BreedsController < JSON::API::ResourceController
+    end
+  end
+
+  module V2
+    class AuthorsController < JSON::API::ResourceController
+    end
+
+    class PeopleController < JSON::API::ResourceController
+    end
+
+    class PostsController < JSON::API::ResourceController
+    end
+
+    class PreferencesController < JSON::API::ResourceController
+    end
+  end
+
+  module V3
+    class PostsController < JSON::API::ResourceController
+    end
+  end
+end
 ### RESOURCES
 class PersonResource < JSON::API::Resource
   attributes :id, :name, :email, :date_joined
@@ -361,6 +410,13 @@ class MoonResource < JSON::API::Resource
   has_one :planet
 end
 
+class PreferencesResource < JSON::API::Resource
+  attribute :id
+  attribute :advanced_mode
+
+  has_one :author, class_name: 'Person'
+  has_many :friends, class_name: 'Person'
+end
 
 ### DATA
 javascript = Section.create(name: 'javascript')

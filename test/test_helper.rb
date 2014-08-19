@@ -11,6 +11,8 @@ require 'minitest/autorun'
 require 'minitest/spec'
 require 'rails/all'
 
+require 'json/api/routing_ext'
+
 require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/hash_helpers', __FILE__)
 require File.expand_path('../helpers/functional_helpers', __FILE__)
@@ -31,42 +33,26 @@ TestApp.initialize!
 
 require File.expand_path('../fixtures/active_record', __FILE__)
 
-# TestApp.routes.finalize!
-
 TestApp.routes.draw do
-  resources :author
+  jsonapi_resources :authors
+  jsonapi_all_resources
+
+  namespace :api do
+    namespace :v1 do
+      jsonapi_all_resources
+    end
+
+    namespace :v2 do
+      jsonapi_resources :authors
+      jsonapi_resources :posts
+      jsonapi_resource :preferences
+    end
+
+    namespace :v3 do
+      jsonapi_resources :posts, except: [:destroy]
+    end
+  end
 end
-
-# TestApp.routes.draw do
-#   JSON::API::Resource._resource_types.each do |resource_type|
-#     resource = JSON::API::Resource.resource_for(resource_type)
-#     resources resource_type, resource.routing_resource_options
-#   end
-#   resources :author
-# end
-
-# TestApp.routes.draw do
-#   resources :author
-#   resources :people
-#   # resources :posts
-#   resources :posts do
-#     match 'links/:relation', controller: 'posts', action: 'show', via: [:get]
-#     match 'links/:relation', controller: 'posts', action: 'update', via: [:put]
-#     match 'links/:relation', controller: 'posts', action: 'destroy', via: [:delete]
-#   end
-#
-#   resources :tags
-#   resources :expense_entries
-#   resources :currencies, :param => :code
-#   resources :breeds
-#
-#
-#   namespace :api, defaults: {format: 'json'}  do
-#     namespace :v1 do
-#
-#     end
-#   end
-# end
 
 class MiniTest::Unit::TestCase
   include Helpers::HashHelpers

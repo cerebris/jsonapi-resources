@@ -94,23 +94,6 @@ module JSON
           # If eager loading is off some resource types will be initialized in
           # _resource_name_from_type
           @@resource_types[base._type] ||= base.name.demodulize
-
-          # Setup routing
-          Rails.application.routes.append do
-            resources base._type, base.routing_resource_options do
-                res = JSON::API::Resource.resource_for(base._type)
-                res._associations.each do |association_name, association|
-                match "links/#{association_name}", controller: res._type.to_s, action: 'show_association', association: association_name.to_s, via: [:get]
-                match "links/#{association_name}", controller: res._type.to_s, action: 'create_association', association: association_name.to_s, via: [:post]
-
-                if association.is_a?(JSON::API::Association::HasMany)
-                  match "links/#{association_name}/:keys", controller: res._type.to_s, action: 'destroy_association', association: association_name.to_s, via: [:delete]
-                else
-                  match "links/#{association_name}", controller: res._type.to_s, action: 'destroy_association', association: association_name.to_s, via: [:delete]
-                end
-              end
-            end
-          end
         end
 
         attr_accessor :_attributes, :_associations, :_allowed_filters , :_type
@@ -335,6 +318,10 @@ module JSON
             @@resource_types[type] = class_name
           end
           return class_name
+        end
+
+        def _resource_types
+          @@resource_types.keys
         end
 
         if RUBY_VERSION >= '2.0'
