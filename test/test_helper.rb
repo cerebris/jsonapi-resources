@@ -44,6 +44,7 @@ TestApp.routes.draw do
   jsonapi_resources :expense_entries
   jsonapi_resources :breeds
   jsonapi_resources :planets
+  jsonapi_resources :planet_types
   jsonapi_resources :moons
   jsonapi_resources :preferences
 
@@ -60,6 +61,7 @@ TestApp.routes.draw do
       jsonapi_resources :expense_entries
       jsonapi_resources :breeds
       jsonapi_resources :planets
+      jsonapi_resources :planet_types
       jsonapi_resources :moons
       jsonapi_resources :preferences
     end
@@ -72,7 +74,7 @@ TestApp.routes.draw do
 
     namespace :v3 do
       jsonapi_resource :preferences do
-
+      #   Intentionally empty block to skip association urls
       end
 
       jsonapi_resources :posts, except: [:destroy] do

@@ -62,6 +62,11 @@ ActiveRecord::Schema.define do
   create_table :planets, force: true do |t|
     t.string :name
     t.string :description
+    t.integer :planet_type_id
+  end
+
+  create_table :planet_types, force: true do |t|
+    t.string :name
   end
 
   create_table :moons, force: true do |t|
@@ -121,6 +126,11 @@ end
 
 class Planet < ActiveRecord::Base
   has_many :moons
+  has_one :planet_type
+end
+
+class PlanetType < ActiveRecord::Base
+  has_many :planets
 end
 
 class Moon < ActiveRecord::Base
@@ -247,6 +257,7 @@ module Api
     end
   end
 end
+
 ### RESOURCES
 class PersonResource < JSON::API::Resource
   attributes :id, :name, :email, :date_joined
@@ -400,6 +411,12 @@ class PlanetResource < JSON::API::Resource
   attribute :description
 
   has_many :moons
+  has_one :planet_type
+end
+
+class PlanetTypeResource < JSON::API::Resource
+  attribute :name
+  has_many :planets
 end
 
 class MoonResource < JSON::API::Resource
@@ -550,8 +567,19 @@ Post.create(title: 'Tagged up post 2',
             tag_ids: [6,7,8,9]
 )
 
-saturn = Planet.create(name: 'Satern', description: 'Saturn is the sixth planet from the Sun and the second largest planet in the Solar System, after Jupiter.')
+gas_giant = PlanetType.create(name: 'Gas Giant')
+planetoid = PlanetType.create(name: 'Planetoid')
+terrestrial = PlanetType.create(name: 'Terrestrial')
+sulfuric = PlanetType.create(name: 'Sulfuric')
+unknown = PlanetType.create(name: 'unknown')
+
+saturn = Planet.create(name: 'Satern',
+                       description: 'Saturn is the sixth planet from the Sun and the second largest planet in the Solar System, after Jupiter.',
+                       planet_type_id: planetoid.id)
 titan = Moon.create(name:'Titan', description: 'Best known of the Saturn moons.', planet_id: saturn.id)
-pluto = Planet.create(name: 'Pluto', description: 'Pluto is the smallest planet.')
-uranus = Planet.create(name: 'Uranus', description: 'Insert adolescent jokes here.')
-jupiter = Planet.create(name: 'Jupiter', description: 'A gas giant.')
+pluto = Planet.create(name: 'Pluto', description: 'Pluto is the smallest planet.', planet_type_id: planetoid.id)
+uranus = Planet.create(name: 'Uranus', description: 'Insert adolescent jokes here.', planet_type_id: gas_giant.id)
+jupiter = Planet.create(name: 'Jupiter', description: 'A gas giant.', planet_type_id: gas_giant.id)
+betax = Planet.create(name: 'Beta X', description: 'Newly discovered Planet X', planet_type_id: unknown.id)
+betay = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Y', planet_type_id: unknown.id)
+betaz = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Z', planet_type_id: unknown.id)

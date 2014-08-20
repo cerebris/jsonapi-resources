@@ -393,9 +393,33 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 'AAAA', json_response['posts'][0]['body']
   end
 
+  def test_update_relationship_has_many_single
+    post :create_association, {post_id: 3, association: 'tags',
+                   tags: [3] }
+
+    assert_response :success
+    post :create_association, {post_id: 3, association: 'tags',
+                               tags: [2] }
+
+    assert_response :success
+    post :create_association, {post_id: 3, association: 'tags',
+                               tags: [5] }
+
+    assert_response :success
+    post :create_association, {post_id: 3, association: 'tags',
+                               tags: [5] }
+
+    assert_response :success
+
+    assert_equal 1, json_response['posts'].size
+    assert_equal 3, json_response['posts'][0]['links']['author']
+    assert matches_array? [2,3,5], json_response['posts'][0]['links']['tags']
+    assert_equal 'AAAA', json_response['posts'][0]['body']
+  end
+
   def test_update_relationship_has_many
     post :create_association, {post_id: 3, association: 'tags',
-                   tags: [2,3] }
+                               tags: [2,3] }
 
     assert_response :success
     assert_equal 1, json_response['posts'].size

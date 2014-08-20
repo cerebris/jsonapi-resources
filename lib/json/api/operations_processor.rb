@@ -13,15 +13,21 @@ module JSON
         transaction {
           request.operations.each do |operation|
             result = nil
-            case operation.op
-              when :add
+            case operation
+              when AddResourceOperation
                 result = add(operation, context)
-              when :replace
+              when AddHasManyAssociationOperation
+                result = add_has_many_association(operation, context)
+              when AddHasOneAssociationOperation
+                result = add_has_one_association(operation, context)
+              when ReplaceAttributesOperation
                 result = replace(operation, context)
-              when :remove
+              when RemoveResourceOperation
                 result = remove(operation, context)
-              when :remove_association
-                result = remove_association(operation, context)
+              when RemoveHasManyAssociationOperation
+                result = remove_has_many_association(operation, context)
+              when RemoveHasOneAssociationOperation
+                result = remove_has_one_association(operation, context)
             end
             @results.push(result)
             if result.has_errors?
@@ -48,34 +54,66 @@ module JSON
       def add(operation, context)
         resource = operation.resource_klass.new
 
-        resource.before_create(context, operation.values)
+        resource.before_operation(context, operation)
 
         update_resource_values(resource, operation.values)
 
-        resource.before_save(context)
+        resource.save(context)
 
-        resource.save
-
-        resource.after_create(context)
+        resource.after_operation(context, operation)
 
         return JSON::API::OperationResult.new(:created, resource)
       rescue JSON::API::Exceptions::Error => e
         return JSON::API::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, e.errors)
       end
 
+      #  Process an add_has_one_association operation
+      def add_has_one_association(operation, context)
+        resource = operation.resource_klass.find_by_key(operation.resource_id, context)
+
+        resource.before_operation(context, operation)
+
+        resource.create_has_one_link(context, operation.key, operation.key_value)
+
+        resource.after_operation(context, operation)
+
+        return JSON::API::OperationResult.new(:created, resource)
+      end
+
+      #  Process an add_has_one_association operation
+      def add_has_many_association(operation, context)
+        resource = operation.resource_klass.find_by_key(operation.resource_id, context)
+
+        resource.before_operation(context, operation)
+        association = resource.class._association(operation.association_type)
+
+        operation.key_values.each do |value|
+          related_resource = Resource.resource_for(association.serialize_type_name).find_by_key(value, context)
+          resource.create_has_many_link(context, operation.association_type, related_resource)
+        end
+
+        resource.before_save(context)
+
+        resource.save(context)
+
+        resource.after_operation(context, operation)
+
+        return JSON::API::OperationResult.new(:created, resource)
+      end
+
       #  Process a replace operation
       def replace(operation, context)
         resource = operation.resource_klass.find_by_key(operation.resource_id, context)
 
-        resource.before_replace(context, operation.values)
+        resource.before_operation(context, operation)
 
         update_resource_values(resource, operation.values)
 
         resource.before_save(context)
 
-        resource.save
+        resource.save(context)
 
-        resource.after_replace(context)
+        resource.after_operation(context, operation)
 
         return JSON::API::OperationResult.new(:ok, resource)
       rescue JSON::API::Exceptions::Error => e
@@ -86,11 +124,11 @@ module JSON
       def remove(operation, context)
         resource = operation.resource_klass.find_by_key(operation.resource_id, context)
 
-        resource.before_remove(context)
+        resource.before_operation(context, operation)
 
         resource.remove
 
-        resource.after_remove(context)
+        resource.after_operation(context, operation)
 
         return JSON::API::OperationResult.new(:no_content)
 
@@ -101,21 +139,30 @@ module JSON
         return JSON::API::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, e.errors)
       end
 
-      # Process a remove_association operation
-      def remove_association(operation, context)
+      # Process a remove_has_one_association operation
+      def remove_has_one_association(operation, context)
         resource = operation.resource_klass.find_by_key(operation.resource_id, context)
 
-        key = operation.values[:associated_key]
+        key = operation.resource_klass._association(operation.association_type).key
 
-        resource.before_remove_association(context, key)
+        resource.before_operation(context, operation)
 
-        if key
-          resource.remove_has_many_link(operation.values[:association], key)
-        else
-          resource.remove_has_one_link(operation.values[:association])
-        end
+        resource.remove_has_one_link(context, key)
 
-        resource.after_remove_association(context)
+        resource.after_operation(context, operation)
+
+        return JSON::API::OperationResult.new(:no_content)
+      end
+
+      # Process a remove_has_many_association operation
+      def remove_has_many_association(operation, context)
+        resource = operation.resource_klass.find_by_key(operation.resource_id, context)
+
+        resource.before_operation(context, operation)
+
+        resource.remove_has_many_link(context, operation.association_type, operation.associated_key)
+
+        resource.after_operation(context, operation)
 
         return JSON::API::OperationResult.new(:no_content)
       end

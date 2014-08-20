@@ -23,17 +23,28 @@ module JSON
         @object.destroy
       end
 
-      def remove_has_many_link(association, key)
+      def create_has_many_link(context, association, related_resource)
+        @object.send(association) << related_resource.object
+        save(context)
+      end
+
+      def create_has_one_link(context, key, key_value)
+        @object.send("#{key}=", key_value)
+        save(context)
+      end
+
+      def remove_has_many_link(context, association, key)
         @object.send(association).delete(key)
-        save
+        save(context)
       end
 
-      def remove_has_one_link(association)
+      def remove_has_one_link(context, association)
         @object.send("#{association}=", nil)
-        save
+        save(context)
       end
 
-      def save
+      def save(context)
+        before_save(context)
         @object.save!
       rescue ActiveRecord::RecordInvalid => e
         errors = []
@@ -55,31 +66,16 @@ module JSON
         keys
       end
 
-      def before_create(context, values)
+      # Callback before an operation is processed
+      def before_operation(context, operation)
       end
 
-      def after_create(context)
+      # Callback after an operation is processed
+      def after_operation(context, operation)
       end
 
+      # Callback before a resource is saved
       def before_save(context)
-      end
-
-      def before_replace(context, values)
-      end
-
-      def after_replace(context)
-      end
-
-      def before_remove(context)
-      end
-
-      def after_remove(context)
-      end
-
-      def before_remove_association(context, key)
-      end
-
-      def after_remove_association(context)
       end
 
       class << self
