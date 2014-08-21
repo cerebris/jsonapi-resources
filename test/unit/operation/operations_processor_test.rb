@@ -15,7 +15,7 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
     count = Planet.count
 
     operations = [
-      JSON::API::AddResourceOperation.new(PlanetResource, {attributes: {'name' => 'earth', 'description' => 'The best planet ever.'}})
+      JSON::API::CreateResourceOperation.new(PlanetResource, {attributes: {'name' => 'earth', 'description' => 'The best planet ever.'}})
     ]
 
     request = JSON::API::Request.new
@@ -36,9 +36,9 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
     count = Planet.count
 
     operations = [
-        JSON::API::AddResourceOperation.new(PlanetResource, {attributes: {'name' => 'earth', 'description' => 'The best planet for life.'}}),
-        JSON::API::AddResourceOperation.new(PlanetResource, {attributes: {'name' => 'mars', 'description' => 'The red planet.'}}),
-        JSON::API::AddResourceOperation.new(PlanetResource, {attributes: {'name' => 'venus', 'description' => 'A very hot planet.'}})
+      JSON::API::CreateResourceOperation.new(PlanetResource, {attributes: {'name' => 'earth', 'description' => 'The best planet for life.'}}),
+      JSON::API::CreateResourceOperation.new(PlanetResource, {attributes: {'name' => 'mars', 'description' => 'The red planet.'}}),
+      JSON::API::CreateResourceOperation.new(PlanetResource, {attributes: {'name' => 'venus', 'description' => 'A very hot planet.'}})
     ]
 
     request = JSON::API::Request.new
@@ -61,7 +61,7 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
 
 
     operations = [
-      JSON::API::AddHasOneAssociationOperation.new(PlanetResource, saturn.id, :planet_type, gas_giant.id)
+      JSON::API::ReplaceHasOneAssociationOperation.new(PlanetResource, saturn.id, :planet_type, gas_giant.id)
     ]
 
     request = JSON::API::Request.new
@@ -88,7 +88,7 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
     assert_equal(betaz.planet_type_id, unknown.id)
 
     operations = [
-        JSON::API::AddHasManyAssociationOperation.new(PlanetTypeResource, gas_giant.id, :planets, [betax.id, betay.id, betaz.id])
+      JSON::API::CreateHasManyAssociationOperation.new(PlanetTypeResource, gas_giant.id, :planets, [betax.id, betay.id, betaz.id])
     ]
 
     request = JSON::API::Request.new
@@ -113,7 +113,7 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
     assert_equal(saturn.name, 'Satern')
 
     operations = [
-        JSON::API::ReplaceAttributesOperation.new(PlanetResource, 1, {attributes: {'name' => 'saturn'}}),
+      JSON::API::ReplaceFieldsOperation.new(PlanetResource, 1, {attributes: {'name' => 'saturn'}}),
     ]
 
     request = JSON::API::Request.new
@@ -142,7 +142,7 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
     assert_equal(pluto.name, 'Pluto')
 
     operations = [
-        JSON::API::RemoveResourceOperation.new(PlanetResource, 2),
+      JSON::API::RemoveResourceOperation.new(PlanetResource, 2),
     ]
 
     request = JSON::API::Request.new
@@ -164,9 +164,9 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
     count = Planet.count
 
     operations = [
-        JSON::API::RemoveResourceOperation.new(PlanetResource, 3),
-        JSON::API::RemoveResourceOperation.new(PlanetResource, 4),
-        JSON::API::RemoveResourceOperation.new(PlanetResource, 4)
+      JSON::API::RemoveResourceOperation.new(PlanetResource, 3),
+      JSON::API::RemoveResourceOperation.new(PlanetResource, 4),
+      JSON::API::RemoveResourceOperation.new(PlanetResource, 4)
     ]
 
     request = JSON::API::Request.new

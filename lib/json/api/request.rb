@@ -129,13 +129,13 @@ module JSON
 
         if object_params_raw.is_a?(Array)
           object_params_raw.each do |p|
-            @operations.push JSON::API::AddResourceOperation.new(@resource_klass,
-                                                                 @resource_klass.verify_create_params(p, @context))
+            @operations.push JSON::API::CreateResourceOperation.new(@resource_klass,
+                                                                    @resource_klass.verify_create_params(p, @context))
           end
         else
-          @operations.push JSON::API::AddResourceOperation.new(@resource_klass,
-                                                               @resource_klass.verify_create_params(object_params_raw,
-                                                                                                    @context))
+          @operations.push JSON::API::CreateResourceOperation.new(@resource_klass,
+                                                                  @resource_klass.verify_create_params(object_params_raw,
+                                                                                                       @context))
         end
       rescue ActionController::ParameterMissing => e
         @errors.concat(JSON::API::Exceptions::ParameterMissing.new(e.param).errors)
@@ -158,15 +158,15 @@ module JSON
         association = resource_klass._association(association_type)
 
         if association.is_a?(JSON::API::Association::HasOne)
-          @operations.push JSON::API::AddHasOneAssociationOperation.new(resource_klass,
-                                                                        parent_key,
-                                                                        association_type,
-                                                                        verified_param_set[:has_one].values[0])
+          @operations.push JSON::API::ReplaceHasOneAssociationOperation.new(resource_klass,
+                                                                            parent_key,
+                                                                            association_type,
+                                                                            verified_param_set[:has_one].values[0])
         else
-          @operations.push JSON::API::AddHasManyAssociationOperation.new(resource_klass,
-                                                                         parent_key,
-                                                                         association_type,
-                                                                         verified_param_set[:has_many].values[0])
+          @operations.push JSON::API::CreateHasManyAssociationOperation.new(resource_klass,
+                                                                            parent_key,
+                                                                            association_type,
+                                                                            verified_param_set[:has_many].values[0])
         end
       rescue ActionController::ParameterMissing => e
         @errors.concat(JSON::API::Exceptions::ParameterMissing.new(e.param).errors)
@@ -189,20 +189,20 @@ module JSON
             if !keys.include?(object_params[@resource_klass._key])
               raise JSON::API::Exceptions::KeyNotIncludedInURL.new(object_params[@resource_klass._key])
             end
-            @operations.push JSON::API::ReplaceAttributesOperation.new(@resource_klass,
-                                                                       object_params[@resource_klass._key],
-                                                                       @resource_klass.verify_update_params(object_params,
-                                                                                                                @context))
+            @operations.push JSON::API::ReplaceFieldsOperation.new(@resource_klass,
+                                                                   object_params[@resource_klass._key],
+                                                                   @resource_klass.verify_update_params(object_params,
+                                                                                                        @context))
           end
         else
           if !object_params_raw[@resource_klass._key].nil? && keys != object_params_raw[@resource_klass._key]
             raise JSON::API::Exceptions::KeyNotIncludedInURL.new(object_params_raw[@resource_klass._key])
           end
 
-          @operations.push JSON::API::ReplaceAttributesOperation.new(@resource_klass,
-                                                                     params[@resource_klass._key],
-                                                                     @resource_klass.verify_update_params(object_params_raw,
-                                                                                                          @context))
+          @operations.push JSON::API::ReplaceFieldsOperation.new(@resource_klass,
+                                                                 params[@resource_klass._key],
+                                                                 @resource_klass.verify_update_params(object_params_raw,
+                                                                                                      @context))
         end
 
       rescue ActionController::ParameterMissing => e

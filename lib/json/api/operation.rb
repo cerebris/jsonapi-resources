@@ -12,7 +12,7 @@ module JSON
       end
     end
 
-    class AddResourceOperation < Operation
+    class CreateResourceOperation < Operation
       attr_reader :values
 
       def initialize(resource_klass, values = {})
@@ -53,7 +53,7 @@ module JSON
       end
     end
 
-    class ReplaceAttributesOperation < Operation
+    class ReplaceFieldsOperation < Operation
       attr_reader :values, :resource_id
 
       def initialize(resource_klass, resource_id, values)
@@ -74,7 +74,7 @@ module JSON
       end
     end
 
-    class AddHasOneAssociationOperation < Operation
+    class ReplaceHasOneAssociationOperation < Operation
       attr_reader :resource_id, :association_type, :key_value
 
       def initialize(resource_klass, resource_id, association_type, key_value)
@@ -93,7 +93,7 @@ module JSON
       end
     end
 
-    class AddHasManyAssociationOperation < Operation
+    class CreateHasManyAssociationOperation < Operation
       attr_reader :resource_id, :association_type, :key_values
 
       def initialize(resource_klass, resource_id, association_type, key_values)
