@@ -22,10 +22,11 @@ module JSON
 
       def apply(context)
         resource = @resource_klass.new
-        resource.update_values(context, @values)
-        resource.save(context)
+        resource.update_values(@values)
+        resource.save
 
         return JSON::API::OperationResult.new(:created, resource)
+
       rescue JSON::API::Exceptions::Error => e
         return JSON::API::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, e.errors)
       end
@@ -63,10 +64,11 @@ module JSON
 
       def apply(context)
         resource = @resource_klass.find_by_key(@resource_id, context)
-        resource.update_values(context, values)
-        resource.save(context)
+        resource.update_values(values)
+        resource.save
 
         return JSON::API::OperationResult.new(:ok, resource)
+
       rescue JSON::API::Exceptions::Error => e
         return JSON::API::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, e.errors)
       end
@@ -85,7 +87,7 @@ module JSON
 
       def apply(context)
         resource = @resource_klass.find_by_key(@resource_id, context)
-        resource.create_has_one_link(context, @key, @key_value)
+        resource.create_has_one_link(@key, @key_value)
 
         return JSON::API::OperationResult.new(:created, resource)
       end
@@ -107,7 +109,7 @@ module JSON
         association = resource.class._association(@association_type)
         @key_values.each do |value|
           related_resource = Resource.resource_for(association.serialize_type_name).find_by_key(value, context)
-          resource.create_has_many_link(context, @association_type, related_resource)
+          resource.create_has_many_link(@association_type, related_resource)
         end
 
         return JSON::API::OperationResult.new(:created, resource)
@@ -126,7 +128,7 @@ module JSON
 
       def apply(context)
         resource = @resource_klass.find_by_key(@resource_id, context)
-        resource.remove_has_many_link(context, @association_type, @associated_key)
+        resource.remove_has_many_link(@association_type, @associated_key)
 
         return JSON::API::OperationResult.new(:no_content)
       end
@@ -145,7 +147,7 @@ module JSON
       def apply(context)
         resource = @resource_klass.find_by_key(@resource_id, context)
         key = @resource_klass._association(@association_type).key
-        resource.remove_has_one_link(context, key)
+        resource.remove_has_one_link(key)
 
         return JSON::API::OperationResult.new(:no_content)
       end

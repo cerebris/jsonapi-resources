@@ -23,28 +23,27 @@ module JSON
         @object.destroy
       end
 
-      def create_has_many_link(context, association, related_resource)
+      def create_has_many_link(association, related_resource)
         @object.send(association) << related_resource.object
-        save(context)
+        save
       end
 
-      def create_has_one_link(context, key, key_value)
+      def create_has_one_link(key, key_value)
         @object.send("#{key}=", key_value)
-        save(context)
+        save
       end
 
-      def remove_has_many_link(context, association, key)
+      def remove_has_many_link(association, key)
         @object.send(association).delete(key)
-        save(context)
+        save
       end
 
-      def remove_has_one_link(context, association)
+      def remove_has_one_link(association)
         @object.send("#{association}=", nil)
-        save(context)
+        save
       end
 
-      def save(context)
-        before_save(context)
+      def save
         @object.save!
       rescue ActiveRecord::RecordInvalid => e
         errors = []
@@ -61,27 +60,15 @@ module JSON
         raise JSON::API::Exceptions::ValidationErrors.new(errors)
       end
 
-      def update_values(context, values)
+      def update_values(values)
         values.each do |property, value|
           send "#{property}=", value
         end unless values.nil?
       end
 
       # Override this on a resource instance to override the fetchable keys
-      def fetchable(keys, context = {})
+      def fetchable(keys, context = nil)
         keys
-      end
-
-      # Callback before an operation is processed
-      def before_operation(context, operation)
-      end
-
-      # Callback after an operation is processed
-      def after_operation(context, operation)
-      end
-
-      # Callback before a resource is saved
-      def before_save(context)
       end
 
       class << self
