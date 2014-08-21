@@ -17,7 +17,7 @@ module JSON
         @filters = {}
       end
 
-      def parse(params)
+      def setup(params)
         @resource_klass ||= self.class.resource_for(params[:controller]) if params[:controller]
 
         unless params.nil?
@@ -127,10 +127,13 @@ module JSON
 
         if object_params_raw.is_a?(Array)
           object_params_raw.each do |p|
-            @operations.push JSON::API::AddResourceOperation.new(@resource_klass, @resource_klass.verify_params(p, :create, @context))
+            @operations.push JSON::API::AddResourceOperation.new(@resource_klass,
+                                                                 @resource_klass.verify_create_params(p, @context))
           end
         else
-          @operations.push JSON::API::AddResourceOperation.new(@resource_klass, @resource_klass.verify_params(object_params_raw, :create, @context))
+          @operations.push JSON::API::AddResourceOperation.new(@resource_klass,
+                                                               @resource_klass.verify_create_params(object_params_raw,
+                                                                                                    @context))
         end
       rescue ActionController::ParameterMissing => e
         @errors.concat(JSON::API::Exceptions::ParameterMissing.new(e.param).errors)
@@ -148,14 +151,22 @@ module JSON
         end
 
         object_params = {links: {association_type => params[association_type]}}
-        verified_params = @resource_klass.verify_params(object_params, :replace, @context)
+        verified_params = @resource_klass.verify_update_params(object_params, @context)
 
         association = resource_klass._association(association_type)
 
         if association.is_a?(JSON::API::Association::HasOne)
-          @operations.push JSON::API::AddHasOneAssociationOperation.new(resource_klass, parent_key, association_type, verified_params.keys[0], verified_params.values[0])
+          @operations.push JSON::API::AddHasOneAssociationOperation.new(resource_klass,
+                                                                        parent_key,
+                                                                        association_type,
+                                                                        verified_params.keys[0],
+                                                                        verified_params.values[0])
         else
-          @operations.push JSON::API::AddHasManyAssociationOperation.new(resource_klass, parent_key, association_type, verified_params.keys[0], verified_params.values[0])
+          @operations.push JSON::API::AddHasManyAssociationOperation.new(resource_klass,
+                                                                         parent_key,
+                                                                         association_type,
+                                                                         verified_params.keys[0],
+                                                                         verified_params.values[0])
         end
       rescue ActionController::ParameterMissing => e
         @errors.concat(JSON::API::Exceptions::ParameterMissing.new(e.param).errors)
@@ -178,14 +189,20 @@ module JSON
             if !keys.include?(object_params[@resource_klass._key])
               raise JSON::API::Exceptions::KeyNotIncludedInURL.new(object_params[@resource_klass._key])
             end
-            @operations.push JSON::API::ReplaceAttributesOperation.new(@resource_klass, object_params[@resource_klass._key], @resource_klass.verify_params(object_params, :replace, @context))
+            @operations.push JSON::API::ReplaceAttributesOperation.new(@resource_klass,
+                                                                       object_params[@resource_klass._key],
+                                                                       @resource_klass.verify_update_params(object_params,
+                                                                                                                @context))
           end
         else
           if !object_params_raw[@resource_klass._key].nil? && keys != object_params_raw[@resource_klass._key]
             raise JSON::API::Exceptions::KeyNotIncludedInURL.new(object_params_raw[@resource_klass._key])
           end
 
-          @operations.push JSON::API::ReplaceAttributesOperation.new(@resource_klass, params[@resource_klass._key], @resource_klass.verify_params(object_params_raw, :replace, @context))
+          @operations.push JSON::API::ReplaceAttributesOperation.new(@resource_klass,
+                                                                     params[@resource_klass._key],
+                                                                     @resource_klass.verify_update_params(object_params_raw,
+                                                                                                          @context))
         end
 
       rescue ActionController::ParameterMissing => e
@@ -215,10 +232,15 @@ module JSON
         if association.is_a?(JSON::API::Association::HasMany)
           keys = parse_key_array(params[:keys])
           keys.each do |key|
-            @operations.push JSON::API::RemoveHasManyAssociationOperation.new(resource_klass, parent_key, association_type, key)
+            @operations.push JSON::API::RemoveHasManyAssociationOperation.new(resource_klass,
+                                                                              parent_key,
+                                                                              association_type,
+                                                                              key)
           end
         else
-          @operations.push JSON::API::RemoveHasOneAssociationOperation.new(resource_klass, parent_key, association_type)
+          @operations.push JSON::API::RemoveHasOneAssociationOperation.new(resource_klass,
+                                                                           parent_key,
+                                                                           association_type)
         end
       end
 

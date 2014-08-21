@@ -17,7 +17,7 @@ module JSON
       before_filter {
         begin
           @request = JSON::API::Request.new(context)
-          @request.parse(params)
+          @request.setup(params)
           render_errors(@request.errors) unless @request.errors.empty?
         rescue => e
           handle_exceptions(e)
@@ -141,7 +141,10 @@ module JSON
           render :status => errors.count == 1 ? errors[0].status : :bad_request, json: {errors: errors}
         else
           # if patch
-            render :status => results[0].code, json: JSON::API::ResourceSerializer.new.serialize(resources, @request.includes, @request.fields, context)
+            render :status => results[0].code, json: JSON::API::ResourceSerializer.new.serialize(resources,
+                                                                                                 @request.includes,
+                                                                                                 @request.fields,
+                                                                                                 context)
           # else
           #   result_hash = {}
           #   resources.each do |resource|

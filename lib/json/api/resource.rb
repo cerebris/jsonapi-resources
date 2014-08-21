@@ -43,6 +43,12 @@ module JSON
         save
       end
 
+      def update_values(values)
+        values.each do |property, value|
+          send "#{property}=", value
+        end unless values.nil?
+      end
+
       def save
         @object.save!
       rescue ActiveRecord::RecordInvalid => e
@@ -58,12 +64,6 @@ module JSON
           end
         end
         raise JSON::API::Exceptions::ValidationErrors.new(errors)
-      end
-
-      def update_values(values)
-        values.each do |property, value|
-          send "#{property}=", value
-        end unless values.nil?
       end
 
       # Override this on a resource instance to override the fetchable keys
@@ -182,13 +182,15 @@ module JSON
           self.new(obj)
         end
 
-        def verify_params(object_params, mode, context = {})
-          if mode == :create
-            allowed_params = createable(_updateable_associations | _attributes.to_a)
-          else
-            allowed_params = updateable(_updateable_associations | _attributes.to_a)
-          end
+        def verify_create_params(object_params, context = {})
+          verify_params(object_params, createable(_updateable_associations | _attributes.to_a), context)
+        end
 
+        def verify_update_params(object_params, context = {})
+          verify_params(object_params, updateable(_updateable_associations | _attributes.to_a), context)
+        end
+
+        def verify_params(object_params, allowed_params, context)
           # push links into top level param list with attributes
           if object_params && object_params[:links]
             object_params[:links].each do |link, value|
