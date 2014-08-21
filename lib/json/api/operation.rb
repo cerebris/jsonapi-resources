@@ -86,7 +86,7 @@ module JSON
 
       def apply(context)
         resource = @resource_klass.find_by_key(@resource_id, context)
-        resource.create_has_one_link(@association_type, @key_value, context)
+        resource.replace_has_one_link(@association_type, @key_value, context)
         resource.save
 
         return JSON::API::OperationResult.new(:created, resource)

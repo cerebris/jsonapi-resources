@@ -36,7 +36,7 @@ module JSON
         @object.send("#{association.key}=", association_key_values)
       end
 
-      def create_has_one_link(association_type, association_key_value, context)
+      def replace_has_one_link(association_type, association_key_value, context)
         association = self.class._associations[association_type]
 
         @object.send("#{association.key}=", association_key_value)
@@ -63,7 +63,7 @@ module JSON
           if value.nil?
             remove_has_one_link(association_type, context)
           else
-            create_has_one_link(association_type, value, context)
+            replace_has_one_link(association_type, value, context)
           end
         end if paramset[:has_one]
 
