@@ -22,7 +22,7 @@ module JSON
 
       def apply(context)
         resource = @resource_klass.new
-        resource.update_values(@values, context)
+        resource.replace_fields(@values, context)
         resource.save
 
         return JSON::API::OperationResult.new(:created, resource)
@@ -64,7 +64,7 @@ module JSON
 
       def apply(context)
         resource = @resource_klass.find_by_key(@resource_id, context)
-        resource.update_values(values, context)
+        resource.replace_fields(values, context)
         resource.save
 
         return JSON::API::OperationResult.new(:ok, resource)

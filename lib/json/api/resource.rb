@@ -54,22 +54,22 @@ module JSON
         @object.send("#{association.key}=", nil)
       end
 
-      def update_values(paramset, context)
-        paramset[:attributes].each do |attribute, value|
+      def replace_fields(field_data, context)
+        field_data[:attributes].each do |attribute, value|
           send "#{attribute}=", value
         end
 
-        paramset[:has_one].each do |association_type, value|
+        field_data[:has_one].each do |association_type, value|
           if value.nil?
             remove_has_one_link(association_type, context)
           else
             replace_has_one_link(association_type, value, context)
           end
-        end if paramset[:has_one]
+        end if field_data[:has_one]
 
-        paramset[:has_many].each do |association_type, values|
+        field_data[:has_many].each do |association_type, values|
           replace_has_many_links(association_type, values, context)
-        end if paramset[:has_many]
+        end if field_data[:has_many]
       end
 
       def save
