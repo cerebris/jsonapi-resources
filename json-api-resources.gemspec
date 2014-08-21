@@ -4,13 +4,13 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'jsonapi/resources/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = 'json-api-resources'
+  spec.name          = 'jsonapi-resources'
   spec.version       = JSONAPI::Resources::VERSION
   spec.authors       = ['Dan Gebhardt', 'Larry Gebhardt']
   spec.email         = ['dan@cerebris.com', 'larry@cerebris.com']
-  spec.summary       = %q{Provides JSON API support.}
-  spec.description   = %q{Provides JSON API support.}
-  spec.homepage      = 'https://github.com/cerebris/json-api-resources'
+  spec.summary       = %q{Provides JSONAPI support.}
+  spec.description   = %q{Provides JSONAPI support.}
+  spec.homepage      = 'https://github.com/cerebris/jsonapi-resources'
   spec.license       = 'MIT'
 
   spec.files         = `git ls-files -z`.split("\x0")

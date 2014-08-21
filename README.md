@@ -14,7 +14,7 @@ The JSON API specification is close to a [1.0rc1 release](https://github.com/jso
 
 Add JAR to your application's `Gemfile`:
 
-    gem 'json-api-resources'
+    gem 'jsonapi-resources'
 
 And then execute:
 
@@ -22,7 +22,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install json-api-resources
+    $ gem install jsonapi-resources
 
 ## Usage
 
@@ -383,7 +383,7 @@ called. This can be used to filter the fields based on scope or other criteria.
 
 ## Contributing
 
-1. Fork it ( http://github.com/cerebris/json-api-resources/fork )
+1. Fork it ( http://github.com/cerebris/jsonapi-resources/fork )
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
