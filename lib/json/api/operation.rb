@@ -7,6 +7,9 @@ module JSON
       def initialize(resource_klass)
         @resource_klass = resource_klass
       end
+
+      def apply(context)
+      end
     end
 
     class AddResourceOperation < Operation
@@ -16,6 +19,16 @@ module JSON
         @values = values
         super(resource_klass)
       end
+
+      def apply(context)
+        resource = @resource_klass.new
+        resource.update_values(context, @values)
+        resource.save(context)
+
+        return JSON::API::OperationResult.new(:created, resource)
+      rescue JSON::API::Exceptions::Error => e
+        return JSON::API::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, e.errors)
+      end
     end
 
     class RemoveResourceOperation < Operation
@@ -23,6 +36,19 @@ module JSON
       def initialize(resource_klass, resource_id)
         @resource_id = resource_id
         super(resource_klass)
+      end
+
+      def apply(context)
+        resource = @resource_klass.find_by_key(@resource_id, context)
+        resource.remove
+
+        return JSON::API::OperationResult.new(:no_content)
+
+      rescue ActiveRecord::DeleteRestrictionError => e
+        record_locked_error = JSON::API::Exceptions::RecordLocked.new(e.message)
+        return JSON::API::OperationResult.new(record_locked_error.errors[0].code, nil, record_locked_error.errors)
+      rescue JSON::API::Exceptions::Error => e
+        return JSON::API::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, e.errors)
       end
     end
 
@@ -33,6 +59,16 @@ module JSON
         @resource_id = resource_id
         @values = values
         super(resource_klass)
+      end
+
+      def apply(context)
+        resource = @resource_klass.find_by_key(@resource_id, context)
+        resource.update_values(context, values)
+        resource.save(context)
+
+        return JSON::API::OperationResult.new(:ok, resource)
+      rescue JSON::API::Exceptions::Error => e
+        return JSON::API::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, e.errors)
       end
     end
 
@@ -46,6 +82,13 @@ module JSON
         @association_type = association_type
         super(resource_klass)
       end
+
+      def apply(context)
+        resource = @resource_klass.find_by_key(@resource_id, context)
+        resource.create_has_one_link(context, @key, @key_value)
+
+        return JSON::API::OperationResult.new(:created, resource)
+      end
     end
 
     class AddHasManyAssociationOperation < Operation
@@ -58,6 +101,17 @@ module JSON
         @association_type = association_type
         super(resource_klass)
       end
+
+      def apply(context)
+        resource = @resource_klass.find_by_key(@resource_id, context)
+        association = resource.class._association(@association_type)
+        @key_values.each do |value|
+          related_resource = Resource.resource_for(association.serialize_type_name).find_by_key(value, context)
+          resource.create_has_many_link(context, @association_type, related_resource)
+        end
+
+        return JSON::API::OperationResult.new(:created, resource)
+      end
     end
 
     class RemoveHasManyAssociationOperation < Operation
@@ -69,6 +123,14 @@ module JSON
         @association_type = association_type
         super(resource_klass)
       end
+
+      def apply(context)
+        resource = @resource_klass.find_by_key(@resource_id, context)
+        resource.remove_has_many_link(context, @association_type, @associated_key)
+
+        return JSON::API::OperationResult.new(:no_content)
+      end
+
     end
 
     class RemoveHasOneAssociationOperation < Operation
@@ -78,6 +140,14 @@ module JSON
         @resource_id = resource_id
         @association_type = association_type
         super(resource_klass)
+      end
+
+      def apply(context)
+        resource = @resource_klass.find_by_key(@resource_id, context)
+        key = @resource_klass._association(@association_type).key
+        resource.remove_has_one_link(context, key)
+
+        return JSON::API::OperationResult.new(:no_content)
       end
     end
   end

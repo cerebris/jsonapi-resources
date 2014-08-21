@@ -61,6 +61,12 @@ module JSON
         raise JSON::API::Exceptions::ValidationErrors.new(errors)
       end
 
+      def update_values(context, values)
+        values.each do |property, value|
+          send "#{property}=", value
+        end unless values.nil?
+      end
+
       # Override this on a resource instance to override the fetchable keys
       def fetchable(keys, context = {})
         keys
