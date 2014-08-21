@@ -1,6 +1,6 @@
-# JSON::API::Resources
+# JSONAPI::Resources
 
-JSON::API::Resources, or "JAR", provides a framework for developing a server that complies with the [JSON API](http://jsonapi.org/) specification.
+JSONAPI::Resources, or "JAR", provides a framework for developing a server that complies with the [JSON API](http://jsonapi.org/) specification.
 
 Like JSON API itself, JAR's design is focused on the resources served by an API. JAR needs little more than a definition of your resources, including their attributes and relationships, to make your server compliant with JSON API.
 
@@ -14,7 +14,7 @@ The JSON API specification is close to a [1.0rc1 release](https://github.com/jso
 
 Add JAR to your application's `Gemfile`:
 
-    gem 'json-api-resources'
+    gem 'jsonapi-resources'
 
 And then execute:
 
@@ -22,7 +22,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install json-api-resources
+    $ gem install jsonapi-resources
 
 ## Usage
 
@@ -32,16 +32,16 @@ Resources define the public interface to your API. A resource defines which attr
 
 Resource definitions should by convention be placed in a directory under app named resources, `app/resources`. The class name should be the single underscored name of the model that backs the resource with `_resource.rb` appended. For example, a `Contact` model's resource should have a class named `ContactResource` defined in a file named `contact_resource.rb`.
 
-#### JSON::API::Resource
+#### JSONAPI::Resource
 
-Resources must be derived from `JSON::API::Resource`, or a class that is itself derived from `JSON::API::Resource`.
+Resources must be derived from `JSONAPI::Resource`, or a class that is itself derived from `JSONAPI::Resource`.
 
 For example:
 
 ```
-require 'json/api/resource'
+require 'jsonapi/resource'
 
-class ContactResource < JSON::API::Resource
+class ContactResource < JSONAPI::Resource
 end
 ```
 
@@ -52,9 +52,9 @@ Any of a resource's attributes that are accessible must be explicitly declared. 
 For example:
 
 ```
-require 'json/api/resource'
+require 'jsonapi/resource'
 
-class ContactResource < JSON::API::Resource
+class ContactResource < JSONAPI::Resource
   attribute :id
   attribute :name_first
   attributes :name_last, :email, :twitter
@@ -68,9 +68,9 @@ A resource object wraps a Ruby object, usually an ActiveModel record, which is a
 For example, a computed attribute for `full_name` could be defined as such:
 
 ```
-require 'json/api/resource'
+require 'jsonapi/resource'
 
-class ContactResource < JSON::API::Resource
+class ContactResource < JSONAPI::Resource
   attributes :id, :name_first, :name_last, :email, :twitter
   attribute :full_name
 
@@ -87,7 +87,7 @@ By default all attributes are assumed to be fetchable. The list of fetchable att
 Here's a contrived example that prevents the email from being returned for resources with an odd `id`:
 
 ```
-class AuthorResource < JSON::API::Resource
+class AuthorResource < JSONAPI::Resource
   attributes :id, :name, :email
   model_name 'Person'
   has_many :posts
@@ -112,9 +112,9 @@ By default all attributes are assumed to be updateble and creatable. To prevent 
 This example prevents `full_name` from being set:
 
 ```
-require 'json/api/resource'
+require 'jsonapi/resource'
 
-class ContactResource < JSON::API::Resource
+class ContactResource < JSONAPI::Resource
   attributes :id, :name_first, :name_last, :email, :twitter
   attribute :full_name
 
@@ -139,7 +139,7 @@ The options hash is not used by the `ResourceController`, but may be used if you
 The primary key of the resource defaults to `id`, which can be changed using the `key` method.
 
 ```
-class CurrencyResource < JSON::API::Resource
+class CurrencyResource < JSONAPI::Resource
   key :code
   attributes :code, :name
 
@@ -153,7 +153,7 @@ end
 The name of the underlying model is inferred from the Resource name. It can be overridden by use of the `model_name` method. For example:
 
 ```
-class AuthorResource < JSON::API::Resource
+class AuthorResource < JSONAPI::Resource
   attributes :id, :name
   model_name 'Person'
   has_many :posts
@@ -167,7 +167,7 @@ Related resources need to be specified in the resource. These are declared with 
 Here's a simple example where a post has a single author and an author can have many posts:
 
 ```
-class PostResource < JSON::API::Resource
+class PostResource < JSONAPI::Resource
   attribute :id, :title, :body
 
   has_one :author
@@ -177,7 +177,7 @@ end
 And the corresponding author:
 
 ```
-class AuthorResource < JSON::API::Resource
+class AuthorResource < JSONAPI::Resource
   attribute :id, :name
 
   has_many :posts
@@ -195,7 +195,7 @@ The association methods support the following options:
 Examples:
 
 ```
- class CommentResource < JSON::API::Resource
+ class CommentResource < JSONAPI::Resource
   attributes :id, :body
   has_one :post
   has_one :author, class_name: 'Person'
@@ -204,7 +204,7 @@ Examples:
 ```
 
 ```
-class ExpenseEntryResource < JSON::API::Resource
+class ExpenseEntryResource < JSONAPI::Resource
   attributes :id, :cost, :transaction_date
 
   has_one :currency, class_name: 'Currency', key: 'currency_code'
@@ -220,9 +220,9 @@ resource class.
 For example:
 
 ```
-require 'json/api/resource'
+require 'jsonapi/resource'
 
-class ContactResource < JSON::API::Resource
+class ContactResource < JSONAPI::Resource
   attributes :id, :name_first, :name_last, :email, :twitter
 
   filter :id
@@ -237,7 +237,7 @@ Basic finding by filters is supported by resources. However if you have more com
 Here's a hackish example:
 
 ```
-class AuthorResource < JSON::API::Resource
+class AuthorResource < JSONAPI::Resource
   attributes :id, :name
   model_name 'Person'
   has_many :posts
@@ -259,12 +259,12 @@ end
 
 ### Controllers
 
-JSON::API::Resources provides a class, `ResourceController`, that can be used as the base class for your controllers. `ResourceController` supports `index`, `show`, `create`, `update`, and `destroy` methods. Just deriving your controller from `ResourceController` will give you a fully functional controller. 
+JSONAPI::Resources provides a class, `ResourceController`, that can be used as the base class for your controllers. `ResourceController` supports `index`, `show`, `create`, `update`, and `destroy` methods. Just deriving your controller from `ResourceController` will give you a fully functional controller. 
 
 For example:
 
 ```
-class PeopleController < JSON::API::ResourceController
+class PeopleController < JSONAPI::ResourceController
 
 end
 ```
@@ -324,7 +324,7 @@ The `ResourceSerializer` can be used to serialize a resource into JSON API compl
 
 ```
 post = Post.find(1)
-JSON::API::ResourceSerializer.new.serialize(PostResource.new(post))
+JSONAPI::ResourceSerializer.new.serialize(PostResource.new(post))
 ```
 
 This returns results like this:
@@ -367,7 +367,7 @@ A hash of resource types and arrays of fields for each resource type.
 
 ```
 post = Post.find(1)
-JSON::API::ResourceSerializer.new.serialize(PostResource.new(post),
+JSONAPI::ResourceSerializer.new.serialize(PostResource.new(post),
         include: ['comments','author','comments.tags','author.posts'],
         fields: {
                  people: [:id, :email, :comments],
@@ -383,7 +383,7 @@ called. This can be used to filter the fields based on scope or other criteria.
 
 ## Contributing
 
-1. Fork it ( http://github.com/cerebris/json-api-resources/fork )
+1. Fork it ( http://github.com/cerebris/jsonapi-resources/fork )
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)

@@ -6,7 +6,7 @@ module ActionDispatch
           resource_type = resources.first
           options = resources.extract_options!.dup
 
-          res = JSON::API::Resource.resource_for(resource_type)
+          res = JSONAPI::Resource.resource_for(resource_type)
           resource resource_type, options.merge(res.routing_resource_options) do
             @scope[:jsonapi_resource] = resource_type
 
@@ -14,7 +14,7 @@ module ActionDispatch
               yield
             else
               res._associations.each do |association_name, association|
-                if association.is_a?(JSON::API::Association::HasMany)
+                if association.is_a?(JSONAPI::Association::HasMany)
                   jsonapi_links(association_name)
                 else
                   jsonapi_link(association_name)
@@ -28,7 +28,7 @@ module ActionDispatch
           resource_type = resources.first
           options = resources.extract_options!.dup
 
-          res = JSON::API::Resource.resource_for(resource_type)
+          res = JSONAPI::Resource.resource_for(resource_type)
           resources resource_type, options.merge(res.routing_resource_options) do
             @scope[:jsonapi_resource] = resource_type
 
@@ -36,7 +36,7 @@ module ActionDispatch
               yield
             else
               res._associations.each do |association_name, association|
-                if association.is_a?(JSON::API::Association::HasMany)
+                if association.is_a?(JSONAPI::Association::HasMany)
                   jsonapi_links(association_name)
                 else
                   jsonapi_link(association_name)
@@ -61,7 +61,7 @@ module ActionDispatch
           link_type = links.first
           options = links.extract_options!.dup
 
-          res = JSON::API::Resource.resource_for(@scope[:jsonapi_resource])
+          res = JSONAPI::Resource.resource_for(@scope[:jsonapi_resource])
 
           methods = links_methods(options)
 
@@ -82,7 +82,7 @@ module ActionDispatch
           link_type = links.first
           options = links.extract_options!.dup
 
-          res = JSON::API::Resource.resource_for(@scope[:jsonapi_resource])
+          res = JSONAPI::Resource.resource_for(@scope[:jsonapi_resource])
 
           methods = links_methods(options)
 

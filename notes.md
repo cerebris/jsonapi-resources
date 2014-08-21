@@ -23,7 +23,7 @@ Specify the following:
   * default_sort
 
 ```
-class ApplicationResource < JSON::API::Resource
+class ApplicationResource < JSONAPI::Resource
 end
 
 class PostResource < ApplicationResource
@@ -61,7 +61,7 @@ end
 
 ## Serializers
 
-class ApplicationSerializer < JSON::API::Serializer
+class ApplicationSerializer < JSONAPI::Serializer
 
 end
 
@@ -81,7 +81,7 @@ end
 
 ## Controllers
 
-ApplicationController < JSON::API::Controller
+ApplicationController < JSONAPI::Controller
 
 PostController < ApplicationController
 
