@@ -11,7 +11,7 @@ require 'minitest/autorun'
 require 'minitest/spec'
 require 'rails/all'
 
-require 'json/api/routing_ext'
+require 'jsonapi/routing_ext'
 
 require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/hash_helpers', __FILE__)

@@ -1,11 +1,11 @@
 require File.expand_path('../../../test_helper', __FILE__)
 require File.expand_path('../../../fixtures/active_record', __FILE__)
 
-class ArticleResource < JSON::API::Resource
+class ArticleResource < JSONAPI::Resource
   model_name 'Post'
 end
 
-class CatResource < JSON::API::Resource
+class CatResource < JSONAPI::Resource
   attribute :id
   attribute :name
   attribute :breed

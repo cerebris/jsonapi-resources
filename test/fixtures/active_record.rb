@@ -1,7 +1,7 @@
 require 'active_record'
-require 'json/api/resource_controller'
-require 'json/api/resource'
-require 'json/api/exceptions'
+require 'jsonapi/resource_controller'
+require 'jsonapi/resource'
+require 'jsonapi/exceptions'
 require 'rails'
 require 'rails/all'
 
@@ -190,76 +190,76 @@ $breed_data.add(Breed.new(2, 'sphinx'))
 $breed_data.add(Breed.new(3, 'to_delete'))
 
 ### CONTROLLERS
-class AuthorsController < JSON::API::ResourceController
+class AuthorsController < JSONAPI::ResourceController
 
 end
 
-class PeopleController < JSON::API::ResourceController
+class PeopleController < JSONAPI::ResourceController
 
 end
 
-class PostsController < JSON::API::ResourceController
+class PostsController < JSONAPI::ResourceController
 end
 
-class TagsController < JSON::API::ResourceController
+class TagsController < JSONAPI::ResourceController
 end
 
-class CurrenciesController < JSON::API::ResourceController
+class CurrenciesController < JSONAPI::ResourceController
 end
 
-class ExpenseEntriesController < JSON::API::ResourceController
+class ExpenseEntriesController < JSONAPI::ResourceController
 end
 
-class BreedsController < JSON::API::ResourceController
+class BreedsController < JSONAPI::ResourceController
 end
 
 ### CONTROLLERS
 module Api
   module V1
-    class AuthorsController < JSON::API::ResourceController
+    class AuthorsController < JSONAPI::ResourceController
     end
 
-    class PeopleController < JSON::API::ResourceController
+    class PeopleController < JSONAPI::ResourceController
     end
 
-    class PostsController < JSON::API::ResourceController
+    class PostsController < JSONAPI::ResourceController
     end
 
-    class TagsController < JSON::API::ResourceController
+    class TagsController < JSONAPI::ResourceController
     end
 
-    class CurrenciesController < JSON::API::ResourceController
+    class CurrenciesController < JSONAPI::ResourceController
     end
 
-    class ExpenseEntriesController < JSON::API::ResourceController
+    class ExpenseEntriesController < JSONAPI::ResourceController
     end
 
-    class BreedsController < JSON::API::ResourceController
+    class BreedsController < JSONAPI::ResourceController
     end
   end
 
   module V2
-    class AuthorsController < JSON::API::ResourceController
+    class AuthorsController < JSONAPI::ResourceController
     end
 
-    class PeopleController < JSON::API::ResourceController
+    class PeopleController < JSONAPI::ResourceController
     end
 
-    class PostsController < JSON::API::ResourceController
+    class PostsController < JSONAPI::ResourceController
     end
 
-    class PreferencesController < JSON::API::ResourceController
+    class PreferencesController < JSONAPI::ResourceController
     end
   end
 
   module V3
-    class PostsController < JSON::API::ResourceController
+    class PostsController < JSONAPI::ResourceController
     end
   end
 end
 
 ### RESOURCES
-class PersonResource < JSON::API::Resource
+class PersonResource < JSONAPI::Resource
   attributes :id, :name, :email, :date_joined
   has_many :comments
   has_many :posts
@@ -271,7 +271,7 @@ class PersonResource < JSON::API::Resource
       when :name
         values.each do |value|
           if value.length < 3
-            raise JSON::API::Exceptions::InvalidFilterValue.new(filter, value)
+            raise JSONAPI::Exceptions::InvalidFilterValue.new(filter, value)
           end
         end
     end
@@ -279,7 +279,7 @@ class PersonResource < JSON::API::Resource
   end
 end
 
-class AuthorResource < JSON::API::Resource
+class AuthorResource < JSONAPI::Resource
   attributes :id, :name, :email
   model_name 'Person'
   has_many :posts
@@ -306,24 +306,24 @@ class AuthorResource < JSON::API::Resource
   end
 end
 
-class CommentResource < JSON::API::Resource
+class CommentResource < JSONAPI::Resource
   attributes :id, :body
   has_one :post
   has_one :author, class_name: 'Person'
   has_many :tags
 end
 
-class TagResource < JSON::API::Resource
+class TagResource < JSONAPI::Resource
   attributes :id, :name
 
   has_many :posts
 end
 
-class SectionResource < JSON::API::Resource
+class SectionResource < JSONAPI::Resource
   attributes 'name'
 end
 
-class PostResource < JSON::API::Resource
+class PostResource < JSONAPI::Resource
   attribute :id
   attribute :title
   attribute :body
@@ -367,13 +367,13 @@ class PostResource < JSON::API::Resource
   end
 
   def self.verify_key(key, context = {})
-    raise JSON::API::Exceptions::InvalidFieldValue.new(:id, key) unless is_num?(key)
-    raise JSON::API::Exceptions::RecordNotFound.new(key) unless find_by_key(key)
+    raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key) unless is_num?(key)
+    raise JSONAPI::Exceptions::RecordNotFound.new(key) unless find_by_key(key)
     return key
   end
 end
 
-class CurrencyResource < JSON::API::Resource
+class CurrencyResource < JSONAPI::Resource
   key :code
   attributes :code, :name
 
@@ -382,14 +382,14 @@ class CurrencyResource < JSON::API::Resource
   has_many :expense_entries
 end
 
-class ExpenseEntryResource < JSON::API::Resource
+class ExpenseEntryResource < JSONAPI::Resource
   attributes :id, :cost, :transaction_date
 
   has_one :currency, class_name: 'Currency', key: 'currency_code'
   has_one :employee
 end
 
-class BreedResource < JSON::API::Resource
+class BreedResource < JSONAPI::Resource
   attributes :id, :name
 
   def self.find(attrs, options = {})
@@ -405,7 +405,7 @@ class BreedResource < JSON::API::Resource
   end
 end
 
-class PlanetResource < JSON::API::Resource
+class PlanetResource < JSONAPI::Resource
   attribute :id
   attribute :name
   attribute :description
@@ -414,12 +414,12 @@ class PlanetResource < JSON::API::Resource
   has_one :planet_type
 end
 
-class PlanetTypeResource < JSON::API::Resource
+class PlanetTypeResource < JSONAPI::Resource
   attribute :name
   has_many :planets
 end
 
-class MoonResource < JSON::API::Resource
+class MoonResource < JSONAPI::Resource
   attribute :id
   attribute :name
   attribute :description
@@ -427,7 +427,7 @@ class MoonResource < JSON::API::Resource
   has_one :planet
 end
 
-class PreferencesResource < JSON::API::Resource
+class PreferencesResource < JSONAPI::Resource
   attribute :id
   attribute :advanced_mode
 

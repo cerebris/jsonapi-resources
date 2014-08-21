@@ -1,2 +1,2 @@
-require 'json/api/resource'
-require 'json/api/resources/version'
+require 'jsonapi/resource'
+require 'jsonapi/resources/version'

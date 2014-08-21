@@ -1,11 +1,11 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'json/api/resources/version'
+require 'jsonapi/resources/version'
 
 Gem::Specification.new do |spec|
   spec.name          = 'json-api-resources'
-  spec.version       = JSON::API::Resources::VERSION
+  spec.version       = JSONAPI::Resources::VERSION
   spec.authors       = ['Dan Gebhardt', 'Larry Gebhardt']
   spec.email         = ['dan@cerebris.com', 'larry@cerebris.com']
   spec.summary       = %q{Provides JSON API support.}

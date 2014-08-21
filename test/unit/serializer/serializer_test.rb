@@ -1,6 +1,6 @@
 require File.expand_path('../../../test_helper', __FILE__)
 require File.expand_path('../../../fixtures/active_record', __FILE__)
-require 'json/api/resource_serializer'
+require 'jsonapi/resource_serializer'
 
 
 class SerializerTest < MiniTest::Unit::TestCase
@@ -23,7 +23,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                       comments: [1,2]
                     }
                   }]
-                 }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), nil, nil))
+                 }, JSONAPI::ResourceSerializer.new.serialize(PostResource.new(@post), nil, nil))
   end
 
   def test_serializer_limited_fieldset
@@ -35,7 +35,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                        author: 1
                      }
                    }]
-                }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), nil,
+                }, JSONAPI::ResourceSerializer.new.serialize(PostResource.new(@post), nil,
                                                                {posts: [:id, :title, :author]}))
   end
 
@@ -65,7 +65,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                               }
                              }]
                   }
-                 }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), [:author], nil))
+                 }, JSONAPI::ResourceSerializer.new.serialize(PostResource.new(@post), [:author], nil))
   end
 
   def test_serializer_include_sub_objects
@@ -128,7 +128,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                 }
             ]
           }
-         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), [:comments,'comments.tags'], nil))
+         }, JSONAPI::ResourceSerializer.new.serialize(PostResource.new(@post), [:comments,'comments.tags'], nil))
   end
 
   def test_serializer_include_has_many_sub_objects_only
@@ -171,7 +171,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                 }
             ]
           }
-         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), ['comments.tags'], nil))
+         }, JSONAPI::ResourceSerializer.new.serialize(PostResource.new(@post), ['comments.tags'], nil))
   end
 
   def test_serializer_include_has_one_sub_objects_only
@@ -202,7 +202,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                   }
               ]
           }
-         }, JSON::API::ResourceSerializer.new.serialize(PostResource.new(@post), ['author.comments'], nil))
+         }, JSONAPI::ResourceSerializer.new.serialize(PostResource.new(@post), ['author.comments'], nil))
   end
 
   def test_serializer_different_foreign_key
@@ -239,7 +239,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               }
               ]
           }
-         }, JSON::API::ResourceSerializer.new.serialize(PersonResource.new(@fred), ['comments'], nil))
+         }, JSONAPI::ResourceSerializer.new.serialize(PersonResource.new(@fred), ['comments'], nil))
   end
 
   def test_serializer_array_of_resources
@@ -336,7 +336,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                 }
             ]
           }
-         }, JSON::API::ResourceSerializer.new.serialize(posts, ['comments','comments.tags'], nil))
+         }, JSONAPI::ResourceSerializer.new.serialize(posts, ['comments','comments.tags'], nil))
   end
 
   def test_serializer_array_of_resources_limited_fields
@@ -418,7 +418,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                         }
                     }]
             }
-        }, JSON::API::ResourceSerializer.new.serialize(posts, ['comments','author','comments.tags','author.posts'],
+        }, JSONAPI::ResourceSerializer.new.serialize(posts, ['comments','author','comments.tags','author.posts'],
                                                        {
                                                            people: [:id, :email, :comments],
                                                            posts: [:id, :title, :author],

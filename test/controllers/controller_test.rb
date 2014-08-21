@@ -801,8 +801,8 @@ class PeopleControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_equal 2, json_response['errors'].size
-    assert_equal JSON::API::VALIDATION_ERROR, json_response['errors'][0]['code']
-    assert_equal JSON::API::VALIDATION_ERROR, json_response['errors'][1]['code']
+    assert_equal JSONAPI::VALIDATION_ERROR, json_response['errors'][0]['code']
+    assert_equal JSONAPI::VALIDATION_ERROR, json_response['errors'][1]['code']
     assert_match /date_joined - can't be blank/, response.body
     assert_match /name - can't be blank/, response.body
   end
@@ -815,7 +815,7 @@ class PeopleControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_equal 1, json_response['errors'].size
-    assert_equal JSON::API::VALIDATION_ERROR, json_response['errors'][0]['code']
+    assert_equal JSONAPI::VALIDATION_ERROR, json_response['errors'][0]['code']
     assert_match /name - can't be blank/, response.body
   end
 
