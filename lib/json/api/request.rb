@@ -8,13 +8,15 @@ module JSON
 
       attr_accessor :fields, :includes, :filters, :errors, :operations, :resource_klass, :context
 
-      def initialize(context = {})
+      def initialize(context = {}, params = nil)
         @context = context
         @errors = []
         @operations = []
         @fields = {}
         @includes = []
         @filters = {}
+
+        setup(params) if params
       end
 
       def setup(params)

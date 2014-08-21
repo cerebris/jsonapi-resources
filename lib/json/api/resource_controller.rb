@@ -16,8 +16,7 @@ module JSON
 
       before_filter {
         begin
-          @request = JSON::API::Request.new(context)
-          @request.setup(params)
+          @request = JSON::API::Request.new(context, params)
           render_errors(@request.errors) unless @request.errors.empty?
         rescue => e
           handle_exceptions(e)
