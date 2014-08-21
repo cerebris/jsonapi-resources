@@ -380,6 +380,25 @@ class PostsControllerTest < ActionController::TestCase
     assert matches_array?([3,4], json_response['posts'][0]['links']['tags'])
   end
 
+  def test_update_remove_links
+    post :update, {id: 3, posts: {
+        title: 'A great new Post',
+        links: {
+            section: nil,
+            tags: []
+        }
+    }
+    }
+
+    assert_response :success
+    assert_equal 1, json_response['posts'].size
+    assert_equal 3, json_response['posts'][0]['links']['author']
+    assert_equal  nil, json_response['posts'][0]['links']['section']
+    assert_equal 'A great new Post', json_response['posts'][0]['title']
+    assert_equal 'AAAA', json_response['posts'][0]['body']
+    assert matches_array?([], json_response['posts'][0]['links']['tags'])
+  end
+
   def test_update_relationship_has_one
     ruby = Section.find_by(name: 'ruby')
 
@@ -760,7 +779,6 @@ class CurrenciesControllerTest < ActionController::TestCase
     assert_equal 1, json_response['currencies'].size
     assert_equal 2, json_response['linked']['expense_entries'].size
   end
-
 end
 
 class PeopleControllerTest < ActionController::TestCase

@@ -22,7 +22,7 @@ module JSON
 
       def apply(context)
         resource = @resource_klass.new
-        resource.update_values(@values)
+        resource.update_values(@values, context)
         resource.save
 
         return JSON::API::OperationResult.new(:created, resource)
@@ -41,7 +41,7 @@ module JSON
 
       def apply(context)
         resource = @resource_klass.find_by_key(@resource_id, context)
-        resource.remove
+        resource.remove(context)
 
         return JSON::API::OperationResult.new(:no_content)
 
@@ -64,7 +64,7 @@ module JSON
 
       def apply(context)
         resource = @resource_klass.find_by_key(@resource_id, context)
-        resource.update_values(values)
+        resource.update_values(values, context)
         resource.save
 
         return JSON::API::OperationResult.new(:ok, resource)
@@ -75,11 +75,10 @@ module JSON
     end
 
     class AddHasOneAssociationOperation < Operation
-      attr_reader :resource_id, :association_type, :key, :key_value
+      attr_reader :resource_id, :association_type, :key_value
 
-      def initialize(resource_klass, resource_id, association_type, key, key_value)
+      def initialize(resource_klass, resource_id, association_type, key_value)
         @resource_id = resource_id
-        @key = key
         @key_value = key_value
         @association_type = association_type
         super(resource_klass)
@@ -87,18 +86,18 @@ module JSON
 
       def apply(context)
         resource = @resource_klass.find_by_key(@resource_id, context)
-        resource.create_has_one_link(@key, @key_value)
+        resource.create_has_one_link(@association_type, @key_value, context)
+        resource.save
 
         return JSON::API::OperationResult.new(:created, resource)
       end
     end
 
     class AddHasManyAssociationOperation < Operation
-      attr_reader :resource_id, :association_type, :key, :key_values
+      attr_reader :resource_id, :association_type, :key_values
 
-      def initialize(resource_klass, resource_id, association_type, key, key_values)
+      def initialize(resource_klass, resource_id, association_type, key_values)
         @resource_id = resource_id
-        @key = key
         @key_values = key_values
         @association_type = association_type
         super(resource_klass)
@@ -106,10 +105,8 @@ module JSON
 
       def apply(context)
         resource = @resource_klass.find_by_key(@resource_id, context)
-        association = resource.class._association(@association_type)
         @key_values.each do |value|
-          related_resource = Resource.resource_for(association.serialize_type_name).find_by_key(value, context)
-          resource.create_has_many_link(@association_type, related_resource)
+          resource.create_has_many_link(@association_type, value, context)
         end
 
         return JSON::API::OperationResult.new(:created, resource)
@@ -128,7 +125,7 @@ module JSON
 
       def apply(context)
         resource = @resource_klass.find_by_key(@resource_id, context)
-        resource.remove_has_many_link(@association_type, @associated_key)
+        resource.remove_has_many_link(@association_type, @associated_key, context)
 
         return JSON::API::OperationResult.new(:no_content)
       end
@@ -146,8 +143,8 @@ module JSON
 
       def apply(context)
         resource = @resource_klass.find_by_key(@resource_id, context)
-        key = @resource_klass._association(@association_type).key
-        resource.remove_has_one_link(key)
+        resource.remove_has_one_link(@association_type, context)
+        resource.save
 
         return JSON::API::OperationResult.new(:no_content)
       end

@@ -19,34 +19,57 @@ module JSON
         self.class._model_class.new
       end
 
-      def remove
+      def remove(context)
         @object.destroy
       end
 
-      def create_has_many_link(association, related_resource)
-        @object.send(association) << related_resource.object
-        save
+      def create_has_many_link(association_type, association_key_value, context)
+        association = self.class._associations[association_type]
+        related_resource = self.class.resource_for(association.serialize_type_name).find_by_key(association_key_value, context)
+
+        @object.send(association.serialize_type_name) << related_resource.object
       end
 
-      def create_has_one_link(key, key_value)
-        @object.send("#{key}=", key_value)
-        save
+      def replace_has_many_links(association_type, association_key_values, context)
+        association = self.class._associations[association_type]
+
+        @object.send("#{association.key}=", association_key_values)
       end
 
-      def remove_has_many_link(association, key)
-        @object.send(association).delete(key)
-        save
+      def create_has_one_link(association_type, association_key_value, context)
+        association = self.class._associations[association_type]
+
+        @object.send("#{association.key}=", association_key_value)
       end
 
-      def remove_has_one_link(association)
-        @object.send("#{association}=", nil)
-        save
+      def remove_has_many_link(association_type, key, context)
+        association = self.class._associations[association_type]
+
+        @object.send(association.serialize_type_name).delete(key)
       end
 
-      def update_values(values)
-        values.each do |property, value|
-          send "#{property}=", value
-        end unless values.nil?
+      def remove_has_one_link(association_type, context)
+        association = self.class._associations[association_type]
+
+        @object.send("#{association.key}=", nil)
+      end
+
+      def update_values(paramset, context)
+        paramset[:attributes].each do |attribute, value|
+          send "#{attribute}=", value
+        end
+
+        paramset[:has_one].each do |association_type, value|
+          if value.nil?
+            remove_has_one_link(association_type, context)
+          else
+            create_has_one_link(association_type, value, context)
+          end
+        end if paramset[:has_one]
+
+        paramset[:has_many].each do |association_type, values|
+          replace_has_many_links(association_type, values, context)
+        end if paramset[:has_many]
       end
 
       def save
@@ -191,35 +214,42 @@ module JSON
         end
 
         def verify_params(object_params, allowed_params, context)
-          # push links into top level param list with attributes
+          # push links into top level param list with attributes in order to check for invalid params
           if object_params && object_params[:links]
             object_params[:links].each do |link, value|
               object_params[link] = value
             end
             object_params.delete(:links)
           end
-
-          checked_params = {}
-          checked_associations = {}
-
           verify_permitted_params(object_params, allowed_params)
+
+          checked_attributes = {}
+          checked_has_one_associations = {}
+          checked_has_many_associations = {}
 
           object_params.each do |key, value|
             param = key.to_sym
 
-            if _associations[param].is_a?(JSON::API::Association::HasOne)
-              checked_params[_associations[param].key] = resource_for(_associations[param].serialize_type_name).verify_key(value, context)
-            elsif _associations[param].is_a?(JSON::API::Association::HasMany)
+            association = _associations[param]
+
+            if association.is_a?(JSON::API::Association::HasOne)
+              checked_has_one_associations[param.to_sym] = resource_for(association.serialize_type_name).verify_key(value, context)
+            elsif association.is_a?(JSON::API::Association::HasMany)
               keys = []
               value.each do |value|
-                keys.push(resource_for(_associations[param].serialize_type_name).verify_key(value, context))
+                keys.push(resource_for(association.serialize_type_name).verify_key(value, context))
               end
-              checked_associations[_associations[param].key] = keys
+              checked_has_many_associations[param.to_sym] = keys
             else
-              checked_params[param] = value
+              checked_attributes[param] = value
             end
           end
-          return checked_params.merge(checked_associations)
+
+          return {
+              attributes: checked_attributes,
+              has_one: checked_has_one_associations,
+              has_many: checked_has_many_associations
+          }
         end
 
         def verify_filters(filters, context = {})
@@ -344,10 +374,6 @@ module JSON
                 @object.method(key).call
               end unless method_defined?(key)
 
-              define_method "#{key}=" do |values|
-                @object.send "#{key}=", values
-              end unless method_defined?("#{key}=")
-
               define_method "_#{attr}_object" do
                 type_name = self.class._associations[attr].serialize_type_name
                 resource_class = self.class.resource_for(type_name)
@@ -362,10 +388,6 @@ module JSON
               define_method key do
                 @object.method(key).call
               end unless method_defined?(key)
-
-              define_method "#{key}=" do |values|
-                @object.send "#{key}=", values
-              end unless method_defined?("#{key}=")
 
               define_method "_#{attr}_objects" do
                 type_name = self.class._associations[attr].serialize_type_name

@@ -142,7 +142,7 @@ module JSON
       end
 
       def parse_add_association_operation(params)
-        association_type = params[:association]
+        association_type = params[:association].to_sym
 
         parent_key = params[resource_klass._as_parent_key]
 
@@ -151,7 +151,7 @@ module JSON
         end
 
         object_params = {links: {association_type => params[association_type]}}
-        verified_params = @resource_klass.verify_update_params(object_params, @context)
+        verified_param_set = @resource_klass.verify_update_params(object_params, @context)
 
         association = resource_klass._association(association_type)
 
@@ -159,14 +159,12 @@ module JSON
           @operations.push JSON::API::AddHasOneAssociationOperation.new(resource_klass,
                                                                         parent_key,
                                                                         association_type,
-                                                                        verified_params.keys[0],
-                                                                        verified_params.values[0])
+                                                                        verified_param_set[:has_one].values[0])
         else
           @operations.push JSON::API::AddHasManyAssociationOperation.new(resource_klass,
                                                                          parent_key,
                                                                          association_type,
-                                                                         verified_params.keys[0],
-                                                                         verified_params.values[0])
+                                                                         verified_param_set[:has_many].values[0])
         end
       rescue ActionController::ParameterMissing => e
         @errors.concat(JSON::API::Exceptions::ParameterMissing.new(e.param).errors)
@@ -224,7 +222,7 @@ module JSON
       end
 
       def parse_remove_association_operation(params)
-        association_type = params[:association]
+        association_type = params[:association].to_sym
 
         parent_key = params[resource_klass._as_parent_key]
 
