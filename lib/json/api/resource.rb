@@ -215,7 +215,7 @@ module JSON
 
         def verify_params(object_params, allowed_params, context)
           # push links into top level param list with attributes in order to check for invalid params
-          if object_params && object_params[:links]
+          if object_params[:links]
             object_params[:links].each do |link, value|
               object_params[link] = value
             end
