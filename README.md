@@ -415,7 +415,7 @@ Like `jsonapi_resources`, but for resources you lookup without an id.
 
 ##### `jsonapi_links`
 
-You can control the relationship URLs by passing a block into `jsonapi_resources` or `jsonapi_resource`. An empty block
+You can control the relationship routes by passing a block into `jsonapi_resources` or `jsonapi_resource`. An empty block
 will not create any relationship routes.
 
 You can add relationship routes in with `jsonapi_links`, for example:
