@@ -4,7 +4,7 @@ JSONAPI::Resources, or "JR", provides a framework for developing a server that c
 
 Like JSON API itself, JR's design is focused on the resources served by an API. JR needs little more than a definition of your resources, including their attributes and relationships, to make your server compliant with JSON API.
 
-While designed primarily to use Rails, it is possible to use JR with data not backed by ActiveRecord.
+JR is designed to work with Rails, and provides custom routes, controllers, and serializers. JR's resources may be backed by ActiveRecord models or by custom objects.
 
 ## Demo App
 
