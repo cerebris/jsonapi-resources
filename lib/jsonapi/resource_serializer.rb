@@ -9,7 +9,7 @@ module JSONAPI
     #     Purpose: determines which fields are serialized for a resource type. This encompasses both attributes and
     #              association ids in the links section for a resource. Fields are global for a resource type.
     #     Example: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}
-    def serialize(source, include, fields, context = {})
+    def serialize(source, include = [], fields = {}, context = nil)
       @fields = fields
       @context = context
       @linked_objects = {}

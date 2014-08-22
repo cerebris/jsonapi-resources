@@ -266,7 +266,7 @@ class PersonResource < JSONAPI::Resource
 
   filter :name
 
-  def self.verify_custom_filter(filter, values, options = {})
+  def self.verify_custom_filter(filter, values, context = nil)
     case filter
       when :name
         values.each do |value|
@@ -286,7 +286,7 @@ class AuthorResource < JSONAPI::Resource
 
   filter :name
 
-  def self.find(filters, options = {})
+  def self.find(filters, context = nil)
     resources = []
 
     filters.each do |attr, filter|
@@ -297,7 +297,7 @@ class AuthorResource < JSONAPI::Resource
     return resources
   end
 
-  def fetchable(keys, options = {})
+  def fetchable(keys, context = nil)
     if (@object.id % 2) == 1
       super(keys - [:email])
     else
@@ -340,15 +340,15 @@ class PostResource < JSONAPI::Resource
   filters :title, :author, :tags, :comments
   filter :id
 
-  def self.updateable(keys, options = {})
+  def self.updateable(keys, context = nil)
     super(keys - [:author, :subject])
   end
 
-  def self.createable(keys, options = {})
+  def self.createable(keys, context = nil)
     super(keys - [:subject])
   end
 
-  def self.verify_custom_filter(filter, values, context = {})
+  def self.verify_custom_filter(filter, values, context = nil)
     case filter
       when :id
         values.each do |key|
@@ -366,7 +366,7 @@ class PostResource < JSONAPI::Resource
     end
   end
 
-  def self.verify_key(key, context = {})
+  def self.verify_key(key, context = nil)
     raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key) unless is_num?(key)
     raise JSONAPI::Exceptions::RecordNotFound.new(key) unless find_by_key(key)
     return key
@@ -392,7 +392,7 @@ end
 class BreedResource < JSONAPI::Resource
   attributes :id, :name
 
-  def self.find(attrs, options = {})
+  def self.find(attrs, context = nil)
     breeds = []
     $breed_data.breeds.values.each do |breed|
       breeds.push(BreedResource.new(breed))
@@ -400,7 +400,7 @@ class BreedResource < JSONAPI::Resource
     breeds
   end
 
-  def self.find_by_key(id, options = {})
+  def self.find_by_key(id, context = nil)
     BreedResource.new($breed_data.breeds[id.to_i])
   end
 end

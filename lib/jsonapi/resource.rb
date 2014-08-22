@@ -161,17 +161,17 @@ module JSONAPI
       end
 
       # Override in your resource to filter the updateable keys
-      def updateable(keys, options = {})
+      def updateable(keys, context = nil)
         keys
       end
 
       # Override in your resource to filter the createable keys
-      def createable(keys, options = {})
+      def createable(keys, context = nil)
         keys
       end
 
       # Override this method if you have more complex requirements than this basic find method provides
-      def find(filters, context = {})
+      def find(filters, context = nil)
         includes = []
         where_filters = {}
 
@@ -196,7 +196,7 @@ module JSONAPI
         return resources
       end
 
-      def find_by_key(key, context = {})
+      def find_by_key(key, context = nil)
         obj = _model_class.where({_key => key}).first
         if obj.nil?
           raise JSONAPI::Exceptions::RecordNotFound.new(key)
@@ -204,11 +204,11 @@ module JSONAPI
         self.new(obj)
       end
 
-      def verify_create_params(object_params, context = {})
+      def verify_create_params(object_params, context = nil)
         verify_params(object_params, createable(_updateable_associations | _attributes.to_a), context)
       end
 
-      def verify_update_params(object_params, context = {})
+      def verify_update_params(object_params, context = nil)
         verify_params(object_params, updateable(_updateable_associations | _attributes.to_a), context)
       end
 
@@ -251,7 +251,7 @@ module JSONAPI
         }
       end
 
-      def verify_filters(filters, context = {})
+      def verify_filters(filters, context = nil)
         verified_filters = {}
         filters.each do |filter, raw_value|
           verified_filter = verify_filter(filter, raw_value, context)
@@ -264,7 +264,7 @@ module JSONAPI
         filter == _serialize_as || _associations.include?(filter)
       end
 
-      def verify_filter(filter, raw, context = {})
+      def verify_filter(filter, raw, context = nil)
         filter_values = []
         filter_values += CSV.parse_line(raw) unless raw.nil? || raw.empty?
 
@@ -276,17 +276,17 @@ module JSONAPI
       end
 
       # override to allow for key processing and checking
-      def verify_key(key, context = {})
+      def verify_key(key, context = nil)
         return key
       end
 
       # override to allow for custom filters
-      def verify_custom_filter(filter, value, context = {})
+      def verify_custom_filter(filter, value, context = nil)
         return filter, value
       end
 
       # override to allow for custom association logic, such as uuids, multiple keys or permission checks on keys
-      def verify_association_filter(filter, raw, context = {})
+      def verify_association_filter(filter, raw, context = nil)
         return filter, raw
       end
 

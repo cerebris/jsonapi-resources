@@ -7,7 +7,7 @@ module JSONAPI
 
     attr_accessor :fields, :includes, :filters, :errors, :operations, :resource_klass, :context
 
-    def initialize(context = {}, params = nil)
+    def initialize(context = nil, params = nil)
       @context = context
       @errors = []
       @operations = []

@@ -1,18 +1,18 @@
 # JSONAPI::Resources
 
-JSONAPI::Resources, or "JAR", provides a framework for developing a server that complies with the [JSON API](http://jsonapi.org/) specification.
+JSONAPI::Resources, or "JR", provides a framework for developing a server that complies with the [JSON API](http://jsonapi.org/) specification.
 
-Like JSON API itself, JAR's design is focused on the resources served by an API. JAR needs little more than a definition of your resources, including their attributes and relationships, to make your server compliant with JSON API.
+Like JSON API itself, JR's design is focused on the resources served by an API. JR needs little more than a definition of your resources, including their attributes and relationships, to make your server compliant with JSON API.
 
-While designed primarily to use Rails, it is possible to use JAR with data not backed by ActiveRecord.
+While designed primarily to use Rails, it is possible to use JR with data not backed by ActiveRecord.
 
-## Status
+## Demo App
 
-The JSON API specification is close to a [1.0rc1 release](https://github.com/json-api/json-api/pull/237) but is still in flux. JAR follows many aspects of the spec but is not yet a complete implementation.
+We have a simple demo app, called [Peeps](https://github.com/cerebris/peeps), available to show how JR is used. 
 
 ## Installation
 
-Add JAR to your application's `Gemfile`:
+Add JR to your application's `Gemfile`:
 
     gem 'jsonapi-resources'
 
@@ -92,7 +92,7 @@ class AuthorResource < JSONAPI::Resource
   model_name 'Person'
   has_many :posts
 
-  def fetchable(keys, options = {})
+  def fetchable(keys, context = nil)
     if (@object.id % 2) == 1
       super(keys - [:email])
     else
@@ -103,7 +103,7 @@ class AuthorResource < JSONAPI::Resource
 end
 ```
 
-Options flow through from objects that use resources, such as the serializer. These can be used to pass in scope or other parameters. Because this method is called for each resource instance, you can use it to control the attributes on a per instance basis.
+Context flows through from the controller and can be used to control the attributes based on the current user (or other value)).
 
 ##### Creatable and Updateable Attributes
 
@@ -122,17 +122,17 @@ class ContactResource < JSONAPI::Resource
     "#{@object.name_first}, #{@object.name_last}"
   end
 
-  def self.updateable(keys, options = {})
+  def self.updateable(keys, context = nil)
     super(keys - [:full_name])
   end
 
-  def self.createable(keys, options = {})
+  def self.createable(keys, context = nil)
     super(keys - [:full_name])
   end
 end
 ```
 
-The options hash is not used by the `ResourceController`, but may be used if you override the controller methods.
+The `context` is not used by the `ResourceController`, but may be used if you override the controller methods.
 
 #### Key
 
@@ -244,7 +244,7 @@ class AuthorResource < JSONAPI::Resource
 
   filter :name
 
-  def self.find(attrs, options = {})
+  def self.find(attrs, context = nil)
     resources = []
 
     attrs[:filters].each do |attr, filter|
@@ -271,48 +271,26 @@ end
 
 Of course you are free to extend this as needed.
 
-##### find_options
-
-The ResourceController has an overridable method called ```find_options```. This gives you a place to set options to be 
-passed into the finder calls made by the ResourceController. For example:
-
-```
-  def find_options
-    {current_user: current_user}
-  end
-```
-
-find_options are not used by the default ```find``` method, however they are available in ```find``` and the
-```find_by_key``` overrides.
-
-##### serialize_options
-
-The ResourceController has an overridable method called ```serialize_options```. This gives you a place to set options to be 
-passed into the serializer calls made by the ResourceController. For example:
-
-```
-  def serialize_options
-    {current_user: current_user}
-  end
-```
-
 #### Error codes
 
 Error codes are provided for each error object returned, based on the error. These errors are:
 
 ```
-module JSON
-  module API
-    VALIDATION_ERROR = 100
-    INVALID_RESOURCE = 101
-    FILTER_NOT_ALLOWED = 102
-    INVALID_FIELD_VALUE = 103
-    INVALID_FIELD = 104
-    PARAM_NOT_ALLOWED = 105
-    INVALID_FILTER_VALUE = 106
+module JSONAPI
+  VALIDATION_ERROR = 100
+  INVALID_RESOURCE = 101
+  FILTER_NOT_ALLOWED = 102
+  INVALID_FIELD_VALUE = 103
+  INVALID_FIELD = 104
+  PARAM_NOT_ALLOWED = 105
+  PARAM_MISSING = 106
+  INVALID_FILTER_VALUE = 107
+  COUNT_MISMATCH = 108
+  KEY_ORDER_MISMATCH = 109
+  KEY_NOT_INCLUDED_IN_URL = 110
 
-    RECORD_NOT_FOUND = 404
-  end
+  RECORD_NOT_FOUND = 404
+  LOCKED = 423
 end
 ```
 
@@ -320,7 +298,7 @@ These codes can be customized in your app by creating an initializer to override
 
 ### Serializer
 
-The `ResourceSerializer` can be used to serialize a resource into JSON API compliant JSON. `ResourceSerializer` has a `serialize` method that takes a resource instance to serialize and a hash of options. For example:
+The `ResourceSerializer` can be used to serialize a resource into JSON API compliant JSON. `ResourceSerializer` has a `serialize` method that takes a resource instance to serialize. For example:
 
 ```
 post = Post.find(1)
@@ -345,9 +323,9 @@ This returns results like this:
 }
 ```                 
 
-#### Serializer options
+#### Serialize method options
 
-Options can be specified to control a serializer's output. Serializers take the following options:
+The serialize method also takes some optional parameters:
 
 ##### `include`
 
@@ -380,6 +358,77 @@ JSONAPI::ResourceSerializer.new.serialize(PostResource.new(post),
 
 Arbitrary fields can also be provided to the serialize method. These will be passed to your resource when fetchable is
 called. This can be used to filter the fields based on scope or other criteria.
+
+##### `context`
+
+You can provide context data. This is not used by the serializer, but is passed through to other methods in the resource.
+
+#### Routing
+
+JR has a couple of helper methods available to assist you with setting up routes.
+ 
+##### `jsonapi_resources`
+
+Like `resources` in ActionDispatch provides a resourceful route provides a mapping between HTTP verbs and URLs and 
+controller actions. This will also setup mappings for relationship URLs for a resource's associations. For example
+
+```
+require 'jsonapi/routing_ext'
+
+Peeps::Application.routes.draw do
+  jsonapi_resources :contacts
+  jsonapi_resources :phone_numbers
+end
+```
+
+gives the following routes
+ 
+```
+                     Prefix Verb   URI Pattern                                               Controller#Action
+contact_links_phone_numbers GET    /contacts/:contact_id/links/phone_numbers(.:format)       contacts#show_association {:association=>"phone_numbers"}
+                            POST   /contacts/:contact_id/links/phone_numbers(.:format)       contacts#create_association {:association=>"phone_numbers"}
+                            DELETE /contacts/:contact_id/links/phone_numbers/:keys(.:format) contacts#destroy_association {:association=>"phone_numbers"}
+                   contacts GET    /contacts(.:format)                                       contacts#index
+                            POST   /contacts(.:format)                                       contacts#create
+                new_contact GET    /contacts/new(.:format)                                   contacts#new
+               edit_contact GET    /contacts/:id/edit(.:format)                              contacts#edit
+                    contact GET    /contacts/:id(.:format)                                   contacts#show
+                            PATCH  /contacts/:id(.:format)                                   contacts#update
+                            PUT    /contacts/:id(.:format)                                   contacts#update
+                            DELETE /contacts/:id(.:format)                                   contacts#destroy
+ phone_number_links_contact GET    /phone_numbers/:phone_number_id/links/contact(.:format)   phone_numbers#show_association {:association=>"contact"}
+                            POST   /phone_numbers/:phone_number_id/links/contact(.:format)   phone_numbers#create_association {:association=>"contact"}
+                            DELETE /phone_numbers/:phone_number_id/links/contact(.:format)   phone_numbers#destroy_association {:association=>"contact"}
+              phone_numbers GET    /phone_numbers(.:format)                                  phone_numbers#index
+                            POST   /phone_numbers(.:format)                                  phone_numbers#create
+           new_phone_number GET    /phone_numbers/new(.:format)                              phone_numbers#new
+          edit_phone_number GET    /phone_numbers/:id/edit(.:format)                         phone_numbers#edit
+               phone_number GET    /phone_numbers/:id(.:format)                              phone_numbers#show
+                            PATCH  /phone_numbers/:id(.:format)                              phone_numbers#update
+                            PUT    /phone_numbers/:id(.:format)                              phone_numbers#update
+                            DELETE /phone_numbers/:id(.:format)                              phone_numbers#destroy
+```
+
+##### `jsonapi_resource`
+
+Like `jsonapi_resources`, but for resources you lookup without an id.
+
+##### `jsonapi_links`
+
+You can control the relationship routes by passing a block into `jsonapi_resources` or `jsonapi_resource`. An empty block
+will not create any relationship routes.
+
+You can add relationship routes in with `jsonapi_links`, for example:
+
+```
+      jsonapi_resources :posts, except: [:destroy] do
+        jsonapi_link :author, except: [:destroy]
+        jsonapi_links :tags, only: [:show, :create]
+      end
+
+```
+
+This will create relationship routes for author (show and create, but not destroy) and for tags (again show and create, but not destroy).
 
 ## Contributing
 
