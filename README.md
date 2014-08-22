@@ -92,14 +92,13 @@ class AuthorResource < JSONAPI::Resource
   model_name 'Person'
   has_many :posts
 
-  def fetchable(keys, context = nil)
+  def fetchable(keys, context)
     if (context.current_user.guest)
       super(keys - [:email])
     else
       super(keys)
     end
   end
-
 end
 ```
 
@@ -115,13 +114,12 @@ This example prevents `full_name` from being set:
 require 'jsonapi/resource'
 
 class ContactResource < JSONAPI::Resource
-  attributes :id, :name_first, :name_last, :email, :twitter
-  attribute :full_name
+  attributes :id, :name_first, :name_last, :full_name
 
   def full_name
     "#{@object.name_first}, #{@object.name_last}"
   end
-
+  
   def self.updateable(keys, context = nil)
     super(keys - [:full_name])
   end
@@ -354,14 +352,9 @@ JSONAPI::ResourceSerializer.new.serialize(PostResource.new(post),
                  comments: [:id, :body, :post]})
 ```
 
-##### Other fields
-
-Arbitrary fields can also be provided to the serialize method. These will be passed to your resource when fetchable is
-called. This can be used to filter the fields based on scope or other criteria.
-
 ##### `context`
 
-You can provide context data. This is not used by the serializer, but is passed through to other methods in the resource.
+Context data can be provided to the serializer, which passes it to each resource as it is inspected.
 
 #### Routing
 
