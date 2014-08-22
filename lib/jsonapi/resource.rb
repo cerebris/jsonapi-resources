@@ -295,7 +295,7 @@ module JSONAPI
         associations = []
 
         @_associations.each do |key, association|
-          if association.is_a?(JSONAPI::Association::HasOne) || association.treat_as_set
+          if association.is_a?(JSONAPI::Association::HasOne) || association.acts_as_set
             associations.push(key)
           end
         end

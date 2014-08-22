@@ -5,7 +5,7 @@ module JSONAPI
       @options       = options
       @key           = options[:key] ? options[:key].to_sym : nil
       @primary_key   = options.fetch(:primary_key, 'id').to_sym
-      @treat_as_set  = options.fetch(:treat_as_set, false) == true
+      @acts_as_set   = options.fetch(:acts_as_set, false) == true
     end
 
     def key
@@ -16,8 +16,8 @@ module JSONAPI
       @primary_key
     end
 
-    def treat_as_set
-      @treat_as_set
+    def acts_as_set
+      @acts_as_set
     end
 
     def serialize_type_name

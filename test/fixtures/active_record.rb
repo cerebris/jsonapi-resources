@@ -331,8 +331,8 @@ class PostResource < JSONAPI::Resource
 
   has_one :author, class_name: 'Person'
   has_one :section
-  has_many :tags, treat_as_set: true
-  has_many :comments, treat_as_set: false
+  has_many :tags, acts_as_set: true
+  has_many :comments, acts_as_set: false
   def subject
     @object.title
   end

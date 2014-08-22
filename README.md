@@ -188,7 +188,7 @@ The association methods support the following options:
  * `class_name` - a string specifying the underlying class for the related resource
  * `primary_key` - the primary key to the related resource, if different than `id`
  * `key` - the key in the resource that identifies the related resource, if different than `<resource_name>_id`
- * `treat_as_set` - allows the entire set of related records to be replaced in one operation. Defaults to false if not set.
+ * `acts_as_set` - allows the entire set of related records to be replaced in one operation. Defaults to false if not set.
 
 Examples:
 
@@ -197,7 +197,7 @@ Examples:
   attributes :id, :body
   has_one :post
   has_one :author, class_name: 'Person'
-  has_many :tags, treat_as_set: true
+  has_many :tags, acts_as_set: true
  end
 ```
 
@@ -377,7 +377,7 @@ JR has a couple of helper methods available to assist you with setting up routes
  
 ##### `jsonapi_resources`
 
-Like `resources` in ActionDispatch `jsonapi_resources` provides resourceful routes mapping between HTTP verbs and URLs and controller actions. This will also setup mappings for relationship URLs for a resource's associations. For example
+Like `resources` in ActionDispatch, `jsonapi_resources` provides resourceful routes mapping between HTTP verbs and URLs and controller actions. This will also setup mappings for relationship URLs for a resource's associations. For example
 
 ```
 require 'jsonapi/routing_ext'
