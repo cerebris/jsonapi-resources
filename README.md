@@ -232,7 +232,7 @@ end
 
 Basic finding by filters is supported by resources. However if you have more complex requirements for finding you can override the `find` and `find_by_key` methods on the resource.
 
-Here's a hackish example:
+Here's an example that defers the `find` operation to a `current_user` set on the `context`:
 
 ```
 class AuthorResource < JSONAPI::Resource
@@ -243,14 +243,11 @@ class AuthorResource < JSONAPI::Resource
   filter :name
 
   def self.find(attrs, context = nil)
-    resources = []
-
-    attrs[:filters].each do |attr, filter|
-      _model_class.where("\"#{attr}\" LIKE \"%#{filter[0]}%\"").each do |object|
-        resources.push self.new(object)
-      end
+    authors = context.current_user.find_authors(attrs)
+    
+    return authors.map do |author|
+      self.new(author)
     end
-    return resources
   end
 end
 ```
@@ -267,7 +264,25 @@ class PeopleController < JSONAPI::ResourceController
 end
 ```
 
-Of course you are free to extend this as needed.
+Of course you are free to extend this as needed and override action handlers or other methods.
+
+The context that's used for serialization and resource configuration is set by the controller's `context` method. 
+
+For example:
+
+```
+class ApplicationController < JSONAPI::ResourceController
+  def context
+    {current_user: current_user}
+  end
+end
+
+# Specific resource controllers derive from ApplicationController
+# and share its context
+class PeopleController < ApplicationController
+
+end
+```
 
 #### Error codes
 
