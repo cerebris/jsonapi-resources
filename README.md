@@ -6,10 +6,6 @@ Like JSON API itself, JR's design is focused on the resources served by an API. 
 
 While designed primarily to use Rails, it is possible to use JR with data not backed by ActiveRecord.
 
-## Status
-
-The JSON API specification is close to a [1.0rc1 release](https://github.com/json-api/json-api/pull/237) but is still in flux. JR follows many aspects of the spec but is not yet a complete implementation.
-
 ## Demo App
 
 We have a simple demo app, called [Peeps](https://github.com/cerebris/peeps), available to show how JR is used. 
