@@ -84,7 +84,7 @@ end
 
 By default all attributes are assumed to be fetchable. The list of fetchable attributes can be filtered by overriding the `fetchable` method. 
 
-Here's a contrived example that prevents the email from being returned for resources with an odd `id`:
+Here's an example that prevents guest users from seeing the `email` field:
 
 ```
 class AuthorResource < JSONAPI::Resource
@@ -93,7 +93,7 @@ class AuthorResource < JSONAPI::Resource
   has_many :posts
 
   def fetchable(keys, context = nil)
-    if (@object.id % 2) == 1
+    if (context.current_user.guest)
       super(keys - [:email])
     else
       super(keys)
