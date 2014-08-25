@@ -71,7 +71,7 @@ module JSONAPI
       end if field_data[:has_many]
     end
 
-    def save
+    def save(context)
       @object.save!
     rescue ActiveRecord::RecordInvalid => e
       errors = []
