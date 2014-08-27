@@ -128,7 +128,7 @@ module JSONAPI
       def attribute(attr)
         @_attributes.add attr
         define_method attr do
-          @object.method(attr).call
+          @object.send(attr)
         end unless method_defined?(attr)
 
         define_method "#{attr}=" do |value|
