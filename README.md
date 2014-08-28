@@ -434,7 +434,6 @@ Rails.application.routes.draw do
     jsonapi_links :tags, only: [:show, :create]
   end
 end
-
 ```
 
 This will create relationship routes for author (show and create, but not destroy) and for tags (again show and create, but not destroy).
