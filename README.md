@@ -8,7 +8,7 @@ JR is designed to work with Rails, and provides custom routes, controllers, and 
 
 ## Demo App
 
-We have a simple demo app, called [Peeps](https://github.com/cerebris/peeps), available to show how JR is used. 
+We have a simple demo app, called [Peeps](https://github.com/cerebris/peeps), available to show how JR is used.
 
 ## Installation
 
@@ -38,7 +38,7 @@ Resources must be derived from `JSONAPI::Resource`, or a class that is itself de
 
 For example:
 
-```
+```ruby
 require 'jsonapi/resource'
 
 class ContactResource < JSONAPI::Resource
@@ -51,7 +51,7 @@ Any of a resource's attributes that are accessible must be explicitly declared. 
 
 For example:
 
-```
+```ruby
 require 'jsonapi/resource'
 
 class ContactResource < JSONAPI::Resource
@@ -63,11 +63,11 @@ end
 
 This resource has 5 attributes: `:id`, `:name_first`, `:name_last`, `:email`, `:twitter`. By default these attributes must exist on the model that is handled by the resource.
 
-A resource object wraps a Ruby object, usually an ActiveModel record, which is available as the `@object` variable. This allows a resource's methods to access the underlying object. 
+A resource object wraps a Ruby object, usually an ActiveModel record, which is available as the `@object` variable. This allows a resource's methods to access the underlying object.
 
 For example, a computed attribute for `full_name` could be defined as such:
 
-```
+```ruby
 require 'jsonapi/resource'
 
 class ContactResource < JSONAPI::Resource
@@ -82,11 +82,11 @@ end
 
 ##### Fetchable Attributes
 
-By default all attributes are assumed to be fetchable. The list of fetchable attributes can be filtered by overriding the `fetchable` method. 
+By default all attributes are assumed to be fetchable. The list of fetchable attributes can be filtered by overriding the `fetchable` method.
 
 Here's an example that prevents guest users from seeing the `email` field:
 
-```
+```ruby
 class AuthorResource < JSONAPI::Resource
   attributes :id, :name, :email
   model_name 'Person'
@@ -110,7 +110,7 @@ By default all attributes are assumed to be updateble and creatable. To prevent 
 
 This example prevents `full_name` from being set:
 
-```
+```ruby
 require 'jsonapi/resource'
 
 class ContactResource < JSONAPI::Resource
@@ -119,7 +119,7 @@ class ContactResource < JSONAPI::Resource
   def full_name
     "#{@object.name_first}, #{@object.name_last}"
   end
-  
+
   def self.updateable(keys, context = nil)
     super(keys - [:full_name])
   end
@@ -136,7 +136,7 @@ The `context` is not used by the `ResourceController`, but may be used if you ov
 
 The primary key of the resource defaults to `id`, which can be changed using the `key` method.
 
-```
+```ruby
 class CurrencyResource < JSONAPI::Resource
   key :code
   attributes :code, :name
@@ -150,7 +150,7 @@ end
 
 The name of the underlying model is inferred from the Resource name. It can be overridden by use of the `model_name` method. For example:
 
-```
+```ruby
 class AuthorResource < JSONAPI::Resource
   attributes :id, :name
   model_name 'Person'
@@ -160,11 +160,11 @@ end
 
 #### Associations
 
-Related resources need to be specified in the resource. These are declared with the `has_one` and the `has_many` methods. 
+Related resources need to be specified in the resource. These are declared with the `has_one` and the `has_many` methods.
 
 Here's a simple example where a post has a single author and an author can have many posts:
 
-```
+```ruby
 class PostResource < JSONAPI::Resource
   attribute :id, :title, :body
 
@@ -174,7 +174,7 @@ end
 
 And the corresponding author:
 
-```
+```ruby
 class AuthorResource < JSONAPI::Resource
   attribute :id, :name
 
@@ -192,7 +192,7 @@ The association methods support the following options:
 
 Examples:
 
-```
+```ruby
  class CommentResource < JSONAPI::Resource
   attributes :id, :body
   has_one :post
@@ -201,7 +201,7 @@ Examples:
  end
 ```
 
-```
+```ruby
 class ExpenseEntryResource < JSONAPI::Resource
   attributes :id, :cost, :transaction_date
 
@@ -213,11 +213,11 @@ end
 #### Filters
 
 Filters for locating objects of the resource type are specified in the resource definition. Single filters can be declared using the `filter` method, and multiple filters can be declared with the `filters` method on the
-resource class. 
+resource class.
 
 For example:
 
-```
+```ruby
 require 'jsonapi/resource'
 
 class ContactResource < JSONAPI::Resource
@@ -234,7 +234,7 @@ Basic finding by filters is supported by resources. However if you have more com
 
 Here's an example that defers the `find` operation to a `current_user` set on the `context`:
 
-```
+```ruby
 class AuthorResource < JSONAPI::Resource
   attributes :id, :name
   model_name 'Person'
@@ -244,7 +244,7 @@ class AuthorResource < JSONAPI::Resource
 
   def self.find(attrs, context = nil)
     authors = context.current_user.find_authors(attrs)
-    
+
     return authors.map do |author|
       self.new(author)
     end
@@ -254,11 +254,11 @@ end
 
 ### Controllers
 
-JSONAPI::Resources provides a class, `ResourceController`, that can be used as the base class for your controllers. `ResourceController` supports `index`, `show`, `create`, `update`, and `destroy` methods. Just deriving your controller from `ResourceController` will give you a fully functional controller. 
+JSONAPI::Resources provides a class, `ResourceController`, that can be used as the base class for your controllers. `ResourceController` supports `index`, `show`, `create`, `update`, and `destroy` methods. Just deriving your controller from `ResourceController` will give you a fully functional controller.
 
 For example:
 
-```
+```ruby
 class PeopleController < JSONAPI::ResourceController
 
 end
@@ -266,11 +266,11 @@ end
 
 Of course you are free to extend this as needed and override action handlers or other methods.
 
-The context that's used for serialization and resource configuration is set by the controller's `context` method. 
+The context that's used for serialization and resource configuration is set by the controller's `context` method.
 
 For example:
 
-```
+```ruby
 class ApplicationController < JSONAPI::ResourceController
   def context
     {current_user: current_user}
@@ -288,7 +288,7 @@ end
 
 Error codes are provided for each error object returned, based on the error. These errors are:
 
-```
+```ruby
 module JSONAPI
   VALIDATION_ERROR = 100
   INVALID_RESOURCE = 101
@@ -313,14 +313,14 @@ These codes can be customized in your app by creating an initializer to override
 
 The `ResourceSerializer` can be used to serialize a resource into JSON API compliant JSON. `ResourceSerializer` has a `serialize` method that takes a resource instance to serialize. For example:
 
-```
+```ruby
 post = Post.find(1)
 JSONAPI::ResourceSerializer.new.serialize(PostResource.new(post))
 ```
 
 This returns results like this:
 
-```
+```ruby
 {
   posts: [{
     id: 1,
@@ -334,7 +334,7 @@ This returns results like this:
     }
   }]
 }
-```                 
+```
 
 #### Serialize method options
 
@@ -347,7 +347,7 @@ An array of resources. Nested resources can be specified with dot notation.
   *Purpose*: determines which objects will be side loaded with the source objects in a linked section
 
   *Example*: ```include: ['comments','author','comments.tags','author.posts']```
-  
+
 ##### `fields`
 
 A hash of resource types and arrays of fields for each resource type.
@@ -356,7 +356,7 @@ A hash of resource types and arrays of fields for each resource type.
 
   *Example*: ```fields: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}```
 
-```
+```ruby
 post = Post.find(1)
 JSONAPI::ResourceSerializer.new.serialize(PostResource.new(post),
         include: ['comments','author','comments.tags','author.posts'],
@@ -374,12 +374,12 @@ Context data can be provided to the serializer, which passes it to each resource
 #### Routing
 
 JR has a couple of helper methods available to assist you with setting up routes.
- 
+
 ##### `jsonapi_resources`
 
 Like `resources` in ActionDispatch, `jsonapi_resources` provides resourceful routes mapping between HTTP verbs and URLs and controller actions. This will also setup mappings for relationship URLs for a resource's associations. For example
 
-```
+```ruby
 require 'jsonapi/routing_ext'
 
 Peeps::Application.routes.draw do
@@ -389,7 +389,7 @@ end
 ```
 
 gives the following routes
- 
+
 ```
                      Prefix Verb   URI Pattern                                               Controller#Action
 contact_links_phone_numbers GET    /contacts/:contact_id/links/phone_numbers(.:format)       contacts#show_association {:association=>"phone_numbers"}
@@ -427,11 +427,13 @@ will not create any relationship routes.
 
 You can add relationship routes in with `jsonapi_links`, for example:
 
-```
-      jsonapi_resources :posts, except: [:destroy] do
-        jsonapi_link :author, except: [:destroy]
-        jsonapi_links :tags, only: [:show, :create]
-      end
+```ruby
+Rails.application.routes.draw do
+  jsonapi_resources :posts, except: [:destroy] do
+    jsonapi_link :author, except: [:destroy]
+    jsonapi_links :tags, only: [:show, :create]
+  end
+end
 
 ```
 
