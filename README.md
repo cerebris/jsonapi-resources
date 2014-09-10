@@ -314,6 +314,7 @@ These codes can be customized in your app by creating an initializer to override
 The `ResourceSerializer` can be used to serialize a resource into JSON API compliant JSON. `ResourceSerializer` has a `serialize` method that takes a resource instance to serialize. For example:
 
 ```ruby
+require 'jsonapi/resource_serializer'
 post = Post.find(1)
 JSONAPI::ResourceSerializer.new.serialize(PostResource.new(post))
 ```
