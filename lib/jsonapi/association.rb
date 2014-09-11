@@ -1,5 +1,7 @@
 module JSONAPI
   class Association
+    attr_reader :primary_key, :acts_as_set, :serialize_type_name, :key, :options, :name, :class_name
+
     def initialize(name, options={})
       @name          = name.to_s
       @options       = options
@@ -8,26 +10,10 @@ module JSONAPI
       @acts_as_set   = options.fetch(:acts_as_set, false) == true
     end
 
-    def key
-      @key
-    end
-
-    def primary_key
-      @primary_key
-    end
-
-    def acts_as_set
-      @acts_as_set
-    end
-
-    def serialize_type_name
-      @serialize_type_name
-    end
-
     class HasOne < Association
       def initialize(name, options={})
         super
-        class_name = options.fetch(:class_name, name.to_s.capitalize)
+        @class_name = options.fetch(:class_name, name.to_s.capitalize)
         @serialize_type_name = class_name.underscore.pluralize.to_sym
         @key ||= "#{name}_id".to_sym
       end
@@ -36,8 +22,8 @@ module JSONAPI
     class HasMany < Association
       def initialize(name, options={})
         super
-        class_name = options.fetch(:class_name, name.to_s.capitalize.singularize).to_sym
-        @serialize_type_name = class_name.to_s.underscore.pluralize.to_sym
+        @class_name = options.fetch(:class_name, name.to_s.capitalize.singularize)
+        @serialize_type_name = class_name.underscore.pluralize.to_sym
         @key ||= "#{name.to_s.singularize}_ids".to_sym
       end
     end
