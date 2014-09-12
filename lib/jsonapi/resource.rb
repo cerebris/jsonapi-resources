@@ -1,3 +1,4 @@
+require 'jsonapi/configuration'
 require 'jsonapi/resource_for'
 require 'jsonapi/association'
 require 'action_dispatch/routing/mapper'
@@ -95,7 +96,7 @@ module JSONAPI
 
     class << self
       def inherited(base)
-        base._attributes = (_attributes || Set.new).dup
+        base._attributes = (_attributes || {}).dup
         base._associations = (_associations || {}).dup
         base._allowed_filters = (_allowed_filters || Set.new).dup
 
@@ -119,14 +120,13 @@ module JSONAPI
 
       # Methods used in defining a resource class
       def attributes(*attrs)
-        @_attributes.merge attrs
         attrs.each do |attr|
           attribute(attr)
         end
       end
 
-      def attribute(attr)
-        @_attributes.add attr
+      def attribute(attr, options = {type: :default})
+        @_attributes[attr] = options
         define_method attr do
           @object.send(attr)
         end unless method_defined?(attr)
@@ -161,13 +161,17 @@ module JSONAPI
       end
 
       # Override in your resource to filter the updateable keys
-      def updateable(keys, context = nil)
-        keys
+      def updateable(keys, context, key_formatter)
+        keys.collect do |key|
+          key_formatter.call(key).to_sym
+        end
       end
 
       # Override in your resource to filter the createable keys
-      def createable(keys, context = nil)
-        keys
+      def createable(keys, context, key_formatter)
+        keys.collect do |key|
+          key_formatter.call(key).to_sym
+        end
       end
 
       # Override this method if you have more complex requirements than this basic find method provides
@@ -204,12 +208,12 @@ module JSONAPI
         self.new(obj)
       end
 
-      def verify_create_params(object_params, context = nil)
-        verify_params(object_params, createable(_updateable_associations | _attributes.to_a), context)
+      def verify_create_params(object_params, context, key_formatter)
+        verify_params(object_params, createable(_updateable_associations | _attributes.keys, context, key_formatter), context)
       end
 
-      def verify_update_params(object_params, context = nil)
-        verify_params(object_params, updateable(_updateable_associations | _attributes.to_a), context)
+      def verify_update_params(object_params, context, key_formatter)
+        verify_params(object_params, updateable(_updateable_associations | _attributes.keys, context, key_formatter), context)
       end
 
       def verify_params(object_params, allowed_params, context)
@@ -227,28 +231,28 @@ module JSONAPI
         checked_has_many_associations = {}
 
         object_params.each do |key, value|
-          param = key.to_sym
+          param = key.to_s
 
-          association = _associations[param]
+          association = _associations[param.to_sym]
 
           if association.is_a?(JSONAPI::Association::HasOne)
-            checked_has_one_associations[param.to_sym] = resource_for(association.serialize_type_name).verify_key(value, context)
+            checked_has_one_associations[param] = resource_for(association.serialize_type_name).verify_key(value, context)
           elsif association.is_a?(JSONAPI::Association::HasMany)
             keys = []
             value.each do |value|
               keys.push(resource_for(association.serialize_type_name).verify_key(value, context))
             end
-            checked_has_many_associations[param.to_sym] = keys
+            checked_has_many_associations[param] = keys
           else
             checked_attributes[param] = value
           end
         end
 
         return {
-            attributes: checked_attributes,
-            has_one: checked_has_one_associations,
-            has_many: checked_has_many_associations
-        }
+            'attributes' => checked_attributes,
+            'has_one' => checked_has_one_associations,
+            'has_many' => checked_has_many_associations
+        }.deep_transform_keys{ |key| key.underscore.to_sym }
       end
 
       def verify_filters(filters, context = nil)
@@ -303,7 +307,8 @@ module JSONAPI
       end
 
       def _has_association?(type)
-        @_associations.has_key?(type)
+        type = type.to_s
+        @_associations.has_key?(type.singularize.to_sym) || @_associations.has_key?(type.pluralize.to_sym)
       end
 
       def _association(type)
@@ -354,8 +359,9 @@ module JSONAPI
         _allowed_filters.include?(filter.to_sym)
       end
 
-      def _validate_field(field)
-        _attributes.include?(field) || _associations.key?(field)
+      def _validate_field(field, key_formatter)
+        fields = (_attributes.keys + _associations.keys).collect {|key| key_formatter.call(key).to_sym}
+        fields.include?(field)
       end
 
       private

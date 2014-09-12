@@ -89,6 +89,21 @@ module JSONAPI
       end
     end
 
+    class InvalidInclude < Error
+      attr_accessor :association, :resource
+      def initialize(resource, association)
+        @resource = resource
+        @association = association
+      end
+
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::INVALID_INCLUDE,
+                            status: :bad_request,
+                            title: 'Invalid field',
+                            detail: "#{association} is not a valid association of #{resource}")]
+      end
+    end
+
     class ParametersNotAllowed < Error
       attr_accessor :params
       def initialize(params)

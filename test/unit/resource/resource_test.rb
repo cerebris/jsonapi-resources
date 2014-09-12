@@ -33,8 +33,8 @@ class ResourceTest < MiniTest::Unit::TestCase
 
   def test_class_attributes
     attrs = CatResource._attributes
-    assert_kind_of(Set, attrs)
-    assert_equal(attrs.size, 3)
+    assert_kind_of(Hash, attrs)
+    assert_equal(attrs.keys.size, 3)
   end
 
   def test_class_assosications

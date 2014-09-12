@@ -288,6 +288,29 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /Ember is Great/, response.body
   end
 
+  def test_create_multiple_wrong_case
+    post :create, { posts: [
+        {
+            Title: 'JR is Great',
+            body:  'JSONAPIResources is the greatest thing since unsliced bread.',
+            links: {
+                author: 3
+            }
+        },
+        {
+            title: 'Ember is Great',
+            BODY:  'Ember is the greatest thing since unsliced bread.',
+            links: {
+                author: 3
+            }
+        }
+    ]
+    }
+
+    assert_response :bad_request
+    assert_match /Title/, json_response['errors'][0]['detail']
+  end
+
   def test_create_simple_missing_posts
     post :create, { posts_spelled_wrong: {
         title: 'JR is Great',
@@ -762,22 +785,109 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
   def test_expense_entries_index
     get :index
     assert_response :success
-    assert_equal 2, json_response['expense_entries'].size
+    assert_equal 2, json_response['expenseEntries'].size
+  end
+
+  def test_expense_entries_show
+    get :show, {id: 1}
+    assert_response :success
+    assert_equal 1, json_response['expenseEntries'].size
+  end
+
+  def test_expense_entries_show_include
+    get :show, {id: 1, include: 'isoCurrency,employee'}
+    assert_response :success
+    assert_equal 1, json_response['expenseEntries'].size
+    assert_equal 1, json_response['linked']['isoCurrencies'].size
+    assert_equal 1, json_response['linked']['people'].size
+  end
+
+  def test_expense_entries_show_bad_include_missing_association
+    get :show, {id: 1, include: 'isoCurrencies,employees'}
+    assert_response :bad_request
+    assert_match /isoCurrencies is not a valid association of expenseEntries/, json_response['errors'][0]['detail']
+    assert_match /employees is not a valid association of expenseEntries/, json_response['errors'][1]['detail']
+  end
+
+  def test_expense_entries_show_bad_include_missing_sub_association
+    get :show, {id: 1, include: 'isoCurrency,employee.post'}
+    assert_response :bad_request
+    assert_match /post is not a valid association of people/, json_response['errors'][0]['detail']
+  end
+
+  def test_expense_entries_show_fields
+    get :show, {id: 1, include: 'isoCurrency,employee', 'fields' => 'transactionDate'}
+    assert_response :success
+    assert_equal 1, json_response['expenseEntries'].size
+    assert json_response['expenseEntries'][0].has_key?('transactionDate')
+    refute json_response['expenseEntries'][0].has_key?('id')
+    refute json_response['expenseEntries'][0].has_key?('links')
+    assert_equal 1, json_response['linked']['isoCurrencies'].size
+    assert_equal 1, json_response['linked']['people'].size
+  end
+
+  def test_expense_entries_show_fields_type
+    get :show, {id: 1, include: 'isoCurrency,employee', 'fields' => {'expenseEntries' => 'transactionDate'}}
+    assert_response :success
+    assert_equal 1, json_response['expenseEntries'].size
+    assert json_response['expenseEntries'][0].has_key?('transactionDate')
+    refute json_response['expenseEntries'][0].has_key?('id')
+    refute json_response['expenseEntries'][0].has_key?('links')
+    assert_equal 1, json_response['linked']['isoCurrencies'].size
+    assert_equal 1, json_response['linked']['people'].size
+  end
+
+  def test_expense_entries_show_fields_type_many
+    get :show, {id: 1, include: 'isoCurrency,employee', 'fields' => {'expenseEntries' => 'transactionDate',
+                                                                     'isoCurrencies' => 'code,name'}}
+    assert_response :success
+    assert_equal 1, json_response['expenseEntries'].size
+    assert json_response['expenseEntries'][0].has_key?('transactionDate')
+    refute json_response['expenseEntries'][0].has_key?('id')
+    refute json_response['expenseEntries'][0].has_key?('links')
+    assert_equal 1, json_response['linked']['isoCurrencies'].size
+    assert_equal 1, json_response['linked']['people'].size
+    assert json_response['linked']['isoCurrencies'][0].has_key?('code')
+    assert json_response['linked']['isoCurrencies'][0].has_key?('name')
+    refute json_response['linked']['isoCurrencies'][0].has_key?('countryName')
   end
 end
 
-class CurrenciesControllerTest < ActionController::TestCase
+class IsoCurrenciesControllerTest < ActionController::TestCase
   def test_currencies_index
     get :index
     assert_response :success
-    assert_equal 2, json_response['currencies'].size
+    assert_equal 2, json_response['isoCurrencies'].size
+  end
+
+  def test_currencies_json_key_underscored
+    JSONAPI.configuration.json_key_format = :underscored
+    get :index
+    assert_response :success
+    assert_equal 2, json_response['iso_currencies'].size
+    JSONAPI.configuration.json_key_format = :camelized
+  end
+
+  def test_currencies_json_key_dasherized
+    JSONAPI.configuration.json_key_format = :dasherized
+    get :index
+    assert_response :success
+    assert_equal 2, json_response['iso-currencies'].size
+    JSONAPI.configuration.json_key_format = :camelized
+  end
+
+  def test_currencies_custom_json_key
+    JSONAPI.configuration.json_key_format = lambda{|key| key.camelize(:upper)}
+    get :index
+    assert_response :success
+    assert_equal 2, json_response['IsoCurrencies'].size
+    JSONAPI.configuration.json_key_format = :camelized
   end
 
   def test_currencies_show
-    get :show, {code: 'USD', include: 'expense_entries,expense_entries.currency_codes'}
+    get :show, {code: 'USD'}
     assert_response :success
-    assert_equal 1, json_response['currencies'].size
-    assert_equal 2, json_response['linked']['expense_entries'].size
+    assert_equal 1, json_response['isoCurrencies'].size
   end
 end
 
@@ -786,7 +896,7 @@ class PeopleControllerTest < ActionController::TestCase
     post :create, { people: {
         name: 'Steve Jobs',
         email:  'sj@email.zzz',
-        date_joined: DateTime.parse('2014-1-30 4:20:00 UTC +00:00')
+        dateJoined: DateTime.parse('2014-1-30 4:20:00 UTC +00:00')
       }
     }
 

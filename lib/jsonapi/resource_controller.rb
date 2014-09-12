@@ -15,7 +15,7 @@ module JSONAPI
 
     before_filter {
       begin
-        @request = JSONAPI::Request.new(context, params)
+        @request = JSONAPI::Request.new(context, params, key_formatter)
         render_errors(@request.errors) unless @request.errors.empty?
       rescue => e
         handle_exceptions(e)
@@ -23,11 +23,13 @@ module JSONAPI
     }
 
     def index
-      render json: JSONAPI::ResourceSerializer.new.serialize(
+      render json: JSONAPI::ResourceSerializer.new.serialize_to_hash(
           resource_klass.find(resource_klass.verify_filters(@request.filters, context), context),
-          @request.includes,
-          @request.fields,
-          context)
+          include: @request.include,
+          fields: @request.fields,
+          context: context,
+          attribute_formatters: attribute_formatters,
+          key_formatter: key_formatter)
     rescue => e
       handle_exceptions(e)
     end
@@ -40,11 +42,13 @@ module JSONAPI
         resources.push(resource_klass.find_by_key(key, context))
       end
 
-      render json: JSONAPI::ResourceSerializer.new.serialize(
+      render json: JSONAPI::ResourceSerializer.new.serialize_to_hash(
           resources,
-          @request.includes,
-          @request.fields,
-          context)
+          include: @request.include,
+          fields: @request.fields,
+          context: context,
+          attribute_formatters: attribute_formatters,
+          key_formatter: key_formatter)
     rescue => e
       handle_exceptions(e)
     end
@@ -115,6 +119,28 @@ module JSONAPI
       {}
     end
 
+    # Control by setting in an initializer:
+    #     JSONAPI.configuration.json_key_format = :camelized
+    #
+    # Override if you want to set a per controller key format. Must return a Proc
+    def key_formatter
+      case JSONAPI.configuration.json_key_format
+        when :underscored
+          lambda{|key| key.to_s.underscore}
+        when :camelized
+          lambda{|key| key.to_s.camelize(:lower)}
+        when :dasherized
+          lambda{|key| key.to_s.dasherize}
+        when Proc
+          JSONAPI.configuration.json_key_format
+      end
+    end
+
+    # override to setup custom attribute_formatters
+    def attribute_formatters
+      {}
+    end
+
     def render_errors(errors, status = :bad_request)
       render(json: {errors: errors}, status: errors.count == 1 ? errors[0].status : status)
     end
@@ -138,18 +164,13 @@ module JSONAPI
       if errors.count > 0
         render :status => errors.count == 1 ? errors[0].status : :bad_request, json: {errors: errors}
       else
-        # if patch
-          render :status => results[0].code, json: JSONAPI::ResourceSerializer.new.serialize(resources,
-                                                                                               @request.includes,
-                                                                                               @request.fields,
-                                                                                               context)
-        # else
-        #   result_hash = {}
-        #   resources.each do |resource|
-        #     result_hash.merge!(JSONAPI::ResourceSerializer.new.serialize(resource, @request.includes, @request.fields, context))
-        #   end
-        #   render :status => results.count == 1 ? results[0].code : :ok, json: result_hash
-        # end
+        render :status => results[0].code,
+               json: JSONAPI::ResourceSerializer.new.serialize_to_hash(resources,
+                                                                       include: @request.include,
+                                                                       fields: @request.fields,
+                                                                       context: context,
+                                                                       attribute_formatters: attribute_formatters,
+                                                                       key_formatter: key_formatter)
       end
     rescue => e
       handle_exceptions(e)

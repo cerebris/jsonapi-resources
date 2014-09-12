@@ -12,12 +12,17 @@ require 'minitest/spec'
 require 'rails/all'
 
 require 'jsonapi/routing_ext'
+require 'jsonapi/configuration'
 
 require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/hash_helpers', __FILE__)
 require File.expand_path('../helpers/functional_helpers', __FILE__)
 
 Rails.env = 'test'
+
+JSONAPI.configure do |config|
+  config.json_key_format = :camelized
+end
 
 class TestApp < Rails::Application
   config.eager_load = false
@@ -40,7 +45,7 @@ TestApp.routes.draw do
   jsonapi_resources :tags
   jsonapi_resources :posts
   jsonapi_resources :sections
-  jsonapi_resources :currencies
+  jsonapi_resources :iso_currencies
   jsonapi_resources :expense_entries
   jsonapi_resources :breeds
   jsonapi_resources :planets
@@ -57,7 +62,7 @@ TestApp.routes.draw do
       jsonapi_resources :tags
       jsonapi_resources :posts
       jsonapi_resources :sections
-      jsonapi_resources :currencies
+      jsonapi_resources :iso_currencies
       jsonapi_resources :expense_entries
       jsonapi_resources :breeds
       jsonapi_resources :planets

@@ -45,12 +45,14 @@ ActiveRecord::Schema.define do
     t.references :comment, :tag, index: true
   end
 
-  create_table :currencies, id: false, force: true do |t|
+  create_table :iso_currencies, id: false, force: true do |t|
     t.string :code, limit: 3, null: false
     t.string :name
+    t.string :country_name
+    t.string :minor_unit
     t.timestamps
   end
-  add_index :currencies, :code, unique: true
+  add_index :iso_currencies, :code, unique: true
 
   create_table :expense_entries, force: true do |t|
     t.string :currency_code, limit: 3, null: false
@@ -114,14 +116,14 @@ end
 class Section < ActiveRecord::Base
 end
 
-class Currency < ActiveRecord::Base
+class IsoCurrency < ActiveRecord::Base
   self.primary_key = :code
-  has_many :expense_entries, foreign_key: 'currency_code'
+  # has_many :expense_entries, foreign_key: 'currency_code'
 end
 
 class ExpenseEntry < ActiveRecord::Base
   belongs_to :employee, class_name: 'Person', foreign_key: 'employee_id'
-  belongs_to :currency, class_name: 'Currency', foreign_key: 'currency_code'
+  belongs_to :iso_currency, foreign_key: 'currency_code'
 end
 
 class Planet < ActiveRecord::Base
@@ -204,7 +206,7 @@ end
 class TagsController < JSONAPI::ResourceController
 end
 
-class CurrenciesController < JSONAPI::ResourceController
+class IsoCurrenciesController < JSONAPI::ResourceController
 end
 
 class ExpenseEntriesController < JSONAPI::ResourceController
@@ -228,7 +230,7 @@ module Api
     class TagsController < JSONAPI::ResourceController
     end
 
-    class CurrenciesController < JSONAPI::ResourceController
+    class IsoCurrenciesController < JSONAPI::ResourceController
     end
 
     class ExpenseEntriesController < JSONAPI::ResourceController
@@ -260,7 +262,9 @@ end
 
 ### RESOURCES
 class PersonResource < JSONAPI::Resource
-  attributes :id, :name, :email, :date_joined
+  attributes :id, :name, :email
+  attribute :date_joined, type: :date_with_timezone
+
   has_many :comments
   has_many :posts
 
@@ -340,12 +344,12 @@ class PostResource < JSONAPI::Resource
   filters :title, :author, :tags, :comments
   filter :id
 
-  def self.updateable(keys, context = nil)
-    super(keys - [:author, :subject])
+  def self.updateable(keys, context, key_formatter)
+    super(keys - [:author, :subject], context, key_formatter)
   end
 
-  def self.createable(keys, context = nil)
-    super(keys - [:subject])
+  def self.createable(keys, context, key_formatter)
+    super(keys - [:subject], context, key_formatter)
   end
 
   def self.verify_custom_filter(filter, values, context = nil)
@@ -373,20 +377,19 @@ class PostResource < JSONAPI::Resource
   end
 end
 
-class CurrencyResource < JSONAPI::Resource
+class IsoCurrencyResource < JSONAPI::Resource
   key :code
-  attributes :code, :name
+  attributes :code, :name, :country_name, :minor_unit
 
   routing_options :param => :code
-
-  has_many :expense_entries
 end
 
 class ExpenseEntryResource < JSONAPI::Resource
-  attributes :id, :cost, :transaction_date
+  attributes :id, :cost
+  attribute :transaction_date, type: :date
 
-  has_one :currency, class_name: 'Currency', key: 'currency_code'
-  has_one :employee
+  has_one :iso_currency, key: 'currency_code', primary_key: 'code'
+  has_one :employee, class_name: 'Person'
 end
 
 class BreedResource < JSONAPI::Resource
@@ -542,18 +545,18 @@ Post.create(title: 'JR How To',
   post.tags.concat jr_tag
 end
 
-Currency.create(code: 'USD', name: 'United States Dollar')
-Currency.create(code: 'EUR', name: 'Euro Member Countries')
+IsoCurrency.create(code: 'USD', name: 'United States Dollar', country_name: 'United States', minor_unit: 'cent')
+IsoCurrency.create(code: 'EUR', name: 'Euro Member Countries', country_name: 'Euro Member Countries', minor_unit: 'cent')
 
 ExpenseEntry.create(currency_code: 'USD',
                employee_id: c.id,
                cost: '12.05',
-               transaction_date: DateTime.parse('2014-04-15 12:13:14 UTC +00:00'))
+               transaction_date: Date.parse('2014-04-15'))
 
 ExpenseEntry.create(currency_code: 'USD',
                employee_id: c.id,
                cost: '12.06',
-               transaction_date: DateTime.parse('2014-04-15 12:13:15 UTC +00:00'))
+               transaction_date: Date.parse('2014-04-15'))
 
 Post.create(title: 'Tagged up post 1',
             body:  'AAAA',
