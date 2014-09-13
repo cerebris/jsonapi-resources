@@ -59,12 +59,12 @@ module JSONAPI
       unless params[:fields].nil?
         if params[:fields].is_a?(String)
           value = params[:fields]
-          resource_fields = value.split(',').map {|s| s.to_sym } unless value.nil? || value.empty?
+          resource_fields = value.split(',') unless value.nil? || value.empty?
           type = @resource_klass._serialize_as
           fields[type] = resource_fields
         elsif params[:fields].is_a?(ActionController::Parameters)
           params[:fields].each do |param, value|
-            resource_fields = value.split(',').map {|s| s.to_sym } unless value.nil? || value.empty?
+            resource_fields = value.split(',') unless value.nil? || value.empty?
             type = param.to_sym
             fields[type] = resource_fields
           end
@@ -80,8 +80,10 @@ module JSONAPI
           @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
         else
           unless values.nil?
+            valid_fields = type_resource.fields.collect {|key| @key_formatter.call(key)}
             values.each do |field|
-              if type_resource._validate_field(field, @key_formatter)
+              if valid_fields.include?(field)
+                # TODO - unformat
                 fields[type].push field.to_s.underscore.to_sym
               else
                 @errors.concat(JSONAPI::Exceptions::InvalidField.new(type, field).errors)
@@ -148,17 +150,64 @@ module JSONAPI
       if object_params_raw.is_a?(Array)
         object_params_raw.each do |p|
           @operations.push JSONAPI::CreateResourceOperation.new(@resource_klass,
-                                                                  @resource_klass.verify_create_params(p, @context, @key_formatter))
+                                                                parse_params(p, @resource_klass.createable_fields(@context)))
         end
       else
         @operations.push JSONAPI::CreateResourceOperation.new(@resource_klass,
-                                                                @resource_klass.verify_create_params(object_params_raw,
-                                                                                                     @context, @key_formatter))
+                                                              parse_params(object_params_raw, @resource_klass.createable_fields(@context)))
       end
     rescue ActionController::ParameterMissing => e
       @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)
     rescue JSONAPI::Exceptions::Error => e
       @errors.concat(e.errors)
+    end
+
+    def parse_params(params, allowed_fields)
+      # push links into top level param list with attributes in order to check for invalid params
+      if params[:links]
+        params[:links].each do |link, value|
+          params[link] = value
+        end
+        params.delete(:links)
+      end
+      verify_permitted_params(params, allowed_fields)
+
+      checked_attributes = {}
+      checked_has_one_associations = {}
+      checked_has_many_associations = {}
+
+      params.each do |key, value|
+        param = key.to_s
+
+        association = @resource_klass._associations[param.to_sym]
+
+        if association.is_a?(JSONAPI::Association::HasOne)
+          checked_has_one_associations[param] = @resource_klass.resource_for(association.serialize_type_name).verify_key(value, context)
+        elsif association.is_a?(JSONAPI::Association::HasMany)
+          keys = []
+          value.each do |value|
+            keys.push(@resource_klass.resource_for(association.serialize_type_name).verify_key(value, context))
+          end
+          checked_has_many_associations[param] = keys
+        else
+          checked_attributes[param] = value
+        end
+      end
+
+      return {
+        'attributes' => checked_attributes,
+        'has_one' => checked_has_one_associations,
+        'has_many' => checked_has_many_associations
+      }.deep_transform_keys{ |key| key.underscore.to_sym } #TODO - unformat
+    end
+
+    def verify_permitted_params(params, allowed_fields)
+      formatted_allowed_fields = allowed_fields.collect {|field| @key_formatter.call(field).to_sym}
+      params_not_allowed = []
+      params.keys.each do |key|
+        params_not_allowed.push(key) unless formatted_allowed_fields.include?(key.to_sym)
+      end
+      raise JSONAPI::Exceptions::ParametersNotAllowed.new(params_not_allowed) if params_not_allowed.length > 0
     end
 
     def parse_add_association_operation(params)
@@ -171,7 +220,7 @@ module JSONAPI
       end
 
       object_params = {links: {association_type => params[association_type]}}
-      verified_param_set = @resource_klass.verify_update_params(object_params, @context, @key_formatter)
+      verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
       association = resource_klass._association(association_type)
 
@@ -208,9 +257,8 @@ module JSONAPI
             raise JSONAPI::Exceptions::KeyNotIncludedInURL.new(object_params[@resource_klass._key])
           end
           @operations.push JSONAPI::ReplaceFieldsOperation.new(@resource_klass,
-                                                                 object_params[@resource_klass._key],
-                                                                 @resource_klass.verify_update_params(object_params,
-                                                                                                      @context, @key_formatter))
+                                                               object_params[@resource_klass._key],
+                                                               parse_params(object_params, @resource_klass.updateable_fields(@context)))
         end
       else
         if !object_params_raw[@resource_klass._key].nil? && keys != object_params_raw[@resource_klass._key]
@@ -219,8 +267,7 @@ module JSONAPI
 
         @operations.push JSONAPI::ReplaceFieldsOperation.new(@resource_klass,
                                                                params[@resource_klass._key],
-                                                               @resource_klass.verify_update_params(object_params_raw,
-                                                                                                    @context, @key_formatter))
+                                                               parse_params(object_params_raw, @resource_klass.updateable_fields(@context)))
       end
 
     rescue ActionController::ParameterMissing => e

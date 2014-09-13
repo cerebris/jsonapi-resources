@@ -161,17 +161,17 @@ module JSONAPI
       end
 
       # Override in your resource to filter the updateable keys
-      def updateable(keys, context, key_formatter)
-        keys.collect do |key|
-          key_formatter.call(key).to_sym
-        end
+      def updateable_fields(context)
+        fields
       end
 
       # Override in your resource to filter the createable keys
-      def createable(keys, context, key_formatter)
-        keys.collect do |key|
-          key_formatter.call(key).to_sym
-        end
+      def createable_fields(context)
+        fields
+      end
+
+      def fields
+        _updateable_associations | _attributes.keys
       end
 
       # Override this method if you have more complex requirements than this basic find method provides
@@ -206,53 +206,6 @@ module JSONAPI
           raise JSONAPI::Exceptions::RecordNotFound.new(key)
         end
         self.new(obj)
-      end
-
-      def verify_create_params(object_params, context, key_formatter)
-        verify_params(object_params, createable(_updateable_associations | _attributes.keys, context, key_formatter), context)
-      end
-
-      def verify_update_params(object_params, context, key_formatter)
-        verify_params(object_params, updateable(_updateable_associations | _attributes.keys, context, key_formatter), context)
-      end
-
-      def verify_params(object_params, allowed_params, context)
-        # push links into top level param list with attributes in order to check for invalid params
-        if object_params[:links]
-          object_params[:links].each do |link, value|
-            object_params[link] = value
-          end
-          object_params.delete(:links)
-        end
-        verify_permitted_params(object_params, allowed_params)
-
-        checked_attributes = {}
-        checked_has_one_associations = {}
-        checked_has_many_associations = {}
-
-        object_params.each do |key, value|
-          param = key.to_s
-
-          association = _associations[param.to_sym]
-
-          if association.is_a?(JSONAPI::Association::HasOne)
-            checked_has_one_associations[param] = resource_for(association.serialize_type_name).verify_key(value, context)
-          elsif association.is_a?(JSONAPI::Association::HasMany)
-            keys = []
-            value.each do |value|
-              keys.push(resource_for(association.serialize_type_name).verify_key(value, context))
-            end
-            checked_has_many_associations[param] = keys
-          else
-            checked_attributes[param] = value
-          end
-        end
-
-        return {
-            'attributes' => checked_attributes,
-            'has_one' => checked_has_one_associations,
-            'has_many' => checked_has_many_associations
-        }.deep_transform_keys{ |key| key.underscore.to_sym }
       end
 
       def verify_filters(filters, context = nil)
@@ -359,11 +312,6 @@ module JSONAPI
         _allowed_filters.include?(filter.to_sym)
       end
 
-      def _validate_field(field, key_formatter)
-        fields = (_attributes.keys + _associations.keys).collect {|key| key_formatter.call(key).to_sym}
-        fields.include?(field)
-      end
-
       private
 
       def _associate(klass, *attrs)
@@ -408,15 +356,6 @@ module JSONAPI
             end
           end
         end
-      end
-
-      def verify_permitted_params(params, allowed_param_set)
-        params_not_allowed = []
-        params.keys.each do |key|
-          param = key.to_sym
-          params_not_allowed.push(param) unless allowed_param_set.include?(param)
-        end
-        raise JSONAPI::Exceptions::ParametersNotAllowed.new(params_not_allowed) if params_not_allowed.length > 0
       end
     end
   end

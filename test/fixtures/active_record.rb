@@ -344,12 +344,12 @@ class PostResource < JSONAPI::Resource
   filters :title, :author, :tags, :comments
   filter :id
 
-  def self.updateable(keys, context, key_formatter)
-    super(keys - [:author, :subject], context, key_formatter)
+  def self.updateable_fields(context)
+    super(context) - [:author, :subject]
   end
 
-  def self.createable(keys, context, key_formatter)
-    super(keys - [:subject], context, key_formatter)
+  def self.createable_fields(context)
+    super(context) - [:subject]
   end
 
   def self.verify_custom_filter(filter, values, context = nil)

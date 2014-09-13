@@ -36,4 +36,3 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 204, status
   end
 end
-
