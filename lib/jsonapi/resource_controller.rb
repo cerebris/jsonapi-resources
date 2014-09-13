@@ -15,7 +15,10 @@ module JSONAPI
 
     before_filter {
       begin
-        @request = JSONAPI::Request.new(context, params, key_formatter)
+        @request = JSONAPI::Request.new(params, {
+          context: context,
+          key_formatter: key_formatter
+        })
         render_errors(@request.errors) unless @request.errors.empty?
       rescue => e
         handle_exceptions(e)

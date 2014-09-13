@@ -7,9 +7,9 @@ module JSONAPI
 
     attr_accessor :fields, :include, :filters, :errors, :operations, :resource_klass, :context
 
-    def initialize(context = nil, params = nil, key_formatter = lambda{|key| key})
-      @context = context
-      @key_formatter = key_formatter
+    def initialize(params = nil, options = {})
+      @context = options.fetch(:context, nil)
+      @key_formatter = options.fetch(:key_formatter, lambda{|key| key})
       @errors = []
       @operations = []
       @fields = {}
