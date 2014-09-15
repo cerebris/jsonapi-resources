@@ -123,20 +123,11 @@ module JSONAPI
     end
 
     # Control by setting in an initializer:
-    #     JSONAPI.configuration.json_key_format = :camelized
+    #     JSONAPI.configuration.json_key_format = :camelized_key
     #
     # Override if you want to set a per controller key format. Must return a Proc
     def key_formatter
-      case JSONAPI.configuration.json_key_format
-        when :underscored
-          lambda{|key| key.to_s.underscore}
-        when :camelized
-          lambda{|key| key.to_s.camelize(:lower)}
-        when :dasherized
-          lambda{|key| key.to_s.dasherize}
-        when Proc
-          JSONAPI.configuration.json_key_format
-      end
+      JSONAPI.configuration.key_formatter
     end
 
     # override to setup custom attribute_formatters

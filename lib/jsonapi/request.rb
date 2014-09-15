@@ -9,7 +9,7 @@ module JSONAPI
 
     def initialize(params = nil, options = {})
       @context = options.fetch(:context, nil)
-      @key_formatter = options.fetch(:key_formatter, lambda{|key| key})
+      @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
       @errors = []
       @operations = []
       @fields = {}
@@ -60,12 +60,12 @@ module JSONAPI
         if params[:fields].is_a?(String)
           value = params[:fields]
           resource_fields = value.split(',') unless value.nil? || value.empty?
-          type = @resource_klass._serialize_as
+          type = @resource_klass._type
           fields[type] = resource_fields
         elsif params[:fields].is_a?(ActionController::Parameters)
           params[:fields].each do |param, value|
             resource_fields = value.split(',') unless value.nil? || value.empty?
-            type = param.to_sym
+            type = param
             fields[type] = resource_fields
           end
         end
@@ -73,18 +73,18 @@ module JSONAPI
 
       # Validate the fields
       fields.each do |type, values|
-        underscored_type = type.to_s.underscore.to_sym
+        underscored_type = unformat_key(type)
         fields[type] = []
         type_resource = self.class.resource_for(underscored_type)
-        if type_resource.nil? || !(@resource_klass._type == underscored_type || @resource_klass._has_association?(underscored_type))
+        if type_resource.nil? || !(@resource_klass._type == underscored_type ||
+                                   @resource_klass._has_association?(underscored_type))
           @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
         else
           unless values.nil?
-            valid_fields = type_resource.fields.collect {|key| @key_formatter.call(key)}
+            valid_fields = type_resource.fields.collect {|key| format_key(key)}
             values.each do |field|
               if valid_fields.include?(field)
-                # TODO - unformat
-                fields[type].push field.to_s.underscore.to_sym
+                fields[type].push unformat_key(field)
               else
                 @errors.concat(JSONAPI::Exceptions::InvalidField.new(type, field).errors)
               end
@@ -95,20 +95,20 @@ module JSONAPI
         end
       end
 
-      @fields = fields.deep_transform_keys{ |key| key.to_s.underscore.to_sym }
+      @fields = fields.deep_transform_keys{ |key| unformat_key(key) }
     end
 
     def check_include(resource_klass, include_parts)
-      association_name = include_parts.first
+      association_name = unformat_key(include_parts.first)
 
-      association = resource_klass._association(association_name.underscore)
+      association = resource_klass._association(association_name)
       if association
         unless include_parts.last.empty?
           check_include(Resource.resource_for(association.class_name), include_parts.last.partition('.'))
         end
       else
-        @errors.concat(JSONAPI::Exceptions::InvalidInclude.new(@key_formatter.call(resource_klass._type),
-                                                               association_name, ).errors)
+        @errors.concat(JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type),
+                                                               include_parts.first, ).errors)
       end
     end
 
@@ -118,7 +118,7 @@ module JSONAPI
       return if included_resources_raw.nil?
       included_resources_raw.each do |include|
         check_include(@resource_klass, include.partition('.'))
-        @include.push(include)
+        @include.push(unformat_key(include).to_s)
       end
     end
 
@@ -145,7 +145,7 @@ module JSONAPI
     end
 
     def parse_add_operation(params)
-      object_params_raw = params.require(@resource_klass._type)
+      object_params_raw = params.require(format_key(@resource_klass._type))
 
       if object_params_raw.is_a?(Array)
         object_params_raw.each do |p|
@@ -177,16 +177,16 @@ module JSONAPI
       checked_has_many_associations = {}
 
       params.each do |key, value|
-        param = key.to_s
+        param = unformat_key(key)
 
-        association = @resource_klass._associations[param.to_sym]
+        association = @resource_klass._association(param)
 
         if association.is_a?(JSONAPI::Association::HasOne)
-          checked_has_one_associations[param] = @resource_klass.resource_for(association.serialize_type_name).verify_key(value, context)
+          checked_has_one_associations[param] = @resource_klass.resource_for(association.type).verify_key(value, context)
         elsif association.is_a?(JSONAPI::Association::HasMany)
           keys = []
           value.each do |value|
-            keys.push(@resource_klass.resource_for(association.serialize_type_name).verify_key(value, context))
+            keys.push(@resource_klass.resource_for(association.type).verify_key(value, context))
           end
           checked_has_many_associations[param] = keys
         else
@@ -198,11 +198,11 @@ module JSONAPI
         'attributes' => checked_attributes,
         'has_one' => checked_has_one_associations,
         'has_many' => checked_has_many_associations
-      }.deep_transform_keys{ |key| key.underscore.to_sym } #TODO - unformat
+      }.deep_transform_keys{ |key| unformat_key(key) }
     end
 
     def verify_permitted_params(params, allowed_fields)
-      formatted_allowed_fields = allowed_fields.collect {|field| @key_formatter.call(field).to_sym}
+      formatted_allowed_fields = allowed_fields.collect {|field| format_key(field).to_sym}
       params_not_allowed = []
       params.keys.each do |key|
         params_not_allowed.push(key) unless formatted_allowed_fields.include?(key.to_sym)
@@ -211,7 +211,7 @@ module JSONAPI
     end
 
     def parse_add_association_operation(params)
-      association_type = params[:association].to_sym
+      association_type = params[:association]
 
       parent_key = params[resource_klass._as_parent_key]
 
@@ -240,7 +240,7 @@ module JSONAPI
     end
 
     def parse_replace_operation(params)
-      object_params_raw = params.require(@resource_klass._type)
+      object_params_raw = params.require(format_key(@resource_klass._type))
 
       keys = params[@resource_klass._key]
       if object_params_raw.is_a?(Array)
@@ -289,7 +289,7 @@ module JSONAPI
     end
 
     def parse_remove_association_operation(params)
-      association_type = params[:association].to_sym
+      association_type = params[:association]
 
       parent_key = params[resource_klass._as_parent_key]
 
@@ -315,6 +315,14 @@ module JSONAPI
         keys.push @resource_klass.verify_key(key, context)
       end
       return keys
+    end
+
+    def format_key(key)
+      @key_formatter.format(key)
+    end
+
+    def unformat_key(key)
+      @key_formatter.unformat(key)
     end
   end
 end

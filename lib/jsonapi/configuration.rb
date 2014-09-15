@@ -1,10 +1,17 @@
+require 'jsonapi/formatter'
+
 module JSONAPI
   class Configuration
-    attr_accessor :json_key_format
+    attr_reader :json_key_format, :key_formatter
 
     def initialize
-      #:underscored, :camelized, :dasherized, or a lambda
-      @json_key_format = :underscored
+      #:underscored_key, :camelized_key, :dasherized_key, or custom
+      self.json_key_format = :underscored_key
+    end
+
+    def json_key_format=(format)
+      @json_key_format = format
+      @key_formatter = JSONAPI::Formatter.formatter_for(format)
     end
   end
 

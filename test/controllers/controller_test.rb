@@ -782,6 +782,10 @@ class TagsControllerTest < ActionController::TestCase
 end
 
 class ExpenseEntriesControllerTest < ActionController::TestCase
+  def after_teardown
+    JSONAPI.configuration.json_key_format = :camelized_key
+  end
+
   def test_expense_entries_index
     get :index
     assert_response :success
@@ -851,9 +855,88 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     assert json_response['linked']['isoCurrencies'][0].has_key?('name')
     refute json_response['linked']['isoCurrencies'][0].has_key?('countryName')
   end
+
+  def test_create_expense_entries_underscored
+    JSONAPI.configuration.json_key_format = :underscored_key
+
+    post :create, { expense_entries: {
+        transaction_date: '2014/04/15',
+        cost:  50.58,
+        links: {
+            employee: 3,
+            iso_currency: 'USD'
+        }
+      },
+      include: 'iso_currency',
+      fields: 'id,transaction_date,iso_currency,cost,employee'
+    }
+
+    assert_response :created
+    assert_equal 1, json_response['expense_entries'].size
+    assert_equal 3, json_response['expense_entries'][0]['links']['employee']
+    assert_equal 'USD', json_response['expense_entries'][0]['links']['iso_currency']
+    assert_equal '50.58', json_response['expense_entries'][0]['cost']
+
+    post :destroy, {id: json_response['expense_entries'][0]['id']}
+    assert_response :no_content
+  end
+
+  def test_create_expense_entries_camelized_key
+    JSONAPI.configuration.json_key_format = :camelized_key
+
+    post :create, { expenseEntries: {
+        transactionDate: '2014/04/15',
+        cost:  50.58,
+        links: {
+            employee: 3,
+            isoCurrency: 'USD'
+        }
+      },
+      include: 'isoCurrency',
+      fields: 'id,transactionDate,isoCurrency,cost,employee'
+    }
+
+    assert_response :created
+    assert_equal 1, json_response['expenseEntries'].size
+    assert_equal 3, json_response['expenseEntries'][0]['links']['employee']
+    assert_equal 'USD', json_response['expenseEntries'][0]['links']['isoCurrency']
+    assert_equal '50.58', json_response['expenseEntries'][0]['cost']
+
+    post :destroy, {id: json_response['expenseEntries'][0]['id']}
+    assert_response :no_content
+  end
+
+  def test_create_expense_entries_dasherized_key
+    JSONAPI.configuration.json_key_format = :dasherized_key
+
+    post :create, { 'expense-entries' => {
+        'transaction-date' => '2014/04/15',
+        cost:  50.58,
+        links: {
+            employee: 3,
+            'iso-currency' => 'USD'
+        }
+      },
+      include: 'iso-currency',
+      fields: 'id,transaction-date,iso-currency,cost,employee'
+    }
+
+    assert_response :created
+    assert_equal 1, json_response['expense-entries'].size
+    assert_equal 3, json_response['expense-entries'][0]['links']['employee']
+    assert_equal 'USD', json_response['expense-entries'][0]['links']['iso-currency']
+    assert_equal '50.58', json_response['expense-entries'][0]['cost']
+
+    post :destroy, {id: json_response['expense-entries'][0]['id']}
+    assert_response :no_content
+  end
 end
 
 class IsoCurrenciesControllerTest < ActionController::TestCase
+  def after_teardown
+    JSONAPI.configuration.json_key_format = :camelized_key
+  end
+
   def test_currencies_index
     get :index
     assert_response :success
@@ -861,27 +944,24 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
   end
 
   def test_currencies_json_key_underscored
-    JSONAPI.configuration.json_key_format = :underscored
+    JSONAPI.configuration.json_key_format = :underscored_key
     get :index
     assert_response :success
     assert_equal 2, json_response['iso_currencies'].size
-    JSONAPI.configuration.json_key_format = :camelized
   end
 
   def test_currencies_json_key_dasherized
-    JSONAPI.configuration.json_key_format = :dasherized
+    JSONAPI.configuration.json_key_format = :dasherized_key
     get :index
     assert_response :success
     assert_equal 2, json_response['iso-currencies'].size
-    JSONAPI.configuration.json_key_format = :camelized
   end
 
   def test_currencies_custom_json_key
-    JSONAPI.configuration.json_key_format = lambda{|key| key.camelize(:upper)}
+    JSONAPI.configuration.json_key_format = :upper_camelized_key
     get :index
     assert_response :success
     assert_equal 2, json_response['IsoCurrencies'].size
-    JSONAPI.configuration.json_key_format = :camelized
   end
 
   def test_currencies_show

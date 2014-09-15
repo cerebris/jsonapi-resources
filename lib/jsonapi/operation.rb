@@ -79,7 +79,7 @@ module JSONAPI
     def initialize(resource_klass, resource_id, association_type, key_value)
       @resource_id = resource_id
       @key_value = key_value
-      @association_type = association_type
+      @association_type = association_type.to_sym
       super(resource_klass)
     end
 
@@ -98,7 +98,7 @@ module JSONAPI
     def initialize(resource_klass, resource_id, association_type, key_values)
       @resource_id = resource_id
       @key_values = key_values
-      @association_type = association_type
+      @association_type = association_type.to_sym
       super(resource_klass)
     end
 
@@ -118,7 +118,7 @@ module JSONAPI
     def initialize(resource_klass, resource_id, association_type, associated_key)
       @resource_id = resource_id
       @associated_key = associated_key
-      @association_type = association_type
+      @association_type = association_type.to_sym
       super(resource_klass)
     end
 
@@ -136,7 +136,7 @@ module JSONAPI
 
     def initialize(resource_klass, resource_id, association_type)
       @resource_id = resource_id
-      @association_type = association_type
+      @association_type = association_type.to_sym
       super(resource_klass)
     end
 

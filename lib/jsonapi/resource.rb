@@ -25,9 +25,9 @@ module JSONAPI
 
     def create_has_many_link(association_type, association_key_value, context)
       association = self.class._associations[association_type]
-      related_resource = self.class.resource_for(association.serialize_type_name).find_by_key(association_key_value, context)
+      related_resource = self.class.resource_for(association.type).find_by_key(association_key_value, context)
 
-      @object.send(association.serialize_type_name) << related_resource.object
+      @object.send(association.type) << related_resource.object
     end
 
     def replace_has_many_links(association_type, association_key_values, context)
@@ -45,7 +45,7 @@ module JSONAPI
     def remove_has_many_link(association_type, key, context)
       association = self.class._associations[association_type]
 
-      @object.send(association.serialize_type_name).delete(key)
+      @object.send(association.type).delete(key)
     end
 
     def remove_has_one_link(association_type, context)
@@ -182,7 +182,7 @@ module JSONAPI
         filters.each do |filter, value|
           if _associations.include?(filter)
             if _associations[filter].is_a?(JSONAPI::Association::HasMany)
-              includes.push(filter.to_sym)
+              includes.push(filter)
               where_filters["#{filter}.#{_associations[filter].primary_key}"] = value
             else
               where_filters["#{_associations[filter].key}"] = value
@@ -218,7 +218,7 @@ module JSONAPI
       end
 
       def is_filter_association?(filter)
-        filter == _serialize_as || _associations.include?(filter)
+        filter == _type || _associations.include?(filter)
       end
 
       def verify_filter(filter, raw, context = nil)
@@ -265,7 +265,7 @@ module JSONAPI
       end
 
       def _association(type)
-        type = type.to_sym unless type.is_a?(Symbol)
+        type = type.to_sym
         @_associations[type]
       end
 
@@ -273,16 +273,12 @@ module JSONAPI
         @_model_name ||= self.name.demodulize.sub(/Resource$/, '')
       end
 
-      def _serialize_as
-        @_serialize_as ||= self._type
-      end
-
       def _key
         @_key ||= :id
       end
 
       def _as_parent_key
-        @_as_parent_key ||= "#{_serialize_as.to_s.singularize}_#{_key}"
+        @_as_parent_key ||= "#{_type.to_s.singularize}_#{_key}"
       end
 
       def _allowed_filters
@@ -309,7 +305,7 @@ module JSONAPI
       end
 
       def _allowed_filter?(filter)
-        _allowed_filters.include?(filter.to_sym)
+        _allowed_filters.include?(filter)
       end
 
       private
@@ -328,7 +324,7 @@ module JSONAPI
             end unless method_defined?(key)
 
             define_method "_#{attr}_object" do
-              type_name = self.class._associations[attr].serialize_type_name
+              type_name = self.class._associations[attr].type
               resource_class = self.class.resource_for(type_name)
               if resource_class
                 associated_object = @object.send attr
@@ -343,7 +339,7 @@ module JSONAPI
             end unless method_defined?(key)
 
             define_method "_#{attr}_objects" do
-              type_name = self.class._associations[attr].serialize_type_name
+              type_name = self.class._associations[attr].type
               resource_class = self.class.resource_for(type_name)
               resources = []
               if resource_class

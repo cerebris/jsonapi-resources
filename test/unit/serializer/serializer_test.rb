@@ -1,6 +1,6 @@
 require File.expand_path('../../../test_helper', __FILE__)
 require File.expand_path('../../../fixtures/active_record', __FILE__)
-require 'jsonapi/resource_serializer'
+require 'jsonapi-resources'
 require 'json'
 
 class SerializerTest < MiniTest::Unit::TestCase
@@ -102,7 +102,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                            }
                        }, JSONAPI::ResourceSerializer.new.serialize_to_hash(PostResource.new(@post),
                                                                            include: [:author],
-                                                                           key_formatter: lambda{|key| key}))
+                                                                           key_formatter: UnderscoredKeyFormatter))
   end
 
   def test_serializer_include_sub_objects

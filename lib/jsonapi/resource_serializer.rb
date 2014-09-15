@@ -14,7 +14,7 @@ module JSONAPI
       include = options.fetch(:include, [])
       @context = options.fetch(:context, nil)
 
-      @key_formatter = options.fetch(:key_formatter, lambda{|key| key.camelize(:lower)})
+      @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
       @attribute_formatters = options.fetch(:attribute_formatters, {})
 
       @linked_objects = {}
@@ -23,9 +23,9 @@ module JSONAPI
 
       if source.respond_to?(:to_ary)
         return {} if source.size == 0
-        @primary_class_name = source[0].class._serialize_as
+        @primary_class_name = source[0].class._type
       else
-        @primary_class_name = source.class._serialize_as
+        @primary_class_name = source.class._type
       end
 
       process_primary(source, requested_associations)
@@ -117,7 +117,7 @@ module JSONAPI
     end
 
     def attribute_hash(source)
-      requested = requested_fields(source.class._serialize_as)
+      requested = requested_fields(source.class._type)
       fields = source.class._attributes.keys.to_a
       unless requested.nil?
         fields = requested & fields
@@ -133,7 +133,7 @@ module JSONAPI
     # class's fetchable method
     def links_hash(source, requested_associations)
       associations = source.class._associations
-      requested = requested_fields(source.class._serialize_as)
+      requested = requested_fields(source.class._type)
       fields = associations.keys
       unless requested.nil?
         fields = requested & fields
@@ -155,7 +155,7 @@ module JSONAPI
           include_linked_object = ia && ia[:include]
           include_linked_children = ia && ia[:include_children]
 
-          type = association.serialize_type_name
+          type = association.type
 
           # If the object has been serialized once it will be in the related objects list,
           # but it's possible all children won't have been captured. So we must still go
@@ -190,11 +190,13 @@ module JSONAPI
     end
 
     def already_serialized?(type, id)
+      type = format_key(type)
       return @linked_objects.key?(type) && @linked_objects[type].key?(id)
     end
 
     # Sets that an object should be included in the primary document of the response.
     def set_primary(type, id)
+      type = format_key(type)
       @linked_objects[type][id][:primary] = true
     end
 
@@ -225,7 +227,7 @@ module JSONAPI
     end
 
     def format_key(key)
-      @key_formatter.call(key.to_s).to_sym
+      @key_formatter.format(key)
     end
 
     def format_attribute(value, type, source, context)

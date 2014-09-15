@@ -13,6 +13,7 @@ require 'rails/all'
 
 require 'jsonapi/routing_ext'
 require 'jsonapi/configuration'
+require 'jsonapi/formatter'
 
 require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/hash_helpers', __FILE__)
@@ -21,7 +22,7 @@ require File.expand_path('../helpers/functional_helpers', __FILE__)
 Rails.env = 'test'
 
 JSONAPI.configure do |config|
-  config.json_key_format = :camelized
+  config.json_key_format = :camelized_key
 end
 
 class TestApp < Rails::Application
@@ -99,5 +100,13 @@ end
 class ActiveSupport::TestCase
   setup do
     @routes = TestApp.routes
+  end
+end
+
+class UpperCamelizedKeyFormatter < JSONAPI::KeyFormatter
+  class << self
+    def format(key)
+      super.camelize(:upper)
+    end
   end
 end
