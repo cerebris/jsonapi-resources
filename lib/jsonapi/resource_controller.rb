@@ -125,7 +125,8 @@ module JSONAPI
     # Control by setting in an initializer:
     #     JSONAPI.configuration.json_key_format = :camelized_key
     #
-    # Override if you want to set a per controller key format. Must return a Proc
+    # Override if you want to set a per controller key format.
+    # Must return a class derived from KeyFormatter.
     def key_formatter
       JSONAPI.configuration.key_formatter
     end
