@@ -426,13 +426,23 @@ class PostsControllerTest < ActionController::TestCase
     ruby = Section.find_by(name: 'ruby')
 
     post :create_association, {post_id: 3, association: 'section',
-                   section: ruby.id }
+                   sections: ruby.id }
 
     assert_response :success
     assert_equal 1, json_response['posts'].size
     assert_equal 3, json_response['posts'][0]['links']['author']
     assert_equal  ruby.id, json_response['posts'][0]['links']['section']
     assert_equal 'AAAA', json_response['posts'][0]['body']
+  end
+
+  def test_update_relationship_has_one_singular_param
+    ruby = Section.find_by(name: 'ruby')
+
+    post :create_association, {post_id: 3, association: 'section',
+                               section: ruby.id }
+
+    assert_response :bad_request
+    assert_match /The required parameter, sections, is missing./, response.body
   end
 
   def test_update_relationship_has_many_single
@@ -474,17 +484,17 @@ class PostsControllerTest < ActionController::TestCase
     ruby = Section.find_by(name: 'ruby')
 
     post :create_association, {post_id: 3, association: 'section',
-                   author: 1 }
+                   authors: 1 }
 
     assert_response :bad_request
-    assert_match /The required parameter, section, is missing./, response.body
+    assert_match /The required parameter, sections, is missing./, response.body
   end
 
   def test_delete_relationship_has_one
     ruby = Section.find_by(name: 'ruby')
 
     post :create_association, {post_id: 9, association: 'section',
-                   section: ruby.id }
+                   sections: ruby.id }
 
     assert_response :success
     assert_equal  ruby.id, json_response['posts'][0]['links']['section']
