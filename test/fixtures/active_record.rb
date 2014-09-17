@@ -486,10 +486,6 @@ d = Person.create(name: 'Tag Crazy Author',
                   email: 'taggy@xyz.fake',
                   date_joined: DateTime.parse('2013-11-30 4:20:00 UTC +00:00'))
 
-# e = Person.create(name: 'Author Wannabe',
-#                   email: 'wanabe@xyz.fake',
-#                   date_joined: DateTime.parse('2014-1-30 4:20:20 UTC +00:00'))
-
 short_tag = Tag.create(name: 'short')
 whiny_tag = Tag.create(name: 'whiny')
 grumpy_tag = Tag.create(name: 'grumpy')
@@ -603,15 +599,6 @@ Post.create(title: 'Tagged up post 2',
             author_id: d.id,
             tag_ids: [6,7,8,9]
 )
-#
-# # id:13
-# Post.create(title: 'Silly Post',
-#             body:  'Use JR to write API apps',
-#             author_id: e.id).tap do |post|
-#   post.comments.create(body: 'First', author_id: e.id)
-#   post.comments.create(body: 'First!!!!', author_id: e.id)
-# end
-#
 
 gas_giant = PlanetType.create(name: 'Gas Giant')
 planetoid = PlanetType.create(name: 'Planetoid')
