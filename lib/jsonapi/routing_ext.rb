@@ -47,7 +47,7 @@ module ActionDispatch
         end
 
         def links_methods(options)
-          default_methods = [:show, :create, :destroy]
+          default_methods = [:show, :create, :destroy, :update]
           if only = options[:only]
             Array(only).map(&:to_sym)
           elsif except = options[:except]
@@ -73,6 +73,10 @@ module ActionDispatch
             match "links/#{link_type}", controller: res._type.to_s, action: 'create_association', association: link_type.to_s, via: [:post]
           end
 
+          if methods.include?(:update)
+            match "links/#{link_type}", controller: res._type.to_s, action: 'update_association', association: link_type.to_s, via: [:put]
+          end
+
           if methods.include?(:destroy)
             match "links/#{link_type}", controller: res._type.to_s, action: 'destroy_association', association: link_type.to_s, via: [:delete]
           end
@@ -92,6 +96,10 @@ module ActionDispatch
 
           if methods.include?(:create)
             match "links/#{link_type}", controller: res._type.to_s, action: 'create_association', association: link_type.to_s, via: [:post]
+          end
+
+          if methods.include?(:update) && res._association(link_type).acts_as_set
+            match "links/#{link_type}", controller: res._type.to_s, action: 'update_association', association: link_type.to_s, via: [:put]
           end
 
           if methods.include?(:destroy)

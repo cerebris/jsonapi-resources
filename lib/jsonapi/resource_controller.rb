@@ -77,6 +77,10 @@ module JSONAPI
       process_request_operations
     end
 
+    def update_association
+      process_request_operations
+    end
+
     def update
       process_request_operations
     end

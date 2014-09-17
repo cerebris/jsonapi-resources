@@ -503,4 +503,24 @@ class SerializerTest < MiniTest::Unit::TestCase
                                                                            }))
   end
 
+  def test_serializer_empty_links_null_and_array
+    planet_hash = JSONAPI::ResourceSerializer.new.serialize_to_hash(PlanetResource.new(Planet.find(8)))
+
+    assert_hash_equals({
+        planets: [{
+            id: 8,
+            name: 'Beta W',
+            description: 'Newly discovered Planet W',
+            links: {
+                planetType: nil,
+                tags: [],
+                moons: []
+             }
+         }]
+     }, planet_hash)
+
+    json = planet_hash.to_json
+    assert_match /\"planetType\":null/, json
+    assert_match /\"moons\":\[\]/, json
+  end
 end

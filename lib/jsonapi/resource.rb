@@ -27,13 +27,31 @@ module JSONAPI
       association = self.class._associations[association_type]
       related_resource = self.class.resource_for(association.type).find_by_key(association_key_value, context)
 
-      @object.send(association.type) << related_resource.object
+      # ToDo: Add option to skip relations that already exist instead of returning an error?
+      relation = @object.send(association.type).where(association.primary_key => association_key_value).first
+      if relation.nil?
+        @object.send(association.type) << related_resource.object
+      else
+        raise JSONAPI::Exceptions::HasManyRelationExists.new(association_key_value)
+      end
     end
 
     def replace_has_many_links(association_type, association_key_values, context)
       association = self.class._associations[association_type]
 
       @object.send("#{association.key}=", association_key_values)
+    end
+
+    def create_has_one_link(association_type, association_key_value, context)
+      association = self.class._associations[association_type]
+
+      # ToDo: Add option to skip relations that already exist instead of returning an error?
+      relation = @object.send("#{association.key}")
+      if relation.nil?
+        @object.send("#{association.key}=", association_key_value)
+      else
+        raise JSONAPI::Exceptions::HasOneRelationExists.new
+      end
     end
 
     def replace_has_one_link(association_type, association_key_value, context)

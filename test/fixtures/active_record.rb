@@ -40,6 +40,7 @@ ActiveRecord::Schema.define do
   create_table :posts_tags, force: true do |t|
     t.references :post, :tag, index: true
   end
+  add_index :posts_tags, [:post_id, :tag_id], unique: true
 
   create_table :comments_tags, force: true do |t|
     t.references :comment, :tag, index: true
@@ -66,6 +67,11 @@ ActiveRecord::Schema.define do
     t.string :description
     t.integer :planet_type_id
   end
+
+  create_table :planets_tags, force: true do |t|
+    t.references :planet, :tag, index: true
+  end
+  add_index :planets_tags, [:planet_id, :tag_id], unique: true
 
   create_table :planet_types, force: true do |t|
     t.string :name
@@ -111,6 +117,7 @@ end
 
 class Tag < ActiveRecord::Base
   has_and_belongs_to_many :posts, join_table: :posts_tags
+  has_and_belongs_to_many :planets, join_table: :planets_tags
 end
 
 class Section < ActiveRecord::Base
@@ -129,6 +136,8 @@ end
 class Planet < ActiveRecord::Base
   has_many :moons
   has_one :planet_type
+
+  has_and_belongs_to_many :tags, join_table: :planets_tags
 end
 
 class PlanetType < ActiveRecord::Base
@@ -238,6 +247,15 @@ module Api
 
     class BreedsController < JSONAPI::ResourceController
     end
+
+    class PlanetsController < JSONAPI::ResourceController
+    end
+
+    class PlanetTypesController < JSONAPI::ResourceController
+    end
+
+    class MoonsController < JSONAPI::ResourceController
+    end
   end
 
   module V2
@@ -321,6 +339,8 @@ class TagResource < JSONAPI::Resource
   attributes :id, :name
 
   has_many :posts
+  # Not including the planets association so they don't get output
+  #has_many :planets
 end
 
 class SectionResource < JSONAPI::Resource
@@ -415,6 +435,14 @@ class PlanetResource < JSONAPI::Resource
 
   has_many :moons
   has_one :planet_type
+
+  has_many :tags, acts_as_set: true
+end
+
+class PropertyResource < JSONAPI::Resource
+  attributes :id, :name
+
+  has_many :planets
 end
 
 class PlanetTypeResource < JSONAPI::Resource
@@ -457,6 +485,10 @@ c = Person.create(name: 'Lazy Author',
 d = Person.create(name: 'Tag Crazy Author',
                   email: 'taggy@xyz.fake',
                   date_joined: DateTime.parse('2013-11-30 4:20:00 UTC +00:00'))
+
+# e = Person.create(name: 'Author Wannabe',
+#                   email: 'wanabe@xyz.fake',
+#                   date_joined: DateTime.parse('2014-1-30 4:20:20 UTC +00:00'))
 
 short_tag = Tag.create(name: 'short')
 whiny_tag = Tag.create(name: 'whiny')
@@ -558,17 +590,28 @@ ExpenseEntry.create(currency_code: 'USD',
                cost: '12.06',
                transaction_date: Date.parse('2014-04-15'))
 
+# id:11
 Post.create(title: 'Tagged up post 1',
             body:  'AAAA',
             author_id: d.id,
             tag_ids: [6,7,8,9]
             )
 
+# id:12
 Post.create(title: 'Tagged up post 2',
             body:  'BBBB',
             author_id: d.id,
             tag_ids: [6,7,8,9]
 )
+#
+# # id:13
+# Post.create(title: 'Silly Post',
+#             body:  'Use JR to write API apps',
+#             author_id: e.id).tap do |post|
+#   post.comments.create(body: 'First', author_id: e.id)
+#   post.comments.create(body: 'First!!!!', author_id: e.id)
+# end
+#
 
 gas_giant = PlanetType.create(name: 'Gas Giant')
 planetoid = PlanetType.create(name: 'Planetoid')
@@ -586,3 +629,5 @@ jupiter = Planet.create(name: 'Jupiter', description: 'A gas giant.', planet_typ
 betax = Planet.create(name: 'Beta X', description: 'Newly discovered Planet X', planet_type_id: unknown.id)
 betay = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Y', planet_type_id: unknown.id)
 betaz = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Z', planet_type_id: unknown.id)
+betaw = Planet.create(name: 'Beta W', description: 'Newly discovered Planet W')
+

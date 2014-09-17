@@ -37,9 +37,9 @@ module JSONAPI
             parse_include(params)
             parse_add_operation(params)
           when 'create_association'
-            parse_fields(params)
-            parse_include(params)
             parse_add_association_operation(params)
+          when 'update_association'
+            parse_update_association_operation(params)
           when 'update'
             parse_fields(params)
             parse_include(params)
@@ -227,10 +227,10 @@ module JSONAPI
         object_params = {links: {association_type => params[plural_association_type]}}
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
-        @operations.push JSONAPI::ReplaceHasOneAssociationOperation.new(resource_klass,
-                                                                          parent_key,
-                                                                          association_type,
-                                                                          verified_param_set[:has_one].values[0])
+        @operations.push JSONAPI::CreateHasOneAssociationOperation.new(resource_klass,
+                                                                      parent_key,
+                                                                      association_type,
+                                                                      verified_param_set[:has_one].values[0])
       else
         if params[association_type].nil?
           raise ActionController::ParameterMissing.new(association_type)
@@ -240,9 +240,47 @@ module JSONAPI
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
         @operations.push JSONAPI::CreateHasManyAssociationOperation.new(resource_klass,
-                                                                          parent_key,
-                                                                          association_type,
-                                                                          verified_param_set[:has_many].values[0])
+                                                                        parent_key,
+                                                                        association_type,
+                                                                        verified_param_set[:has_many].values[0])
+      end
+    rescue ActionController::ParameterMissing => e
+      @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)
+    end
+
+    def parse_update_association_operation(params)
+      association_type = params[:association]
+
+      parent_key = params[resource_klass._as_parent_key]
+
+      association = resource_klass._association(association_type)
+
+      if association.is_a?(JSONAPI::Association::HasOne)
+        plural_association_type = association_type.pluralize
+
+        if params[plural_association_type].nil?
+          raise ActionController::ParameterMissing.new(plural_association_type)
+        end
+
+        object_params = {links: {association_type => params[plural_association_type]}}
+        verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
+
+        @operations.push JSONAPI::ReplaceHasOneAssociationOperation.new(resource_klass,
+                                                                        parent_key,
+                                                                        association_type,
+                                                                        verified_param_set[:has_one].values[0])
+      else
+        if params[association_type].nil?
+          raise ActionController::ParameterMissing.new(association_type)
+        end
+
+        object_params = {links: {association_type => params[association_type]}}
+        verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
+
+        @operations.push JSONAPI::ReplaceHasManyAssociationOperation.new(resource_klass,
+                                                                         parent_key,
+                                                                         association_type,
+                                                                         verified_param_set[:has_many].values[0])
       end
     rescue ActionController::ParameterMissing => e
       @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)

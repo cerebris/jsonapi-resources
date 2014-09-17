@@ -7,6 +7,10 @@ require 'jsonapi/operations_processor'
 
 class OperationsProcessorTest < MiniTest::Unit::TestCase
   def setup
+    betax = Planet.find(5)
+    betay = Planet.find(6)
+    betaz = Planet.find(7)
+    unknown = PlanetType.find(5)
   end
 
   def test_create_single_resource
@@ -51,7 +55,7 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
     assert_equal(Planet.count, count + 3)
   end
 
-  def test_add_has_one_association
+  def test_replace_has_one_association
     op = JSONAPI::OperationsProcessor.new()
 
     saturn = Planet.find(1)
@@ -71,11 +75,13 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
 
     assert_kind_of(Array, results)
     assert_kind_of(JSONAPI::OperationResult, results[0])
-    assert_equal(:created, results[0].code)
-    assert_equal(results[0].resource.object.attributes['planet_type_id'], gas_giant.id)
+    assert_equal(:no_content, results[0].code)
+
+    saturn.reload
+    assert_equal(saturn.planet_type_id, gas_giant.id)
   end
 
-  def test_add_has_many_association
+  def test_create_has_many_association
     op = JSONAPI::OperationsProcessor.new()
 
     betax = Planet.find(5)
@@ -83,12 +89,48 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
     betaz = Planet.find(7)
     gas_giant = PlanetType.find(1)
     unknown = PlanetType.find(5)
-    assert_equal(betax.planet_type_id, unknown.id)
-    assert_equal(betay.planet_type_id, unknown.id)
-    assert_equal(betaz.planet_type_id, unknown.id)
+    betax.planet_type_id = unknown.id
+    betay.planet_type_id = unknown.id
+    betaz.planet_type_id = unknown.id
+    betax.save!
+    betay.save!
+    betaz.save!
 
     operations = [
       JSONAPI::CreateHasManyAssociationOperation.new(PlanetTypeResource, gas_giant.id, :planets, [betax.id, betay.id, betaz.id])
+    ]
+
+    request = JSONAPI::Request.new
+    request.operations = operations
+
+    results = op.process(request)
+
+    betax.reload
+    betay.reload
+    betaz.reload
+
+    assert_equal(betax.planet_type_id, gas_giant.id)
+    assert_equal(betay.planet_type_id, gas_giant.id)
+    assert_equal(betaz.planet_type_id, gas_giant.id)
+  end
+
+  def test_replace_has_many_association
+    op = JSONAPI::OperationsProcessor.new()
+
+    betax = Planet.find(5)
+    betay = Planet.find(6)
+    betaz = Planet.find(7)
+    gas_giant = PlanetType.find(1)
+    unknown = PlanetType.find(5)
+    betax.planet_type_id = unknown.id
+    betay.planet_type_id = unknown.id
+    betaz.planet_type_id = unknown.id
+    betax.save!
+    betay.save!
+    betaz.save!
+
+    operations = [
+        JSONAPI::ReplaceHasManyAssociationOperation.new(PlanetTypeResource, gas_giant.id, :planets, [betax.id, betay.id, betaz.id])
     ]
 
     request = JSONAPI::Request.new

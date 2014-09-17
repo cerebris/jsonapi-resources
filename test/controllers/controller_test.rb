@@ -385,7 +385,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_update_with_links
     javascript = Section.find_by(name: 'javascript')
 
-    post :update, {id: 3, posts: {
+    put :update, {id: 3, posts: {
         title: 'A great new Post',
         links: {
             section: javascript.id,
@@ -404,7 +404,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_update_remove_links
-    post :update, {id: 3, posts: {
+    put :update, {id: 3, posts: {
         title: 'A great new Post',
         links: {
             section: nil,
@@ -424,67 +424,131 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_relationship_has_one
     ruby = Section.find_by(name: 'ruby')
+    post_object = Post.find(3)
+    assert_not_equal ruby.id, post_object.section_id
 
-    post :create_association, {post_id: 3, association: 'section',
-                   sections: ruby.id }
+    put :update_association, {post_id: 3, association: 'section', sections: ruby.id }
 
-    assert_response :success
-    assert_equal 1, json_response['posts'].size
-    assert_equal 3, json_response['posts'][0]['links']['author']
-    assert_equal  ruby.id, json_response['posts'][0]['links']['section']
-    assert_equal 'AAAA', json_response['posts'][0]['body']
+    assert_response :no_content
+    post_object = Post.find(3)
+    assert_equal ruby.id, post_object.section_id
   end
 
   def test_update_relationship_has_one_singular_param
     ruby = Section.find_by(name: 'ruby')
+    post_object = Post.find(3)
 
-    post :create_association, {post_id: 3, association: 'section',
-                               section: ruby.id }
+    put :update_association, {post_id: 3, association: 'section', section: ruby.id }
 
     assert_response :bad_request
-    assert_match /The required parameter, sections, is missing./, response.body
   end
 
-  def test_update_relationship_has_many_single
-    post :create_association, {post_id: 3, association: 'tags',
-                   tags: [3] }
+  def test_update_relationship_has_one_singular_param_relation_nil
+    ruby = Section.find_by(name: 'ruby')
+    post_object = Post.find(3)
+    post_object.section_id = nil
+    post_object.save!
 
-    assert_response :success
-    post :create_association, {post_id: 3, association: 'tags',
-                               tags: [2] }
+    put :update_association, {post_id: 3, association: 'section', sections: ruby.id }
 
-    assert_response :success
-    post :create_association, {post_id: 3, association: 'tags',
-                               tags: [5] }
-
-    assert_response :success
-    post :create_association, {post_id: 3, association: 'tags',
-                               tags: [5] }
-
-    assert_response :success
-
-    assert_equal 1, json_response['posts'].size
-    assert_equal 3, json_response['posts'][0]['links']['author']
-    assert matches_array? [2,3,5], json_response['posts'][0]['links']['tags']
-    assert_equal 'AAAA', json_response['posts'][0]['body']
+    assert_response :no_content
+    post_object = Post.find(3)
+    assert_equal ruby.id, post_object.section_id
   end
 
-  def test_update_relationship_has_many
-    post :create_association, {post_id: 3, association: 'tags',
-                               tags: [2,3] }
+  def test_create_relationship_has_one_singular_param_relation_nil
+    ruby = Section.find_by(name: 'ruby')
+    post_object = Post.find(3)
+    post_object.section_id = nil
+    post_object.save!
 
-    assert_response :success
-    assert_equal 1, json_response['posts'].size
-    assert_equal 3, json_response['posts'][0]['links']['author']
-    assert matches_array? [2,3], json_response['posts'][0]['links']['tags']
-    assert_equal 'AAAA', json_response['posts'][0]['body']
+    post :create_association, {post_id: 3, association: 'section', sections: ruby.id }
+
+    assert_response :no_content
+    post_object = Post.find(3)
+    assert_equal ruby.id, post_object.section_id
+  end
+
+  def test_create_relationship_has_one_singular_param_relation_not_nil
+    ruby = Section.find_by(name: 'ruby')
+    js = Section.find_by(name: 'javascript')
+    post_object = Post.find(3)
+    post_object.section_id = js.id
+    post_object.save!
+
+    post :create_association, {post_id: 3, association: 'section', sections: ruby.id }
+
+    assert_response :bad_request
+    assert_match /The relation already exists./, response.body
+    post_object = Post.find(3)
+    assert_equal js.id, post_object.section_id
+  end
+
+  def test_update_relationship_has_many_join_table_single
+    put :update_association, {post_id: 3, association: 'tags', tags: [] }
+    assert_response :no_content
+
+    post_object = Post.find(3)
+    assert_equal 0, post_object.tags.length
+
+    put :update_association, {post_id: 3, association: 'tags', tags: [2] }
+
+    assert_response :no_content
+    post_object = Post.find(3)
+    assert_equal 1, post_object.tags.length
+
+    put :update_association, {post_id: 3, association: 'tags', tags: [5] }
+
+    assert_response :no_content
+    post_object = Post.find(3)
+    tags = post_object.tags.collect{|tag| tag.id}
+    assert_equal 1, tags.length
+    assert matches_array? [5] , tags
+  end
+
+  def test_update_relationship_has_many_join_table
+    put :update_association, {post_id: 3, association: 'tags', tags: [2,3] }
+
+    assert_response :no_content
+    post_object = Post.find(3)
+    assert_equal 2, post_object.tags.collect{|tag| tag.id}.length
+    assert matches_array? [2,3] , post_object.tags.collect{|tag| tag.id}
+  end
+
+  def test_create_relationship_has_many_join_table
+    put :update_association, {post_id: 3, association: 'tags', tags: [2,3] }
+
+    assert_response :no_content
+    post_object = Post.find(3)
+    assert_equal 2, post_object.tags.collect{|tag| tag.id}.length
+    assert matches_array? [2,3] , post_object.tags.collect{|tag| tag.id}
+
+    post :create_association, {post_id: 3, association: 'tags', tags: [5] }
+
+    assert_response :no_content
+    post_object = Post.find(3)
+    assert_equal 3, post_object.tags.collect{|tag| tag.id}.length
+    assert matches_array? [2,3,5] , post_object.tags.collect{|tag| tag.id}
+  end
+
+  def test_create_relationship_has_many_join_table_record_exists
+    put :update_association, {post_id: 3, association: 'tags', tags: [2,3] }
+
+    assert_response :no_content
+    post_object = Post.find(3)
+    assert_equal 2, post_object.tags.collect{|tag| tag.id}.length
+    assert matches_array? [2,3] , post_object.tags.collect{|tag| tag.id}
+
+    post :create_association, {post_id: 3, association: 'tags', tags: [5,2] }
+
+    assert_response :bad_request
+    assert_match /The relation to 2 already exists./, response.body
   end
 
   def test_update_relationship_has_one_mismatch_params
     ruby = Section.find_by(name: 'ruby')
 
-    post :create_association, {post_id: 3, association: 'section',
-                   authors: 1 }
+    post :create_association, {post_id: 3, association: 'section', authors: 1 }
 
     assert_response :bad_request
     assert_match /The required parameter, sections, is missing./, response.body
@@ -493,13 +557,11 @@ class PostsControllerTest < ActionController::TestCase
   def test_delete_relationship_has_one
     ruby = Section.find_by(name: 'ruby')
 
-    post :create_association, {post_id: 9, association: 'section',
-                   sections: ruby.id }
+    post :create_association, {post_id: 9, association: 'section', sections: ruby.id }
 
-    assert_response :success
-    assert_equal  ruby.id, json_response['posts'][0]['links']['section']
+    assert_response :no_content
 
-    post :destroy_association, {post_id: 9, association: 'section'}
+    delete :destroy_association, {post_id: 9, association: 'section'}
 
     assert_response :no_content
     post = Post.find(9)
@@ -507,23 +569,35 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_delete_relationship_has_many
-    post :create_association, {post_id: 9, association: 'tags',
-                   tags: [2,3] }
-    assert_response :success
+    put :update_association, {post_id: 9, association: 'tags', tags: [2,3] }
+    assert_response :no_content
     p = Post.find(9)
     assert_equal [2,3], p.tag_ids
 
-    post :destroy_association, {post_id: 9, association: 'tags', keys: '3'}
+    delete :destroy_association, {post_id: 9, association: 'tags', keys: '3'}
 
+    p.reload
     assert_response :no_content
     assert_equal [2], p.tag_ids
   end
 
+  def test_delete_relationship_has_many_does_not_exist
+    put :update_association, {post_id: 9, association: 'tags', tags: [2,3] }
+    assert_response :no_content
+    p = Post.find(9)
+    assert_equal [2,3], p.tag_ids
+
+    delete :destroy_association, {post_id: 9, association: 'tags', keys: '4'}
+
+    p.reload
+    assert_response :not_found
+    assert_equal [2,3], p.tag_ids
+  end
 
   def test_update_mismatched_keys
     javascript = Section.find_by(name: 'javascript')
 
-    post :update, {id: 3, posts: {
+    put :update, {id: 3, posts: {
         id: 2,
         title: 'A great new Post',
         links: {
@@ -540,7 +614,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_update_extra_param
     javascript = Section.find_by(name: 'javascript')
 
-    post :update, {id: 3, posts: {
+    put :update, {id: 3, posts: {
         asdfg: 'aaaa',
         title: 'A great new Post',
         links: {
@@ -557,7 +631,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_update_extra_param_in_links
     javascript = Section.find_by(name: 'javascript')
 
-    post :update, {id: 3, posts: {
+    put :update, {id: 3, posts: {
         title: 'A great new Post',
         links: {
             asdfg: 'aaaa',
@@ -574,7 +648,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_update_missing_param
     javascript = Section.find_by(name: 'javascript')
 
-    post :update, {id: 3, posts_spelled_wrong: {
+    put :update, {id: 3, posts_spelled_wrong: {
         title: 'A great new Post',
         links: {
             section: javascript.id,
@@ -590,7 +664,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_update_multiple
     javascript = Section.find_by(name: 'javascript')
 
-    post :update, {id: [3,9], posts: [
+    put :update, {id: [3,9], posts: [
       {
         id: 3,
         title: 'A great new Post QWERTY',
@@ -627,7 +701,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_update_multiple_missing_keys
     javascript = Section.find_by(name: 'javascript')
 
-    post :update, {id: [3,9], posts: [
+    put :update, {id: [3,9], posts: [
         {
             title: 'A great new Post ASDFG',
             links: {
@@ -651,7 +725,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_update_mismatch_keys
     javascript = Section.find_by(name: 'javascript')
 
-    post :update, {id: [3,9], posts: [
+    put :update, {id: [3,9], posts: [
         {
             id: 3,
             title: 'A great new Post ASDFG',
@@ -677,7 +751,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_update_multiple_count_mismatch
     javascript = Section.find_by(name: 'javascript')
 
-    post :update, {id: [3,9,2], posts: [
+    put :update, {id: [3,9,2], posts: [
         {
             id: 3,
             title: 'A great new Post QWERTY',
@@ -701,7 +775,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_update_unpermitted_attributes
-    post :update, {id: 3, posts: {
+    put :update, {id: 3, posts: {
         subject: 'A great new Post',
         links: {
             author: 1,
@@ -716,7 +790,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_update_bad_attributes
-    post :update, {id: 3, posts: {
+    put :update, {id: 3, posts: {
         subject: 'A great new Post',
         linked_objects: {
             author: 1,
@@ -730,28 +804,28 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_delete_single
     initial_count = Post.count
-    post :destroy, {id: '4'}
+    delete :destroy, {id: '4'}
     assert_response :no_content
     assert_equal initial_count - 1, Post.count
   end
 
   def test_delete_multiple
     initial_count = Post.count
-    post :destroy, {id: '5,6'}
+    delete :destroy, {id: '5,6'}
     assert_response :no_content
     assert_equal initial_count - 2, Post.count
   end
 
   def test_delete_multiple_one_does_not_exist
     initial_count = Post.count
-    post :destroy, {id: '5,6,99999'}
+    delete :destroy, {id: '5,6,99999'}
     assert_response :not_found
     assert_equal initial_count, Post.count
   end
 
   def test_delete_extra_param
     initial_count = Post.count
-    post :destroy, {id: '4', asdfg: 'aaaa'}
+    delete :destroy, {id: '4', asdfg: 'aaaa'}
     assert_response :bad_request
     assert_equal initial_count, Post.count
   end
@@ -887,7 +961,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     assert_equal 'USD', json_response['expense_entries'][0]['links']['iso_currency']
     assert_equal '50.58', json_response['expense_entries'][0]['cost']
 
-    post :destroy, {id: json_response['expense_entries'][0]['id']}
+    delete :destroy, {id: json_response['expense_entries'][0]['id']}
     assert_response :no_content
   end
 
@@ -912,7 +986,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     assert_equal 'USD', json_response['expenseEntries'][0]['links']['isoCurrency']
     assert_equal '50.58', json_response['expenseEntries'][0]['cost']
 
-    post :destroy, {id: json_response['expenseEntries'][0]['id']}
+    delete :destroy, {id: json_response['expenseEntries'][0]['id']}
     assert_response :no_content
   end
 
@@ -937,7 +1011,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     assert_equal 'USD', json_response['expense-entries'][0]['links']['iso-currency']
     assert_equal '50.58', json_response['expense-entries'][0]['cost']
 
-    post :destroy, {id: json_response['expense-entries'][0]['id']}
+    delete :destroy, {id: json_response['expense-entries'][0]['id']}
     assert_response :no_content
   end
 end
@@ -1008,7 +1082,7 @@ class PeopleControllerTest < ActionController::TestCase
   end
 
   def test_update_validations_missing_attribute
-    post :update, { id: 3, people: {
+    put :update, { id: 3, people: {
         name:  ''
     }
     }
@@ -1021,7 +1095,7 @@ class PeopleControllerTest < ActionController::TestCase
 
   def test_delete_locked
     initial_count = Person.count
-    post :destroy, {id: '3'}
+    delete :destroy, {id: '3'}
     assert_response :locked
     assert_equal initial_count, Person.count
   end
@@ -1121,7 +1195,7 @@ class BreedsControllerTest < ActionController::TestCase
     assert_equal 1, json_response['breeds'].size
     assert_equal 'calic', json_response['breeds'][0]['name']
 
-    post :update, {id: json_response['breeds'][0]['id'], breeds: {
+    put :update, {id: json_response['breeds'][0]['id'], breeds: {
         name: 'calico'
     }
     }
@@ -1132,7 +1206,7 @@ class BreedsControllerTest < ActionController::TestCase
 
   def test_poro_delete
     initial_count = $breed_data.breeds.keys.count
-    post :destroy, {id: '3'}
+    delete :destroy, {id: '3'}
     assert_response :no_content
     assert_equal initial_count - 1, $breed_data.breeds.keys.count
   end

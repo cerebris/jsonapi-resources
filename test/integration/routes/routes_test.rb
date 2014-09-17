@@ -26,6 +26,10 @@ class RoutesTest < ActionDispatch::IntegrationTest
     assert_routing({ path: '/posts/1/links/author', method: :post }, { controller: 'posts', action: 'create_association', post_id: '1', association: 'author' })
   end
 
+  def test_routing_posts_links_author_update
+    assert_routing({ path: '/posts/1/links/author', method: :put }, { controller: 'posts', action: 'update_association', post_id: '1', association: 'author' })
+  end
+
   def test_routing_posts_links_tags_show
     assert_routing({ path: '/posts/1/links/tags', method: :get }, { controller: 'posts', action: 'show_association', post_id: '1', association: 'tags' })
   end
@@ -34,9 +38,26 @@ class RoutesTest < ActionDispatch::IntegrationTest
     assert_routing({ path: '/posts/1/links/tags/1,2', method: :delete }, { controller: 'posts', action: 'destroy_association', post_id: '1', keys: '1,2', association: 'tags' })
   end
 
-  def test_routing_posts_links_tags_update
+  def test_routing_posts_links_tags_create
     assert_routing({ path: '/posts/1/links/tags', method: :post }, { controller: 'posts', action: 'create_association', post_id: '1', association: 'tags' })
   end
+
+  def test_routing_posts_links_tags_update_acts_as_set
+    assert_routing({ path: '/posts/1/links/tags', method: :put }, { controller: 'posts', action: 'update_association', post_id: '1', association: 'tags' })
+  end
+
+  def test_routing_authors_show
+    assert_routing({ path: '/authors/1', method: :get }, {action: 'show', controller: 'authors', id: '1'})
+  end
+
+  def test_routing_author_links_posts_create_not_acts_as_set
+    assert_routing({ path: '/authors/1/links/posts', method: :post }, { controller: 'authors', action: 'create_association', author_id: '1', association: 'posts' })
+  end
+
+  # ToDo: Test that non acts as set has_many association update route is not created
+  # def test_routing_author_links_posts_update_not_acts_as_set
+  #   refute_routing({ path: '/authors/1/links/posts', method: :put }, { controller: 'authors', action: 'update_association', author_id: '1', association: 'posts' })
+  # end
 
   # V1
   def test_routing_v1_posts_show
@@ -81,5 +102,8 @@ class RoutesTest < ActionDispatch::IntegrationTest
   # def test_routing_posts_links_tags_only_create_show
   #   assert_routing({ path: '/api/v3/posts/1/links/tags/1,2', method: :delete }, { controller: 'api/v3/posts', action: 'destroy_association', post_id: '1', keys: '1,2', association: 'tags' })
   # end
+
+  # Test that non acts as set has_many association update route is not created
+
 end
 
