@@ -194,7 +194,7 @@ module JSONAPI
           end
           checked_has_many_associations[param] = keys
         else
-          checked_attributes[param] = value
+          checked_attributes[param] = unformat_value(param, value)
         end
       end
 
@@ -203,6 +203,11 @@ module JSONAPI
         'has_one' => checked_has_one_associations,
         'has_many' => checked_has_many_associations
       }.deep_transform_keys{ |key| unformat_key(key) }
+    end
+
+    def unformat_value(attribute, value)
+      value_formatter = JSONAPI::ValueFormatter.value_formatter_for(@resource_klass._attribute_options(attribute)[:format])
+      value_formatter.unformat(value, @resource_klass, context)
     end
 
     def verify_permitted_params(params, allowed_fields)

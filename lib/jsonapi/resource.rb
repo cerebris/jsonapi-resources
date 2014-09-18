@@ -143,7 +143,7 @@ module JSONAPI
         end
       end
 
-      def attribute(attr, options = {type: :default})
+      def attribute(attr, options = {})
         @_attributes[attr] = options
         define_method attr do
           @object.send(attr)
@@ -152,6 +152,10 @@ module JSONAPI
         define_method "#{attr}=" do |value|
           @object.send "#{attr}=", value
         end unless method_defined?("#{attr}=")
+      end
+
+      def default_attribute_options
+        {format: :default}
       end
 
       def has_one(*attrs)
@@ -266,6 +270,10 @@ module JSONAPI
       end
 
       # quasi private class methods
+      def _attribute_options(attr)
+        default_attribute_options.merge(@_attributes[attr])
+      end
+
       def _updateable_associations
         associations = []
 

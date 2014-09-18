@@ -560,6 +560,13 @@ class PostsControllerTest < ActionController::TestCase
     assert matches_array? [2, 3, 5], post_object.tags.collect { |tag| tag.id }
   end
 
+  def test_create_relationship_has_many_missing_tags
+    post :create_association, {post_id: 3, association: 'tags'}
+
+    assert_response :bad_request
+    assert_match /The required parameter, tags, is missing./, response.body
+  end
+
   def test_create_relationship_has_many_join_table_record_exists
     put :update_association, {post_id: 3, association: 'tags', tags: [2, 3]}
 
@@ -579,6 +586,13 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /The required parameter, sections, is missing./, response.body
+  end
+
+  def test_update_relationship_has_many_missing_tags
+    put :update_association, {post_id: 3, association: 'tags'}
+
+    assert_response :bad_request
+    assert_match /The required parameter, tags, is missing./, response.body
   end
 
   def test_delete_relationship_has_one
@@ -1222,11 +1236,13 @@ class AuthorsControllerTest < ActionController::TestCase
 end
 
 class BreedsControllerTest < ActionController::TestCase
+  # Note: Breed names go through the TitleValueFormatter
+
   def test_poro_index
     get :index
     assert_response :success
     assert_equal 0, json_response['breeds'][0]['id']
-    assert_equal 'persian', json_response['breeds'][0]['name']
+    assert_equal 'Persian', json_response['breeds'][0]['name']
   end
 
   def test_poro_show
@@ -1234,7 +1250,7 @@ class BreedsControllerTest < ActionController::TestCase
     assert_response :success
     assert json_response['breeds'].is_a?(Hash)
     assert_equal 0, json_response['breeds']['id']
-    assert_equal 'persian', json_response['breeds']['name']
+    assert_equal 'Persian', json_response['breeds']['name']
   end
 
   def test_poro_show_multiple
@@ -1243,9 +1259,9 @@ class BreedsControllerTest < ActionController::TestCase
     assert json_response['breeds'].is_a?(Array)
     assert_equal 2, json_response['breeds'].size
     assert_equal 0, json_response['breeds'][0]['id']
-    assert_equal 'persian', json_response['breeds'][0]['name']
+    assert_equal 'Persian', json_response['breeds'][0]['name']
     assert_equal 2, json_response['breeds'][1]['id']
-    assert_equal 'sphinx', json_response['breeds'][1]['name']
+    assert_equal 'Sphinx', json_response['breeds'][1]['name']
   end
 
   def test_poro_create_simple
@@ -1258,20 +1274,20 @@ class BreedsControllerTest < ActionController::TestCase
 
     assert_response :created
     assert json_response['breeds'].is_a?(Hash)
-    assert_equal 'tabby', json_response['breeds']['name']
+    assert_equal 'Tabby', json_response['breeds']['name']
   end
 
   def test_poro_create_update
     post :create,
          {
            breeds: {
-             name: 'calic'
+             name: 'CALIC'
            }
          }
 
     assert_response :created
     assert json_response['breeds'].is_a?(Hash)
-    assert_equal 'calic', json_response['breeds']['name']
+    assert_equal 'Calic', json_response['breeds']['name']
 
     put :update,
         {
@@ -1282,7 +1298,7 @@ class BreedsControllerTest < ActionController::TestCase
         }
     assert_response :success
     assert json_response['breeds'].is_a?(Hash)
-    assert_equal 'calico', json_response['breeds']['name']
+    assert_equal 'Calico', json_response['breeds']['name']
   end
 
   def test_poro_delete

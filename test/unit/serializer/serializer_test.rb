@@ -70,7 +70,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                      id: 1,
                      name: 'Joe Author',
                      email: 'joe@xyz.fake',
-                     dateJoined: '2013-08-07 20:25:00 UTC',
+                     dateJoined: '2013-08-07 16:25:00 -0400',
                      links: {
                        comments: [1],
                        posts: [1, 2, 11]
@@ -103,7 +103,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                      id: 1,
                      name: 'Joe Author',
                      email: 'joe@xyz.fake',
-                     date_joined: '2013-08-07 20:25:00 UTC',
+                     date_joined: '2013-08-07 16:25:00 -0400',
                      links: {
                        comments: [1],
                        posts: [1, 2, 11]
@@ -271,7 +271,7 @@ class SerializerTest < MiniTest::Unit::TestCase
           id: 2,
           name: 'Fred Reader',
           email: 'fred@xyz.fake',
-          dateJoined: '2013-10-31 20:25:00 UTC',
+          dateJoined: '2013-10-31 16:25:00 -0400',
           links: {
             posts: [],
             comments: [2, 3]
@@ -523,11 +523,9 @@ class SerializerTest < MiniTest::Unit::TestCase
       JSONAPI::ResourceSerializer.new.serialize_to_hash(
         ExpenseEntryResource.new(@expense_entry),
         include: ['iso_currency', 'employee'],
-        fields: {people: [:id, :name, :email, :date_joined]},
-        attribute_formatters: {
-          date_with_timezone: lambda { |value, source, context| value.in_time_zone('Eastern Time (US & Canada)').to_s },
-          date: lambda { |value, source, context| value.strftime('%m/%d/%Y') }
-        }))
+        fields: {people: [:id, :name, :email, :date_joined]}
+      )
+    )
   end
 
   def test_serializer_empty_links_null_and_array

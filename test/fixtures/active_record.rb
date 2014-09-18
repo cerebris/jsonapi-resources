@@ -281,7 +281,7 @@ end
 ### RESOURCES
 class PersonResource < JSONAPI::Resource
   attributes :id, :name, :email
-  attribute :date_joined, type: :date_with_timezone
+  attribute :date_joined, format: :date_with_timezone
 
   has_many :comments
   has_many :posts
@@ -406,14 +406,15 @@ end
 
 class ExpenseEntryResource < JSONAPI::Resource
   attributes :id, :cost
-  attribute :transaction_date, type: :date
+  attribute :transaction_date, format: :date
 
   has_one :iso_currency, key: 'currency_code', primary_key: 'code'
   has_one :employee, class_name: 'Person'
 end
 
 class BreedResource < JSONAPI::Resource
-  attributes :id, :name
+  attribute :id, format_misspelled: :does_not_exist
+  attribute :name, format: :title
 
   def self.find(attrs, context = nil)
     breeds = []

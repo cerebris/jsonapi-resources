@@ -17,7 +17,6 @@ module JSONAPI
       include = options.fetch(:include, [])
       @context = options.fetch(:context, nil)
       @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
-      @attribute_formatters = options.fetch(:attribute_formatters, {})
 
       @linked_objects = {}
 
@@ -131,8 +130,10 @@ module JSONAPI
       end
 
       source.fetchable(fields, @context).each_with_object({}) do |name, hash|
-        attrribute = source.class._attributes[name]
-        hash[format_key(name)] = format_attribute(source.send(name), attrribute[:type], source, @context)
+        hash[format_key(name)] = format_value(source.send(name),
+                                              source.class._attribute_options(name)[:format],
+                                              source,
+                                              @context)
       end
     end
 
@@ -224,25 +225,13 @@ module JSONAPI
       end
     end
 
-    def default_attribute_formatter(value)
-      case value
-        when String, Integer
-          return value
-        else
-          return value.to_s
-      end
-    end
-
     def format_key(key)
       @key_formatter.format(key)
     end
 
-    def format_attribute(value, type, source, context)
-      if @attribute_formatters.has_key?(type)
-        @attribute_formatters[type].call(value, source, context)
-      else
-        default_attribute_formatter(value)
-      end
+    def format_value(value, format, source, context)
+      value_formatter = JSONAPI::ValueFormatter.value_formatter_for(format)
+      value_formatter.format(value, source, context)
     end
   end
 end
