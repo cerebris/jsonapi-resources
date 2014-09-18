@@ -185,7 +185,11 @@ module JSONAPI
           checked_has_one_associations[param] = @resource_klass.resource_for(association.type).verify_key(value, context)
         elsif association.is_a?(JSONAPI::Association::HasMany)
           keys = []
-          value.each do |value|
+          if value.is_a?(Array)
+            value.each do |val|
+              keys.push(@resource_klass.resource_for(association.type).verify_key(val, context))
+            end
+          else
             keys.push(@resource_klass.resource_for(association.type).verify_key(value, context))
           end
           checked_has_many_associations[param] = keys

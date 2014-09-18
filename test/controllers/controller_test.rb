@@ -526,7 +526,7 @@ class PostsControllerTest < ActionController::TestCase
     post_object = Post.find(3)
     assert_equal 1, post_object.tags.length
 
-    put :update_association, {post_id: 3, association: 'tags', tags: [5]}
+    put :update_association, {post_id: 3, association: 'tags', tags: 5}
 
     assert_response :no_content
     post_object = Post.find(3)
