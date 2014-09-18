@@ -10,10 +10,12 @@ module JSONAPI
     #              association ids in the links section for a resource. Fields are global for a resource type.
     #     Example: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}
     def serialize_to_hash(source, options = {})
+      is_resource_collection = source.respond_to?(:to_ary)
+      return {} if source.nil? || (is_resource_collection && source.size == 0)
+
       @fields =  options.fetch(:fields, {})
       include = options.fetch(:include, [])
       @context = options.fetch(:context, nil)
-
       @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
       @attribute_formatters = options.fetch(:attribute_formatters, {})
 
@@ -21,8 +23,7 @@ module JSONAPI
 
       requested_associations = parse_includes(include)
 
-      if source.respond_to?(:to_ary)
-        return {} if source.size == 0
+      if is_resource_collection
         @primary_class_name = source[0].class._type
       else
         @primary_class_name = source.class._type
@@ -31,28 +32,34 @@ module JSONAPI
       process_primary(source, requested_associations)
 
       primary_class_name = @primary_class_name.to_sym
-      primary_hash = {format_key(primary_class_name) => []}
 
       linked_hash = {}
+      primary_objects = []
       @linked_objects.each do |class_name, objects|
         class_name = class_name.to_sym
 
-        linked = []
+        linked_objects = []
         objects.each_value do |object|
           if object[:primary]
-            primary_hash[format_key(primary_class_name)].push(object[:object_hash])
+            primary_objects.push(object[:object_hash])
           else
-            linked.push(object[:object_hash])
+            linked_objects.push(object[:object_hash])
           end
         end
-        linked_hash[format_key(class_name)] = linked unless linked.empty?
+        linked_hash[format_key(class_name)] = linked_objects unless linked_objects.empty?
+      end
+
+      if is_resource_collection
+        primary_hash = {format_key(primary_class_name) => primary_objects}
+      else
+        primary_hash = {format_key(primary_class_name) => primary_objects[0]}
       end
 
       if linked_hash.size > 0
-        primary_hash.merge!({linked: linked_hash})
+        primary_hash.merge({linked: linked_hash})
+      else
+        primary_hash
       end
-
-      return primary_hash
     end
 
     private

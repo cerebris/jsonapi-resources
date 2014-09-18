@@ -14,7 +14,7 @@ class SerializerTest < MiniTest::Unit::TestCase
   def test_serializer
 
     assert_hash_equals({
-                  posts: [{
+                  posts: {
                     id: 1,
                     title: 'New post',
                     body: 'A body!!!',
@@ -25,20 +25,20 @@ class SerializerTest < MiniTest::Unit::TestCase
                       tags: [1,2,3],
                       comments: [1,2]
                     }
-                  }]
+                  }
                  }, JSONAPI::ResourceSerializer.new.serialize_to_hash(PostResource.new(@post)))
   end
 
   def test_serializer_limited_fieldset
 
     assert_hash_equals({
-                   posts: [{
+                   posts: {
                      id: 1,
                      title: 'New post',
                      links: {
                        author: 1
                      }
-                   }]
+                   }
                 }, JSONAPI::ResourceSerializer.new.serialize_to_hash(PostResource.new(@post),
                                                                     fields: {posts: [:id, :title, :author]}))
   end
@@ -46,7 +46,7 @@ class SerializerTest < MiniTest::Unit::TestCase
   def test_serializer_include
 
     assert_hash_equals({
-                  posts: [{
+                  posts: {
                     id: 1,
                     title: 'New post',
                     body: 'A body!!!',
@@ -57,7 +57,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                       comments: [1,2],
                       section: nil
                     }
-                  }],
+                  },
                   linked: {
                     people: [{
                               id: 1,
@@ -76,7 +76,7 @@ class SerializerTest < MiniTest::Unit::TestCase
   def test_serializer_key_format
 
     assert_hash_equals({
-                           posts: [{
+                           posts: {
                                        id: 1,
                                        title: 'New post',
                                        body: 'A body!!!',
@@ -87,7 +87,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                                            comments: [1,2],
                                            section: nil
                                        }
-                                   }],
+                                   },
                            linked: {
                                people: [{
                                             id: 1,
@@ -109,7 +109,7 @@ class SerializerTest < MiniTest::Unit::TestCase
 
     assert_hash_equals(
         {
-          posts: [{
+          posts: {
             id: 1,
             title: 'New post',
             body: 'A body!!!',
@@ -120,7 +120,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               comments: [1,2],
               section: nil
             }
-          }],
+          },
           linked: {
             tags: [
                 {
@@ -173,7 +173,7 @@ class SerializerTest < MiniTest::Unit::TestCase
 
     assert_hash_equals(
         {
-          posts: [{
+          posts: {
             id: 1,
             title: 'New post',
             body: 'A body!!!',
@@ -184,7 +184,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               comments: [1,2],
               section: nil
             }
-          }],
+          },
           linked: {
             tags: [
                 {
@@ -217,7 +217,7 @@ class SerializerTest < MiniTest::Unit::TestCase
 
     assert_hash_equals(
         {
-          posts: [{
+          posts: {
             id: 1,
             title: 'New post',
             body: 'A body!!!',
@@ -228,7 +228,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               comments: [1,2],
               section: nil
             }
-          }],
+          },
           linked: {
               comments: [
                   {
@@ -249,7 +249,7 @@ class SerializerTest < MiniTest::Unit::TestCase
 
     assert_hash_equals(
         {
-          people: [{
+          people: {
             id: 2,
             name: 'Fred Reader',
             email: 'fred@xyz.fake',
@@ -258,7 +258,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               posts: [],
               comments: [2,3]
             }
-          }],
+          },
           linked: {
               comments: [{
                 id: 2,
@@ -471,7 +471,7 @@ class SerializerTest < MiniTest::Unit::TestCase
 
   def test_serializer_camelized_with_value_formatters
     assert_hash_equals({
-                           expenseEntries: [{
+                           expenseEntries: {
                                        id: 1,
                                        transactionDate: '04/15/2014',
                                        cost: '12.05',
@@ -479,7 +479,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                                            isoCurrency: 'USD',
                                            employee: 3
                                        }
-                                   }],
+                                   },
                            linked: {
                                isoCurrencies: [{
                                    code: 'USD',
@@ -507,7 +507,7 @@ class SerializerTest < MiniTest::Unit::TestCase
     planet_hash = JSONAPI::ResourceSerializer.new.serialize_to_hash(PlanetResource.new(Planet.find(8)))
 
     assert_hash_equals({
-        planets: [{
+        planets: {
             id: 8,
             name: 'Beta W',
             description: 'Newly discovered Planet W',
@@ -516,7 +516,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                 tags: [],
                 moons: []
              }
-         }]
+         }
      }, planet_hash)
 
     json = planet_hash.to_json

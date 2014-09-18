@@ -40,9 +40,13 @@ module JSONAPI
     def show
       keys = parse_key_array(params[resource_klass._key])
 
-      resources = []
-      keys.each do |key|
-        resources.push(resource_klass.find_by_key(key, context))
+      if keys.length > 1
+        resources = []
+        keys.each do |key|
+          resources.push(resource_klass.find_by_key(key, context))
+        end
+      else
+        resources = resource_klass.find_by_key(keys[0], context)
       end
 
       render json: JSONAPI::ResourceSerializer.new.serialize_to_hash(
@@ -163,13 +167,17 @@ module JSONAPI
       if errors.count > 0
         render :status => errors.count == 1 ? errors[0].status : :bad_request, json: {errors: errors}
       else
-        render :status => results[0].code,
-               json: JSONAPI::ResourceSerializer.new.serialize_to_hash(resources,
-                                                                       include: @request.include,
-                                                                       fields: @request.fields,
-                                                                       context: context,
-                                                                       attribute_formatters: attribute_formatters,
-                                                                       key_formatter: key_formatter)
+        if results.length > 0 && resources.length > 0
+          render :status => results[0].code,
+                 json: JSONAPI::ResourceSerializer.new.serialize_to_hash(resources.length > 1 ? resources : resources[0],
+                                                                         include: @request.include,
+                                                                         fields: @request.fields,
+                                                                         context: context,
+                                                                         attribute_formatters: attribute_formatters,
+                                                                         key_formatter: key_formatter)
+        else
+          render :status => results[0].code, json: nil
+        end
       end
     rescue => e
       handle_exceptions(e)
