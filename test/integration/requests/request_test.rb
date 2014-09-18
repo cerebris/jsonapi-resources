@@ -9,22 +9,18 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_put_single
-    put '/posts/3', {"posts" => {"id" => "3", "title" => "A great new Post", "links" => { "tags" => [3,4] }}}
+    put '/posts/3',
+        {
+          'posts' => {
+            'id' => '3',
+            'title' => 'A great new Post',
+            'links' => {
+              'tags' => [3, 4]
+            }
+          }
+        }
     assert_equal 200, status
   end
-
-  # def test_put_links
-  #   put '/posts/3/links/tags', {"tags" => [1,4] }
-  #   assert_equal 200, status
-  # end
-
-  # def test_patch_create
-  #   patch '/posts',
-  #       {"op" => "add",
-  #       "path" => "/-",
-  #       "value" => {"title" => "Another great new Post", "body" => "saasd", "links" => { "author" => 3 }}}
-  #   assert_equal 200, status
-  # end
 
   def test_destroy_single
     delete '/posts/7'

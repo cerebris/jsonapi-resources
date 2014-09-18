@@ -130,7 +130,7 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
     betaz.save!
 
     operations = [
-        JSONAPI::ReplaceHasManyAssociationOperation.new(PlanetTypeResource, gas_giant.id, :planets, [betax.id, betay.id, betaz.id])
+      JSONAPI::ReplaceHasManyAssociationOperation.new(PlanetTypeResource, gas_giant.id, :planets, [betax.id, betay.id, betaz.id])
     ]
 
     request = JSONAPI::Request.new

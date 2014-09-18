@@ -80,7 +80,7 @@ TestApp.routes.draw do
 
     namespace :v3 do
       jsonapi_resource :preferences do
-      #   Intentionally empty block to skip association urls
+        # Intentionally empty block to skip association urls
       end
 
       jsonapi_resources :posts, except: [:destroy] do
