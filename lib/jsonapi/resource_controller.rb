@@ -15,7 +15,10 @@ module JSONAPI
 
     before_filter {
       begin
-        @request = JSONAPI::Request.new(context, params)
+        @request = JSONAPI::Request.new(params, {
+          context: context,
+          key_formatter: key_formatter
+        })
         render_errors(@request.errors) unless @request.errors.empty?
       rescue => e
         handle_exceptions(e)
@@ -23,11 +26,13 @@ module JSONAPI
     }
 
     def index
-      render json: JSONAPI::ResourceSerializer.new.serialize(
+      render json: JSONAPI::ResourceSerializer.new.serialize_to_hash(
           resource_klass.find(resource_klass.verify_filters(@request.filters, context), context),
-          @request.includes,
-          @request.fields,
-          context)
+          include: @request.include,
+          fields: @request.fields,
+          context: context,
+          attribute_formatters: attribute_formatters,
+          key_formatter: key_formatter)
     rescue => e
       handle_exceptions(e)
     end
@@ -35,16 +40,22 @@ module JSONAPI
     def show
       keys = parse_key_array(params[resource_klass._key])
 
-      resources = []
-      keys.each do |key|
-        resources.push(resource_klass.find_by_key(key, context))
+      if keys.length > 1
+        resources = []
+        keys.each do |key|
+          resources.push(resource_klass.find_by_key(key, context))
+        end
+      else
+        resources = resource_klass.find_by_key(keys[0], context)
       end
 
-      render json: JSONAPI::ResourceSerializer.new.serialize(
+      render json: JSONAPI::ResourceSerializer.new.serialize_to_hash(
           resources,
-          @request.includes,
-          @request.fields,
-          context)
+          include: @request.include,
+          fields: @request.fields,
+          context: context,
+          attribute_formatters: attribute_formatters,
+          key_formatter: key_formatter)
     rescue => e
       handle_exceptions(e)
     end
@@ -67,6 +78,10 @@ module JSONAPI
     end
 
     def create_association
+      process_request_operations
+    end
+
+    def update_association
       process_request_operations
     end
 
@@ -115,6 +130,20 @@ module JSONAPI
       {}
     end
 
+    # Control by setting in an initializer:
+    #     JSONAPI.configuration.json_key_format = :camelized_key
+    #
+    # Override if you want to set a per controller key format.
+    # Must return a class derived from KeyFormatter.
+    def key_formatter
+      JSONAPI.configuration.key_formatter
+    end
+
+    # override to setup custom attribute_formatters
+    def attribute_formatters
+      {}
+    end
+
     def render_errors(errors, status = :bad_request)
       render(json: {errors: errors}, status: errors.count == 1 ? errors[0].status : status)
     end
@@ -138,18 +167,17 @@ module JSONAPI
       if errors.count > 0
         render :status => errors.count == 1 ? errors[0].status : :bad_request, json: {errors: errors}
       else
-        # if patch
-          render :status => results[0].code, json: JSONAPI::ResourceSerializer.new.serialize(resources,
-                                                                                               @request.includes,
-                                                                                               @request.fields,
-                                                                                               context)
-        # else
-        #   result_hash = {}
-        #   resources.each do |resource|
-        #     result_hash.merge!(JSONAPI::ResourceSerializer.new.serialize(resource, @request.includes, @request.fields, context))
-        #   end
-        #   render :status => results.count == 1 ? results[0].code : :ok, json: result_hash
-        # end
+        if results.length > 0 && resources.length > 0
+          render :status => results[0].code,
+                 json: JSONAPI::ResourceSerializer.new.serialize_to_hash(resources.length > 1 ? resources : resources[0],
+                                                                         include: @request.include,
+                                                                         fields: @request.fields,
+                                                                         context: context,
+                                                                         attribute_formatters: attribute_formatters,
+                                                                         key_formatter: key_formatter)
+        else
+          render :status => results[0].code, json: nil
+        end
       end
     rescue => e
       handle_exceptions(e)

@@ -1,7 +1,7 @@
 module JSONAPI
   class ResourceSerializer
 
-    # Serializes a single resource, or an array of resources
+    # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
     # include:
     #     Purpose: determines which objects will be side loaded with the source objects in a linked section
     #     Example: ['comments','author','comments.tags','author.posts']
@@ -9,45 +9,56 @@ module JSONAPI
     #     Purpose: determines which fields are serialized for a resource type. This encompasses both attributes and
     #              association ids in the links section for a resource. Fields are global for a resource type.
     #     Example: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}
-    def serialize(source, include = [], fields = {}, context = nil)
-      @fields = fields
-      @context = context
+    def serialize_to_hash(source, options = {})
+      is_resource_collection = source.respond_to?(:to_ary)
+      return {} if source.nil? || (is_resource_collection && source.size == 0)
+
+      @fields =  options.fetch(:fields, {})
+      include = options.fetch(:include, [])
+      @context = options.fetch(:context, nil)
+      @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
+
       @linked_objects = {}
 
       requested_associations = parse_includes(include)
 
-      if source.respond_to?(:to_ary)
-        return {} if source.size == 0
-        @primary_class_name = source[0].class._serialize_as
+      if is_resource_collection
+        @primary_class_name = source[0].class._type
       else
-        @primary_class_name = source.class._serialize_as
+        @primary_class_name = source.class._type
       end
 
       process_primary(source, requested_associations)
 
       primary_class_name = @primary_class_name.to_sym
-      primary_hash = {primary_class_name => []}
 
       linked_hash = {}
+      primary_objects = []
       @linked_objects.each do |class_name, objects|
         class_name = class_name.to_sym
 
-        linked = []
+        linked_objects = []
         objects.each_value do |object|
           if object[:primary]
-            primary_hash[primary_class_name].push(object[:object_hash])
+            primary_objects.push(object[:object_hash])
           else
-            linked.push(object[:object_hash])
+            linked_objects.push(object[:object_hash])
           end
         end
-        linked_hash[class_name] = linked unless linked.empty?
+        linked_hash[format_key(class_name)] = linked_objects unless linked_objects.empty?
+      end
+
+      if is_resource_collection
+        primary_hash = {format_key(primary_class_name) => primary_objects}
+      else
+        primary_hash = {format_key(primary_class_name) => primary_objects[0]}
       end
 
       if linked_hash.size > 0
-        primary_hash.merge!({linked: linked_hash})
+        primary_hash.merge({linked: linked_hash})
+      else
+        primary_hash
       end
-
-      return primary_hash
     end
 
     private
@@ -57,7 +68,7 @@ module JSONAPI
     def parse_includes(includes)
       requested_associations = {}
       includes.each do |include|
-        include = include.to_s if include.is_a? Symbol
+        include = include.to_s.underscore
 
         pos = include.index('.')
         if pos
@@ -112,14 +123,17 @@ module JSONAPI
     end
 
     def attribute_hash(source)
-      requested = requested_fields(source.class._serialize_as)
-      fields = source.class._attributes.to_a
+      requested = requested_fields(source.class._type)
+      fields = source.class._attributes.keys.to_a
       unless requested.nil?
         fields = requested & fields
       end
 
       source.fetchable(fields, @context).each_with_object({}) do |name, hash|
-        hash[name] = source.send(name)
+        hash[format_key(name)] = format_value(source.send(name),
+                                              source.class._attribute_options(name)[:format],
+                                              source,
+                                              @context)
       end
     end
 
@@ -127,7 +141,7 @@ module JSONAPI
     # class's fetchable method
     def links_hash(source, requested_associations)
       associations = source.class._associations
-      requested = requested_fields(source.class._serialize_as)
+      requested = requested_fields(source.class._type)
       fields = associations.keys
       unless requested.nil?
         fields = requested & fields
@@ -141,7 +155,7 @@ module JSONAPI
           key = association.key
 
           if field_set.include?(name)
-            hash[name] = source.send(key)
+            hash[format_key(name)] = source.send(key)
           end
 
           ia = requested_associations.is_a?(Hash) ? requested_associations[name] : nil
@@ -149,7 +163,7 @@ module JSONAPI
           include_linked_object = ia && ia[:include]
           include_linked_children = ia && ia[:include_children]
 
-          type = association.serialize_type_name
+          type = association.type
 
           # If the object has been serialized once it will be in the related objects list,
           # but it's possible all children won't have been captured. So we must still go
@@ -157,13 +171,14 @@ module JSONAPI
           if include_linked_object || include_linked_children
             if association.is_a?(JSONAPI::Association::HasOne)
               object = source.send("_#{name}_object")
-
-              id = object.send(association.primary_key)
-              associations_only = already_serialized?(type, id)
-              if include_linked_object && !associations_only
-                add_linked_object(type, id, object_hash(object, ia[:include_related]))
-              elsif include_linked_children || associations_only
-                links_hash(object, ia[:include_related])
+              if object
+                id = object.send(association.primary_key)
+                associations_only = already_serialized?(type, id)
+                if include_linked_object && !associations_only
+                  add_linked_object(type, id, object_hash(object, ia[:include_related]))
+                elsif include_linked_children || associations_only
+                  links_hash(object, ia[:include_related])
+                end
               end
             elsif association.is_a?(JSONAPI::Association::HasMany)
               objects = source.send("_#{name}_objects")
@@ -183,16 +198,20 @@ module JSONAPI
     end
 
     def already_serialized?(type, id)
+      type = format_key(type)
       return @linked_objects.key?(type) && @linked_objects[type].key?(id)
     end
 
     # Sets that an object should be included in the primary document of the response.
     def set_primary(type, id)
+      type = format_key(type)
       @linked_objects[type][id][:primary] = true
     end
 
     # Collects the hashes for all objects processed by the serializer
     def add_linked_object(type, id, object_hash, primary = false)
+      type = format_key(type)
+
       unless @linked_objects.key?(type)
         @linked_objects[type] = {}
       end
@@ -204,6 +223,15 @@ module JSONAPI
       else
         @linked_objects[type].store(id, {primary: primary, object_hash: object_hash})
       end
+    end
+
+    def format_key(key)
+      @key_formatter.format(key)
+    end
+
+    def format_value(value, format, source, context)
+      value_formatter = JSONAPI::ValueFormatter.value_formatter_for(format)
+      value_formatter.format(value, source, context)
     end
   end
 end

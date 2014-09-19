@@ -30,6 +30,32 @@ module JSONAPI
       end
     end
 
+    class HasManyRelationExists < Error
+      attr_accessor :id
+      def initialize(id)
+        @id = id
+      end
+
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::RELATION_EXISTS,
+                            status: :bad_request,
+                            title: 'Relation exists',
+                            detail: "The relation to #{id} already exists.")]
+      end
+    end
+
+    class HasOneRelationExists < Error
+      def initialize
+      end
+
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::RELATION_EXISTS,
+                            status: :bad_request,
+                            title: 'Relation exists',
+                            detail: 'The relation already exists.')]
+      end
+    end
+
     class FilterNotAllowed < Error
       attr_accessor :filter
       def initialize(filter)
@@ -86,6 +112,21 @@ module JSONAPI
                              status: :bad_request,
                              title: 'Invalid field',
                              detail: "#{field} is not a valid field for #{type}.")]
+      end
+    end
+
+    class InvalidInclude < Error
+      attr_accessor :association, :resource
+      def initialize(resource, association)
+        @resource = resource
+        @association = association
+      end
+
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::INVALID_INCLUDE,
+                            status: :bad_request,
+                            title: 'Invalid field',
+                            detail: "#{association} is not a valid association of #{resource}")]
       end
     end
 

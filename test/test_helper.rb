@@ -12,12 +12,18 @@ require 'minitest/spec'
 require 'rails/all'
 
 require 'jsonapi/routing_ext'
+require 'jsonapi/configuration'
+require 'jsonapi/formatter'
 
 require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/hash_helpers', __FILE__)
 require File.expand_path('../helpers/functional_helpers', __FILE__)
 
 Rails.env = 'test'
+
+JSONAPI.configure do |config|
+  config.json_key_format = :camelized_key
+end
 
 class TestApp < Rails::Application
   config.eager_load = false
@@ -40,7 +46,7 @@ TestApp.routes.draw do
   jsonapi_resources :tags
   jsonapi_resources :posts
   jsonapi_resources :sections
-  jsonapi_resources :currencies
+  jsonapi_resources :iso_currencies
   jsonapi_resources :expense_entries
   jsonapi_resources :breeds
   jsonapi_resources :planets
@@ -57,7 +63,7 @@ TestApp.routes.draw do
       jsonapi_resources :tags
       jsonapi_resources :posts
       jsonapi_resources :sections
-      jsonapi_resources :currencies
+      jsonapi_resources :iso_currencies
       jsonapi_resources :expense_entries
       jsonapi_resources :breeds
       jsonapi_resources :planets
@@ -74,7 +80,7 @@ TestApp.routes.draw do
 
     namespace :v3 do
       jsonapi_resource :preferences do
-      #   Intentionally empty block to skip association urls
+        # Intentionally empty block to skip association urls
       end
 
       jsonapi_resources :posts, except: [:destroy] do
@@ -94,5 +100,41 @@ end
 class ActiveSupport::TestCase
   setup do
     @routes = TestApp.routes
+  end
+end
+
+class UpperCamelizedKeyFormatter < JSONAPI::KeyFormatter
+  class << self
+    def format(key)
+      super.camelize(:upper)
+    end
+  end
+end
+
+class DateWithTimezoneValueFormatter < JSONAPI::ValueFormatter
+  class << self
+    def format(raw_value, source, context)
+      raw_value.in_time_zone('Eastern Time (US & Canada)').to_s
+    end
+  end
+end
+
+class DateValueFormatter < JSONAPI::ValueFormatter
+  class << self
+    def format(raw_value, source, context)
+      raw_value.strftime('%m/%d/%Y')
+    end
+  end
+end
+
+class TitleValueFormatter < JSONAPI::ValueFormatter
+  class << self
+    def format(raw_value, source, context)
+      super(raw_value, source, context).titlecase
+    end
+
+    def unformat(value, resource_klass, context)
+      value.to_s.downcase
+    end
   end
 end

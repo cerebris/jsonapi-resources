@@ -67,9 +67,25 @@ module JSONAPI
       resource.save(context)
 
       return JSONAPI::OperationResult.new(:ok, resource)
+    end
+  end
 
-    rescue JSONAPI::Exceptions::Error => e
-      return JSONAPI::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, e.errors)
+  class CreateHasOneAssociationOperation < Operation
+    attr_reader :resource_id, :association_type, :key_value
+
+    def initialize(resource_klass, resource_id, association_type, key_value)
+      @resource_id = resource_id
+      @key_value = key_value
+      @association_type = association_type.to_sym
+      super(resource_klass)
+    end
+
+    def apply(context)
+      resource = @resource_klass.find_by_key(@resource_id, context)
+      resource.create_has_one_link(@association_type, @key_value, context)
+      resource.save(context)
+
+      return JSONAPI::OperationResult.new(:no_content)
     end
   end
 
@@ -79,7 +95,7 @@ module JSONAPI
     def initialize(resource_klass, resource_id, association_type, key_value)
       @resource_id = resource_id
       @key_value = key_value
-      @association_type = association_type
+      @association_type = association_type.to_sym
       super(resource_klass)
     end
 
@@ -88,7 +104,7 @@ module JSONAPI
       resource.replace_has_one_link(@association_type, @key_value, context)
       resource.save(context)
 
-      return JSONAPI::OperationResult.new(:created, resource)
+      return JSONAPI::OperationResult.new(:no_content)
     end
   end
 
@@ -98,7 +114,7 @@ module JSONAPI
     def initialize(resource_klass, resource_id, association_type, key_values)
       @resource_id = resource_id
       @key_values = key_values
-      @association_type = association_type
+      @association_type = association_type.to_sym
       super(resource_klass)
     end
 
@@ -108,7 +124,26 @@ module JSONAPI
         resource.create_has_many_link(@association_type, value, context)
       end
 
-      return JSONAPI::OperationResult.new(:created, resource)
+      return JSONAPI::OperationResult.new(:no_content)
+    end
+  end
+
+  class ReplaceHasManyAssociationOperation < Operation
+    attr_reader :resource_id, :association_type, :key_values
+
+    def initialize(resource_klass, resource_id, association_type, key_values)
+      @resource_id = resource_id
+      @key_values = key_values
+      @association_type = association_type.to_sym
+      super(resource_klass)
+    end
+
+    def apply(context)
+      resource = @resource_klass.find_by_key(@resource_id, context)
+      resource.replace_has_many_links(@association_type, @key_values, context)
+      resource.save(context)
+
+      return JSONAPI::OperationResult.new(:no_content)
     end
   end
 
@@ -118,7 +153,7 @@ module JSONAPI
     def initialize(resource_klass, resource_id, association_type, associated_key)
       @resource_id = resource_id
       @associated_key = associated_key
-      @association_type = association_type
+      @association_type = association_type.to_sym
       super(resource_klass)
     end
 
@@ -127,8 +162,10 @@ module JSONAPI
       resource.remove_has_many_link(@association_type, @associated_key, context)
 
       return JSONAPI::OperationResult.new(:no_content)
-    end
 
+    rescue ActiveRecord::RecordNotFound => e
+      raise JSONAPI::Exceptions::RecordNotFound.new(@associated_key)
+    end
   end
 
   class RemoveHasOneAssociationOperation < Operation
@@ -136,7 +173,7 @@ module JSONAPI
 
     def initialize(resource_klass, resource_id, association_type)
       @resource_id = resource_id
-      @association_type = association_type
+      @association_type = association_type.to_sym
       super(resource_klass)
     end
 

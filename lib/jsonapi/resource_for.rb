@@ -7,12 +7,10 @@ module JSONAPI
     module ClassMethods
       if RUBY_VERSION >= '2.0'
         def resource_for(type)
-          begin
-            resource_name = JSONAPI::Resource._resource_name_from_type(type)
-            Object.const_get resource_name if resource_name
-          rescue NameError
-            nil
-          end
+          resource_name = JSONAPI::Resource._resource_name_from_type(type)
+          Object.const_get resource_name if resource_name
+        rescue NameError
+          nil
         end
       else
         def resource_for(type)
