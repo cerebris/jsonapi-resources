@@ -1,4 +1,4 @@
-# JSONAPI::Resources
+# JSONAPI::Resources [![Build Status](https://secure.travis-ci.org/cerebris/jsonapi-resources.png?branch=master)](http://travis-ci.org/cerebris/jsonapi-resources)
 
 JSONAPI::Resources, or "JR", provides a framework for developing a server that complies with the [JSON API](http://jsonapi.org/) specification.
 
@@ -462,14 +462,14 @@ If you want to change the way an attribute is serialized you have a couple of wa
 class PersonResource < JSONAPI::Resource
   attributes :id, :name, :email
   attribute :last_login_time
-  
+
   def last_login_time
     @object.last_login_time.in_time_zone('Eastern Time (US & Canada)').to_s
   end
 end
 ```
 
-This is simple to implement for a one off situation, but not for example if you want to apply the same formatting rules to all DateTime fields in your system. Another issue is the attribute on the resource will always return a formatted response, whether you want it or not. 
+This is simple to implement for a one off situation, but not for example if you want to apply the same formatting rules to all DateTime fields in your system. Another issue is the attribute on the resource will always return a formatted response, whether you want it or not.
 
 ##### Value Formatters
 
@@ -517,7 +517,7 @@ end
 You can also create your own Value Formatter. Value Formatters must be named with the `format` name followed by `ValueFormatter`, i.e. `DateWithTimezoneValueFormatter` and derive from `JSONAPI::ValueFormatter`. It is recommended that you create a directory for your formatters, called `formatters`.
 
 The `format` method is called by the ResourceSerializer as is serializing a resource. The format method takes the `raw_value`, `source`, and `context` parameters. `raw_value` is the value as read from the model, `source` is the resource instance itself, and `context` is the context of the current user/request. From this you can base the formatted version of the attribute on other values on the resource or the current context.
- 
+
 The `unformat` method is called when processing the request. Each incoming attribute (except `links`) are run through the `unformat` method. The `unformat` method takes the `value`, `resource_klass`, and `context` parameters. `value` is the value as it comes in on the request, `resource_klass` is the resource that is being updated or created, and `context` is the context of the current user/request. This allows you process the incoming value to alter its state before it is stored in the model. By default no processing is applied.
 
 ###### Use a Different Default Value Formatter
@@ -530,7 +530,7 @@ Another way to handle formatting is to set a different default value formatter. 
   end
 ```
 
-and 
+and
 
 ```
 class MyDefaultValueFormatter < JSONAPI::ValueFormatter
@@ -564,7 +564,7 @@ JSONAPI.configure do |config|
 end
 ```
 
-This will cause the serializer to use the CamelizedKeyFormatter. Besides UnderscoredKeyFormatter and CamelizedKeyFormatter JR defines the DasherizedKeyFormatter. You can also create your own KeyFormatter, for example: 
+This will cause the serializer to use the CamelizedKeyFormatter. Besides UnderscoredKeyFormatter and CamelizedKeyFormatter JR defines the DasherizedKeyFormatter. You can also create your own KeyFormatter, for example:
 
 ```
 class UpperCamelizedKeyFormatter < JSONAPI::KeyFormatter
