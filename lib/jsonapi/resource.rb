@@ -1,7 +1,6 @@
 require 'jsonapi/configuration'
 require 'jsonapi/resource_for'
 require 'jsonapi/association'
-require 'action_dispatch/routing/mapper'
 
 module JSONAPI
   class Resource
