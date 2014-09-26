@@ -107,8 +107,8 @@ module JSONAPI
     end
 
     # Override this on a resource instance to override the fetchable keys
-    def fetchable(keys, context = nil)
-      keys
+    def fetchable_fields(context)
+      self.class.fields
     end
 
     class << self
@@ -192,7 +192,7 @@ module JSONAPI
       end
 
       def fields
-        _updateable_associations | _attributes.keys
+        _associations.keys | _attributes.keys
       end
 
       # Override this method if you have more complex requirements than this basic find method provides
