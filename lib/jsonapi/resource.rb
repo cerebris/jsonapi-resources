@@ -183,15 +183,11 @@ module JSONAPI
 
       # Override in your resource to filter the updateable keys
       def updateable_fields(context)
-        setable_fields
+        _updateable_associations | _attributes.keys
       end
 
       # Override in your resource to filter the createable keys
       def createable_fields(context)
-        setable_fields
-      end
-
-      def setable_fields
         _updateable_associations | _attributes.keys
       end
 
