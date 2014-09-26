@@ -319,11 +319,11 @@ class AuthorResource < JSONAPI::Resource
     return resources
   end
 
-  def fetchable(keys, context = nil)
+  def fetchable_fields(context)
     if (@object.id % 2) == 1
-      super(keys - [:email])
+      super(context) - [:email]
     else
-      super(keys)
+      super(context)
     end
   end
 end

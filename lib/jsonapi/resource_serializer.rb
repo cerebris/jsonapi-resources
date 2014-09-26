@@ -124,12 +124,12 @@ module JSONAPI
 
     def attribute_hash(source)
       requested = requested_fields(source.class._type)
-      fields = source.class._attributes.keys.to_a
+      fields = source.fetchable_fields(@context) & source.class._attributes.keys.to_a
       unless requested.nil?
         fields = requested & fields
       end
 
-      source.fetchable(fields, @context).each_with_object({}) do |name, hash|
+      fields.each_with_object({}) do |name, hash|
         hash[format_key(name)] = format_value(source.send(name),
                                               source.class._attribute_options(name)[:format],
                                               source,
@@ -149,7 +149,7 @@ module JSONAPI
 
       field_set = Set.new(fields)
 
-      included_associations = source.fetchable(associations.keys, @context)
+      included_associations = source.fetchable_fields(@context) & associations.keys
       associations.each_with_object({}) do |(name, association), hash|
         if included_associations.include? name
           key = association.key

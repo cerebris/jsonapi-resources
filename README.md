@@ -82,7 +82,7 @@ end
 
 ##### Fetchable Attributes
 
-By default all attributes are assumed to be fetchable. The list of fetchable attributes can be filtered by overriding the `fetchable` method.
+By default all attributes are assumed to be fetchable. The list of fetchable attributes can be filtered by overriding the `fetchable_fields` method.
 
 Here's an example that prevents guest users from seeing the `email` field:
 
@@ -92,11 +92,11 @@ class AuthorResource < JSONAPI::Resource
   model_name 'Person'
   has_many :posts
 
-  def fetchable(keys, context)
+  def fetchable_fields(context)
     if (context.current_user.guest)
-      super(keys - [:email])
+      super(context) - [:email]
     else
-      super(keys)
+      super(context)
     end
   end
 end
@@ -106,7 +106,7 @@ Context flows through from the controller and can be used to control the attribu
 
 ##### Creatable and Updateable Attributes
 
-By default all attributes are assumed to be updateble and creatable. To prevent some attributes from being accepted by the `update` or `create` methods, override the `self.updateable` and `self.creatable` methods on a resource.
+By default all attributes are assumed to be updateable and creatable. To prevent some attributes from being accepted by the `update` or `create` methods, override the `self.updateable_fields` and `self.createable_fields` methods on a resource.
 
 This example prevents `full_name` from being set:
 
@@ -120,17 +120,17 @@ class ContactResource < JSONAPI::Resource
     "#{@object.name_first}, #{@object.name_last}"
   end
 
-  def self.updateable(keys, context = nil)
-    super(keys - [:full_name])
+  def self.updateable_fields(context)
+    super - [:full_name]
   end
 
-  def self.createable(keys, context = nil)
-    super(keys - [:full_name])
+  def self.createable_fields(keys, context)
+    super - [:full_name]
   end
 end
 ```
 
-The `context` is not used by the `ResourceController`, but may be used if you override the controller methods.
+The `context` is not by default used by the `ResourceController`, but may be used if you override the controller methods. By using the context you have the option to determine the createable and updateable fields based on the user.
 
 ##### Attribute Formatting
 
