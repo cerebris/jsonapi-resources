@@ -229,9 +229,9 @@ module JSONAPI
       @key_formatter.format(key)
     end
 
-    def format_value(value, format, source, context)
+    def format_value(value, format, source)
       value_formatter = JSONAPI::ValueFormatter.value_formatter_for(format)
-      value_formatter.format(value, source, context)
+      value_formatter.format(value, source)
     end
   end
 end
