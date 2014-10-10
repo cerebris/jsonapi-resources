@@ -458,7 +458,7 @@ JR by default uses some simple rules to format an attribute for serialization. S
 
 If you want to change the way an attribute is serialized you have a couple of ways. The simplest method is to create a getter method on the resource which overrides the attribute and apply the formatting there. For example:
 
-```
+```ruby
 class PersonResource < JSONAPI::Resource
   attributes :id, :name, :email
   attribute :last_login_time
@@ -475,7 +475,7 @@ This is simple to implement for a one off situation, but not for example if you 
 
 To overcome the above limitations JR uses Value Formatters. Value Formatters allow you to control the way values are handled for an attribute. The `format` can be set per attribute as it is declared in the resource. For example:
 
-```
+```ruby
 class PersonResource < JSONAPI::Resource
   attributes :id, :name, :email
   attribute :last_login_time, format: :date_with_timezone
@@ -484,7 +484,7 @@ end
 
 A Value formatter has a `format` and an `unformat` method. Here's the base ValueFormatter and DefaultValueFormatter for reference:
 
-```
+```ruby
 module JSONAPI
   class ValueFormatter < Formatter
     class << self
@@ -524,7 +524,7 @@ The `unformat` method is called when processing the request. Each incoming attri
 
 Another way to handle formatting is to set a different default value formatter. This will affect all attributes that do notw have a `format` set. You can do this by overriding the `default_attribute_options` method for a resource (or a base resource for a system wide change).
 
-```
+```ruby
   def default_attribute_options
     {format: :my_default}
   end
@@ -532,7 +532,7 @@ Another way to handle formatting is to set a different default value formatter. 
 
 and
 
-```
+```ruby
 class MyDefaultValueFormatter < JSONAPI::ValueFormatter
   class << self
     def format(raw_value, context)
@@ -566,7 +566,7 @@ end
 
 This will cause the serializer to use the CamelizedKeyFormatter. Besides UnderscoredKeyFormatter and CamelizedKeyFormatter JR defines the DasherizedKeyFormatter. You can also create your own KeyFormatter, for example:
 
-```
+```ruby
 class UpperCamelizedKeyFormatter < JSONAPI::KeyFormatter
   class << self
     def format(key)
