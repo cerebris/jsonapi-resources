@@ -15,7 +15,7 @@ module JSONAPI
 
       @fields =  options.fetch(:fields, {})
       include = options.fetch(:include, [])
-      @context = options.fetch(:context, nil)
+
       @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
 
       @linked_objects = {}
@@ -110,7 +110,7 @@ module JSONAPI
       end
     end
 
-    # Returns a serialized hash for the source object, with
+    # Returns a serialized hash for the source model, with
     def object_hash(source, requested_associations)
       obj_hash = attribute_hash(source)
       links = links_hash(source, requested_associations)
@@ -124,7 +124,7 @@ module JSONAPI
 
     def attribute_hash(source)
       requested = requested_fields(source.class._type)
-      fields = source.fetchable_fields(@context) & source.class._attributes.keys.to_a
+      fields = source.fetchable_fields & source.class._attributes.keys.to_a
       unless requested.nil?
         fields = requested & fields
       end
@@ -132,8 +132,7 @@ module JSONAPI
       fields.each_with_object({}) do |name, hash|
         hash[format_key(name)] = format_value(source.send(name),
                                               source.class._attribute_options(name)[:format],
-                                              source,
-                                              @context)
+                                              source)
       end
     end
 
@@ -149,7 +148,7 @@ module JSONAPI
 
       field_set = Set.new(fields)
 
-      included_associations = source.fetchable_fields(@context) & associations.keys
+      included_associations = source.fetchable_fields & associations.keys
       associations.each_with_object({}) do |(name, association), hash|
         if included_associations.include? name
           key = association.key
@@ -170,25 +169,25 @@ module JSONAPI
           # through the associations.
           if include_linked_object || include_linked_children
             if association.is_a?(JSONAPI::Association::HasOne)
-              object = source.send("_#{name}_object")
-              if object
-                id = object.send(association.primary_key)
+              resource = source.send("_#{name}_resource")
+              if resource
+                id = resource.send(association.primary_key)
                 associations_only = already_serialized?(type, id)
                 if include_linked_object && !associations_only
-                  add_linked_object(type, id, object_hash(object, ia[:include_related]))
+                  add_linked_object(type, id, object_hash(resource, ia[:include_related]))
                 elsif include_linked_children || associations_only
-                  links_hash(object, ia[:include_related])
+                  links_hash(resource, ia[:include_related])
                 end
               end
             elsif association.is_a?(JSONAPI::Association::HasMany)
-              objects = source.send("_#{name}_objects")
-              objects.each do |object|
-                id = object.send(association.primary_key)
+              resources = source.send("_#{name}_resources")
+              resources.each do |resource|
+                id = resource.send(association.primary_key)
                 associations_only = already_serialized?(type, id)
                 if include_linked_object && !associations_only
-                  add_linked_object(type, id, object_hash(object, ia[:include_related]))
+                  add_linked_object(type, id, object_hash(resource, ia[:include_related]))
                 elsif include_linked_children || associations_only
-                  links_hash(object, ia[:include_related])
+                  links_hash(resource, ia[:include_related])
                 end
               end
             end

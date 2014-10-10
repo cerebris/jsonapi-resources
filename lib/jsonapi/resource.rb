@@ -8,89 +8,87 @@ module JSONAPI
 
     @@resource_types = {}
 
-    attr_reader :object
+    attr :context
+    attr_reader :model
 
-    def initialize(object = create_new_object)
-      @object = object
+    def initialize(model, context = nil)
+      @model = model
+      @context = context
     end
 
-    def create_new_object
-      self.class._model_class.new
+    def remove
+      @model.destroy
     end
 
-    def remove(context)
-      @object.destroy
-    end
-
-    def create_has_many_link(association_type, association_key_value, context)
+    def create_has_many_link(association_type, association_key_value)
       association = self.class._associations[association_type]
-      related_resource = self.class.resource_for(association.type).find_by_key(association_key_value, context)
+      related_resource = self.class.resource_for(association.type).find_by_key(association_key_value, @context)
 
       # ToDo: Add option to skip relations that already exist instead of returning an error?
-      relation = @object.send(association.type).where(association.primary_key => association_key_value).first
+      relation = @model.send(association.type).where(association.primary_key => association_key_value).first
       if relation.nil?
-        @object.send(association.type) << related_resource.object
+        @model.send(association.type) << related_resource.model
       else
         raise JSONAPI::Exceptions::HasManyRelationExists.new(association_key_value)
       end
     end
 
-    def replace_has_many_links(association_type, association_key_values, context)
+    def replace_has_many_links(association_type, association_key_values)
       association = self.class._associations[association_type]
 
-      @object.send("#{association.key}=", association_key_values)
+      @model.send("#{association.key}=", association_key_values)
     end
 
-    def create_has_one_link(association_type, association_key_value, context)
+    def create_has_one_link(association_type, association_key_value)
       association = self.class._associations[association_type]
 
       # ToDo: Add option to skip relations that already exist instead of returning an error?
-      relation = @object.send("#{association.key}")
+      relation = @model.send("#{association.key}")
       if relation.nil?
-        @object.send("#{association.key}=", association_key_value)
+        @model.send("#{association.key}=", association_key_value)
       else
         raise JSONAPI::Exceptions::HasOneRelationExists.new
       end
     end
 
-    def replace_has_one_link(association_type, association_key_value, context)
+    def replace_has_one_link(association_type, association_key_value)
       association = self.class._associations[association_type]
 
-      @object.send("#{association.key}=", association_key_value)
+      @model.send("#{association.key}=", association_key_value)
     end
 
-    def remove_has_many_link(association_type, key, context)
+    def remove_has_many_link(association_type, key)
       association = self.class._associations[association_type]
 
-      @object.send(association.type).delete(key)
+      @model.send(association.type).delete(key)
     end
 
-    def remove_has_one_link(association_type, context)
+    def remove_has_one_link(association_type)
       association = self.class._associations[association_type]
 
-      @object.send("#{association.key}=", nil)
+      @model.send("#{association.key}=", nil)
     end
 
-    def replace_fields(field_data, context)
+    def replace_fields(field_data)
       field_data[:attributes].each do |attribute, value|
         send "#{attribute}=", value
       end
 
       field_data[:has_one].each do |association_type, value|
         if value.nil?
-          remove_has_one_link(association_type, context)
+          remove_has_one_link(association_type)
         else
-          replace_has_one_link(association_type, value, context)
+          replace_has_one_link(association_type, value)
         end
       end if field_data[:has_one]
 
       field_data[:has_many].each do |association_type, values|
-        replace_has_many_links(association_type, values, context)
+        replace_has_many_links(association_type, values)
       end if field_data[:has_many]
     end
 
-    def save(context)
-      @object.save!
+    def save
+      @model.save!
     rescue ActiveRecord::RecordInvalid => e
       errors = []
       e.record.errors.messages.each do |element|
@@ -107,7 +105,7 @@ module JSONAPI
     end
 
     # Override this on a resource instance to override the fetchable keys
-    def fetchable_fields(context)
+    def fetchable_fields
       self.class.fields
     end
 
@@ -127,6 +125,14 @@ module JSONAPI
 
       attr_accessor :_attributes, :_associations, :_allowed_filters , :_type
 
+      def create(context)
+        self.new(self.create_model, context)
+      end
+
+      def create_model
+        _model_class.new
+      end
+
       def routing_options(options)
         @_routing_resource_options = options
       end
@@ -145,11 +151,11 @@ module JSONAPI
       def attribute(attr, options = {})
         @_attributes[attr] = options
         define_method attr do
-          @object.send(attr)
+          @model.send(attr)
         end unless method_defined?(attr)
 
         define_method "#{attr}=" do |value|
-          @object.send "#{attr}=", value
+          @model.send "#{attr}=", value
         end unless method_defined?("#{attr}=")
       end
 
@@ -182,12 +188,12 @@ module JSONAPI
       end
 
       # Override in your resource to filter the updateable keys
-      def updateable_fields(context)
+      def updateable_fields(context = nil)
         _updateable_associations | _attributes.keys
       end
 
       # Override in your resource to filter the createable keys
-      def createable_fields(context)
+      def createable_fields(context = nil)
         _updateable_associations | _attributes.keys
       end
 
@@ -214,19 +220,19 @@ module JSONAPI
         end
 
         resources = []
-        _model_class.where(where_filters).includes(includes).each do |object|
-          resources.push self.new(object)
+        _model_class.where(where_filters).includes(includes).each do |model|
+          resources.push self.new(model, context)
         end
 
         return resources
       end
 
       def find_by_key(key, context = nil)
-        obj = _model_class.where({_key => key}).first
-        if obj.nil?
+        model = _model_class.where({_key => key}).first
+        if model.nil?
           raise JSONAPI::Exceptions::RecordNotFound.new(key)
         end
-        self.new(obj)
+        self.new(model, context)
       end
 
       def verify_filters(filters, context = nil)
@@ -345,36 +351,36 @@ module JSONAPI
             key = @_associations[attr].key
 
             define_method key do
-              @object.method(key).call
+              @model.method(key).call
             end unless method_defined?(key)
 
-            define_method "_#{attr}_object" do
+            define_method "_#{attr}_resource" do
               type_name = self.class._associations[attr].type
               resource_class = self.class.resource_for(type_name)
               if resource_class
-                associated_object = @object.send attr
-                return resource_class.new(associated_object)
+                associated_model = @model.send attr
+                return resource_class.new(associated_model, @context)
               end
-            end
+            end unless method_defined?("_#{attr}_resource")
           elsif @_associations[attr].is_a?(JSONAPI::Association::HasMany)
             key = @_associations[attr].key
 
             define_method key do
-              @object.method(key).call
+              @model.method(key).call
             end unless method_defined?(key)
 
-            define_method "_#{attr}_objects" do
+            define_method "_#{attr}_resources" do
               type_name = self.class._associations[attr].type
               resource_class = self.class.resource_for(type_name)
               resources = []
               if resource_class
-                associated_objects = @object.send attr
-                associated_objects.each do |associated_object|
-                  resources.push resource_class.new(associated_object)
+                associated_models = @model.send attr
+                associated_models.each do |associated_model|
+                  resources.push resource_class.new(associated_model, @context)
                 end
               end
               return resources
-            end
+            end unless method_defined?("_#{attr}_resources")
           end
         end
       end

@@ -13,24 +13,23 @@ module JSONAPI
   class ResourceController < ActionController::Base
     include ResourceFor
 
-    before_filter {
-      begin
-        @request = JSONAPI::Request.new(params, {
-          context: context,
-          key_formatter: key_formatter
-        })
-        render_errors(@request.errors) unless @request.errors.empty?
-      rescue => e
-        handle_exceptions(e)
-      end
-    }
+    before_filter :setup_request
+
+    def setup_request
+      @request = JSONAPI::Request.new(params, {
+        context: context,
+        key_formatter: key_formatter
+      })
+      render_errors(@request.errors) unless @request.errors.empty?
+    rescue => e
+      handle_exceptions(e)
+    end
 
     def index
       render json: JSONAPI::ResourceSerializer.new.serialize_to_hash(
           resource_klass.find(resource_klass.verify_filters(@request.filters, context), context),
           include: @request.include,
           fields: @request.fields,
-          context: context,
           attribute_formatters: attribute_formatters,
           key_formatter: key_formatter)
     rescue => e
@@ -53,7 +52,6 @@ module JSONAPI
           resources,
           include: @request.include,
           fields: @request.fields,
-          context: context,
           attribute_formatters: attribute_formatters,
           key_formatter: key_formatter)
     rescue => e
@@ -172,7 +170,6 @@ module JSONAPI
                  json: JSONAPI::ResourceSerializer.new.serialize_to_hash(resources.length > 1 ? resources : resources[0],
                                                                          include: @request.include,
                                                                          fields: @request.fields,
-                                                                         context: context,
                                                                          attribute_formatters: attribute_formatters,
                                                                          key_formatter: key_formatter)
         else

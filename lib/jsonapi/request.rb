@@ -182,15 +182,15 @@ module JSONAPI
         association = @resource_klass._association(param)
 
         if association.is_a?(JSONAPI::Association::HasOne)
-          checked_has_one_associations[param] = @resource_klass.resource_for(association.type).verify_key(value, context)
+          checked_has_one_associations[param] = @resource_klass.resource_for(association.type).verify_key(value, @context)
         elsif association.is_a?(JSONAPI::Association::HasMany)
           keys = []
           if value.is_a?(Array)
             value.each do |val|
-              keys.push(@resource_klass.resource_for(association.type).verify_key(val, context))
+              keys.push(@resource_klass.resource_for(association.type).verify_key(val, @context))
             end
           else
-            keys.push(@resource_klass.resource_for(association.type).verify_key(value, context))
+            keys.push(@resource_klass.resource_for(association.type).verify_key(value, @context))
           end
           checked_has_many_associations[param] = keys
         else
@@ -368,7 +368,7 @@ module JSONAPI
     def parse_key_array(raw)
       keys = []
       raw.split(/,/).collect do |key|
-        keys.push @resource_klass.verify_key(key, context)
+        keys.push @resource_klass.verify_key(key, @context)
       end
       return keys
     end

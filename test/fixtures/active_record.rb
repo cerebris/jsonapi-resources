@@ -288,7 +288,7 @@ class PersonResource < JSONAPI::Resource
 
   filter :name
 
-  def self.verify_custom_filter(filter, values, context = nil)
+  def self.verify_custom_filter(filter, values, context)
     case filter
       when :name
         values.each do |value|
@@ -308,22 +308,22 @@ class AuthorResource < JSONAPI::Resource
 
   filter :name
 
-  def self.find(filters, context = nil)
+  def self.find(filters, context)
     resources = []
 
     filters.each do |attr, filter|
-      _model_class.where("\"#{attr}\" LIKE \"%#{filter[0]}%\"").each do |object|
-        resources.push self.new(object)
+      _model_class.where("\"#{attr}\" LIKE \"%#{filter[0]}%\"").each do |model|
+        resources.push self.new(model, context)
       end
     end
     return resources
   end
 
-  def fetchable_fields(context)
-    if (@object.id % 2) == 1
-      super(context) - [:email]
+  def fetchable_fields
+    if (@model.id % 2) == 1
+      super - [:email]
     else
-      super(context)
+      super
     end
   end
 end
@@ -358,7 +358,7 @@ class PostResource < JSONAPI::Resource
   has_many :tags, acts_as_set: true
   has_many :comments, acts_as_set: false
   def subject
-    @object.title
+    @model.title
   end
 
   filters :title, :author, :tags, :comments
@@ -392,7 +392,7 @@ class PostResource < JSONAPI::Resource
 
   def self.verify_key(key, context = nil)
     raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key) unless is_num?(key)
-    raise JSONAPI::Exceptions::RecordNotFound.new(key) unless find_by_key(key)
+    raise JSONAPI::Exceptions::RecordNotFound.new(key) unless find_by_key(key, context)
     return key
   end
 end
@@ -419,13 +419,13 @@ class BreedResource < JSONAPI::Resource
   def self.find(attrs, context = nil)
     breeds = []
     $breed_data.breeds.values.each do |breed|
-      breeds.push(BreedResource.new(breed))
+      breeds.push(BreedResource.new(breed, context))
     end
     breeds
   end
 
   def self.find_by_key(id, context = nil)
-    BreedResource.new($breed_data.breeds[id.to_i])
+    BreedResource.new($breed_data.breeds[id.to_i], context)
   end
 end
 
