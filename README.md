@@ -63,7 +63,7 @@ end
 
 This resource has 5 attributes: `:id`, `:name_first`, `:name_last`, `:email`, `:twitter`. By default these attributes must exist on the model that is handled by the resource.
 
-A resource object wraps a Ruby model, usually an ActiveModel record, which is available as the `@model` variable. This allows a resource's methods to access the underlying model.
+A resource object wraps a Ruby object, usually an ActiveModel record, which is available as the `@model` variable. This allows a resource's methods to access the underlying model.
 
 For example, a computed attribute for `full_name` could be defined as such:
 
