@@ -63,7 +63,7 @@ end
 
 This resource has 5 attributes: `:id`, `:name_first`, `:name_last`, `:email`, `:twitter`. By default these attributes must exist on the model that is handled by the resource.
 
-A resource object wraps a Ruby object, usually an ActiveModel record, which is available as the `@object` variable. This allows a resource's methods to access the underlying object.
+A resource object wraps a Ruby object, usually an ActiveModel record, which is available as the `@model` variable. This allows a resource's methods to access the underlying model.
 
 For example, a computed attribute for `full_name` could be defined as such:
 
@@ -75,7 +75,7 @@ class ContactResource < JSONAPI::Resource
   attribute :full_name
 
   def full_name
-    "#{@object.name_first}, #{@object.name_last}"
+    "#{@model.name_first}, #{@model.name_last}"
   end
 end
 ```
@@ -117,7 +117,7 @@ class ContactResource < JSONAPI::Resource
   attributes :id, :name_first, :name_last, :full_name
 
   def full_name
-    "#{@object.name_first}, #{@object.name_last}"
+    "#{@model.name_first}, #{@model.name_last}"
   end
 
   def self.updateable_fields(context)
@@ -458,13 +458,13 @@ JR by default uses some simple rules to format an attribute for serialization. S
 
 If you want to change the way an attribute is serialized you have a couple of ways. The simplest method is to create a getter method on the resource which overrides the attribute and apply the formatting there. For example:
 
-```
+```ruby
 class PersonResource < JSONAPI::Resource
   attributes :id, :name, :email
   attribute :last_login_time
 
   def last_login_time
-    @object.last_login_time.in_time_zone('Eastern Time (US & Canada)').to_s
+    @model.last_login_time.in_time_zone(@context[:current_user].time_zone).to_s
   end
 end
 ```
@@ -475,7 +475,7 @@ This is simple to implement for a one off situation, but not for example if you 
 
 To overcome the above limitations JR uses Value Formatters. Value Formatters allow you to control the way values are handled for an attribute. The `format` can be set per attribute as it is declared in the resource. For example:
 
-```
+```ruby
 class PersonResource < JSONAPI::Resource
   attributes :id, :name, :email
   attribute :last_login_time, format: :date_with_timezone
@@ -484,15 +484,15 @@ end
 
 A Value formatter has a `format` and an `unformat` method. Here's the base ValueFormatter and DefaultValueFormatter for reference:
 
-```
+```ruby
 module JSONAPI
   class ValueFormatter < Formatter
     class << self
-      def format(raw_value, source, context)
+      def format(raw_value, context)
         super(raw_value)
       end
 
-      def unformat(value, resource_klass, context)
+      def unformat(value, context)
         super(value)
       end
       ...
@@ -502,7 +502,7 @@ end
 
 class DefaultValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value, source, context)
+    def format(raw_value, context)
       case raw_value
         when String, Integer
           return raw_value
@@ -516,15 +516,15 @@ end
 
 You can also create your own Value Formatter. Value Formatters must be named with the `format` name followed by `ValueFormatter`, i.e. `DateWithTimezoneValueFormatter` and derive from `JSONAPI::ValueFormatter`. It is recommended that you create a directory for your formatters, called `formatters`.
 
-The `format` method is called by the ResourceSerializer as is serializing a resource. The format method takes the `raw_value`, `source`, and `context` parameters. `raw_value` is the value as read from the model, `source` is the resource instance itself, and `context` is the context of the current user/request. From this you can base the formatted version of the attribute on other values on the resource or the current context.
+The `format` method is called by the ResourceSerializer as is serializing a resource. The format method takes the `raw_value`, and `context` parameters. `raw_value` is the value as read from the model, and `context` is the context of the current user/request. From this you can base the formatted version of the attribute current context.
 
-The `unformat` method is called when processing the request. Each incoming attribute (except `links`) are run through the `unformat` method. The `unformat` method takes the `value`, `resource_klass`, and `context` parameters. `value` is the value as it comes in on the request, `resource_klass` is the resource that is being updated or created, and `context` is the context of the current user/request. This allows you process the incoming value to alter its state before it is stored in the model. By default no processing is applied.
+The `unformat` method is called when processing the request. Each incoming attribute (except `links`) are run through the `unformat` method. The `unformat` method takes the `value`, and `context` parameters. `value` is the value as it comes in on the request, and `context` is the context of the current user/request. This allows you process the incoming value to alter its state before it is stored in the model. By default no processing is applied.
 
 ###### Use a Different Default Value Formatter
 
 Another way to handle formatting is to set a different default value formatter. This will affect all attributes that do notw have a `format` set. You can do this by overriding the `default_attribute_options` method for a resource (or a base resource for a system wide change).
 
-```
+```ruby
   def default_attribute_options
     {format: :my_default}
   end
@@ -532,15 +532,15 @@ Another way to handle formatting is to set a different default value formatter. 
 
 and
 
-```
+```ruby
 class MyDefaultValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value, source, context)
+    def format(raw_value, context)
       case raw_value
         when String, Integer
           return raw_value
         when DateTime
-          return raw_value.in_time_zone('Eastern Time (US & Canada)').to_s
+          return raw_value.in_time_zone(context[:current_user].time_zone).to_s
         else
           return raw_value.to_s
       end
@@ -566,7 +566,7 @@ end
 
 This will cause the serializer to use the CamelizedKeyFormatter. Besides UnderscoredKeyFormatter and CamelizedKeyFormatter JR defines the DasherizedKeyFormatter. You can also create your own KeyFormatter, for example:
 
-```
+```ruby
 class UpperCamelizedKeyFormatter < JSONAPI::KeyFormatter
   class << self
     def format(key)

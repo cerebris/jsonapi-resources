@@ -37,11 +37,11 @@ module JSONAPI
 
   class ValueFormatter < Formatter
     class << self
-      def format(raw_value, source, context)
+      def format(raw_value, context)
         super(raw_value)
       end
 
-      def unformat(value, resource_klass, context)
+      def unformat(value, context)
         super(value)
       end
 
@@ -82,7 +82,7 @@ end
 
 class DefaultValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value, source, context)
+    def format(raw_value, context)
       case raw_value
         when String, Integer
           return raw_value
