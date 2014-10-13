@@ -15,16 +15,6 @@ module JSONAPI
 
     before_filter :setup_request
 
-    def setup_request
-      @request = JSONAPI::Request.new(params, {
-        context: context,
-        key_formatter: key_formatter
-      })
-      render_errors(@request.errors) unless @request.errors.empty?
-    rescue => e
-      handle_exceptions(e)
-    end
-
     def index
       render json: JSONAPI::ResourceSerializer.new.serialize_to_hash(
           resource_klass.find(resource_klass.verify_filters(@request.filters, context), context),
@@ -113,6 +103,16 @@ module JSONAPI
 
     def resource_klass_name
       @resource_klass_name ||= "#{self.class.name.demodulize.sub(/Controller$/, '').singularize}Resource"
+    end
+
+    def setup_request
+      @request = JSONAPI::Request.new(params, {
+        context: context,
+        key_formatter: key_formatter
+      })
+      render_errors(@request.errors) unless @request.errors.empty?
+    rescue => e
+      handle_exceptions(e)
     end
 
     def parse_key_array(raw)
