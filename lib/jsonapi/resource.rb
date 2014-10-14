@@ -219,7 +219,7 @@ module JSONAPI
       end
 
       # Override this method if you have more complex requirements than this basic find method provides
-      def find(filters, context = nil)
+      def find(filters, sort_params, context = nil)
         includes = []
         where_filters = {}
 
@@ -236,8 +236,16 @@ module JSONAPI
           end
         end
 
+        order_options = sort_params.each_with_object({}) { |sort_key, order_hash|
+          if sort_key.starts_with?('-')
+            order_hash[sort_key.slice(1..-1)] = :desc
+          else
+            order_hash[sort_key] = :asc
+          end
+        }
+
         resources = []
-        _model_class.where(where_filters).includes(includes).each do |model|
+        _model_class.where(where_filters).order(order_options).includes(includes).each do |model|
           resources.push self.new(model, context)
         end
 

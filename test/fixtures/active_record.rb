@@ -308,7 +308,7 @@ class AuthorResource < JSONAPI::Resource
 
   filter :name
 
-  def self.find(filters, context)
+  def self.find(filters, sort_params, context)
     resources = []
 
     filters.each do |attr, filter|
@@ -417,7 +417,7 @@ class BreedResource < JSONAPI::Resource
   # This is unneeded, just here for testing
   routing_options :param => :id
 
-  def self.find(attrs, context = nil)
+  def self.find(attrs, sort_params, context = nil)
     breeds = []
     $breed_data.breeds.values.each do |breed|
       breeds.push(BreedResource.new(breed, context))

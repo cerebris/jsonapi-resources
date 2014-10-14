@@ -254,7 +254,7 @@ class AuthorResource < JSONAPI::Resource
 
   filter :name
 
-  def self.find(attrs, context = nil)
+  def self.find(attrs, sort_params, context = nil)
     authors = context.current_user.find_authors(attrs)
 
     return authors.map do |author|
@@ -313,6 +313,9 @@ module JSONAPI
   COUNT_MISMATCH = 108
   KEY_ORDER_MISMATCH = 109
   KEY_NOT_INCLUDED_IN_URL = 110
+  INVALID_INCLUDE = 112
+  RELATION_EXISTS = 113
+  INVALID_SORT_PARAM = 114
 
   RECORD_NOT_FOUND = 404
   LOCKED = 423
