@@ -199,7 +199,6 @@ end
 
 The association methods support the following options:
  * `class_name` - a string specifying the underlying class for the related resource
- * `primary_key` - the primary key to the related resource, if different than `id`
  * `key` - the key in the resource that identifies the related resource, if different than `<resource_name>_id`
  * `acts_as_set` - allows the entire set of related records to be replaced in one operation. Defaults to false if not set.
 

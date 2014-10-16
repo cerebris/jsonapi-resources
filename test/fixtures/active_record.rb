@@ -406,7 +406,7 @@ class ExpenseEntryResource < JSONAPI::Resource
   attributes :id, :cost
   attribute :transaction_date, format: :date
 
-  has_one :iso_currency, key: 'currency_code', primary_key: 'code'
+  has_one :iso_currency, key: 'currency_code'
   has_one :employee, class_name: 'Person'
 end
 
