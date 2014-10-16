@@ -75,6 +75,7 @@ module JSONAPI
           send "#{attribute}=", value
           rescue ArgumentError
             raise JSONAPI::Exceptions::InvalidFieldValue.new(attribute, value)
+          # :nocov: Will be thrown if an enum value isn't allowed for an enum. Currently not tested as enums are a rails 4.1 and higher feature
         end
       end
 
@@ -189,6 +190,8 @@ module JSONAPI
 
       def key(key)
         @_key = key.to_sym
+        # :nocov:
+        # :nocov:
       end
 
       # Override in your resource to filter the updateable keys
@@ -310,6 +313,8 @@ module JSONAPI
 
       def _key
         @_key ||= :id
+        # :nocov:
+        # :nocov:
       end
 
       def _as_parent_key
@@ -329,6 +334,7 @@ module JSONAPI
         return class_name
       end
 
+      # :nocov:
       if RUBY_VERSION >= '2.0'
         def _model_class
           @model ||= Object.const_get(_model_name)
@@ -338,6 +344,7 @@ module JSONAPI
           @model ||= _model_name.to_s.safe_constantize
         end
       end
+      # :nocov:
 
       def _allowed_filter?(filter)
         _allowed_filters.include?(filter)

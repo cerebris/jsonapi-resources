@@ -5,6 +5,7 @@ module JSONAPI
     end
 
     module ClassMethods
+      # :nocov:
       if RUBY_VERSION >= '2.0'
         def resource_for(type)
           resource_name = JSONAPI::Resource._resource_name_from_type(type)
@@ -18,6 +19,7 @@ module JSONAPI
           resource_name.safe_constantize if resource_name
         end
       end
+      # :nocov:
     end
   end
 end

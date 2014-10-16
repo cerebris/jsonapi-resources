@@ -91,6 +91,7 @@ module JSONAPI
     end
 
     private
+    # :nocov:
     if RUBY_VERSION >= '2.0'
       def resource_klass
         @resource_klass ||= Object.const_get resource_klass_name
@@ -100,6 +101,7 @@ module JSONAPI
         @resource_klass ||= resource_klass_name.safe_constantize
       end
     end
+    # :nocov:
 
     def resource_klass_name
       @resource_klass_name ||= "#{self.class.name.demodulize.sub(/Controller$/, '').singularize}Resource"
@@ -112,7 +114,9 @@ module JSONAPI
       })
       render_errors(@request.errors) unless @request.errors.empty?
     rescue => e
+      # :nocov:
       handle_exceptions(e)
+      # :nocov:
     end
 
     def parse_key_array(raw)
@@ -187,7 +191,9 @@ module JSONAPI
         when JSONAPI::Exceptions::Error
           render_errors(e.errors)
         else # raise all other exceptions
+          # :nocov:
           raise e
+          # :nocov:
       end
     end
   end
