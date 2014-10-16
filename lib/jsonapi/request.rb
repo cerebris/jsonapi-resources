@@ -298,31 +298,31 @@ module JSONAPI
     def parse_replace_operation(params)
       object_params_raw = params.require(format_key(@resource_klass._type))
 
-      keys = params[@resource_klass._key]
+      keys = params[@resource_klass._primary_key]
       if object_params_raw.is_a?(Array)
         if keys.count != object_params_raw.count
           raise JSONAPI::Exceptions::CountMismatch
         end
 
         object_params_raw.each do |object_params|
-          if object_params[@resource_klass._key].nil?
+          if object_params[@resource_klass._primary_key].nil?
             raise JSONAPI::Exceptions::MissingKey.new
           end
 
-          if !keys.include?(object_params[@resource_klass._key])
-            raise JSONAPI::Exceptions::KeyNotIncludedInURL.new(object_params[@resource_klass._key])
+          if !keys.include?(object_params[@resource_klass._primary_key])
+            raise JSONAPI::Exceptions::KeyNotIncludedInURL.new(object_params[@resource_klass._primary_key])
           end
           @operations.push JSONAPI::ReplaceFieldsOperation.new(@resource_klass,
-                                                               object_params[@resource_klass._key],
+                                                               object_params[@resource_klass._primary_key],
                                                                parse_params(object_params, @resource_klass.updateable_fields(@context)))
         end
       else
-        if !object_params_raw[@resource_klass._key].nil? && keys != object_params_raw[@resource_klass._key]
-          raise JSONAPI::Exceptions::KeyNotIncludedInURL.new(object_params_raw[@resource_klass._key])
+        if !object_params_raw[@resource_klass._primary_key].nil? && keys != object_params_raw[@resource_klass._primary_key]
+          raise JSONAPI::Exceptions::KeyNotIncludedInURL.new(object_params_raw[@resource_klass._primary_key])
         end
 
         @operations.push JSONAPI::ReplaceFieldsOperation.new(@resource_klass,
-                                                               params[@resource_klass._key],
+                                                               params[@resource_klass._primary_key],
                                                                parse_params(object_params_raw, @resource_klass.updateable_fields(@context)))
       end
 
@@ -333,7 +333,7 @@ module JSONAPI
     end
 
     def parse_remove_operation(params)
-      keys = parse_key_array(params.permit(@resource_klass._key)[@resource_klass._key])
+      keys = parse_key_array(params.permit(@resource_klass._primary_key)[@resource_klass._primary_key])
 
       keys.each do |key|
         @operations.push JSONAPI::RemoveResourceOperation.new(@resource_klass, key)

@@ -20,6 +20,10 @@ module JSONAPI
       @model.destroy
     end
 
+    def id
+      model.send(self.class._primary_key)
+    end
+
     def create_has_many_link(association_type, association_key_value)
       association = self.class._associations[association_type]
       related_resource = self.class.resource_for(association.type).find_by_key(association_key_value, @context)
@@ -73,9 +77,10 @@ module JSONAPI
       field_data[:attributes].each do |attribute, value|
         begin
           send "#{attribute}=", value
-          rescue ArgumentError
-            raise JSONAPI::Exceptions::InvalidFieldValue.new(attribute, value)
+        rescue ArgumentError
           # :nocov: Will be thrown if an enum value isn't allowed for an enum. Currently not tested as enums are a rails 4.1 and higher feature
+          raise JSONAPI::Exceptions::InvalidFieldValue.new(attribute, value)
+          # :nocov:
         end
       end
 
@@ -189,9 +194,14 @@ module JSONAPI
       end
 
       def key(key)
-        @_key = key.to_sym
         # :nocov:
+        warn '[DEPRECATION] `key` is deprecated.  Please use `primary_key` instead.'
+        @_primary_key = key.to_sym
         # :nocov:
+      end
+
+      def primary_key(key)
+        @_primary_key = key.to_sym
       end
 
       # Override in your resource to filter the updateable keys
@@ -235,7 +245,7 @@ module JSONAPI
       end
 
       def find_by_key(key, context = nil)
-        model = _model_class.where({_key => key}).first
+        model = _model_class.where({_primary_key => key}).first
         if model.nil?
           raise JSONAPI::Exceptions::RecordNotFound.new(key)
         end
@@ -312,17 +322,22 @@ module JSONAPI
       end
 
       def _key
-        @_key ||= :id
         # :nocov:
+        warn '[DEPRECATION] `_key` is deprecated.  Please use `_primary_key` instead.'
+        _primary_key
         # :nocov:
+      end
+
+      def _primary_key
+        @_primary_key ||= :id
       end
 
       def _as_parent_key
-        @_as_parent_key ||= "#{_type.to_s.singularize}_#{_key}"
+        @_as_parent_key ||= "#{_type.to_s.singularize}_#{_primary_key}"
       end
 
       def _allowed_filters
-        !@_allowed_filters.nil? ? @_allowed_filters : Set.new([_key])
+        !@_allowed_filters.nil? ? @_allowed_filters : Set.new([_primary_key])
       end
 
       def _resource_name_from_type(type)

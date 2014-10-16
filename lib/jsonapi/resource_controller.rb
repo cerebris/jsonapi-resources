@@ -27,7 +27,7 @@ module JSONAPI
     end
 
     def show
-      keys = parse_key_array(params[resource_klass._key])
+      keys = parse_key_array(params[:id])
 
       if keys.length > 1
         resources = []
@@ -58,7 +58,9 @@ module JSONAPI
       association = resource_klass._association(association_type)
       render json: { association_type => parent_resource.send(association.key)}
     rescue => e
+      # :nocov:
       handle_exceptions(e)
+      # :nocov:
     end
 
     def create
