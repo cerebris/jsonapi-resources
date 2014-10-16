@@ -71,7 +71,11 @@ module JSONAPI
 
     def replace_fields(field_data)
       field_data[:attributes].each do |attribute, value|
-        send "#{attribute}=", value
+        begin
+          send "#{attribute}=", value
+          rescue ArgumentError
+            raise JSONAPI::Exceptions::InvalidFieldValue.new(attribute, value)
+        end
       end
 
       field_data[:has_one].each do |association_type, value|
