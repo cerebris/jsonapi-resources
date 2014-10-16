@@ -145,13 +145,13 @@ end
 
 The system will lookup a value formatter named `DateWithTimezoneValueFormatter` and will use this when serializing and updating the attribute. See the [Value Formatters](#value-formatters) section for more details.
 
-#### Key
+#### Primary Key
 
-The primary key of the resource defaults to `id`, which can be changed using the `key` method.
+Resources are always represented using a key of `id`. If the underlying model does not use `id` as the primary key you can use the `primary_key` method to tell the resource which field on the model to use as the primary key. Note: this doesn't have to be the actual primary key of the model. For example you may wish to use integers internally and a different scheme publicly.
 
 ```ruby
 class CurrencyResource < JSONAPI::Resource
-  key :code
+  primary_key :code
   attributes :code, :name
 
   has_many :expense_entries
