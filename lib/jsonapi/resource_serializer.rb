@@ -152,10 +152,10 @@ module JSONAPI
       included_associations = source.fetchable_fields & associations.keys
       associations.each_with_object({}) do |(name, association), hash|
         if included_associations.include? name
-          key = association.key
+          foreign_key = association.foreign_key
 
           if field_set.include?(name)
-            hash[format_key(name)] = source.send(key)
+            hash[format_key(name)] = source.send(foreign_key)
           end
 
           ia = requested_associations.is_a?(Hash) ? requested_associations[name] : nil

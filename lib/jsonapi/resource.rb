@@ -40,16 +40,16 @@ module JSONAPI
     def replace_has_many_links(association_type, association_key_values)
       association = self.class._associations[association_type]
 
-      @model.send("#{association.key}=", association_key_values)
+      send("#{association.foreign_key}=", association_key_values)
     end
 
     def create_has_one_link(association_type, association_key_value)
       association = self.class._associations[association_type]
 
       # ToDo: Add option to skip relations that already exist instead of returning an error?
-      relation = @model.send("#{association.key}")
+      relation = @model.send("#{association.foreign_key}")
       if relation.nil?
-        @model.send("#{association.key}=", association_key_value)
+        send("#{association.foreign_key}=", association_key_value)
       else
         raise JSONAPI::Exceptions::HasOneRelationExists.new
       end
@@ -58,7 +58,7 @@ module JSONAPI
     def replace_has_one_link(association_type, association_key_value)
       association = self.class._associations[association_type]
 
-      @model.send("#{association.key}=", association_key_value)
+      send("#{association.foreign_key}=", association_key_value)
     end
 
     def remove_has_many_link(association_type, key)
@@ -70,7 +70,6 @@ module JSONAPI
     def remove_has_one_link(association_type)
       association = self.class._associations[association_type]
 
-      @model.send("#{association.key}=", nil)
     end
 
     def replace_fields(field_data)
@@ -229,7 +228,7 @@ module JSONAPI
               includes.push(filter)
               where_filters["#{filter}.#{_associations[filter].primary_key}"] = value
             else
-              where_filters["#{_associations[filter].key}"] = value
+              where_filters["#{_associations[filter].foreign_key}"] = value
             end
           else
             where_filters[filter] = value
@@ -373,12 +372,15 @@ module JSONAPI
         attrs.each do |attr|
           @_associations[attr] = klass.new(attr, options)
 
-          if @_associations[attr].is_a?(JSONAPI::Association::HasOne)
-            key = @_associations[attr].key
+          foreign_key = @_associations[attr].foreign_key
 
-            define_method key do
-              @model.method(key).call
-            end unless method_defined?(key)
+          define_method foreign_key do
+            @model.method(foreign_key).call
+          end unless method_defined?(foreign_key)
+
+          define_method "#{foreign_key}=" do |value|
+            @model.method("#{foreign_key}=").call(value)
+          end unless method_defined?("#{foreign_key}=")
 
             define_method "_#{attr}_resource" do
               type_name = self.class._associations[attr].type

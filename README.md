@@ -199,7 +199,7 @@ end
 
 The association methods support the following options:
  * `class_name` - a string specifying the underlying class for the related resource
- * `key` - the key in the resource that identifies the related resource, if different than `<resource_name>_id`
+ * `foreign_key` - the method on the resource used to fetch the related resource. Defaults to `<resource_name>_id` for has_one and `<resource_name>_ids` for has_many relationships.
  * `acts_as_set` - allows the entire set of related records to be replaced in one operation. Defaults to false if not set.
 
 Examples:

@@ -56,7 +56,7 @@ module JSONAPI
       parent_resource = resource_klass.find_by_key(parent_key, context)
 
       association = resource_klass._association(association_type)
-      render json: { association_type => parent_resource.send(association.key)}
+      render json: { association_type => parent_resource.send(association.foreign_key)}
     rescue => e
       # :nocov:
       handle_exceptions(e)
