@@ -352,7 +352,7 @@ module JSONAPI
       # :nocov:
       if RUBY_VERSION >= '2.0'
         def _model_class
-          @model ||= Object.const_get(_model_name)
+          @model ||= Object.const_get(_model_name.to_s)
         end
       else
         def _model_class
