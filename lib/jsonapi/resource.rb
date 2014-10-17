@@ -70,6 +70,7 @@ module JSONAPI
     def remove_has_one_link(association_type)
       association = self.class._associations[association_type]
 
+      send("#{association.foreign_key}=", nil)
     end
 
     def replace_fields(field_data)
@@ -382,22 +383,17 @@ module JSONAPI
             @model.method("#{foreign_key}=").call(value)
           end unless method_defined?("#{foreign_key}=")
 
-            define_method "_#{attr}_resource" do
+          if @_associations[attr].is_a?(JSONAPI::Association::HasOne)
+            define_method attr do
               type_name = self.class._associations[attr].type
               resource_class = self.class.resource_for(type_name)
               if resource_class
                 associated_model = @model.send attr
                 return resource_class.new(associated_model, @context)
               end
-            end unless method_defined?("_#{attr}_resource")
+            end unless method_defined?(attr)
           elsif @_associations[attr].is_a?(JSONAPI::Association::HasMany)
-            key = @_associations[attr].key
-
-            define_method key do
-              @model.method(key).call
-            end unless method_defined?(key)
-
-            define_method "_#{attr}_resources" do
+            define_method attr do
               type_name = self.class._associations[attr].type
               resource_class = self.class.resource_for(type_name)
               resources = []
@@ -408,7 +404,7 @@ module JSONAPI
                 end
               end
               return resources
-            end unless method_defined?("_#{attr}_resources")
+            end unless method_defined?(attr)
           end
         end
       end

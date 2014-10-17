@@ -170,7 +170,7 @@ module JSONAPI
           # through the associations.
           if include_linked_object || include_linked_children
             if association.is_a?(JSONAPI::Association::HasOne)
-              resource = source.send("_#{name}_resource")
+              resource = source.send(name)
               if resource
                 id = resource.id
                 associations_only = already_serialized?(type, id)
@@ -181,7 +181,7 @@ module JSONAPI
                 end
               end
             elsif association.is_a?(JSONAPI::Association::HasMany)
-              resources = source.send("_#{name}_resources")
+              resources = source.send(name)
               resources.each do |resource|
                 id = resource.id
                 associations_only = already_serialized?(type, id)
