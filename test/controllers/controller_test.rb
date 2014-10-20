@@ -1129,7 +1129,7 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
   end
 
   def test_currencies_show
-    get :show, {id: 'USD'}
+    get :show, {code: 'USD'}
     assert_response :success
     assert json_response['isoCurrencies'].is_a?(Hash)
   end

@@ -27,7 +27,7 @@ module JSONAPI
     end
 
     def show
-      keys = parse_key_array(params[:id])
+      keys = parse_key_array(params[resource_klass._primary_key])
 
       if keys.length > 1
         resources = []
