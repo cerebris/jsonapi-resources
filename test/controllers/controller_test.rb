@@ -1001,7 +1001,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
 
   def test_expense_entries_show_fields_type_many
     get :show, {id: 1, include: 'isoCurrency,employee', 'fields' => {'expenseEntries' => 'transactionDate',
-                                                                     'isoCurrencies' => 'code,name'}}
+                                                                     'isoCurrencies' => 'id,name'}}
     assert_response :success
     assert json_response['expenseEntries'].is_a?(Hash)
     assert json_response['expenseEntries'].has_key?('transactionDate')
@@ -1009,7 +1009,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     refute json_response['expenseEntries'].has_key?('links')
     assert_equal 1, json_response['linked']['isoCurrencies'].size
     assert_equal 1, json_response['linked']['people'].size
-    assert json_response['linked']['isoCurrencies'][0].has_key?('code')
+    assert json_response['linked']['isoCurrencies'][0].has_key?('id')
     assert json_response['linked']['isoCurrencies'][0].has_key?('name')
     refute json_response['linked']['isoCurrencies'][0].has_key?('countryName')
   end

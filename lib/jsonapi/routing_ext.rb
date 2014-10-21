@@ -7,6 +7,7 @@ module ActionDispatch
           options = resources.extract_options!.dup
 
           res = JSONAPI::Resource.resource_for(resource_type)
+
           resource resource_type, options.merge(res.routing_resource_options) do
             @scope[:jsonapi_resource] = resource_type
 
@@ -29,6 +30,10 @@ module ActionDispatch
           options = resources.extract_options!.dup
 
           res = JSONAPI::Resource.resource_for(resource_type)
+
+          # Route using the primary_key. Can be overridden using routing_resource_options
+          options.merge!(param: res._primary_key)
+
           resources resource_type, options.merge(res.routing_resource_options) do
             @scope[:jsonapi_resource] = resource_type
 

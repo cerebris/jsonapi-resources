@@ -111,6 +111,12 @@ class RoutesTest < ActionDispatch::IntegrationTest
                    {action: 'show', controller: 'api/v3/posts', id: '1'})
   end
 
+  #primary_key
+  def test_routing_primary_key_jsonapi_resources
+    assert_routing({path: '/iso_currencies/USD', method: :get},
+                   {action: 'show', controller: 'iso_currencies', code: 'USD'})
+  end
+
   # ToDo: Refute routing
   # def test_routing_v3_posts_delete
   #   assert_routing({ path: '/api/v3/posts/1', method: :delete },

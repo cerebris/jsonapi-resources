@@ -27,7 +27,7 @@ module JSONAPI
     end
 
     def show
-      keys = parse_key_array(params[resource_klass._key])
+      keys = parse_key_array(params[resource_klass._primary_key])
 
       if keys.length > 1
         resources = []
@@ -56,9 +56,11 @@ module JSONAPI
       parent_resource = resource_klass.find_by_key(parent_key, context)
 
       association = resource_klass._association(association_type)
-      render json: { association_type => parent_resource.send(association.key)}
+      render json: { association_type => parent_resource.send(association.foreign_key)}
     rescue => e
+      # :nocov:
       handle_exceptions(e)
+      # :nocov:
     end
 
     def create
@@ -91,6 +93,7 @@ module JSONAPI
     end
 
     private
+    # :nocov:
     if RUBY_VERSION >= '2.0'
       def resource_klass
         @resource_klass ||= Object.const_get resource_klass_name
@@ -100,6 +103,7 @@ module JSONAPI
         @resource_klass ||= resource_klass_name.safe_constantize
       end
     end
+    # :nocov:
 
     def resource_klass_name
       @resource_klass_name ||= "#{self.class.name.demodulize.sub(/Controller$/, '').singularize}Resource"
@@ -112,7 +116,9 @@ module JSONAPI
       })
       render_errors(@request.errors) unless @request.errors.empty?
     rescue => e
+      # :nocov:
       handle_exceptions(e)
+      # :nocov:
     end
 
     def parse_key_array(raw)
@@ -187,7 +193,9 @@ module JSONAPI
         when JSONAPI::Exceptions::Error
           render_errors(e.errors)
         else # raise all other exceptions
+          # :nocov:
           raise e
+          # :nocov:
       end
     end
   end

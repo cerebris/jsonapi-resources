@@ -398,23 +398,24 @@ class PostResource < JSONAPI::Resource
 end
 
 class IsoCurrencyResource < JSONAPI::Resource
-  key :code
-  attributes :code, :name, :country_name, :minor_unit
-
-  routing_options :param => :code
+  primary_key :code
+  attributes :id, :name, :country_name, :minor_unit
 end
 
 class ExpenseEntryResource < JSONAPI::Resource
   attributes :id, :cost
   attribute :transaction_date, format: :date
 
-  has_one :iso_currency, key: 'currency_code', primary_key: 'code'
+  has_one :iso_currency, foreign_key: 'currency_code'
   has_one :employee, class_name: 'Person'
 end
 
 class BreedResource < JSONAPI::Resource
   attribute :id, format_misspelled: :does_not_exist
   attribute :name, format: :title
+
+  # This is unneeded, just here for testing
+  routing_options :param => :id
 
   def self.find(attrs, context = nil)
     breeds = []

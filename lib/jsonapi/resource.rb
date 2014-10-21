@@ -20,6 +20,10 @@ module JSONAPI
       @model.destroy
     end
 
+    def id
+      model.send(self.class._primary_key)
+    end
+
     def create_has_many_link(association_type, association_key_value)
       association = self.class._associations[association_type]
       related_resource = self.class.resource_for(association.type).find_by_key(association_key_value, @context)
@@ -36,16 +40,16 @@ module JSONAPI
     def replace_has_many_links(association_type, association_key_values)
       association = self.class._associations[association_type]
 
-      @model.send("#{association.key}=", association_key_values)
+      send("#{association.foreign_key}=", association_key_values)
     end
 
     def create_has_one_link(association_type, association_key_value)
       association = self.class._associations[association_type]
 
       # ToDo: Add option to skip relations that already exist instead of returning an error?
-      relation = @model.send("#{association.key}")
+      relation = @model.send("#{association.foreign_key}")
       if relation.nil?
-        @model.send("#{association.key}=", association_key_value)
+        send("#{association.foreign_key}=", association_key_value)
       else
         raise JSONAPI::Exceptions::HasOneRelationExists.new
       end
@@ -54,7 +58,7 @@ module JSONAPI
     def replace_has_one_link(association_type, association_key_value)
       association = self.class._associations[association_type]
 
-      @model.send("#{association.key}=", association_key_value)
+      send("#{association.foreign_key}=", association_key_value)
     end
 
     def remove_has_many_link(association_type, key)
@@ -66,12 +70,18 @@ module JSONAPI
     def remove_has_one_link(association_type)
       association = self.class._associations[association_type]
 
-      @model.send("#{association.key}=", nil)
+      send("#{association.foreign_key}=", nil)
     end
 
     def replace_fields(field_data)
       field_data[:attributes].each do |attribute, value|
-        send "#{attribute}=", value
+        begin
+          send "#{attribute}=", value
+        rescue ArgumentError
+          # :nocov: Will be thrown if an enum value isn't allowed for an enum. Currently not tested as enums are a rails 4.1 and higher feature
+          raise JSONAPI::Exceptions::InvalidFieldValue.new(attribute, value)
+          # :nocov:
+        end
       end
 
       field_data[:has_one].each do |association_type, value|
@@ -184,7 +194,14 @@ module JSONAPI
       end
 
       def key(key)
-        @_key = key.to_sym
+        # :nocov:
+        warn '[DEPRECATION] `key` is deprecated.  Please use `primary_key` instead.'
+        @_primary_key = key.to_sym
+        # :nocov:
+      end
+
+      def primary_key(key)
+        @_primary_key = key.to_sym
       end
 
       # Override in your resource to filter the updateable keys
@@ -212,7 +229,7 @@ module JSONAPI
               includes.push(filter)
               where_filters["#{filter}.#{_associations[filter].primary_key}"] = value
             else
-              where_filters["#{_associations[filter].key}"] = value
+              where_filters["#{_associations[filter].foreign_key}"] = value
             end
           else
             where_filters[filter] = value
@@ -228,7 +245,7 @@ module JSONAPI
       end
 
       def find_by_key(key, context = nil)
-        model = _model_class.where({_key => key}).first
+        model = _model_class.where({_primary_key => key}).first
         if model.nil?
           raise JSONAPI::Exceptions::RecordNotFound.new(key)
         end
@@ -305,15 +322,22 @@ module JSONAPI
       end
 
       def _key
-        @_key ||= :id
+        # :nocov:
+        warn '[DEPRECATION] `_key` is deprecated.  Please use `_primary_key` instead.'
+        _primary_key
+        # :nocov:
+      end
+
+      def _primary_key
+        @_primary_key ||= :id
       end
 
       def _as_parent_key
-        @_as_parent_key ||= "#{_type.to_s.singularize}_#{_key}"
+        @_as_parent_key ||= "#{_type.to_s.singularize}_#{_primary_key}"
       end
 
       def _allowed_filters
-        !@_allowed_filters.nil? ? @_allowed_filters : Set.new([_key])
+        !@_allowed_filters.nil? ? @_allowed_filters : Set.new([_primary_key])
       end
 
       def _resource_name_from_type(type)
@@ -325,15 +349,17 @@ module JSONAPI
         return class_name
       end
 
+      # :nocov:
       if RUBY_VERSION >= '2.0'
         def _model_class
-          @model ||= Object.const_get(_model_name)
+          @model ||= Object.const_get(_model_name.to_s)
         end
       else
         def _model_class
           @model ||= _model_name.to_s.safe_constantize
         end
       end
+      # :nocov:
 
       def _allowed_filter?(filter)
         _allowed_filters.include?(filter)
@@ -347,29 +373,27 @@ module JSONAPI
         attrs.each do |attr|
           @_associations[attr] = klass.new(attr, options)
 
+          foreign_key = @_associations[attr].foreign_key
+
+          define_method foreign_key do
+            @model.method(foreign_key).call
+          end unless method_defined?(foreign_key)
+
+          define_method "#{foreign_key}=" do |value|
+            @model.method("#{foreign_key}=").call(value)
+          end unless method_defined?("#{foreign_key}=")
+
           if @_associations[attr].is_a?(JSONAPI::Association::HasOne)
-            key = @_associations[attr].key
-
-            define_method key do
-              @model.method(key).call
-            end unless method_defined?(key)
-
-            define_method "_#{attr}_resource" do
+            define_method attr do
               type_name = self.class._associations[attr].type
               resource_class = self.class.resource_for(type_name)
               if resource_class
                 associated_model = @model.send attr
                 return resource_class.new(associated_model, @context)
               end
-            end unless method_defined?("_#{attr}_resource")
+            end unless method_defined?(attr)
           elsif @_associations[attr].is_a?(JSONAPI::Association::HasMany)
-            key = @_associations[attr].key
-
-            define_method key do
-              @model.method(key).call
-            end unless method_defined?(key)
-
-            define_method "_#{attr}_resources" do
+            define_method attr do
               type_name = self.class._associations[attr].type
               resource_class = self.class.resource_for(type_name)
               resources = []
@@ -380,7 +404,7 @@ module JSONAPI
                 end
               end
               return resources
-            end unless method_defined?("_#{attr}_resources")
+            end unless method_defined?(attr)
           end
         end
       end

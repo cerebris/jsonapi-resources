@@ -507,7 +507,7 @@ class SerializerTest < MiniTest::Unit::TestCase
         },
         linked: {
           isoCurrencies: [{
-                            code: 'USD',
+                            id: 'USD',
                             countryName: 'United States',
                             name: 'United States Dollar',
                             minorUnit: 'cent'

@@ -91,16 +91,17 @@ module JSONAPI
     # The fields options controls both fields and included links references.
     def process_primary(source, requested_associations)
       if source.respond_to?(:to_ary)
-        source.each do |object|
-          id = object.send(object.class._key)
+        source.each do |resource|
+          id = resource.id
           if already_serialized?(@primary_class_name, id)
             set_primary(@primary_class_name, id)
           end
 
-          add_linked_object(@primary_class_name, id, object_hash(object,  requested_associations), true)
+          add_linked_object(@primary_class_name, id, object_hash(resource,  requested_associations), true)
         end
       else
-        id = source.send(source.class._key)
+        resource = source
+        id = resource.id
         # ToDo: See if this is actually needed
         # if already_serialized?(@primary_class_name, id)
         #   set_primary(@primary_class_name, id)
@@ -151,10 +152,10 @@ module JSONAPI
       included_associations = source.fetchable_fields & associations.keys
       associations.each_with_object({}) do |(name, association), hash|
         if included_associations.include? name
-          key = association.key
+          foreign_key = association.foreign_key
 
           if field_set.include?(name)
-            hash[format_key(name)] = source.send(key)
+            hash[format_key(name)] = source.send(foreign_key)
           end
 
           ia = requested_associations.is_a?(Hash) ? requested_associations[name] : nil
@@ -169,9 +170,9 @@ module JSONAPI
           # through the associations.
           if include_linked_object || include_linked_children
             if association.is_a?(JSONAPI::Association::HasOne)
-              resource = source.send("_#{name}_resource")
+              resource = source.send(name)
               if resource
-                id = resource.send(association.primary_key)
+                id = resource.id
                 associations_only = already_serialized?(type, id)
                 if include_linked_object && !associations_only
                   add_linked_object(type, id, object_hash(resource, ia[:include_related]))
@@ -180,9 +181,9 @@ module JSONAPI
                 end
               end
             elsif association.is_a?(JSONAPI::Association::HasMany)
-              resources = source.send("_#{name}_resources")
+              resources = source.send(name)
               resources.each do |resource|
-                id = resource.send(association.primary_key)
+                id = resource.id
                 associations_only = already_serialized?(type, id)
                 if include_linked_object && !associations_only
                   add_linked_object(type, id, object_hash(resource, ia[:include_related]))

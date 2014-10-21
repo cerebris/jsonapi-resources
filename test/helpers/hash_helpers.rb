@@ -1,5 +1,6 @@
 module Helpers
   module HashHelpers
+    # :nocov:
     def assert_hash_contains(exp, act, msg = nil)
       msg = message(msg, '') { diff exp, act }
       assert(matches_hash?(exp, act), msg)
@@ -9,5 +10,6 @@ module Helpers
       msg = message(msg, '') { diff exp, act }
       assert(matches_hash?(exp, act, {exact: true}), msg)
     end
+    # :nocov:
   end
 end

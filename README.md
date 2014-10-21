@@ -145,13 +145,13 @@ end
 
 The system will lookup a value formatter named `DateWithTimezoneValueFormatter` and will use this when serializing and updating the attribute. See the [Value Formatters](#value-formatters) section for more details.
 
-#### Key
+#### Primary Key
 
-The primary key of the resource defaults to `id`, which can be changed using the `key` method.
+Resources are always represented using a key of `id`. If the underlying model does not use `id` as the primary key you can use the `primary_key` method to tell the resource which field on the model to use as the primary key. Note: this doesn't have to be the actual primary key of the model. For example you may wish to use integers internally and a different scheme publicly.
 
 ```ruby
 class CurrencyResource < JSONAPI::Resource
-  key :code
+  primary_key :code
   attributes :code, :name
 
   has_many :expense_entries
@@ -199,8 +199,7 @@ end
 
 The association methods support the following options:
  * `class_name` - a string specifying the underlying class for the related resource
- * `primary_key` - the primary key to the related resource, if different than `id`
- * `key` - the key in the resource that identifies the related resource, if different than `<resource_name>_id`
+ * `foreign_key` - the method on the resource used to fetch the related resource. Defaults to `<resource_name>_id` for has_one and `<resource_name>_ids` for has_many relationships.
  * `acts_as_set` - allows the entire set of related records to be replaced in one operation. Defaults to false if not set.
 
 Examples:
