@@ -219,7 +219,9 @@ module JSONAPI
       end
 
       # Override this method if you have more complex requirements than this basic find method provides
-      def find(filters, sort_params, context = nil)
+      def find(filters, options = {})
+        context = options[:context]
+        sort_params = options.fetch(:sort_params) { [] }
         includes = []
         where_filters = {}
 

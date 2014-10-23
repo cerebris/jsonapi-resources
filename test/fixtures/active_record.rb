@@ -308,12 +308,12 @@ class AuthorResource < JSONAPI::Resource
 
   filter :name
 
-  def self.find(filters, sort_params, context)
+  def self.find(filters, options = {})
     resources = []
 
     filters.each do |attr, filter|
       _model_class.where("\"#{attr}\" LIKE \"%#{filter[0]}%\"").each do |model|
-        resources.push self.new(model, context)
+        resources.push self.new(model, options[:context])
       end
     end
     return resources
@@ -417,10 +417,10 @@ class BreedResource < JSONAPI::Resource
   # This is unneeded, just here for testing
   routing_options :param => :id
 
-  def self.find(attrs, sort_params, context = nil)
+  def self.find(attrs, options = {})
     breeds = []
     $breed_data.breeds.values.each do |breed|
-      breeds.push(BreedResource.new(breed, context))
+      breeds.push(BreedResource.new(breed, options[:context]))
     end
     breeds
   end

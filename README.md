@@ -254,7 +254,8 @@ class AuthorResource < JSONAPI::Resource
 
   filter :name
 
-  def self.find(attrs, sort_params, context = nil)
+  def self.find(attrs, options = {})
+    context = options[:context]
     authors = context.current_user.find_authors(attrs)
 
     return authors.map do |author|
