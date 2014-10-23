@@ -238,15 +238,8 @@ module JSONAPI
           end
         end
 
-        order_options = sort_params.each_with_object({}) { |sort_key, order_hash|
-          if sort_key.starts_with?('-')
-            order_hash[sort_key.slice(1..-1)] = :desc
-          else
-            order_hash[sort_key] = :asc
-          end
-        }
-
         resources = []
+        order_options = construct_order_options(sort_params)
         _model_class.where(where_filters).order(order_options).includes(includes).each do |model|
           resources.push self.new(model, context)
         end
@@ -417,6 +410,16 @@ module JSONAPI
             end unless method_defined?(attr)
           end
         end
+      end
+
+      def construct_order_options(sort_params)
+        sort_params.each_with_object({}) { |sort_key, order_hash|
+          if sort_key.starts_with?('-')
+            order_hash[sort_key.slice(1..-1)] = :desc
+          else
+            order_hash[sort_key] = :asc
+          end
+        }
       end
     end
   end
