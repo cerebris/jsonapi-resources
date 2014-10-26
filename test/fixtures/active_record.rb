@@ -372,6 +372,10 @@ class PostResource < JSONAPI::Resource
     super(context) - [:subject]
   end
 
+  def self.sortable_fields(context)
+    super(context) - [:id]
+  end
+
   def self.verify_custom_filter(filter, values, context = nil)
     case filter
       when :id

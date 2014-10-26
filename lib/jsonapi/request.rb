@@ -157,7 +157,9 @@ module JSONAPI
 
     def check_sort_param(resource_klass, sort_param)
       sort_param = sort_param.sub(/\A-/, '')
-      unless resource_klass._attributes.keys.include? sort_param.to_sym
+      sortable_fields = resource_klass.sortable_fields(context)
+
+      unless sortable_fields.include? sort_param.to_sym
         @errors.concat(JSONAPI::Exceptions::InvalidSortParam
           .new(format_key(resource_klass._type), sort_param).errors)
       end

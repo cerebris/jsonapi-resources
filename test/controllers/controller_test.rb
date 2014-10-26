@@ -185,6 +185,13 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /asdfg is not a valid sort param for post/, response.body
   end
 
+  def test_excluded_sort_param
+    get :index, {sort: 'id'}
+
+    assert_response :bad_request
+    assert_match /id is not a valid sort param for post/, response.body
+  end
+
   # ToDo: test validating the parameter values
   # def test_index_invalid_filter_value
   #   get :index, {ids: [1,'asdfg1']}

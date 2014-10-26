@@ -214,6 +214,11 @@ module JSONAPI
         _updateable_associations | _attributes.keys
       end
 
+      # Override in your resource to filter the sortable keys
+      def sortable_fields(context = nil)
+        _attributes.keys
+      end
+
       def fields
         _associations.keys | _attributes.keys
       end
