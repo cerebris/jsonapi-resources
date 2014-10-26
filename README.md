@@ -92,7 +92,7 @@ class AuthorResource < JSONAPI::Resource
   model_name 'Person'
   has_many :posts
 
-  def fetchable_fields(context)
+  def fetchable_fields
     if (context.current_user.guest)
       super(context) - [:email]
     else
