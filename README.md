@@ -262,7 +262,7 @@ end
 
 Basic finding by filters is supported by resources. However if you have more complex requirements for finding you can override the `find` and `find_by_key` methods on the resource.
 
-Here's an example that defers the `find` operation to a `current_user` set on the `context`:
+Here's an example that defers the `find` operation to a `current_user` set on the `context` option:
 
 ```ruby
 class AuthorResource < JSONAPI::Resource
