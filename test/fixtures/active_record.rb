@@ -396,7 +396,7 @@ class PostResource < JSONAPI::Resource
 
   def self.verify_key(key, context = nil)
     raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key) unless is_num?(key)
-    raise JSONAPI::Exceptions::RecordNotFound.new(key) unless find_by_key(key, context)
+    raise JSONAPI::Exceptions::RecordNotFound.new(key) unless find_by_key(key, context: context)
     return key
   end
 end
@@ -429,8 +429,8 @@ class BreedResource < JSONAPI::Resource
     breeds
   end
 
-  def self.find_by_key(id, context = nil)
-    BreedResource.new($breed_data.breeds[id.to_i], context)
+  def self.find_by_key(id, options = {})
+    BreedResource.new($breed_data.breeds[id.to_i], options[:context])
   end
 end
 

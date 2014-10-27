@@ -33,10 +33,10 @@ module JSONAPI
       if keys.length > 1
         resources = []
         keys.each do |key|
-          resources.push(resource_klass.find_by_key(key, context))
+          resources.push(resource_klass.find_by_key(key, context: context))
         end
       else
-        resources = resource_klass.find_by_key(keys[0], context)
+        resources = resource_klass.find_by_key(keys[0], context: context)
       end
 
       render json: JSONAPI::ResourceSerializer.new.serialize_to_hash(
@@ -54,7 +54,7 @@ module JSONAPI
 
       parent_key = params[resource_klass._as_parent_key]
 
-      parent_resource = resource_klass.find_by_key(parent_key, context)
+      parent_resource = resource_klass.find_by_key(parent_key, context: context)
 
       association = resource_klass._association(association_type)
       render json: { association_type => parent_resource.send(association.foreign_key)}

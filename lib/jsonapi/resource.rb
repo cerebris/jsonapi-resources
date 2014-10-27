@@ -26,7 +26,7 @@ module JSONAPI
 
     def create_has_many_link(association_type, association_key_value)
       association = self.class._associations[association_type]
-      related_resource = self.class.resource_for(association.type).find_by_key(association_key_value, @context)
+      related_resource = self.class.resource_for(association.type).find_by_key(association_key_value, context: @context)
 
       # ToDo: Add option to skip relations that already exist instead of returning an error?
       relation = @model.send(association.type).where(association.primary_key => association_key_value).first
@@ -252,7 +252,8 @@ module JSONAPI
         return resources
       end
 
-      def find_by_key(key, context = nil)
+      def find_by_key(key, options = {})
+        context = options[:context]
         model = _model_class.where({_primary_key => key}).first
         if model.nil?
           raise JSONAPI::Exceptions::RecordNotFound.new(key)
