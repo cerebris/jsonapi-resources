@@ -5,7 +5,7 @@ module JSONAPI
   class Request
     include ResourceFor
 
-    attr_accessor :fields, :include, :filters, :errors, :operations, :resource_klass, :context
+    attr_accessor :fields, :include, :filters, :sort_params, :errors, :operations, :resource_klass, :context
 
     def initialize(params = nil, options = {})
       @context = options.fetch(:context, nil)
@@ -28,6 +28,7 @@ module JSONAPI
             parse_fields(params)
             parse_include(params)
             parse_filters(params)
+            parse_sort_params(params)
           when 'show_associations'
           when 'show'
             parse_fields(params)
@@ -142,6 +143,26 @@ module JSONAPI
         end
       end
       @filters = filters
+    end
+
+    def parse_sort_params(params)
+      @sort_params = if params[:sort].present?
+        CSV.parse_line(params[:sort]).each do |sort_param|
+          check_sort_param(@resource_klass, sort_param)
+        end
+      else
+        []
+      end
+    end
+
+    def check_sort_param(resource_klass, sort_param)
+      sort_param = sort_param.sub(/\A-/, '')
+      sortable_fields = resource_klass.sortable_fields(context)
+
+      unless sortable_fields.include? sort_param.to_sym
+        @errors.concat(JSONAPI::Exceptions::InvalidSortParam
+          .new(format_key(resource_klass._type), sort_param).errors)
+      end
     end
 
     def parse_add_operation(params)

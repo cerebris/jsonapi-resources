@@ -157,6 +157,41 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 3, json_response['posts'].size
   end
 
+  def test_sorting_asc
+    get :index, {sort: 'title'}
+
+    assert_response :success
+    assert_equal "Delete This Later - Multiple2-1", json_response['posts'][0]['title']
+  end
+
+  def test_sorting_desc
+    get :index, {sort: '-title'}
+
+    assert_response :success
+    assert_equal "Update This Later - Multiple", json_response['posts'][0]['title']
+  end
+
+  def test_sorting_by_multiple_fields
+    get :index, {sort: 'title,body'}
+
+    assert_response :success
+    assert_equal 8, json_response['posts'][0]['id']
+  end
+
+  def test_invalid_sort_param
+    get :index, {sort: 'asdfg'}
+
+    assert_response :bad_request
+    assert_match /asdfg is not a valid sort param for post/, response.body
+  end
+
+  def test_excluded_sort_param
+    get :index, {sort: 'id'}
+
+    assert_response :bad_request
+    assert_match /id is not a valid sort param for post/, response.body
+  end
+
   # ToDo: test validating the parameter values
   # def test_index_invalid_filter_value
   #   get :index, {ids: [1,'asdfg1']}

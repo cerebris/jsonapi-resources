@@ -132,6 +132,24 @@ end
 
 The `context` is not by default used by the `ResourceController`, but may be used if you override the controller methods. By using the context you have the option to determine the createable and updateable fields based on the user.
 
+##### Sortable Attributes
+
+JR supports [sorting primary resources by multiple sort criteria](http://jsonapi.org/format/#fetching-sorting).
+
+By default all attributes are assumed to be sortable. To prevent some attributes from being sortable, override the `self.sortable_fields` method on a resource.
+
+Here's an example that prevents sorting by post's `body`:
+
+```ruby
+class PostResource < JSONAPI::Resource
+  attribute :id, :title, :body
+
+  def self.sortable_fields(context)
+    super(context) - [:body]
+  end
+end
+```
+
 ##### Attribute Formatting
 
 Attributes can have a Format. By default all attributes use the default formatter. If an attribute has the `format` option set the system will attempt to find a formatter based on this name. In the following example the `last_login_time` will be returned formatted to a certain time zone:
@@ -254,7 +272,8 @@ class AuthorResource < JSONAPI::Resource
 
   filter :name
 
-  def self.find(attrs, context = nil)
+  def self.find(attrs, options = {})
+    context = options[:context]
     authors = context.current_user.find_authors(attrs)
 
     return authors.map do |author|
@@ -313,6 +332,9 @@ module JSONAPI
   COUNT_MISMATCH = 108
   KEY_ORDER_MISMATCH = 109
   KEY_NOT_INCLUDED_IN_URL = 110
+  INVALID_INCLUDE = 112
+  RELATION_EXISTS = 113
+  INVALID_SORT_PARAM = 114
 
   RECORD_NOT_FOUND = 404
   LOCKED = 423

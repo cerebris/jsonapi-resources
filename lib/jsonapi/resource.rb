@@ -214,12 +214,19 @@ module JSONAPI
         _updateable_associations | _attributes.keys
       end
 
+      # Override in your resource to filter the sortable keys
+      def sortable_fields(context = nil)
+        _attributes.keys
+      end
+
       def fields
         _associations.keys | _attributes.keys
       end
 
       # Override this method if you have more complex requirements than this basic find method provides
-      def find(filters, context = nil)
+      def find(filters, options = {})
+        context = options[:context]
+        sort_params = options.fetch(:sort_params) { [] }
         includes = []
         where_filters = {}
 
@@ -237,7 +244,8 @@ module JSONAPI
         end
 
         resources = []
-        _model_class.where(where_filters).includes(includes).each do |model|
+        order_options = construct_order_options(sort_params)
+        _model_class.where(where_filters).order(order_options).includes(includes).each do |model|
           resources.push self.new(model, context)
         end
 
@@ -407,6 +415,16 @@ module JSONAPI
             end unless method_defined?(attr)
           end
         end
+      end
+
+      def construct_order_options(sort_params)
+        sort_params.each_with_object({}) { |sort_key, order_hash|
+          if sort_key.starts_with?('-')
+            order_hash[sort_key.slice(1..-1)] = :desc
+          else
+            order_hash[sort_key] = :asc
+          end
+        }
       end
     end
   end
