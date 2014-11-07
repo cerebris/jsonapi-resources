@@ -261,6 +261,21 @@ module JSONAPI
         self.new(model, context)
       end
 
+      def get_resources(keys, context = nil)
+        if keys.length > 1
+          _models = _model_class.where({_primary_key => keys})
+
+          unless _models.length == keys.length
+            key = (keys - _models.pluck(:id).map(&:to_s)).first
+            raise JSONAPI::Exceptions::RecordNotFound.new(key)
+          end
+
+          _models.map { |model| self.new(model, context) }
+        else
+          self.find_by_key(keys[0], context)
+        end
+      end
+
       def verify_filters(filters, context = nil)
         verified_filters = {}
         filters.each do |filter, raw_value|

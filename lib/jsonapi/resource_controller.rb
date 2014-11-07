@@ -29,15 +29,7 @@ module JSONAPI
 
     def show
       keys = parse_key_array(params[resource_klass._primary_key])
-
-      if keys.length > 1
-        resources = []
-        keys.each do |key|
-          resources.push(resource_klass.find_by_key(key, context: context))
-        end
-      else
-        resources = resource_klass.find_by_key(keys[0], context: context)
-      end
+      resources = resource_klass.get_resources(keys, context)
 
       render json: JSONAPI::ResourceSerializer.new.serialize_to_hash(
           resources,
