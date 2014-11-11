@@ -135,7 +135,7 @@ end
 
 class Planet < ActiveRecord::Base
   has_many :moons
-  has_one :planet_type
+  belongs_to :planet_type
 
   has_and_belongs_to_many :tags, join_table: :planets_tags
 end
@@ -452,7 +452,7 @@ class PropertyResource < JSONAPI::Resource
 end
 
 class PlanetTypeResource < JSONAPI::Resource
-  attribute :name
+  attributes :id, :name
   has_many :planets
 end
 

@@ -398,7 +398,7 @@ module JSONAPI
               resource_class = self.class.resource_for(type_name)
               if resource_class
                 associated_model = @model.send attr
-                return resource_class.new(associated_model, @context)
+                return associated_model ? resource_class.new(associated_model, @context) : nil
               end
             end unless method_defined?(attr)
           elsif @_associations[attr].is_a?(JSONAPI::Association::HasMany)

@@ -549,4 +549,50 @@ class SerializerTest < MiniTest::Unit::TestCase
     assert_match /\"planetType\":null/, json
     assert_match /\"moons\":\[\]/, json
   end
+
+  def test_serializer_include_with_empty_links_null_and_array
+    planets = []
+    Planet.find(7, 8).each do |planet|
+      planets.push PlanetResource.new(planet)
+    end
+
+    planet_hash = JSONAPI::ResourceSerializer.new.serialize_to_hash(
+      planets,
+      include: ['planet_type'],
+      fields: { planet_types: [:id, :name] }
+    )
+
+    assert_hash_equals(
+      {
+        planets: [{
+                    id: 7,
+                    name: 'Beta X',
+                    description: 'Newly discovered Planet Z',
+                    links: {
+                      planetType: 1,
+                      tags: [],
+                      moons: []
+                    }
+                  },
+                  {
+                    id: 8,
+                    name: 'Beta W',
+                    description: 'Newly discovered Planet W',
+                    links: {
+                      planetType: nil,
+                      tags: [],
+                      moons: []
+                    }
+                  }],
+        linked: {
+          planetTypes: [
+            { id: 1, name: "Gas Giant" }
+          ]
+        }
+      }, planet_hash)
+
+    json = planet_hash.to_json
+    assert_match /\"planetType\":null/, json
+    assert_match /\"moons\":\[\]/, json
+  end
 end
