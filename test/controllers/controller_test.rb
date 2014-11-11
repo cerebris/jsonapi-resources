@@ -971,6 +971,12 @@ class TagsControllerTest < ActionController::TestCase
     assert_equal 4, json_response['tags'].size
     assert_equal 2, json_response['linked']['posts'].size
   end
+
+  def test_tags_show_multiple_with_nonexistent_ids
+    get :show, {id: '6,99,9,100'}
+    assert_response :not_found
+    assert_match /The record identified by 99 could not be found./, json_response['errors'][0]['detail']
+  end
 end
 
 class ExpenseEntriesControllerTest < ActionController::TestCase
