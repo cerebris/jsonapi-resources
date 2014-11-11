@@ -433,12 +433,8 @@ class BreedResource < JSONAPI::Resource
     BreedResource.new($breed_data.breeds[id.to_i], options[:context])
   end
 
-  def self.get_resources(keys, options = {})
-    if keys.length > 1
-      keys.map { |key| self.find_by_key(key, options) }
-    else
-      self.find_by_key(keys[0], options)
-    end
+  def self.find_by_keys(keys, options = {})
+    keys.map { |key| self.find_by_key(key, options) }
   end
 end
 
