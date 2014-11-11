@@ -476,6 +476,23 @@ class PreferencesResource < JSONAPI::Resource
   has_many :friends, class_name: 'Person'
 end
 
+warn 'start testing Name Collisions'
+# The name collisions only emmit warnings. Exceptions would change the flow of the tests
+
+class LinksResource < JSONAPI::Resource
+
+end
+
+class BadlyNamedAttributesResource < JSONAPI::Resource
+  attributes :type, :href, :links
+
+  has_many :links
+  has_one :href
+  has_one :id
+  has_many :types
+end
+warn 'end testing Name Collisions'
+
 ### DATA
 javascript = Section.create(name: 'javascript')
 ruby = Section.create(name: 'ruby')
