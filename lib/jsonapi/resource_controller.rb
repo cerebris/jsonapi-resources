@@ -120,11 +120,7 @@ module JSONAPI
     end
 
     def parse_key_array(raw)
-      keys = []
-      raw.split(/,/).collect do |key|
-        keys.push resource_klass.verify_key(key, context)
-      end
-      return keys
+      return resource_klass.verify_keys(raw.split(/,/), context)
     end
 
     # override to set context

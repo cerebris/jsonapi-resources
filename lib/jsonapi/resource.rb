@@ -302,6 +302,13 @@ module JSONAPI
         return key
       end
 
+      # override to allow for key processing and checking
+      def verify_keys(keys, context = nil)
+        return keys.collect do |key|
+          verify_key(key, context)
+        end
+      end
+
       # override to allow for custom filters
       def verify_custom_filter(filter, value, context = nil)
         return filter, value

@@ -207,9 +207,7 @@ module JSONAPI
         elsif association.is_a?(JSONAPI::Association::HasMany)
           keys = []
           if value.is_a?(Array)
-            value.each do |val|
-              keys.push(@resource_klass.resource_for(association.type).verify_key(val, @context))
-            end
+            keys = @resource_klass.resource_for(association.type).verify_keys(value, @context)
           else
             keys.push(@resource_klass.resource_for(association.type).verify_key(value, @context))
           end
@@ -387,11 +385,7 @@ module JSONAPI
     end
 
     def parse_key_array(raw)
-      keys = []
-      raw.split(/,/).collect do |key|
-        keys.push @resource_klass.verify_key(key, @context)
-      end
-      return keys
+      return @resource_klass.verify_keys(raw.split(/,/), context)
     end
 
     def format_key(key)
