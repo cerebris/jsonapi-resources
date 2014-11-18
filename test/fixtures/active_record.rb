@@ -379,9 +379,7 @@ class PostResource < JSONAPI::Resource
   def self.verify_custom_filter(filter, values, context = nil)
     case filter
       when :id
-        values.each do |key|
-          verify_key(key, context)
-        end
+        verify_keys(values, context)
     end
     return filter, values
   end
