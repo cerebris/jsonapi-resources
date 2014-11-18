@@ -127,6 +127,9 @@ module JSONAPI
 
         type = base.name.demodulize.sub(/Resource$/, '').underscore
         base._type = type.pluralize.to_sym
+
+        check_reserved_resource_name(base._type, base.name)
+
         # If eager loading is on this is how all the resource types are setup
         # If eager loading is off some resource types will be initialized in
         # _resource_name_from_type
@@ -159,6 +162,8 @@ module JSONAPI
       end
 
       def attribute(attr, options = {})
+        check_reserved_attribute_name(attr)
+
         @_attributes[attr] = options
         define_method attr do
           @model.send(attr)
@@ -388,10 +393,33 @@ module JSONAPI
 
       private
 
+      def check_reserved_resource_name(type, name)
+        if [:ids, :types, :hrefs, :links].include?(type)
+          warn "[NAME COLLISION] `#{name}` is a reserved resource name."
+          return
+        end
+      end
+
+      def check_reserved_attribute_name(name)
+        # Allow :id since it can be used to specify the format. Since it is a method on the base Resource
+        # an attribute method won't be created for it.
+        if [:type, :href, :links].include?(name.to_sym)
+          warn "[NAME COLLISION] `#{name}` is a reserved key in #{@@resource_types[_type]}."
+        end
+      end
+
+      def check_reserved_association_name(name)
+        if [:id, :ids, :type, :types, :href, :hrefs, :link, :links].include?(name.to_sym)
+          warn "[NAME COLLISION] `#{name}` is a reserved association name in #{@@resource_types[_type]}."
+        end
+      end
+
       def _associate(klass, *attrs)
         options = attrs.extract_options!
 
         attrs.each do |attr|
+          check_reserved_association_name(attr)
+
           @_associations[attr] = klass.new(attr, options)
 
           foreign_key = @_associations[attr].foreign_key
