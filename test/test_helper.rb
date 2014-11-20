@@ -1,14 +1,12 @@
+require 'coveralls'
 require 'simplecov'
 
-# To run tests with coverage
-# COVERAGE=true rake test
-if ENV['COVERAGE']
-  SimpleCov.start do
-  end
-else
-  require 'coveralls'
-  Coveralls.wear!
-end
+Coveralls.wear!('rails')
+SimpleCov.formatter = SimpleCov::Formatter::MultiFormatter[
+  SimpleCov::Formatter::HTMLFormatter,
+  Coveralls::SimpleCov::Formatter
+]
+SimpleCov.start 'rails'
 
 require 'minitest/autorun'
 require 'minitest/spec'
