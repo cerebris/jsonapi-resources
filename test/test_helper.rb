@@ -5,6 +5,9 @@ require 'simplecov'
 if ENV['COVERAGE']
   SimpleCov.start do
   end
+else
+  require 'coveralls'
+  Coveralls.wear!
 end
 
 require 'minitest/autorun'

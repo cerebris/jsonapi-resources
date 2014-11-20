@@ -20,3 +20,5 @@ rails = case version
           "~> #{version}"
         end
 gem 'rails', rails
+
+gem 'coveralls', require: false
