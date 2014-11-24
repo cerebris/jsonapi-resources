@@ -107,7 +107,7 @@ module JSONAPI
                           code: JSONAPI::VALIDATION_ERROR,
                           status: :bad_request,
                           title: "#{element[0]} - #{message}",
-                          detail: "can't be blank",
+                          detail: message,
                           path: "\\#{element[0]}"))
         end
       end
