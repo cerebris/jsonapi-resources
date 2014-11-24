@@ -307,6 +307,26 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /asdfg is not allowed/, response.body
   end
 
+  def test_create_with_invalid_data
+    post :create,
+         {
+           posts: {
+             title: 'JSONAPIResources is the greatest thing...',
+             body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+           }
+         }
+
+    assert_response :bad_request
+
+    assert_equal "\\author", json_response['errors'][0]['path']
+    assert_equal "can't be blank", json_response['errors'][0]['detail']
+    assert_equal "author - can't be blank", json_response['errors'][0]['title']
+
+    assert_equal "\\title", json_response['errors'][1]['path']
+    assert_equal "is too long (maximum is 35 characters)", json_response['errors'][1]['detail']
+    assert_equal "title - is too long (maximum is 35 characters)", json_response['errors'][1]['title']
+  end
+
   def test_create_multiple
     post :create,
          {
