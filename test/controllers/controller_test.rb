@@ -1350,3 +1350,10 @@ class BreedsControllerTest < ActionController::TestCase
   end
 
 end
+
+class Api::V2::PreferencesControllerTest < ActionController::TestCase
+  def test_show_singleton_resource_without_id
+    get :show
+    assert_response :success
+  end
+end

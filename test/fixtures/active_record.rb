@@ -5,12 +5,17 @@ require 'jsonapi/exceptions'
 require 'rails'
 require 'rails/all'
 
+ActiveSupport::Inflector.inflections(:en) do |inflect|
+  inflect.uncountable 'preferences'
+end
+
 ### DATABASE
 ActiveRecord::Schema.define do
   create_table :people, force: true do |t|
     t.string     :name
     t.string     :email
     t.datetime   :date_joined
+    t.belongs_to :preferences
     t.timestamps
   end
 
@@ -94,6 +99,7 @@ class Person < ActiveRecord::Base
   has_many :posts, foreign_key: 'author_id'
   has_many :comments, foreign_key: 'author_id'
   has_many :expense_entries, foreign_key: 'employee_id', dependent: :restrict_with_exception
+  belongs_to :preferences
 
   ### Validations
   validates :name, presence: true
@@ -146,6 +152,11 @@ end
 
 class Moon < ActiveRecord::Base
   belongs_to :planet
+end
+
+class Preferences < ActiveRecord::Base
+  has_one :author, class_name: 'Person'
+  has_many :friends, class_name: 'Person'
 end
 
 class Breed
@@ -470,8 +481,12 @@ class PreferencesResource < JSONAPI::Resource
   attribute :id
   attribute :advanced_mode
 
-  has_one :author, class_name: 'Person'
-  has_many :friends, class_name: 'Person'
+  has_one :author, foreign_key: :person_id
+  has_many :friends
+
+  def self.find_by_key(key, context: nil)
+    new(Preferences.first)
+  end
 end
 
 warn 'start testing Name Collisions'
@@ -643,3 +658,4 @@ betay = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Y', 
 betaz = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Z', planet_type_id: unknown.id)
 betaw = Planet.create(name: 'Beta W', description: 'Newly discovered Planet W')
 
+preference = Preferences.create
