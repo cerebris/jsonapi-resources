@@ -142,8 +142,8 @@ module JSONAPI
       {}
     end
 
-    def render_errors(errors, status = :bad_request)
-      render(json: {errors: errors}, status: errors.count == 1 ? errors[0].status : status)
+    def render_errors(errors)
+      render(json: {errors: errors}, status: errors[0].status)
     end
 
     def process_request_operations
@@ -163,17 +163,17 @@ module JSONAPI
       end
 
       if errors.count > 0
-        render :status => errors.count == 1 ? errors[0].status : :bad_request, json: {errors: errors}
+        render status: errors[0].status, json: {errors: errors}
       else
         if results.length > 0 && resources.length > 0
-          render :status => results[0].code,
+          render status: results[0].code,
                  json: JSONAPI::ResourceSerializer.new.serialize_to_hash(resources.length > 1 ? resources : resources[0],
                                                                          include: @request.include,
                                                                          fields: @request.fields,
                                                                          attribute_formatters: attribute_formatters,
                                                                          key_formatter: key_formatter)
         else
-          render :status => results[0].code, json: nil
+          render status: results[0].code, json: nil
         end
       end
     rescue => e
