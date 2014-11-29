@@ -134,7 +134,7 @@ module JSONAPI
       params.each do |key, value|
         filter = key.to_sym
 
-        if [:include, :fields, :format, :controller, :action, :sort].include?(filter)
+        if JSONAPI.configuration.allowed_request_params.include?(filter)
           # Ignore non-filter parameters
         elsif @resource_klass._allowed_filter?(filter)
           filters[filter] = value
