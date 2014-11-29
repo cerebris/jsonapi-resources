@@ -27,7 +27,7 @@ module JSONAPI
       return JSONAPI::OperationResult.new(:created, resource)
 
     rescue JSONAPI::Exceptions::Error => e
-      return JSONAPI::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, e.errors)
+      return JSONAPI::OperationResult.new(e.errors[0].code, nil, e.errors)
     end
   end
 
@@ -48,7 +48,7 @@ module JSONAPI
       record_locked_error = JSONAPI::Exceptions::RecordLocked.new(e.message)
       return JSONAPI::OperationResult.new(record_locked_error.errors[0].code, nil, record_locked_error.errors)
     rescue JSONAPI::Exceptions::Error => e
-      return JSONAPI::OperationResult.new(e.errors.count == 1 ? e.errors[0].code : :bad_request, nil, e.errors)
+      return JSONAPI::OperationResult.new(e.errors[0].code, nil, e.errors)
     end
   end
 

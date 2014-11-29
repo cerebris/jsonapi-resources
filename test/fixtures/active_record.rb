@@ -107,6 +107,7 @@ class Post < ActiveRecord::Base
   belongs_to :section
 
   validates :author, presence: true
+  validates :title, length: { maximum: 35 }
 end
 
 class Comment < ActiveRecord::Base

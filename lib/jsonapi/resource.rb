@@ -100,18 +100,7 @@ module JSONAPI
     def save
       @model.save!
     rescue ActiveRecord::RecordInvalid => e
-      errors = []
-      e.record.errors.messages.each do |element|
-        element[1].each do |message|
-          errors.push(JSONAPI::Error.new(
-                          code: JSONAPI::VALIDATION_ERROR,
-                          status: :bad_request,
-                          title: "#{element[0]} - #{message}",
-                          detail: "can't be blank",
-                          path: "\\#{element[0]}"))
-        end
-      end
-      raise JSONAPI::Exceptions::ValidationErrors.new(errors)
+      raise JSONAPI::Exceptions::ValidationErrors.new(e.record.errors.messages)
     end
 
     # Override this on a resource instance to override the fetchable keys

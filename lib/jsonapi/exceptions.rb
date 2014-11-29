@@ -223,9 +223,23 @@ module JSONAPI
     end
 
     class ValidationErrors < Error
-      attr_accessor :errors
-      def initialize(errors)
-        @errors = errors
+      attr_accessor :messages
+      def initialize(messages)
+        @messages = messages
+      end
+
+      def errors
+        messages.inject([]) do |arr, element|
+          arr.concat(
+            element[1].map do |message|
+              JSONAPI::Error.new(code: JSONAPI::VALIDATION_ERROR,
+                                 status: :unprocessable_entity,
+                                 title: "#{element[0]} - #{message}",
+                                 detail: message,
+                                 path: "/#{element[0]}")
+            end
+          )
+        end
       end
     end
 
