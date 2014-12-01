@@ -260,7 +260,7 @@ end
 
 ##### Finders
 
-Basic finding by filters is supported by resources. However if you have more complex requirements for finding you can override the `find` and `find_by_key` methods on the resource.
+Basic finding by filters is supported by resources. However if you have more complex requirements for finding you can override the `find`, `find_by_key` and `find_by_keys` methods on the resource class.
 
 Here's an example that defers the `find` operation to a `current_user` set on the `context` option:
 
@@ -279,6 +279,23 @@ class AuthorResource < JSONAPI::Resource
     return authors.map do |author|
       self.new(author)
     end
+  end
+end
+```
+
+##### Customizing base records for finder methods
+
+If you need to change the base records on which `find`, `find_by_key` and `find_by_keys` operate, you can override the `records` method on the resource class.
+
+For example to allow a user to only retrieve his own posts you can do the following:
+
+```ruby
+class PostResource < JSONAPI::Resource
+  attribute :id, :title, :body
+
+  def self.records(options = {})
+    context = options[:context]
+    context.current_user.posts
   end
 end
 ```

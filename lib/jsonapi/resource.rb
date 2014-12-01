@@ -239,7 +239,7 @@ module JSONAPI
 
         resources = []
         order_options = construct_order_options(sort_params)
-        _model_class.where(where_filters).order(order_options).includes(includes).each do |model|
+        records(options).where(where_filters).order(order_options).includes(includes).each do |model|
           resources.push self.new(model, context)
         end
 
@@ -248,7 +248,7 @@ module JSONAPI
 
       def find_by_key(key, options = {})
         context = options[:context]
-        model = _model_class.where({_primary_key => key}).first
+        model = records(options).where({_primary_key => key}).first
         if model.nil?
           raise JSONAPI::Exceptions::RecordNotFound.new(key)
         end
@@ -257,7 +257,7 @@ module JSONAPI
 
       def find_by_keys(keys, options = {})
         context = options[:context]
-        _models = _model_class.where({_primary_key => keys})
+        _models = records(options).where({_primary_key => keys})
 
         unless _models.length == keys.length
           key = (keys - _models.pluck(:id).map(&:to_s)).first
@@ -265,6 +265,12 @@ module JSONAPI
         end
 
         _models.map { |model| self.new(model, context) }
+      end
+
+      # Override this method if you want to customize the relation for
+      # finder methods (find, find_by_key, find_by_keys)
+      def records(options = {})
+        _model_class
       end
 
       def verify_filters(filters, context = nil)

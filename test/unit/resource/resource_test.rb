@@ -3,6 +3,10 @@ require File.expand_path('../../../fixtures/active_record', __FILE__)
 
 class ArticleResource < JSONAPI::Resource
   model_name 'Post'
+
+  def self.records(options)
+    options[:context].posts
+  end
 end
 
 class CatResource < JSONAPI::Resource
@@ -41,5 +45,35 @@ class ResourceTest < MiniTest::Unit::TestCase
     associations = CatResource._associations
     assert_kind_of(Hash, associations)
     assert_equal(associations.size, 2)
+  end
+
+  def test_find_with_customized_base_records
+    author = Person.find(1)
+    posts = ArticleResource.find([], context: author).map(&:model)
+
+    assert(posts.include?(Post.find(1)))
+    refute(posts.include?(Post.find(3)))
+  end
+
+  def test_find_by_key_with_customized_base_records
+    author = Person.find(1)
+
+    post = ArticleResource.find_by_key(1, context: author).model
+    assert_equal(post, Post.find(1))
+
+    assert_raises JSONAPI::Exceptions::RecordNotFound do
+      ArticleResource.find_by_key(3, context: author).model
+    end
+  end
+
+  def test_find_by_keys_with_customized_base_records
+    author = Person.find(1)
+
+    posts = ArticleResource.find_by_keys([1, 2], context: author)
+    assert_equal(posts.length, 2)
+
+    assert_raises JSONAPI::Exceptions::RecordNotFound do
+      ArticleResource.find_by_keys([1, 3], context: author).model
+    end
   end
 end
