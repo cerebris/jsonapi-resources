@@ -1197,6 +1197,54 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
     assert_response :success
     assert json_response['isoCurrencies'].is_a?(Hash)
   end
+
+  def test_currencies_json_key_underscored_sort
+    JSONAPI.configuration.json_key_format = :underscored_key
+    get :index, {sort: 'country_name'}
+    assert_response :success
+    assert_equal 2, json_response['iso_currencies'].size
+    assert_equal 'Euro Member Countries', json_response['iso_currencies'][0]['country_name']
+    assert_equal 'United States', json_response['iso_currencies'][1]['country_name']
+
+    # reverse sort
+    get :index, {sort: '-country_name'}
+    assert_response :success
+    assert_equal 2, json_response['iso_currencies'].size
+    assert_equal 'United States', json_response['iso_currencies'][0]['country_name']
+    assert_equal 'Euro Member Countries', json_response['iso_currencies'][1]['country_name']
+  end
+
+  def test_currencies_json_key_dasherized_sort
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    get :index, {sort: 'country-name'}
+    assert_response :success
+    assert_equal 2, json_response['iso-currencies'].size
+    assert_equal 'Euro Member Countries', json_response['iso-currencies'][0]['country-name']
+    assert_equal 'United States', json_response['iso-currencies'][1]['country-name']
+
+    # reverse sort
+    get :index, {sort: '-country-name'}
+    assert_response :success
+    assert_equal 2, json_response['iso-currencies'].size
+    assert_equal 'United States', json_response['iso-currencies'][0]['country-name']
+    assert_equal 'Euro Member Countries', json_response['iso-currencies'][1]['country-name']
+  end
+
+  def test_currencies_json_key_custom_json_key_sort
+    JSONAPI.configuration.json_key_format = :upper_camelized_key
+    get :index, {sort: 'CountryName'}
+    assert_response :success
+    assert_equal 2, json_response['IsoCurrencies'].size
+    assert_equal 'Euro Member Countries', json_response['IsoCurrencies'][0]['CountryName']
+    assert_equal 'United States', json_response['IsoCurrencies'][1]['CountryName']
+
+    # reverse sort
+    get :index, {sort: '-CountryName'}
+    assert_response :success
+    assert_equal 2, json_response['IsoCurrencies'].size
+    assert_equal 'United States', json_response['IsoCurrencies'][0]['CountryName']
+    assert_equal 'Euro Member Countries', json_response['IsoCurrencies'][1]['CountryName']
+  end
 end
 
 class PeopleControllerTest < ActionController::TestCase

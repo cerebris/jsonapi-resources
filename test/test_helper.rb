@@ -108,6 +108,10 @@ class UpperCamelizedKeyFormatter < JSONAPI::KeyFormatter
     def format(key)
       super.camelize(:upper)
     end
+
+    def unformat(formatted_key)
+      formatted_key.to_s.underscore.to_sym
+    end
   end
 end
 

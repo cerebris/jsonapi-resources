@@ -147,8 +147,18 @@ module JSONAPI
 
     def parse_sort_params(params)
       @sort_params = if params[:sort].present?
-        CSV.parse_line(params[:sort]).each do |sort_param|
-          check_sort_param(@resource_klass, sort_param)
+        CSV.parse_line(params[:sort]).collect do |sort_param|
+          # A parameter name may not start with a dash
+          # We need to preserve the dash as the sort direction before we unformat the string
+          if sort_param.start_with?('-')
+            unformatted_sort_param = unformat_key(sort_param[1..-1]).to_s
+            unformatted_sort_param.prepend('-')
+          else
+            unformatted_sort_param = unformat_key(sort_param).to_s
+          end
+
+          check_sort_param(@resource_klass, unformatted_sort_param)
+          unformatted_sort_param
         end
       else
         []
