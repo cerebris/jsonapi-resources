@@ -8,6 +8,35 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
   end
 
+  def test_get_underscored_key
+    JSONAPI.configuration.json_key_format = :underscored_key
+    get '/iso_currencies'
+    assert_equal 200, status
+    assert_equal 3, json_response['iso_currencies'].size
+  end
+
+  def test_get_underscored_key_filtered
+    JSONAPI.configuration.json_key_format = :underscored_key
+    get '/iso_currencies?country_name=Canada'
+    assert_equal 200, status
+    assert_equal 1, json_response['iso_currencies'].size
+    assert_equal 'Canada', json_response['iso_currencies'][0]['country_name']
+  end
+
+  def test_get_camelized_key_filtered
+    JSONAPI.configuration.json_key_format = :camelized_key
+    get '/iso_currencies?countryName=Canada'
+    assert_equal 200, status
+    assert_equal 1, json_response['isoCurrencies'].size
+    assert_equal 'Canada', json_response['isoCurrencies'][0]['countryName']
+  end
+
+  def test_get_camelized_route_and_key_filtered
+    get '/api/v4/isoCurrencies?countryName=Canada'
+    assert_equal 200, status
+    assert_equal 1, json_response['isoCurrencies'].size
+    assert_equal 'Canada', json_response['isoCurrencies'][0]['countryName']
+  end
   def test_put_single
     put '/posts/3',
         {

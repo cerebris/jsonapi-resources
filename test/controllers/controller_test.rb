@@ -1252,6 +1252,30 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
     assert_equal 'Euro Member Countries', json_response['IsoCurrencies'][1]['CountryName']
     assert_equal 'Canada', json_response['IsoCurrencies'][2]['CountryName']
   end
+
+  def test_currencies_json_key_underscored_filter
+    JSONAPI.configuration.json_key_format = :underscored_key
+    get :index, {country_name: 'Canada'}
+    assert_response :success
+    assert_equal 1, json_response['iso_currencies'].size
+    assert_equal 'Canada', json_response['iso_currencies'][0]['country_name']
+  end
+
+  def test_currencies_json_key_camelized_key_filter
+    JSONAPI.configuration.json_key_format = :camelized_key
+    get :index, {'countryName' => 'Canada'}
+    assert_response :success
+    assert_equal 1, json_response['isoCurrencies'].size
+    assert_equal 'Canada', json_response['isoCurrencies'][0]['countryName']
+  end
+
+  def test_currencies_json_key_custom_json_key_filter
+    JSONAPI.configuration.json_key_format = :upper_camelized_key
+    get :index, {'CountryName' => 'Canada'}
+    assert_response :success
+    assert_equal 1, json_response['IsoCurrencies'].size
+    assert_equal 'Canada', json_response['IsoCurrencies'][0]['CountryName']
+  end
 end
 
 class PeopleControllerTest < ActionController::TestCase
