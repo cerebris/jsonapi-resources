@@ -134,9 +134,11 @@ module JSONAPI
       params.each do |key, value|
         filter = key.to_sym
 
-        if JSONAPI.configuration.allowed_request_params.include?(filter)
-          # Ignore non-filter parameters
-        elsif @resource_klass._allowed_filter?(filter)
+        # Ignore non-filter parameters
+        next if JSONAPI.configuration.allowed_request_params.include?(filter)
+
+        filter = unformat_key(key).to_sym
+        if @resource_klass._allowed_filter?(filter)
           filters[filter] = value
         else
           @errors.concat(JSONAPI::Exceptions::FilterNotAllowed.new(filter).errors)
