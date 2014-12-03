@@ -54,7 +54,6 @@ TestApp.routes.draw do
   jsonapi_resources :moons
   jsonapi_resources :preferences
 
-
   namespace :api do
     namespace :v1 do
       jsonapi_resources :authors
@@ -88,6 +87,14 @@ TestApp.routes.draw do
         jsonapi_links :tags, only: [:show, :create]
       end
     end
+
+    JSONAPI.configuration.route_format = :camelized_key
+    namespace :v4 do
+      jsonapi_resources :posts
+      jsonapi_resources :expense_entries
+      jsonapi_resources :iso_currencies
+    end
+    JSONAPI.configuration.route_format = :underscored_key
   end
 end
 

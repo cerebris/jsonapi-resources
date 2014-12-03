@@ -37,6 +37,14 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 1, json_response['isoCurrencies'].size
     assert_equal 'Canada', json_response['isoCurrencies'][0]['countryName']
   end
+
+  def test_get_camelized_route_and_links
+    JSONAPI.configuration.json_key_format = :camelized_key
+    get '/api/v4/expenseEntries/1/links/isoCurrency'
+    assert_equal 200, status
+    assert_equal 'USD', json_response['isoCurrency']
+  end
+
   def test_put_single
     put '/posts/3',
         {

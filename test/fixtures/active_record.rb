@@ -288,6 +288,17 @@ module Api
     class PostsController < JSONAPI::ResourceController
     end
   end
+
+  module V4
+    class PostsController < JSONAPI::ResourceController
+    end
+
+    class ExpenseEntriesController < JSONAPI::ResourceController
+    end
+
+    class IsoCurrenciesController < JSONAPI::ResourceController
+    end
+  end
 end
 
 ### RESOURCES
@@ -414,6 +425,8 @@ end
 class IsoCurrencyResource < JSONAPI::Resource
   primary_key :code
   attributes :id, :name, :country_name, :minor_unit
+
+  filter :country_name
 end
 
 class ExpenseEntryResource < JSONAPI::Resource

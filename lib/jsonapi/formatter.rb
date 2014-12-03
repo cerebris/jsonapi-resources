@@ -37,6 +37,18 @@ module JSONAPI
     end
   end
 
+  class RouteFormatter < Formatter
+    class << self
+      def format(route)
+        super
+      end
+
+      def unformat(formatted_route)
+        super.to_sym
+      end
+    end
+  end
+
   class ValueFormatter < Formatter
     class << self
       def format(raw_value, context)
@@ -91,6 +103,33 @@ class DefaultValueFormatter < JSONAPI::ValueFormatter
         else
           return raw_value.to_s
       end
+    end
+  end
+end
+
+class UnderscoredRouteFormatter < JSONAPI::RouteFormatter
+end
+
+class CamelizedRouteFormatter < JSONAPI::RouteFormatter
+  class << self
+    def format(route)
+      super.camelize(:lower)
+    end
+
+    def unformat(formatted_route)
+      formatted_route.to_s.underscore.to_sym
+    end
+  end
+end
+
+class DasherizedRouteFormatter < JSONAPI::RouteFormatter
+  class << self
+    def format(route)
+      super.dasherize
+    end
+
+    def unformat(formatted_route)
+      formatted_route.to_s.underscore.to_sym
     end
   end
 end
