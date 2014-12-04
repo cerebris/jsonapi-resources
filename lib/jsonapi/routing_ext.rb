@@ -24,8 +24,9 @@ module ActionDispatch
           options = resources.extract_options!.dup
           options[:controller] ||= resource_type
           options.merge!(res.routing_resource_options)
+          options[:path] = format_route(resource_type)
 
-          resource format_route(resource_type), options do
+          resource resource_type, options do
             @scope[:jsonapi_resource] = resource_type
 
             if block_given?
@@ -53,9 +54,10 @@ module ActionDispatch
           # Route using the primary_key. Can be overridden using routing_resource_options
           options[:param] ||= res._primary_key
 
-          resources format_route(resource_type), options do
+          options[:path] = format_route(resource_type)
+
+          resources resource_type, options do
             @scope[:jsonapi_resource] = resource_type
-            @scope[:nested_param] = "#{format_route(resource_type.to_s.singularize)}_#{res._primary_key}"
 
             if block_given?
               yield

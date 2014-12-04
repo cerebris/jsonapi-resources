@@ -88,13 +88,19 @@ TestApp.routes.draw do
       end
     end
 
-    JSONAPI.configuration.route_format = :camelized_key
+    JSONAPI.configuration.route_format = :camelized_route
     namespace :v4 do
       jsonapi_resources :posts
       jsonapi_resources :expense_entries
       jsonapi_resources :iso_currencies
     end
-    JSONAPI.configuration.route_format = :underscored_key
+    JSONAPI.configuration.route_format = :dasherized_route
+    namespace :v5 do
+      jsonapi_resources :posts
+      jsonapi_resources :expense_entries
+      jsonapi_resources :iso_currencies
+    end
+    JSONAPI.configuration.route_format = :underscored_route
   end
 end
 

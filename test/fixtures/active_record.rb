@@ -299,6 +299,17 @@ module Api
     class IsoCurrenciesController < JSONAPI::ResourceController
     end
   end
+
+  module V5
+    class PostsController < JSONAPI::ResourceController
+    end
+
+    class ExpenseEntriesController < JSONAPI::ResourceController
+    end
+
+    class IsoCurrenciesController < JSONAPI::ResourceController
+    end
+  end
 end
 
 ### RESOURCES
