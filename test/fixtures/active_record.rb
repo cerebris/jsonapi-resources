@@ -288,6 +288,28 @@ module Api
     class PostsController < JSONAPI::ResourceController
     end
   end
+
+  module V4
+    class PostsController < JSONAPI::ResourceController
+    end
+
+    class ExpenseEntriesController < JSONAPI::ResourceController
+    end
+
+    class IsoCurrenciesController < JSONAPI::ResourceController
+    end
+  end
+
+  module V5
+    class PostsController < JSONAPI::ResourceController
+    end
+
+    class ExpenseEntriesController < JSONAPI::ResourceController
+    end
+
+    class IsoCurrenciesController < JSONAPI::ResourceController
+    end
+  end
 end
 
 ### RESOURCES
@@ -414,6 +436,8 @@ end
 class IsoCurrencyResource < JSONAPI::Resource
   primary_key :code
   attributes :id, :name, :country_name, :minor_unit
+
+  filter :country_name
 end
 
 class ExpenseEntryResource < JSONAPI::Resource
@@ -616,6 +640,7 @@ end
 
 IsoCurrency.create(code: 'USD', name: 'United States Dollar', country_name: 'United States', minor_unit: 'cent')
 IsoCurrency.create(code: 'EUR', name: 'Euro Member Countries', country_name: 'Euro Member Countries', minor_unit: 'cent')
+IsoCurrency.create(code: 'CAD', name: 'Canadian dollar', country_name: 'Canada', minor_unit: 'cent')
 
 ExpenseEntry.create(currency_code: 'USD',
                employee_id: c.id,

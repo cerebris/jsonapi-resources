@@ -9,6 +9,12 @@ class SerializerTest < MiniTest::Unit::TestCase
     @fred = Person.find_by(name: 'Fred Reader')
 
     @expense_entry = ExpenseEntry.find(1)
+
+    JSONAPI.configuration.json_key_format = :camelized_key
+  end
+
+  def after_teardown
+    JSONAPI.configuration.json_key_format = :underscored_key
   end
 
   def test_serializer

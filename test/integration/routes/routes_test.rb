@@ -111,6 +111,44 @@ class RoutesTest < ActionDispatch::IntegrationTest
                    {action: 'show', controller: 'api/v3/posts', id: '1'})
   end
 
+  # V4 camelCase
+  def test_routing_v4_posts_show
+    assert_routing({path: '/api/v4/posts/1', method: :get},
+                   {action: 'show', controller: 'api/v4/posts', id: '1'})
+  end
+
+  def test_routing_v4_isoCurrencies_resources
+    assert_routing({path: '/api/v4/isoCurrencies/USD', method: :get},
+                   {action: 'show', controller: 'api/v4/iso_currencies', code: 'USD'})
+  end
+
+  def test_routing_v4_expenseEntries_resources
+    assert_routing({path: '/api/v4/expenseEntries/1', method: :get},
+                   {action: 'show', controller: 'api/v4/expense_entries', id: '1'})
+
+    assert_routing({path: '/api/v4/expenseEntries/1/links/isoCurrency', method: :get},
+                   {controller: 'api/v4/expense_entries', action: 'show_association', expense_entry_id: '1', association: 'iso_currency'})
+  end
+
+  # V5 dasherized
+  def test_routing_v5_posts_show
+    assert_routing({path: '/api/v5/posts/1', method: :get},
+                   {action: 'show', controller: 'api/v5/posts', id: '1'})
+  end
+
+  def test_routing_v5_isoCurrencies_resources
+    assert_routing({path: '/api/v5/iso-currencies/USD', method: :get},
+                   {action: 'show', controller: 'api/v5/iso_currencies', code: 'USD'})
+  end
+
+  def test_routing_v5_expenseEntries_resources
+    assert_routing({path: '/api/v5/expense-entries/1', method: :get},
+                   {action: 'show', controller: 'api/v5/expense_entries', id: '1'})
+
+    assert_routing({path: '/api/v5/expense-entries/1/links/iso-currency', method: :get},
+                   {controller: 'api/v5/expense_entries', action: 'show_association', expense_entry_id: '1', association: 'iso_currency'})
+  end
+  
   #primary_key
   def test_routing_primary_key_jsonapi_resources
     assert_routing({path: '/iso_currencies/USD', method: :get},
@@ -136,4 +174,3 @@ class RoutesTest < ActionDispatch::IntegrationTest
   # Test that non acts as set has_many association update route is not created
 
 end
-

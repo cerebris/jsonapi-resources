@@ -54,7 +54,6 @@ TestApp.routes.draw do
   jsonapi_resources :moons
   jsonapi_resources :preferences
 
-
   namespace :api do
     namespace :v1 do
       jsonapi_resources :authors
@@ -88,6 +87,20 @@ TestApp.routes.draw do
         jsonapi_links :tags, only: [:show, :create]
       end
     end
+
+    JSONAPI.configuration.route_format = :camelized_route
+    namespace :v4 do
+      jsonapi_resources :posts
+      jsonapi_resources :expense_entries
+      jsonapi_resources :iso_currencies
+    end
+    JSONAPI.configuration.route_format = :dasherized_route
+    namespace :v5 do
+      jsonapi_resources :posts
+      jsonapi_resources :expense_entries
+      jsonapi_resources :iso_currencies
+    end
+    JSONAPI.configuration.route_format = :underscored_route
   end
 end
 
@@ -107,6 +120,10 @@ class UpperCamelizedKeyFormatter < JSONAPI::KeyFormatter
   class << self
     def format(key)
       super.camelize(:upper)
+    end
+
+    def unformat(formatted_key)
+      formatted_key.to_s.underscore.to_sym
     end
   end
 end

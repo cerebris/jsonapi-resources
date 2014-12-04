@@ -1166,36 +1166,115 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
   end
 
   def test_currencies_index
+    JSONAPI.configuration.json_key_format = :camelized_key
     get :index
     assert_response :success
-    assert_equal 2, json_response['isoCurrencies'].size
+    assert_equal 3, json_response['isoCurrencies'].size
   end
 
   def test_currencies_json_key_underscored
     JSONAPI.configuration.json_key_format = :underscored_key
     get :index
     assert_response :success
-    assert_equal 2, json_response['iso_currencies'].size
+    assert_equal 3, json_response['iso_currencies'].size
   end
 
   def test_currencies_json_key_dasherized
     JSONAPI.configuration.json_key_format = :dasherized_key
     get :index
     assert_response :success
-    assert_equal 2, json_response['iso-currencies'].size
+    assert_equal 3, json_response['iso-currencies'].size
   end
 
   def test_currencies_custom_json_key
     JSONAPI.configuration.json_key_format = :upper_camelized_key
     get :index
     assert_response :success
-    assert_equal 2, json_response['IsoCurrencies'].size
+    assert_equal 3, json_response['IsoCurrencies'].size
   end
 
   def test_currencies_show
     get :show, {code: 'USD'}
     assert_response :success
     assert json_response['isoCurrencies'].is_a?(Hash)
+  end
+
+  def test_currencies_json_key_underscored_sort
+    JSONAPI.configuration.json_key_format = :underscored_key
+    get :index, {sort: 'country_name'}
+    assert_response :success
+    assert_equal 3, json_response['iso_currencies'].size
+    assert_equal 'Canada', json_response['iso_currencies'][0]['country_name']
+    assert_equal 'Euro Member Countries', json_response['iso_currencies'][1]['country_name']
+    assert_equal 'United States', json_response['iso_currencies'][2]['country_name']
+
+    # reverse sort
+    get :index, {sort: '-country_name'}
+    assert_response :success
+    assert_equal 3, json_response['iso_currencies'].size
+    assert_equal 'United States', json_response['iso_currencies'][0]['country_name']
+    assert_equal 'Euro Member Countries', json_response['iso_currencies'][1]['country_name']
+    assert_equal 'Canada', json_response['iso_currencies'][2]['country_name']
+  end
+
+  def test_currencies_json_key_dasherized_sort
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    get :index, {sort: 'country-name'}
+    assert_response :success
+    assert_equal 3, json_response['iso-currencies'].size
+    assert_equal 'Canada', json_response['iso-currencies'][0]['country-name']
+    assert_equal 'Euro Member Countries', json_response['iso-currencies'][1]['country-name']
+    assert_equal 'United States', json_response['iso-currencies'][2]['country-name']
+
+    # reverse sort
+    get :index, {sort: '-country-name'}
+    assert_response :success
+    assert_equal 3, json_response['iso-currencies'].size
+    assert_equal 'United States', json_response['iso-currencies'][0]['country-name']
+    assert_equal 'Euro Member Countries', json_response['iso-currencies'][1]['country-name']
+    assert_equal 'Canada', json_response['iso-currencies'][2]['country-name']
+  end
+
+  def test_currencies_json_key_custom_json_key_sort
+    JSONAPI.configuration.json_key_format = :upper_camelized_key
+    get :index, {sort: 'CountryName'}
+    assert_response :success
+    assert_equal 3, json_response['IsoCurrencies'].size
+    assert_equal 'Canada', json_response['IsoCurrencies'][0]['CountryName']
+    assert_equal 'Euro Member Countries', json_response['IsoCurrencies'][1]['CountryName']
+    assert_equal 'United States', json_response['IsoCurrencies'][2]['CountryName']
+
+    # reverse sort
+    get :index, {sort: '-CountryName'}
+    assert_response :success
+    assert_equal 3, json_response['IsoCurrencies'].size
+    assert_equal 'United States', json_response['IsoCurrencies'][0]['CountryName']
+    assert_equal 'Euro Member Countries', json_response['IsoCurrencies'][1]['CountryName']
+    assert_equal 'Canada', json_response['IsoCurrencies'][2]['CountryName']
+  end
+
+  def test_currencies_json_key_underscored_filter
+    JSONAPI.configuration.json_key_format = :underscored_key
+    get :index, {country_name: 'Canada'}
+    assert_response :success
+    assert_equal 1, json_response['iso_currencies'].size
+    assert_equal 'Canada', json_response['iso_currencies'][0]['country_name']
+  end
+
+  def test_currencies_json_key_camelized_key_filter
+    JSONAPI.configuration.json_key_format = :camelized_key
+    get :index, {'countryName' => 'Canada'}
+    assert_response :success
+    assert_equal 1, json_response['isoCurrencies'].size
+    assert_equal 'Canada', json_response['isoCurrencies'][0]['countryName']
+  end
+
+  def test_currencies_json_key_custom_json_key_filter
+    JSONAPI.configuration.json_key_format = :upper_camelized_key
+    get :index, {'CountryName' => 'Canada'}
+    assert_response :success
+    assert_equal 1, json_response['IsoCurrencies'].size
+    assert_equal 'Canada', json_response['IsoCurrencies'][0]['CountryName']
   end
 end
 
