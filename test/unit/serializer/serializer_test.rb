@@ -34,7 +34,7 @@ class SerializerTest < MiniTest::Unit::TestCase
           }
         }
       },
-      JSONAPI::ResourceSerializer.new.serialize_to_hash(
+      JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(
         PostResource.new(@post)))
   end
 
@@ -50,7 +50,7 @@ class SerializerTest < MiniTest::Unit::TestCase
           }
         }
       },
-      JSONAPI::ResourceSerializer.new.serialize_to_hash(
+      JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(
         PostResource.new(@post),
         fields: {posts: [:id, :title, :author]}))
   end
@@ -84,7 +84,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                    }]
         }
       },
-      JSONAPI::ResourceSerializer.new.serialize_to_hash(
+      JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(
         PostResource.new(@post), include: [:author]))
   end
 
@@ -117,7 +117,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                    }]
         }
       },
-      JSONAPI::ResourceSerializer.new.serialize_to_hash(
+      JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(
         PostResource.new(@post),
         include: [:author],
         key_formatter: UnderscoredKeyFormatter))
@@ -185,7 +185,7 @@ class SerializerTest < MiniTest::Unit::TestCase
           ]
         }
       },
-      JSONAPI::ResourceSerializer.new.serialize_to_hash(
+      JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(
         PostResource.new(@post), include: [:comments, 'comments.tags']))
   end
 
@@ -231,7 +231,7 @@ class SerializerTest < MiniTest::Unit::TestCase
           ]
         }
       },
-      JSONAPI::ResourceSerializer.new.serialize_to_hash(
+      JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(
         PostResource.new(@post), include: ['comments.tags']))
   end
 
@@ -265,7 +265,7 @@ class SerializerTest < MiniTest::Unit::TestCase
           ]
         }
       },
-      JSONAPI::ResourceSerializer.new.serialize_to_hash(
+      JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(
         PostResource.new(@post), include: ['author.comments']))
   end
 
@@ -305,7 +305,7 @@ class SerializerTest < MiniTest::Unit::TestCase
           ]
         }
       },
-      JSONAPI::ResourceSerializer.new.serialize_to_hash(
+      JSONAPI::ResourceSerializer.new(PersonResource).serialize_to_hash(
         PersonResource.new(@fred), include: ['comments']))
   end
 
@@ -404,7 +404,7 @@ class SerializerTest < MiniTest::Unit::TestCase
           ]
         }
       },
-      JSONAPI::ResourceSerializer.new.serialize_to_hash(
+      JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(
         posts, include: ['comments', 'comments.tags']))
   end
 
@@ -488,7 +488,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             }]
         }
       },
-      JSONAPI::ResourceSerializer.new.serialize_to_hash(
+      JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(
         posts,
         include: ['comments', 'author', 'comments.tags', 'author.posts'],
         fields: {
@@ -526,7 +526,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                    }]
         }
       },
-      JSONAPI::ResourceSerializer.new.serialize_to_hash(
+      JSONAPI::ResourceSerializer.new(ExpenseEntryResource).serialize_to_hash(
         ExpenseEntryResource.new(@expense_entry),
         include: ['iso_currency', 'employee'],
         fields: {people: [:id, :name, :email, :date_joined]}
@@ -535,7 +535,8 @@ class SerializerTest < MiniTest::Unit::TestCase
   end
 
   def test_serializer_empty_links_null_and_array
-    planet_hash = JSONAPI::ResourceSerializer.new.serialize_to_hash(PlanetResource.new(Planet.find(8)))
+    planet_hash = JSONAPI::ResourceSerializer.new(PlanetResource).serialize_to_hash(
+      PlanetResource.new(Planet.find(8)))
 
     assert_hash_equals(
       {
@@ -562,7 +563,7 @@ class SerializerTest < MiniTest::Unit::TestCase
       planets.push PlanetResource.new(planet)
     end
 
-    planet_hash = JSONAPI::ResourceSerializer.new.serialize_to_hash(
+    planet_hash = JSONAPI::ResourceSerializer.new(PlanetResource).serialize_to_hash(
       planets,
       include: ['planet_type'],
       fields: { planet_types: [:id, :name] }
