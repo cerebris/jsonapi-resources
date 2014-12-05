@@ -8,6 +8,12 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['posts'].is_a?(Array)
   end
 
+  def test_index_filter_with_empty_result
+    get :index, {title: 'post that does not exist'}
+    assert_response :success
+    assert json_response['posts'].is_a?(Array)
+  end
+
   def test_index_filter_by_id
     get :index, {id: '1'}
     assert_response :success
