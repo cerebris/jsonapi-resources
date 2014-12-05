@@ -8,6 +8,13 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['posts'].is_a?(Array)
   end
 
+  def test_index_filter_with_empty_result
+    get :index, {title: 'post that does not exist'}
+    assert_response :success
+    assert json_response['posts'].is_a?(Array)
+    assert_equal 0, json_response['posts'].size
+  end
+
   def test_index_filter_by_id
     get :index, {id: '1'}
     assert_response :success
@@ -100,7 +107,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_filter_associations_multiple_not_found
     get :index, {tags: '1', comments: '3'}
     assert_response :success
-    assert_equal 0, json_response.size
+    assert_equal 0, json_response['posts'].size
   end
 
   def test_bad_filter

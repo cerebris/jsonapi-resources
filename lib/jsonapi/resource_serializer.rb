@@ -1,6 +1,11 @@
 module JSONAPI
   class ResourceSerializer
 
+    def initialize(primary_resource_klass)
+      @primary_resource_klass = primary_resource_klass
+      @primary_class_name = @primary_resource_klass._type
+    end
+
     # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
     # include:
     #     Purpose: determines which objects will be side loaded with the source objects in a linked section
@@ -11,7 +16,6 @@ module JSONAPI
     #     Example: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}
     def serialize_to_hash(source, options = {})
       is_resource_collection = source.respond_to?(:to_ary)
-      return {} if source.nil? || (is_resource_collection && source.size == 0)
 
       @fields =  options.fetch(:fields, {})
       include = options.fetch(:include, [])
@@ -22,15 +26,7 @@ module JSONAPI
 
       requested_associations = parse_includes(include)
 
-      if is_resource_collection
-        @primary_class_name = source[0].class._type
-      else
-        @primary_class_name = source.class._type
-      end
-
       process_primary(source, requested_associations)
-
-      primary_class_name = @primary_class_name.to_sym
 
       linked_hash = {}
       primary_objects = []
@@ -49,9 +45,9 @@ module JSONAPI
       end
 
       if is_resource_collection
-        primary_hash = {format_key(primary_class_name) => primary_objects}
+        primary_hash = {format_key(@primary_class_name) => primary_objects}
       else
-        primary_hash = {format_key(primary_class_name) => primary_objects[0]}
+        primary_hash = {format_key(@primary_class_name) => primary_objects[0]}
       end
 
       if linked_hash.size > 0

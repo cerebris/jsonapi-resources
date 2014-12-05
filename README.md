@@ -362,12 +362,14 @@ These codes can be customized in your app by creating an initializer to override
 
 ### Serializer
 
-The `ResourceSerializer` can be used to serialize a resource into JSON API compliant JSON. `ResourceSerializer` has a `serialize_to_hash` method that takes a resource instance to serialize. For example:
+The `ResourceSerializer` can be used to serialize a resource into JSON API compliant JSON. `ResourceSerializer` must be
+ initialized with the primary resource type it will be serializing. `ResourceSerializer` has a `serialize_to_hash`
+ method that takes a resource instance or array of resource instances to serialize. For example:
 
 ```ruby
 require 'jsonapi/resource_serializer'
 post = Post.find(1)
-JSONAPI::ResourceSerializer.new.serialize_to_hash(PostResource.new(post))
+JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(PostResource.new(post))
 ```
 
 This returns results like this:
@@ -410,7 +412,7 @@ A hash of resource types and arrays of fields for each resource type.
 
 ```ruby
 post = Post.find(1)
-JSONAPI::ResourceSerializer.new.serialize_to_hash(PostResource.new(post),
+JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(PostResource.new(post),
         include: ['comments','author','comments.tags','author.posts'],
         fields: {
                  people: [:id, :email, :comments],

@@ -16,7 +16,7 @@ module JSONAPI
     before_filter :setup_request
 
     def index
-      render json: JSONAPI::ResourceSerializer.new.serialize_to_hash(
+      render json: JSONAPI::ResourceSerializer.new(resource_klass).serialize_to_hash(
           resource_klass.find(resource_klass.verify_filters(@request.filters, context),
             context: context, sort_params: @request.sort_params),
           include: @request.include,
@@ -36,7 +36,7 @@ module JSONAPI
                     resource_klass.find_by_key(keys[0], context: context)
                   end
 
-      render json: JSONAPI::ResourceSerializer.new.serialize_to_hash(
+      render json: JSONAPI::ResourceSerializer.new(resource_klass).serialize_to_hash(
           resources,
           include: @request.include,
           fields: @request.fields,
@@ -168,11 +168,12 @@ module JSONAPI
       else
         if results.length > 0 && resources.length > 0
           render status: results[0].code,
-                 json: JSONAPI::ResourceSerializer.new.serialize_to_hash(resources.length > 1 ? resources : resources[0],
-                                                                         include: @request.include,
-                                                                         fields: @request.fields,
-                                                                         attribute_formatters: attribute_formatters,
-                                                                         key_formatter: key_formatter)
+                 json: JSONAPI::ResourceSerializer.new(resource_klass).serialize_to_hash(
+                   resources.length > 1 ? resources : resources[0],
+                   include: @request.include,
+                   fields: @request.fields,
+                   attribute_formatters: attribute_formatters,
+                   key_formatter: key_formatter)
         else
           render status: results[0].code, json: nil
         end
