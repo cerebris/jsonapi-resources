@@ -76,10 +76,14 @@ module JSONAPI
       fields.each do |type, values|
         underscored_type = unformat_key(type)
         fields[type] = []
-        type_resource = self.class.resource_for(underscored_type)
-        if type_resource.nil? || !(@resource_klass._type == underscored_type ||
-                                   @resource_klass._has_association?(underscored_type))
+        begin
+          type_resource = self.class.resource_for(underscored_type)
+        rescue NameError
           @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
+        end
+          if type_resource.nil? || !(@resource_klass._type == underscored_type ||
+                                     @resource_klass._has_association?(underscored_type))
+            @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
         else
           unless values.nil?
             valid_fields = type_resource.fields.collect {|key| format_key(key)}
