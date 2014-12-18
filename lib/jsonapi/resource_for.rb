@@ -11,7 +11,7 @@ module JSONAPI
           resource_name = JSONAPI::Resource._resource_name_from_type(type)
           Object.const_get resource_name if resource_name
         rescue NameError
-          nil
+          raise NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
         end
       else
         def resource_for(type)
