@@ -97,12 +97,7 @@ end
 class DefaultValueFormatter < JSONAPI::ValueFormatter
   class << self
     def format(raw_value, context)
-      case raw_value
-        when String, Integer
-          return raw_value
-        else
-          return raw_value.to_s
-      end
+      raw_value
     end
   end
 end

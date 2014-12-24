@@ -505,7 +505,7 @@ class SerializerTest < MiniTest::Unit::TestCase
         expenseEntries: {
           id: 1,
           transactionDate: '04/15/2014',
-          cost: '12.05',
+          cost: 12.05,
           links: {
             isoCurrency: 'USD',
             employee: 3
@@ -601,5 +601,47 @@ class SerializerTest < MiniTest::Unit::TestCase
     json = planet_hash.to_json
     assert_match /\"planetType\":null/, json
     assert_match /\"moons\":\[\]/, json
+  end
+
+  def test_serializer_booleans
+    JSONAPI.configuration.json_key_format = :underscored_key
+
+    preferences = PreferencesResource.new(Preferences.find(1))
+
+    assert_hash_equals(
+      {
+        preferences: {
+                  id: 1,
+                  advanced_mode: false,
+                  links: {
+                    author: nil,
+                    friends: []
+                  }
+                }
+      },
+      JSONAPI::ResourceSerializer.new(PreferencesResource).serialize_to_hash(preferences))
+  end
+
+  def test_serializer_data_types
+    JSONAPI.configuration.json_key_format = :underscored_key
+
+    facts = FactResource.new(Fact.find(1))
+
+    assert_hash_equals(
+      {
+        facts: {
+          id: 1,
+          spouse_name: 'Jane Author',
+          bio: 'First man to run across Antartica.',
+          quality_rating: 23.89/45.6,
+          salary: BigDecimal('47000.56', 30),
+          date_time_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00'),
+          birthday: Date.parse('1965-06-30'),
+          bedtime: Time.parse('2000-01-01 20:00:00 UTC +00:00'), #DB seems to set the date to 2001-01-01 for time types
+          photo: "abc",
+          cool: false
+        }
+      },
+      JSONAPI::ResourceSerializer.new(FactResource).serialize_to_hash(facts))
   end
 end

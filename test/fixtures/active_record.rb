@@ -92,6 +92,19 @@ ActiveRecord::Schema.define do
     t.integer :person_id
     t.boolean :advanced_mode, default: false
   end
+
+  create_table :facts, force: true do |t|
+    t.integer  :person_id
+    t.string   :spouse_name
+    t.text     :bio
+    t.float    :quality_rating
+    t.decimal  :salary, :precision => 12, :scale => 2
+    t.datetime :date_time_joined
+    t.date     :birthday
+    t.time     :bedtime
+    t.binary   :photo, limit: 1.kilobyte
+    t.boolean  :cool
+  end
 end
 
 ### MODELS
@@ -158,6 +171,9 @@ end
 class Preferences < ActiveRecord::Base
   has_one :author, class_name: 'Person'
   has_many :friends, class_name: 'Person'
+end
+
+class Fact < ActiveRecord::Base
 end
 
 class Breed
@@ -234,6 +250,9 @@ class ExpenseEntriesController < JSONAPI::ResourceController
 end
 
 class BreedsController < JSONAPI::ResourceController
+end
+
+class FactsController < JSONAPI::ResourceController
 end
 
 ### CONTROLLERS
@@ -514,6 +533,19 @@ class PreferencesResource < JSONAPI::Resource
   end
 end
 
+class FactResource < JSONAPI::Resource
+  attribute :id
+  attribute :spouse_name
+  attribute :bio
+  attribute :quality_rating
+  attribute :salary
+  attribute :date_time_joined
+  attribute :birthday
+  attribute :bedtime
+  attribute :photo
+  attribute :cool
+end
+
 warn 'start testing Name Collisions'
 # The name collisions only emmit warnings. Exceptions would change the flow of the tests
 
@@ -685,3 +717,14 @@ betaz = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Z', 
 betaw = Planet.create(name: 'Beta W', description: 'Newly discovered Planet W')
 
 preference = Preferences.create
+
+fact = Fact.create(spouse_name: 'Jane Author',
+                   bio: 'First man to run across Antartica.',
+                   quality_rating: 23.89/45.6,
+                   salary: BigDecimal('47000.56'),
+                   date_time_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00'),
+                   birthday: Date.parse('1965-06-30'),
+                   bedtime: Time.parse('2000-01-01 20:00:00 UTC +00:00'),
+                   photo: "abc",
+                   cool: false
+)

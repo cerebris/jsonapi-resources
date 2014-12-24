@@ -1106,7 +1106,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     assert json_response['expense_entries'].is_a?(Hash)
     assert_equal 3, json_response['expense_entries']['links']['employee']
     assert_equal 'USD', json_response['expense_entries']['links']['iso_currency']
-    assert_equal '50.58', json_response['expense_entries']['cost']
+    assert_equal 50.58, json_response['expense_entries']['cost']
 
     delete :destroy, {id: json_response['expense_entries']['id']}
     assert_response :no_content
@@ -1133,7 +1133,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     assert json_response['expenseEntries'].is_a?(Hash)
     assert_equal 3, json_response['expenseEntries']['links']['employee']
     assert_equal 'USD', json_response['expenseEntries']['links']['isoCurrency']
-    assert_equal '50.58', json_response['expenseEntries']['cost']
+    assert_equal 50.58, json_response['expenseEntries']['cost']
 
     delete :destroy, {id: json_response['expenseEntries']['id']}
     assert_response :no_content
@@ -1160,7 +1160,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     assert json_response['expense-entries'].is_a?(Hash)
     assert_equal 3, json_response['expense-entries']['links']['employee']
     assert_equal 'USD', json_response['expense-entries']['links']['iso-currency']
-    assert_equal '50.58', json_response['expense-entries']['cost']
+    assert_equal 50.58, json_response['expense-entries']['cost']
 
     delete :destroy, {id: json_response['expense-entries']['id']}
     assert_response :no_content
@@ -1466,3 +1466,21 @@ class Api::V2::PreferencesControllerTest < ActionController::TestCase
     assert_response :success
   end
 end
+
+class FactsControllerTest < ActionController::TestCase
+  def test_type_formatting
+    get :show, {id: '1'}
+    assert_response :success
+    assert json_response['facts'].is_a?(Hash)
+    assert_equal 'Jane Author', json_response['facts']['spouseName']
+    assert_equal 'First man to run across Antartica.', json_response['facts']['bio']
+    assert_equal 23.89/45.6, json_response['facts']['qualityRating']
+    assert_equal 47000.56, json_response['facts']['salary']
+    assert_equal '2013-08-07T20:25:00.000Z', json_response['facts']['dateTimeJoined']
+    assert_equal '1965-06-30', json_response['facts']['birthday']
+    assert_equal '2000-01-01T20:00:00Z', json_response['facts']['bedtime']
+    assert_equal 'abc', json_response['facts']['photo']
+    assert_equal false, json_response['facts']['cool']
+  end
+end
+
