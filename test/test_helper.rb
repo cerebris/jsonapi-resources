@@ -31,6 +31,8 @@ class TestApp < Rails::Application
   config.session_store :cookie_store, key: 'session'
   config.secret_key_base = 'secret'
 
+  ActiveSupport::JSON::Encoding.encode_big_decimal_as_string = false
+
   #Raise errors on unsupported parameters
   config.action_controller.action_on_unpermitted_parameters = :raise
 end
@@ -53,6 +55,7 @@ TestApp.routes.draw do
   jsonapi_resources :planet_types
   jsonapi_resources :moons
   jsonapi_resources :preferences
+  jsonapi_resources :facts
 
   namespace :api do
     namespace :v1 do

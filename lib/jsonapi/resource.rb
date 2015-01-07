@@ -217,29 +217,34 @@ module JSONAPI
         _associations.keys | _attributes.keys
       end
 
+      def apply_filter(records, filter, value)
+        records.where(filter => value)
+      end
+
       # Override this method if you have more complex requirements than this basic find method provides
       def find(filters, options = {})
         context = options[:context]
         sort_params = options.fetch(:sort_params) { [] }
         includes = []
-        where_filters = {}
+
+        records = records(options)
 
         filters.each do |filter, value|
           if _associations.include?(filter)
             if _associations[filter].is_a?(JSONAPI::Association::HasMany)
               includes.push(filter)
-              where_filters["#{filter}.#{_associations[filter].primary_key}"] = value
+              records = apply_filter(records, "#{filter}.#{_associations[filter].primary_key}", value)
             else
-              where_filters["#{_associations[filter].foreign_key}"] = value
+              records = apply_filter(records, "#{_associations[filter].foreign_key}", value)
             end
           else
-            where_filters[filter] = value
+            records = apply_filter(records, filter, value)
           end
         end
 
         resources = []
         order_options = construct_order_options(sort_params)
-        records(options).where(where_filters).order(order_options).includes(includes).each do |model|
+        records.order(order_options).includes(includes).each do |model|
           resources.push self.new(model, context)
         end
 
@@ -260,7 +265,7 @@ module JSONAPI
         _models = records(options).where({_primary_key => keys})
 
         unless _models.length == keys.length
-          key = (keys - _models.pluck(:id).map(&:to_s)).first
+          key = (keys - _models.pluck(_primary_key).map(&:to_s)).first
           raise JSONAPI::Exceptions::RecordNotFound.new(key)
         end
 
