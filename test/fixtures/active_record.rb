@@ -509,7 +509,7 @@ class PreferencesResource < JSONAPI::Resource
   has_one :author, foreign_key: :person_id
   has_many :friends
 
-  def self.find_by_key(key, context: nil)
+  def self.find_by_key(key, options = {})
     new(Preferences.first)
   end
 end
