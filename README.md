@@ -260,30 +260,9 @@ end
 
 ##### Finders
 
-Basic finding by filters is supported by resources. However if you have more complex requirements for finding you can override the `find`, `find_by_key` and `find_by_keys` methods on the resource class.
+Basic finding by filters is supported by resources. This is implemented in the `find`, `find_by_key` and `find_by_keys` finder methods. Currently this is implemented for ActiveRecord based resources. The finder methods rely on the `records` method to get an Arel relation. It is therefore possible to override `records` to affect the three find related methods.
 
-Here's an example that defers the `find` operation to a `current_user` set on the `context` option:
-
-```ruby
-class AuthorResource < JSONAPI::Resource
-  attributes :id, :name
-  model_name 'Person'
-  has_many :posts
-
-  filter :name
-
-  def self.find(attrs, options = {})
-    context = options[:context]
-    authors = context.current_user.find_authors(attrs)
-
-    return authors.map do |author|
-      self.new(author)
-    end
-  end
-end
-```
-
-##### Customizing base records for finder methods
+###### Customizing base records for finder methods
 
 If you need to change the base records on which `find`, `find_by_key` and `find_by_keys` operate, you can override the `records` method on the resource class.
 
@@ -296,6 +275,57 @@ class PostResource < JSONAPI::Resource
   def self.records(options = {})
     context = options[:context]
     context.current_user.posts
+  end
+end
+```
+
+###### Applying Filters
+
+The `apply_filter` method is called to apply each filter to the Arel relation. You may override this method to gain control over how the filters are applied to the Arel relation.
+
+For example to change how a
+
+```ruby
+def apply_filter(records, filter, value)
+  case filter
+    when :visibility
+      records.where('users.publicly_visible = ?', value == :public)
+    when :last_name, :first_name, :name
+      if value.is_a?(Array)
+        value.each do |val|
+          records = records.where(_model_class.arel_table[filter].matches(val))
+        end
+        return records
+      else
+        records.where(_model_class.arel_table[filter].matches(value))
+      end
+    else
+      return super(records, filter, value)
+  end
+end
+```
+
+###### Override finder methods
+
+Finally if you have more complex requirements for finding you can override the `find`, `find_by_key` and `find_by_keys` methods on the resource class.
+
+Here's an example that defers the `find` operation to a `current_user` set on the `context` option:
+
+```ruby
+class AuthorResource < JSONAPI::Resource
+  attributes :id, :name
+  model_name 'Person'
+  has_many :posts
+
+  filter :name
+
+  def self.find(filters, options = {})
+    context = options[:context]
+    authors = context.current_user.find_authors(filters)
+
+    return authors.map do |author|
+      self.new(author)
+    end
   end
 end
 ```
