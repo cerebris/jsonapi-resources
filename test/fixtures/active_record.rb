@@ -474,7 +474,7 @@ class BreedResource < JSONAPI::Resource
   # This is unneeded, just here for testing
   routing_options :param => :id
 
-  def self.find(attrs, options = {})
+  def self.find(filters, options = {})
     breeds = []
     $breed_data.breeds.values.each do |breed|
       breeds.push(BreedResource.new(breed, options[:context]))
