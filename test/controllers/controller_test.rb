@@ -1363,17 +1363,6 @@ class AuthorsControllerTest < ActionController::TestCase
     assert_equal 3, json_response['authors'][0]['links']['posts'].size
   end
 
-  def test_get_person_as_author_variable_email
-    get :index, {id: '4'}
-    assert_response :success
-    assert_equal 1, json_response['authors'].size
-    assert_equal 4, json_response['authors'][0]['id']
-    assert_equal 'Tag Crazy Author', json_response['authors'][0]['name']
-    assert_equal 'taggy@xyz.fake', json_response['authors'][0]['email']
-    assert_equal 1, json_response['authors'][0]['links'].size
-    assert_equal 2, json_response['authors'][0]['links']['posts'].size
-  end
-
   def test_get_person_as_author_by_name_filter
     get :index, {name: 'thor'}
     assert_response :success
@@ -1465,6 +1454,70 @@ class Api::V2::PreferencesControllerTest < ActionController::TestCase
     get :show
     assert_response :success
   end
+end
+
+class Api::V1::PostsControllerTest < ActionController::TestCase
+  def test_show_post_namespaced
+    get :show, {id: '1'}
+    assert_response :success
+    assert_hash_equals(
+      {
+        posts: {
+          id: 1,
+          title: 'New post',
+          body: 'A body!!!',
+          subject: 'New post',
+          links: {
+            section: nil,
+            writer: 1,
+            comments: [1, 2]
+          }
+        }
+      }, json_response
+    )
+  end
+
+  def test_show_post_namespaced_include
+    get :show, {id: '1', include: 'writer'}
+    assert_response :success
+    assert_equal 1, json_response['posts']['links']['writer']
+    assert_nil json_response['posts']['links']['tags']
+    assert_equal 1, json_response['linked']['people'][0]['id']
+    assert_equal 'joe@xyz.fake', json_response['linked']['people'][0]['email']
+  end
+
+  def test_index_filter_on_association_namespaced
+    get :index, {writer: '1'}
+    assert_response :success
+    assert_equal 3, json_response['posts'].size
+  end
+
+  def test_sorting_desc_namespaced
+    get :index, {sort: '-title'}
+
+    assert_response :success
+    assert_equal "Update This Later - Multiple", json_response['posts'][0]['title']
+  end
+
+  def test_create_simple_namespaced
+    post :create,
+         {
+           posts: {
+             title: 'JR - now with Namespacing',
+             body: 'JSONAPIResources is the greatest thing since unsliced bread now that it has namespaced resources.',
+             links: {
+               writer: 3
+             }
+           }
+         }
+
+    assert_response :created
+    assert json_response['posts'].is_a?(Hash)
+    assert_equal 3, json_response['posts']['links']['writer']
+    assert_equal 'JR - now with Namespacing', json_response['posts']['title']
+    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread now that it has namespaced resources.', json_response['posts']['body']
+  end
+
 end
 
 class FactsControllerTest < ActionController::TestCase
