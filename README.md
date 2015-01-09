@@ -464,7 +464,7 @@ JR has a couple of helper methods available to assist you with setting up routes
 
 ##### `jsonapi_resources`
 
-Like `resources` in ActionDispatch, `jsonapi_resources` provides resourceful routes mapping between HTTP verbs and URLs and controller actions. This will also setup mappings for relationship URLs for a resource's associations. For example
+Like `resources` in `ActionDispatch`, `jsonapi_resources` provides resourceful routes mapping between HTTP verbs and URLs and controller actions. This will also setup mappings for relationship URLs for a resource's associations. For example
 
 ```ruby
 require 'jsonapi/routing_ext'
