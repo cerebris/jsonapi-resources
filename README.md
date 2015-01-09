@@ -420,7 +420,7 @@ This returns results like this:
 }
 ```
 
-#### Serialize_to_hash method options
+#### serialize_to_hash method options
 
 The `serialize_to_hash` method also takes some optional parameters:
 
