@@ -102,7 +102,7 @@ class AuthorResource < JSONAPI::Resource
 end
 ```
 
-Context flows through from the controller and can be used to control the attributes based on the current user (or other value)).
+Context flows through from the controller and can be used to control the attributes based on the current user (or other value).
 
 ##### Creatable and Updateable Attributes
 
