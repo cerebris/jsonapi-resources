@@ -626,7 +626,7 @@ This way all DateTime values will be formatted to display in the specified timez
 
 #### Key Format
 
-JSONAPI is agnostic on the format of the keys used in the responses. By default JR uses underscored keys which match the attribute names used by rails models.  This can be changed by specifying a different key formatter.
+JSONAPI is agnostic on the format of the keys used in the responses. By default JR uses underscored keys which match the attribute names used by Rails models.  This can be changed by specifying a different key formatter.
 
 For example to use camel cased keys with an initial lowercase character (JSON's default) create an initializer and add the following:
 
