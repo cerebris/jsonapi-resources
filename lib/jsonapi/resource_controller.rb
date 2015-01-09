@@ -104,7 +104,7 @@ module JSONAPI
     # :nocov:
 
     def resource_klass_name
-      @resource_klass_name ||= "#{self.class.name.demodulize.sub(/Controller$/, '').singularize}Resource"
+      @resource_klass_name ||= "#{self.class.name.sub(/Controller$/, '').singularize}Resource"
     end
 
     def setup_request

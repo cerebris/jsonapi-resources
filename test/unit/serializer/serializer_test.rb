@@ -38,6 +38,25 @@ class SerializerTest < MiniTest::Unit::TestCase
         PostResource.new(@post)))
   end
 
+  def test_serializer_namespaced_resource
+    assert_hash_equals(
+      {
+        posts: {
+          id: '1',
+          title: 'New post',
+          body: 'A body!!!',
+          subject: 'New post',
+          links: {
+            section: nil,
+            writer: '1',
+            comments: ['1', '2']
+          }
+        }
+      },
+      JSONAPI::ResourceSerializer.new(Api::V1::PostResource).serialize_to_hash(
+        Api::V1::PostResource.new(@post)))
+  end
+
   def test_serializer_limited_fieldset
 
     assert_hash_equals(

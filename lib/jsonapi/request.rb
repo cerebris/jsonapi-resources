@@ -20,7 +20,7 @@ module JSONAPI
     end
 
     def setup(params)
-      @resource_klass ||= self.class.resource_for(params[:controller].split('/').last) if params[:controller]
+      @resource_klass ||= self.class.resource_for(params[:controller]) if params[:controller]
 
       unless params.nil?
         case params[:action]
