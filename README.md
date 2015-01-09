@@ -281,7 +281,7 @@ end
 
 ###### Applying Filters
 
-The `apply_filter` method is called to apply each filter to the Arel relation. You may override this method to gain control over how the filters are applied to the Arel relation.
+The `apply_filter` method is called to apply each filter to the `Arel` relation. You may override this method to gain control over how the filters are applied to the `Arel` relation.
 
 For example to change how a
 
