@@ -1,6 +1,6 @@
 # JSONAPI::Resources [![Build Status](https://secure.travis-ci.org/cerebris/jsonapi-resources.png?branch=master)](http://travis-ci.org/cerebris/jsonapi-resources)
 
-JSONAPI::Resources, or "JR", provides a framework for developing a server that complies with the [JSON API](http://jsonapi.org/) specification.
+`JSONAPI::Resources`, or "JR", provides a framework for developing a server that complies with the [JSON API](http://jsonapi.org/) specification.
 
 Like JSON API itself, JR's design is focused on the resources served by an API. JR needs little more than a definition of your resources, including their attributes and relationships, to make your server compliant with JSON API.
 
@@ -63,7 +63,7 @@ end
 
 This resource has 5 attributes: `:id`, `:name_first`, `:name_last`, `:email`, `:twitter`. By default these attributes must exist on the model that is handled by the resource.
 
-A resource object wraps a Ruby object, usually an ActiveModel record, which is available as the `@model` variable. This allows a resource's methods to access the underlying model.
+A resource object wraps a Ruby object, usually an `ActiveModel` record, which is available as the `@model` variable. This allows a resource's methods to access the underlying model.
 
 For example, a computed attribute for `full_name` could be defined as such:
 
@@ -102,7 +102,7 @@ class AuthorResource < JSONAPI::Resource
 end
 ```
 
-Context flows through from the controller and can be used to control the attributes based on the current user (or other value)).
+Context flows through from the controller and can be used to control the attributes based on the current user (or other value).
 
 ##### Creatable and Updateable Attributes
 
@@ -152,9 +152,9 @@ end
 
 ##### Attribute Formatting
 
-Attributes can have a Format. By default all attributes use the default formatter. If an attribute has the `format` option set the system will attempt to find a formatter based on this name. In the following example the `last_login_time` will be returned formatted to a certain time zone:
+Attributes can have a `Format`. By default all attributes use the default formatter. If an attribute has the `format` option set the system will attempt to find a formatter based on this name. In the following example the `last_login_time` will be returned formatted to a certain time zone:
 
-```
+```ruby
 class PersonResource < JSONAPI::Resource
   attributes :id, :name, :email
   attribute :last_login_time, format: :date_with_timezone
@@ -235,7 +235,7 @@ Examples:
 class ExpenseEntryResource < JSONAPI::Resource
   attributes :id, :cost, :transaction_date
 
-  has_one :currency, class_name: 'Currency', key: 'currency_code'
+  has_one :currency, class_name: 'Currency', foreign_key: 'currency_code'
   has_one :employee
 end
 ```
@@ -260,7 +260,7 @@ end
 
 ##### Finders
 
-Basic finding by filters is supported by resources. This is implemented in the `find`, `find_by_key` and `find_by_keys` finder methods. Currently this is implemented for ActiveRecord based resources. The finder methods rely on the `records` method to get an Arel relation. It is therefore possible to override `records` to affect the three find related methods.
+Basic finding by filters is supported by resources. This is implemented in the `find`, `find_by_key` and `find_by_keys` finder methods. Currently this is implemented for `ActiveRecord` based resources. The finder methods rely on the `records` method to get an `Arel` relation. It is therefore possible to override `records` to affect the three find related methods.
 
 ###### Customizing base records for finder methods
 
@@ -281,9 +281,9 @@ end
 
 ###### Applying Filters
 
-The `apply_filter` method is called to apply each filter to the Arel relation. You may override this method to gain control over how the filters are applied to the Arel relation.
+The `apply_filter` method is called to apply each filter to the `Arel` relation. You may override this method to gain control over how the filters are applied to the `Arel` relation.
 
-For example to change how a
+This example shows how you can implement different approaches for different filters.
 
 ```ruby
 def apply_filter(records, filter, value)
@@ -332,7 +332,7 @@ end
 
 ### Controllers
 
-JSONAPI::Resources provides a class, `ResourceController`, that can be used as the base class for your controllers. `ResourceController` supports `index`, `show`, `create`, `update`, and `destroy` methods. Just deriving your controller from `ResourceController` will give you a fully functional controller.
+`JSONAPI::Resources` provides a class, `ResourceController`, that can be used as the base class for your controllers. `ResourceController` supports `index`, `show`, `create`, `update`, and `destroy` methods. Just deriving your controller from `ResourceController` will give you a fully functional controller.
 
 For example:
 
@@ -420,7 +420,7 @@ This returns results like this:
 }
 ```
 
-#### Serialize_to_hash method options
+#### serialize_to_hash method options
 
 The `serialize_to_hash` method also takes some optional parameters:
 
@@ -442,13 +442,16 @@ A hash of resource types and arrays of fields for each resource type.
 
 ```ruby
 post = Post.find(1)
-JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(PostResource.new(post),
-        include: ['comments','author','comments.tags','author.posts'],
-        fields: {
-                 people: [:id, :email, :comments],
-                 posts: [:id, :title, :author],
-                 tags: [:name],
-                 comments: [:id, :body, :post]})
+JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(
+  PostResource.new(post),
+  include: ['comments','author','comments.tags','author.posts'],
+  fields: {
+    people: [:id, :email, :comments],
+    posts: [:id, :title, :author],
+    tags: [:name],
+    comments: [:id, :body, :post]
+  }
+)
 ```
 
 ##### `context`
@@ -461,7 +464,7 @@ JR has a couple of helper methods available to assist you with setting up routes
 
 ##### `jsonapi_resources`
 
-Like `resources` in ActionDispatch, `jsonapi_resources` provides resourceful routes mapping between HTTP verbs and URLs and controller actions. This will also setup mappings for relationship URLs for a resource's associations. For example
+Like `resources` in `ActionDispatch`, `jsonapi_resources` provides resourceful routes mapping between HTTP verbs and URLs and controller actions. This will also setup mappings for relationship URLs for a resource's associations. For example:
 
 ```ruby
 require 'jsonapi/routing_ext'
@@ -586,13 +589,13 @@ end
 
 You can also create your own Value Formatter. Value Formatters must be named with the `format` name followed by `ValueFormatter`, i.e. `DateWithTimezoneValueFormatter` and derive from `JSONAPI::ValueFormatter`. It is recommended that you create a directory for your formatters, called `formatters`.
 
-The `format` method is called by the ResourceSerializer as is serializing a resource. The format method takes the `raw_value`, and `context` parameters. `raw_value` is the value as read from the model, and `context` is the context of the current user/request. From this you can base the formatted version of the attribute current context.
+The `format` method is called by the `ResourceSerializer` as is serializing a resource. The format method takes the `raw_value`, and `context` parameters. `raw_value` is the value as read from the model, and `context` is the context of the current user/request. From this you can base the formatted version of the attribute current context.
 
 The `unformat` method is called when processing the request. Each incoming attribute (except `links`) are run through the `unformat` method. The `unformat` method takes the `value`, and `context` parameters. `value` is the value as it comes in on the request, and `context` is the context of the current user/request. This allows you process the incoming value to alter its state before it is stored in the model. By default no processing is applied.
 
 ###### Use a Different Default Value Formatter
 
-Another way to handle formatting is to set a different default value formatter. This will affect all attributes that do notw have a `format` set. You can do this by overriding the `default_attribute_options` method for a resource (or a base resource for a system wide change).
+Another way to handle formatting is to set a different default value formatter. This will affect all attributes that do not have a `format` set. You can do this by overriding the `default_attribute_options` method for a resource (or a base resource for a system wide change).
 
 ```ruby
   def default_attribute_options
@@ -623,7 +626,7 @@ This way all DateTime values will be formatted to display in the specified timez
 
 #### Key Format
 
-JSONAPI is agnostic on the format of the keys used in the responses. By default JR uses underscored keys which match the attribute names used by rails models.  This can be changed by specifying a different key formatter.
+JSONAPI is agnostic on the format of the keys used in the responses. By default JR uses underscored keys which match the attribute names used by Rails models.  This can be changed by specifying a different key formatter.
 
 For example to use camel cased keys with an initial lowercase character (JSON's default) create an initializer and add the following:
 
@@ -634,7 +637,7 @@ JSONAPI.configure do |config|
 end
 ```
 
-This will cause the serializer to use the CamelizedKeyFormatter. Besides UnderscoredKeyFormatter and CamelizedKeyFormatter JR defines the DasherizedKeyFormatter. You can also create your own KeyFormatter, for example:
+This will cause the serializer to use the `CamelizedKeyFormatter`. Besides `UnderscoredKeyFormatter` and `CamelizedKeyFormatter` JR defines the `DasherizedKeyFormatter`. You can also create your own `KeyFormatter`, for example:
 
 ```ruby
 class UpperCamelizedKeyFormatter < JSONAPI::KeyFormatter
