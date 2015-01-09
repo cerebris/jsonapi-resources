@@ -182,7 +182,7 @@ class PostsControllerTest < ActionController::TestCase
     get :index, {sort: 'title,body'}
 
     assert_response :success
-    assert_equal 8, json_response['posts'][0]['id']
+    assert_equal '8', json_response['posts'][0]['id']
   end
 
   def test_invalid_sort_param
@@ -211,8 +211,8 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['posts'].is_a?(Hash)
     assert_equal 'New post', json_response['posts']['title']
     assert_equal 'A body!!!', json_response['posts']['body']
-    assert_equal [1, 2, 3], json_response['posts']['links']['tags']
-    assert_equal [1, 2], json_response['posts']['links']['comments']
+    assert_equal ['1', '2', '3'], json_response['posts']['links']['tags']
+    assert_equal ['1', '2'], json_response['posts']['links']['comments']
     assert_nil json_response['linked']
   end
 
@@ -222,8 +222,8 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['posts'].is_a?(Hash)
     assert_equal 'New post', json_response['posts']['title']
     assert_equal 'A body!!!', json_response['posts']['body']
-    assert_equal [1, 2, 3], json_response['posts']['links']['tags']
-    assert_equal [1, 2], json_response['posts']['links']['comments']
+    assert_equal ['1', '2', '3'], json_response['posts']['links']['tags']
+    assert_equal ['1', '2'], json_response['posts']['links']['comments']
     assert_equal 2, json_response['linked']['comments'].size
     assert_nil json_response['linked']['tags']
   end
@@ -234,7 +234,7 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['posts'].is_a?(Hash)
     assert_nil json_response['posts']['title']
     assert_nil json_response['posts']['body']
-    assert_equal 1, json_response['posts']['links']['author']
+    assert_equal '1', json_response['posts']['links']['author']
   end
 
   def test_show_single_invalid_id_format
@@ -275,7 +275,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :created
     assert json_response['posts'].is_a?(Hash)
-    assert_equal 3, json_response['posts']['links']['author']
+    assert_equal '3', json_response['posts']['links']['author']
     assert_equal 'JR is Great', json_response['posts']['title']
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['posts']['body']
   end
@@ -361,7 +361,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :created
     assert json_response['posts'].is_a?(Array)
     assert_equal json_response['posts'].size, 2
-    assert_equal json_response['posts'][0]['links']['author'], 3
+    assert_equal json_response['posts'][0]['links']['author'], '3'
     assert_match /JR is Great/, response.body
     assert_match /Ember is Great/, response.body
   end
@@ -438,10 +438,10 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :created
     assert json_response['posts'].is_a?(Hash)
-    assert_equal 3, json_response['posts']['links']['author']
+    assert_equal '3', json_response['posts']['links']['author']
     assert_equal 'JR is Great', json_response['posts']['title']
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['posts']['body']
-    assert_equal [3, 4], json_response['posts']['links']['tags']
+    assert_equal ['3', '4'], json_response['posts']['links']['tags']
   end
 
   def test_create_with_links_include_and_fields
@@ -461,7 +461,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :created
     assert json_response['posts'].is_a?(Hash)
-    assert_equal 3, json_response['posts']['links']['author']
+    assert_equal '3', json_response['posts']['links']['author']
     assert_equal 'JR is Great!', json_response['posts']['title']
     assert_equal nil, json_response['posts']['body']
     assert_equal nil, json_response['posts']['links']['tags']
@@ -487,11 +487,11 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :success
     assert json_response['posts'].is_a?(Hash)
-    assert_equal 3, json_response['posts']['links']['author']
-    assert_equal javascript.id, json_response['posts']['links']['section']
+    assert_equal '3', json_response['posts']['links']['author']
+    assert_equal javascript.id.to_s, json_response['posts']['links']['section']
     assert_equal 'A great new Post', json_response['posts']['title']
     assert_equal 'AAAA', json_response['posts']['body']
-    assert matches_array?([3, 4], json_response['posts']['links']['tags'])
+    assert matches_array?(['3', '4'], json_response['posts']['links']['tags'])
   end
 
   def test_update_remove_links
@@ -509,7 +509,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :success
     assert json_response['posts'].is_a?(Hash)
-    assert_equal 3, json_response['posts']['links']['author']
+    assert_equal '3', json_response['posts']['links']['author']
     assert_equal nil, json_response['posts']['links']['section']
     assert_equal 'A great new Post', json_response['posts']['title']
     assert_equal 'AAAA', json_response['posts']['body']
@@ -806,17 +806,17 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :success
     assert_equal json_response['posts'].size, 2
-    assert_equal json_response['posts'][0]['links']['author'], 3
-    assert_equal json_response['posts'][0]['links']['section'], javascript.id
+    assert_equal json_response['posts'][0]['links']['author'], '3'
+    assert_equal json_response['posts'][0]['links']['section'], javascript.id.to_s
     assert_equal json_response['posts'][0]['title'], 'A great new Post QWERTY'
     assert_equal json_response['posts'][0]['body'], 'AAAA'
-    assert_equal json_response['posts'][0]['links']['tags'], [3, 4]
+    assert_equal json_response['posts'][0]['links']['tags'], ['3', '4']
 
-    assert_equal json_response['posts'][1]['links']['author'], 3
-    assert_equal json_response['posts'][1]['links']['section'], javascript.id
+    assert_equal json_response['posts'][1]['links']['author'], '3'
+    assert_equal json_response['posts'][1]['links']['section'], javascript.id.to_s
     assert_equal json_response['posts'][1]['title'], 'A great new Post ASDFG'
     assert_equal json_response['posts'][1]['body'], 'AAAA'
-    assert_equal json_response['posts'][1]['links']['tags'], [3, 4]
+    assert_equal json_response['posts'][1]['links']['tags'], ['3', '4']
   end
 
   def test_update_multiple_missing_keys
@@ -1104,7 +1104,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
 
     assert_response :created
     assert json_response['expense_entries'].is_a?(Hash)
-    assert_equal 3, json_response['expense_entries']['links']['employee']
+    assert_equal '3', json_response['expense_entries']['links']['employee']
     assert_equal 'USD', json_response['expense_entries']['links']['iso_currency']
     assert_equal 50.58, json_response['expense_entries']['cost']
 
@@ -1131,7 +1131,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
 
     assert_response :created
     assert json_response['expenseEntries'].is_a?(Hash)
-    assert_equal 3, json_response['expenseEntries']['links']['employee']
+    assert_equal '3', json_response['expenseEntries']['links']['employee']
     assert_equal 'USD', json_response['expenseEntries']['links']['isoCurrency']
     assert_equal 50.58, json_response['expenseEntries']['cost']
 
@@ -1158,7 +1158,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
 
     assert_response :created
     assert json_response['expense-entries'].is_a?(Hash)
-    assert_equal 3, json_response['expense-entries']['links']['employee']
+    assert_equal '3', json_response['expense-entries']['links']['employee']
     assert_equal 'USD', json_response['expense-entries']['links']['iso-currency']
     assert_equal 50.58, json_response['expense-entries']['cost']
 
@@ -1346,7 +1346,7 @@ class PeopleControllerTest < ActionController::TestCase
     get :index, {name: 'Joe Author'}
     assert_response :success
     assert_equal json_response['people'].size, 1
-    assert_equal json_response['people'][0]['id'], 1
+    assert_equal json_response['people'][0]['id'], '1'
     assert_equal json_response['people'][0]['name'], 'Joe Author'
   end
 end
@@ -1356,7 +1356,7 @@ class AuthorsControllerTest < ActionController::TestCase
     get :index, {id: '1'}
     assert_response :success
     assert_equal 1, json_response['authors'].size
-    assert_equal 1, json_response['authors'][0]['id']
+    assert_equal '1', json_response['authors'][0]['id']
     assert_equal 'Joe Author', json_response['authors'][0]['name']
     assert_equal nil, json_response['authors'][0]['email']
     assert_equal 1, json_response['authors'][0]['links'].size
@@ -1367,7 +1367,7 @@ class AuthorsControllerTest < ActionController::TestCase
     get :index, {id: '4'}
     assert_response :success
     assert_equal 1, json_response['authors'].size
-    assert_equal 4, json_response['authors'][0]['id']
+    assert_equal '4', json_response['authors'][0]['id']
     assert_equal 'Tag Crazy Author', json_response['authors'][0]['name']
     assert_equal 'taggy@xyz.fake', json_response['authors'][0]['email']
     assert_equal 1, json_response['authors'][0]['links'].size
@@ -1378,7 +1378,7 @@ class AuthorsControllerTest < ActionController::TestCase
     get :index, {name: 'thor'}
     assert_response :success
     assert_equal 3, json_response['authors'].size
-    assert_equal 1, json_response['authors'][0]['id']
+    assert_equal '1', json_response['authors'][0]['id']
     assert_equal 'Joe Author', json_response['authors'][0]['name']
     assert_equal 1, json_response['authors'][0]['links'].size
     assert_equal 3, json_response['authors'][0]['links']['posts'].size
@@ -1391,7 +1391,7 @@ class BreedsControllerTest < ActionController::TestCase
   def test_poro_index
     get :index
     assert_response :success
-    assert_equal 0, json_response['breeds'][0]['id']
+    assert_equal '0', json_response['breeds'][0]['id']
     assert_equal 'Persian', json_response['breeds'][0]['name']
   end
 
@@ -1399,7 +1399,7 @@ class BreedsControllerTest < ActionController::TestCase
     get :show, {id: '0'}
     assert_response :success
     assert json_response['breeds'].is_a?(Hash)
-    assert_equal 0, json_response['breeds']['id']
+    assert_equal '0', json_response['breeds']['id']
     assert_equal 'Persian', json_response['breeds']['name']
   end
 
@@ -1408,9 +1408,9 @@ class BreedsControllerTest < ActionController::TestCase
     assert_response :success
     assert json_response['breeds'].is_a?(Array)
     assert_equal 2, json_response['breeds'].size
-    assert_equal 0, json_response['breeds'][0]['id']
+    assert_equal '0', json_response['breeds'][0]['id']
     assert_equal 'Persian', json_response['breeds'][0]['name']
-    assert_equal 2, json_response['breeds'][1]['id']
+    assert_equal '2', json_response['breeds'][1]['id']
     assert_equal 'Sphinx', json_response['breeds'][1]['name']
   end
 
@@ -1483,4 +1483,3 @@ class FactsControllerTest < ActionController::TestCase
     assert_equal false, json_response['facts']['cool']
   end
 end
-
