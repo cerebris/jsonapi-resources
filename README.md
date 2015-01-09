@@ -637,7 +637,7 @@ JSONAPI.configure do |config|
 end
 ```
 
-This will cause the serializer to use the CamelizedKeyFormatter. Besides UnderscoredKeyFormatter and CamelizedKeyFormatter JR defines the DasherizedKeyFormatter. You can also create your own KeyFormatter, for example:
+This will cause the serializer to use the `CamelizedKeyFormatter`. Besides UnderscoredKeyFormatter and CamelizedKeyFormatter JR defines the DasherizedKeyFormatter. You can also create your own KeyFormatter, for example:
 
 ```ruby
 class UpperCamelizedKeyFormatter < JSONAPI::KeyFormatter
