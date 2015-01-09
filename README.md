@@ -260,7 +260,7 @@ end
 
 ##### Finders
 
-Basic finding by filters is supported by resources. This is implemented in the `find`, `find_by_key` and `find_by_keys` finder methods. Currently this is implemented for `ActiveRecord` based resources. The finder methods rely on the `records` method to get an Arel relation. It is therefore possible to override `records` to affect the three find related methods.
+Basic finding by filters is supported by resources. This is implemented in the `find`, `find_by_key` and `find_by_keys` finder methods. Currently this is implemented for `ActiveRecord` based resources. The finder methods rely on the `records` method to get an `Arel` relation. It is therefore possible to override `records` to affect the three find related methods.
 
 ###### Customizing base records for finder methods
 
