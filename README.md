@@ -283,7 +283,7 @@ end
 
 The `apply_filter` method is called to apply each filter to the `Arel` relation. You may override this method to gain control over how the filters are applied to the `Arel` relation.
 
-For example to change how a
+This example shows how you can implement different approaches for different filters.
 
 ```ruby
 def apply_filter(records, filter, value)
