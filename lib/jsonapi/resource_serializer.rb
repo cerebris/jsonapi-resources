@@ -127,10 +127,15 @@ module JSONAPI
       end
 
       fields.each_with_object({}) do |name, hash|
-        format = name == :id ? 'id' : source.class._attribute_options(name)[:format]
-        hash[format_key(name)] = format_value(source.send(name),
-                                              format,
-                                              source)
+        format = source.class._attribute_options(name)[:format]
+        if format == :default && name == :id
+          format = 'id'
+        end
+        hash[format_key(name)] = format_value(
+          source.send(name),
+          format,
+          source
+        )
       end
     end
 
@@ -149,10 +154,9 @@ module JSONAPI
       included_associations = source.fetchable_fields & associations.keys
       associations.each_with_object({}) do |(name, association), hash|
         if included_associations.include? name
-          foreign_key = association.foreign_key
 
           if field_set.include?(name)
-            hash[format_key(name)] = source.send(foreign_key)
+            hash[format_key(name)] = foreign_key_value(source, association)
           end
 
           ia = requested_associations.is_a?(Hash) ? requested_associations[name] : nil
@@ -197,6 +201,18 @@ module JSONAPI
     def already_serialized?(type, id)
       type = format_key(type)
       return @linked_objects.key?(type) && @linked_objects[type].key?(id)
+    end
+
+    # Extracts the foreign key value for an association.
+    def foreign_key_value(source, association)
+      foreign_key = association.foreign_key
+      value = source.send(foreign_key)
+
+      if association.is_a?(JSONAPI::Association::HasMany)
+        value.map { |value| IdValueFormatter.format(value, {}) }
+      elsif association.is_a?(JSONAPI::Association::HasOne)
+        IdValueFormatter.format(value, {})
+      end
     end
 
     # Sets that an object should be included in the primary document of the response.
