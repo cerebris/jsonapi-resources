@@ -127,8 +127,9 @@ module JSONAPI
       end
 
       fields.each_with_object({}) do |name, hash|
+        format = name == :id ? 'id' : source.class._attribute_options(name)[:format]
         hash[format_key(name)] = format_value(source.send(name),
-                                              source.class._attribute_options(name)[:format],
+                                              format,
                                               source)
       end
     end

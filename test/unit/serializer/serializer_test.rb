@@ -22,15 +22,15 @@ class SerializerTest < MiniTest::Unit::TestCase
     assert_hash_equals(
       {
         posts: {
-          id: 1,
+          id: '1',
           title: 'New post',
           body: 'A body!!!',
           subject: 'New post',
           links: {
             section: nil,
-            author: 1,
-            tags: [1, 2, 3],
-            comments: [1, 2]
+            author: '1',
+            tags: ['1', '2', '3'],
+            comments: ['1', '2']
           }
         }
       },
@@ -43,10 +43,10 @@ class SerializerTest < MiniTest::Unit::TestCase
     assert_hash_equals(
       {
         posts: {
-          id: 1,
+          id: '1',
           title: 'New post',
           links: {
-            author: 1
+            author: '1'
           }
         }
       },
@@ -60,26 +60,26 @@ class SerializerTest < MiniTest::Unit::TestCase
     assert_hash_equals(
       {
         posts: {
-          id: 1,
+          id: '1',
           title: 'New post',
           body: 'A body!!!',
           subject: 'New post',
           links: {
-            author: 1,
-            tags: [1, 2, 3],
-            comments: [1, 2],
+            author: '1',
+            tags: ['1', '2', '3'],
+            comments: ['1', '2'],
             section: nil
           }
         },
         linked: {
           people: [{
-                     id: 1,
+                     id: '1',
                      name: 'Joe Author',
                      email: 'joe@xyz.fake',
                      dateJoined: '2013-08-07 16:25:00 -0400',
                      links: {
-                       comments: [1],
-                       posts: [1, 2, 11]
+                       comments: ['1'],
+                       posts: ['1', '2', '11']
                      }
                    }]
         }
@@ -93,26 +93,26 @@ class SerializerTest < MiniTest::Unit::TestCase
     assert_hash_equals(
       {
         posts: {
-          id: 1,
+          id: '1',
           title: 'New post',
           body: 'A body!!!',
           subject: 'New post',
           links: {
-            author: 1,
-            tags: [1, 2, 3],
-            comments: [1, 2],
+            author: '1',
+            tags: ['1', '2', '3'],
+            comments: ['1', '2'],
             section: nil
           }
         },
         linked: {
           people: [{
-                     id: 1,
+                     id: '1',
                      name: 'Joe Author',
                      email: 'joe@xyz.fake',
                      date_joined: '2013-08-07 16:25:00 -0400',
                      links: {
-                       comments: [1],
-                       posts: [1, 2, 11]
+                       comments: ['1'],
+                       posts: ['1', '2', '11']
                      }
                    }]
         }
@@ -128,35 +128,35 @@ class SerializerTest < MiniTest::Unit::TestCase
     assert_hash_equals(
       {
         posts: {
-          id: 1,
+          id: '1',
           title: 'New post',
           body: 'A body!!!',
           subject: 'New post',
           links: {
-            author: 1,
-            tags: [1, 2, 3],
-            comments: [1, 2],
+            author: '1',
+            tags: ['1', '2', '3'],
+            comments: ['1', '2'],
             section: nil
           }
         },
         linked: {
           tags: [
             {
-              id: 1,
+              id: '1',
               name: 'short',
               links: {
                 posts: :not_nil
               }
             },
             {
-              id: 2,
+              id: '2',
               name: 'whiny',
               links: {
                 posts: :not_nil
               }
             },
             {
-              id: 4,
+              id: '4',
               name: 'happy',
               links: {
                 posts: :not_nil
@@ -165,21 +165,21 @@ class SerializerTest < MiniTest::Unit::TestCase
           ],
           comments: [
             {
-              id: 1,
+              id: '1',
               body: 'what a dumb post',
               links: {
-                author: 1,
-                post: 1,
-                tags: [2, 1]
+                author: '1',
+                post: '1',
+                tags: ['2', '1']
               }
             },
             {
-              id: 2,
+              id: '2',
               body: 'i liked it',
               links: {
-                author: 2,
-                post: 1,
-                tags: [4, 1]
+                author: '2',
+                post: '1',
+                tags: ['4', '1']
               }
             }
           ]
@@ -194,35 +194,35 @@ class SerializerTest < MiniTest::Unit::TestCase
     assert_hash_equals(
       {
         posts: {
-          id: 1,
+          id: '1',
           title: 'New post',
           body: 'A body!!!',
           subject: 'New post',
           links: {
-            author: 1,
-            tags: [1, 2, 3],
-            comments: [1, 2],
+            author: '1',
+            tags: ['1', '2', '3'],
+            comments: ['1', '2'],
             section: nil
           }
         },
         linked: {
           tags: [
             {
-              id: 1,
+              id: '1',
               name: 'short',
               links: {
                 posts: :not_nil
               }
             },
             {
-              id: 2,
+              id: '2',
               name: 'whiny',
               links: {
                 posts: :not_nil
               }
             },
             {
-              id: 4,
+              id: '4',
               name: 'happy',
               links: {
                 posts: :not_nil
@@ -240,26 +240,26 @@ class SerializerTest < MiniTest::Unit::TestCase
     assert_hash_equals(
       {
         posts: {
-          id: 1,
+          id: '1',
           title: 'New post',
           body: 'A body!!!',
           subject: 'New post',
           links: {
-            author: 1,
-            tags: [1, 2, 3],
-            comments: [1, 2],
+            author: '1',
+            tags: ['1', '2', '3'],
+            comments: ['1', '2'],
             section: nil
           }
         },
         linked: {
           comments: [
             {
-              id: 1,
+              id: '1',
               body: 'what a dumb post',
               links: {
-                author: 1,
-                post: 1,
-                tags: [2, 1]
+                author: '1',
+                post: '1',
+                tags: ['2', '1']
               }
             }
           ]
@@ -274,32 +274,32 @@ class SerializerTest < MiniTest::Unit::TestCase
     assert_hash_equals(
       {
         people: {
-          id: 2,
+          id: '2',
           name: 'Fred Reader',
           email: 'fred@xyz.fake',
           dateJoined: '2013-10-31 16:25:00 -0400',
           links: {
             posts: [],
-            comments: [2, 3]
+            comments: ['2', '3']
           }
         },
         linked: {
           comments: [{
-                       id: 2,
+                       id: '2',
                        body: 'i liked it',
                        links: {
-                         author: 2,
-                         post: 1,
-                         tags: [4, 1]
+                         author: '2',
+                         post: '1',
+                         tags: ['4', '1']
                        }
                      },
                      {
-                       id: 3,
+                       id: '3',
                        body: 'Thanks man. Great post. But what is JR?',
                        links: {
-                         author: 2,
-                         post: 2,
-                         tags: [5]
+                         author: '2',
+                         post: '2',
+                         tags: ['5']
                        }
                      }
           ]
@@ -319,86 +319,86 @@ class SerializerTest < MiniTest::Unit::TestCase
     assert_hash_equals(
       {
         posts: [{
-                  id: 1,
+                  id: '1',
                   title: 'New post',
                   body: 'A body!!!',
                   subject: 'New post',
                   links: {
-                    author: 1,
-                    tags: [1, 2, 3],
-                    comments: [1, 2],
+                    author: '1',
+                    tags: ['1', '2', '3'],
+                    comments: ['1', '2'],
                     section: nil
                   }
                 },
                 {
-                  id: 2,
+                  id: '2',
                   title: 'JR Solves your serialization woes!',
                   body: 'Use JR',
                   subject: 'JR Solves your serialization woes!',
                   links: {
-                    author: 1,
-                    tags: [5],
-                    comments: [3],
-                    section: 3
+                    author: '1',
+                    tags: ['5'],
+                    comments: ['3'],
+                    section: '3'
                   }
                 }],
         linked: {
           tags: [
             {
-              id: 1,
+              id: '1',
               name: 'short',
               links: {
                 posts: :not_nil
               }
             },
             {
-              id: 2,
+              id: '2',
               name: 'whiny',
               links: {
                 posts: :not_nil
               }
             },
             {
-              id: 4,
+              id: '4',
               name: 'happy',
               links: {
                 posts: :not_nil
               }
             },
             {
-              id: 5,
+              id: '5',
               name: 'JR',
               links: {
-                posts: [2, 11]
+                posts: ['2', '11']
               }
             }
           ],
           comments: [
             {
-              id: 1,
+              id: '1',
               body: 'what a dumb post',
               links: {
-                author: 1,
-                post: 1,
-                tags: [2, 1]
+                author: '1',
+                post: '1',
+                tags: ['2', '1']
               }
             },
             {
-              id: 2,
+              id: '2',
               body: 'i liked it',
               links: {
-                author: 2,
-                post: 1,
-                tags: [4, 1]
+                author: '2',
+                post: '1',
+                tags: ['4', '1']
               }
             },
             {
-              id: 3,
+              id: '3',
               body: 'Thanks man. Great post. But what is JR?',
               links: {
-                author: 2,
-                post: 2,
-                tags: [5]
+                author: '2',
+                post: '2',
+                tags: ['5']
               }
             }
           ]
@@ -418,17 +418,17 @@ class SerializerTest < MiniTest::Unit::TestCase
     assert_hash_equals(
       {
         posts: [{
-                  id: 1,
+                  id: '1',
                   title: 'New post',
                   links: {
-                    author: 1
+                    author: '1'
                   }
                 },
                 {
-                  id: 2,
+                  id: '2',
                   title: 'JR Solves your serialization woes!',
                   links: {
-                    author: 1
+                    author: '1'
                   }
                 }],
         linked: {
@@ -448,42 +448,42 @@ class SerializerTest < MiniTest::Unit::TestCase
           ],
           comments: [
             {
-              id: 1,
+              id: '1',
               body: 'what a dumb post',
               links: {
-                post: 1
+                post: '1'
               }
             },
             {
-              id: 2,
+              id: '2',
               body: 'i liked it',
               links: {
-                post: 1
+                post: '1'
               }
             },
             {
-              id: 3,
+              id: '3',
               body: 'Thanks man. Great post. But what is JR?',
               links: {
-                post: 2
+                post: '2'
               }
             }
           ],
           posts: [
             {
-              id: 11,
+              id: '11',
               title: 'JR How To',
               links: {
-                author: 1
+                author: '1'
               }
             }
           ],
           people: [
             {
-              id: 1,
+              id: '1',
               email: 'joe@xyz.fake',
               links: {
-                comments: [1]
+                comments: ['1']
               }
             }]
         }
@@ -503,12 +503,12 @@ class SerializerTest < MiniTest::Unit::TestCase
     assert_hash_equals(
       {
         expenseEntries: {
-          id: 1,
+          id: '1',
           transactionDate: '04/15/2014',
           cost: 12.05,
           links: {
             isoCurrency: 'USD',
-            employee: 3
+            employee: '3'
           }
         },
         linked: {
@@ -519,7 +519,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                             minorUnit: 'cent'
                           }],
           people: [{
-                     id: 3,
+                     id: '3',
                      name: 'Lazy Author',
                      email: 'lazy@xyz.fake',
                      dateJoined: '2013-10-31 17:25:00 -0400',
@@ -541,7 +541,7 @@ class SerializerTest < MiniTest::Unit::TestCase
     assert_hash_equals(
       {
         planets: {
-          id: 8,
+          id: '8',
           name: 'Beta W',
           description: 'Newly discovered Planet W',
           links: {
@@ -572,17 +572,17 @@ class SerializerTest < MiniTest::Unit::TestCase
     assert_hash_equals(
       {
         planets: [{
-                    id: 7,
+                    id: '7',
                     name: 'Beta X',
                     description: 'Newly discovered Planet Z',
                     links: {
-                      planetType: 1,
+                      planetType: '1',
                       tags: [],
                       moons: []
                     }
                   },
                   {
-                    id: 8,
+                    id: '8',
                     name: 'Beta W',
                     description: 'Newly discovered Planet W',
                     links: {
@@ -593,7 +593,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                   }],
         linked: {
           planetTypes: [
-            { id: 1, name: "Gas Giant" }
+            { id: '1', name: "Gas Giant" }
           ]
         }
       }, planet_hash)
@@ -611,7 +611,7 @@ class SerializerTest < MiniTest::Unit::TestCase
     assert_hash_equals(
       {
         preferences: {
-                  id: 1,
+                  id: '1',
                   advanced_mode: false,
                   links: {
                     author: nil,
@@ -630,7 +630,7 @@ class SerializerTest < MiniTest::Unit::TestCase
     assert_hash_equals(
       {
         facts: {
-          id: 1,
+          id: '1',
           spouse_name: 'Jane Author',
           bio: 'First man to run across Antartica.',
           quality_rating: 23.89/45.6,
