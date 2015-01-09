@@ -235,7 +235,7 @@ Examples:
 class ExpenseEntryResource < JSONAPI::Resource
   attributes :id, :cost, :transaction_date
 
-  has_one :currency, class_name: 'Currency', key: 'currency_code'
+  has_one :currency, class_name: 'Currency', foreign_key: 'currency_code'
   has_one :employee
 end
 ```
