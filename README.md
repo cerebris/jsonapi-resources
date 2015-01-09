@@ -595,7 +595,7 @@ The `unformat` method is called when processing the request. Each incoming attri
 
 ###### Use a Different Default Value Formatter
 
-Another way to handle formatting is to set a different default value formatter. This will affect all attributes that do notw have a `format` set. You can do this by overriding the `default_attribute_options` method for a resource (or a base resource for a system wide change).
+Another way to handle formatting is to set a different default value formatter. This will affect all attributes that do not have a `format` set. You can do this by overriding the `default_attribute_options` method for a resource (or a base resource for a system wide change).
 
 ```ruby
   def default_attribute_options
