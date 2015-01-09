@@ -154,7 +154,7 @@ end
 
 Attributes can have a `Format`. By default all attributes use the default formatter. If an attribute has the `format` option set the system will attempt to find a formatter based on this name. In the following example the `last_login_time` will be returned formatted to a certain time zone:
 
-```
+```ruby
 class PersonResource < JSONAPI::Resource
   attributes :id, :name, :email
   attribute :last_login_time, format: :date_with_timezone
