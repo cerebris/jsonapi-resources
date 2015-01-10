@@ -399,7 +399,7 @@ module JSONAPI
       end
 
       def module_path
-        self.name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').downcase : ''
+        @module_path ||= self.name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').downcase : ''
       end
 
       private
