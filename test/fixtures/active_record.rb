@@ -545,12 +545,7 @@ end
 
 module Api
   module V1
-    class WriterResource < JSONAPI::Resource
-      attributes :id, :name, :email
-      model_name 'Person'
-      has_many :posts
-
-      filter :name
+    class PersonResource < PersonResource
     end
 
     class PostResource < JSONAPI::Resource
