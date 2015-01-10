@@ -389,6 +389,8 @@ class PostResource < JSONAPI::Resource
   filter :id
 end
 
+...
+
 module Api
   module V1
     class PostResource < JSONAPI::Resource
@@ -399,7 +401,7 @@ module Api
       attribute :body
       attribute :subject
 
-      has_one :writer, class_name: 'Person', foreign_key: 'author_id'
+      has_one :writer, foreign_key: 'author_id'
       has_one :section
       has_many :comments, acts_as_set: false
 
@@ -408,6 +410,14 @@ module Api
       end
 
       filters :writer
+    end
+
+    class WriterResource < JSONAPI::Resource
+      attributes :id, :name, :email
+      model_name 'Person'
+      has_many :posts
+
+      filter :name
     end
   end
 end
@@ -442,7 +452,7 @@ Rails.application.routes.draw do
 end
 ```
 
-When a namespaced `resource` is used any related `resources` must also be in the same namespace.
+When a namespaced `resource` is used, any related `resources` must also be in the same namespace.
 
 #### Error codes
 
