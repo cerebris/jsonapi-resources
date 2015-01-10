@@ -545,7 +545,12 @@ end
 
 module Api
   module V1
-    class PersonResource < PersonResource
+    class WriterResource < JSONAPI::Resource
+      attributes :id, :name, :email
+      model_name 'Person'
+      has_many :posts
+
+      filter :name
     end
 
     class PostResource < JSONAPI::Resource
@@ -555,7 +560,7 @@ module Api
       attribute :body
       attribute :subject
 
-      has_one :writer, class_name: 'Person', foreign_key: 'author_id'
+      has_one :writer, foreign_key: 'author_id'
       has_one :section
       has_many :comments, acts_as_set: false
 

@@ -1482,8 +1482,8 @@ class Api::V1::PostsControllerTest < ActionController::TestCase
     assert_response :success
     assert_equal '1', json_response['posts']['links']['writer']
     assert_nil json_response['posts']['links']['tags']
-    assert_equal '1', json_response['linked']['people'][0]['id']
-    assert_equal 'joe@xyz.fake', json_response['linked']['people'][0]['email']
+    assert_equal '1', json_response['linked']['writers'][0]['id']
+    assert_equal 'joe@xyz.fake', json_response['linked']['writers'][0]['email']
   end
 
   def test_index_filter_on_association_namespaced
