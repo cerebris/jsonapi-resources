@@ -20,7 +20,7 @@ module JSONAPI
     end
 
     def setup(params)
-      @resource_klass ||= self.class.resource_for(params[:controller].split('/').last) if params[:controller]
+      @resource_klass ||= self.class.resource_for(params[:controller]) if params[:controller]
 
       unless params.nil?
         case params[:action]
@@ -77,7 +77,7 @@ module JSONAPI
         underscored_type = unformat_key(type)
         fields[type] = []
         begin
-          type_resource = self.class.resource_for(underscored_type)
+          type_resource = self.class.resource_for(@resource_klass.module_path + underscored_type.to_s)
         rescue NameError
           @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
         end
@@ -109,7 +109,7 @@ module JSONAPI
       association = resource_klass._association(association_name)
       if association
         unless include_parts.last.empty?
-          check_include(Resource.resource_for(association.class_name), include_parts.last.partition('.'))
+          check_include(Resource.resource_for(@resource_klass.module_path + association.class_name.to_s), include_parts.last.partition('.'))
         end
       else
         @errors.concat(JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type),
@@ -219,13 +219,13 @@ module JSONAPI
         association = @resource_klass._association(param)
 
         if association.is_a?(JSONAPI::Association::HasOne)
-          checked_has_one_associations[param] = @resource_klass.resource_for(association.type).verify_key(value, @context)
+          checked_has_one_associations[param] = @resource_klass.resource_for(@resource_klass.module_path + association.type.to_s).verify_key(value, @context)
         elsif association.is_a?(JSONAPI::Association::HasMany)
           keys = []
           if value.is_a?(Array)
-            keys = @resource_klass.resource_for(association.type).verify_keys(value, @context)
+            keys = @resource_klass.resource_for(@resource_klass.module_path + association.type.to_s).verify_keys(value, @context)
           else
-            keys.push(@resource_klass.resource_for(association.type).verify_key(value, @context))
+            keys.push(@resource_klass.resource_for(@resource_klass.module_path + association.type.to_s).verify_key(value, @context))
           end
           checked_has_many_associations[param] = keys
         else

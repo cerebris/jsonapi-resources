@@ -362,6 +362,98 @@ class PeopleController < ApplicationController
 end
 ```
 
+#### Namespaces
+
+JSONAPI::Resources supports namespacing of controllers and resources. With namespacing you can version your API.
+
+If you namespace your controller it will require a namespaced resource.
+
+In the following example we have a `resource` that isn't namespaced, and one the has now been namespaced. There are slight differences between the two resources, as might be seen in a new version of an API:
+
+```ruby
+class PostResource < JSONAPI::Resource
+  attribute :id
+  attribute :title
+  attribute :body
+  attribute :subject
+
+  has_one :author, class_name: 'Person'
+  has_one :section
+  has_many :tags, acts_as_set: true
+  has_many :comments, acts_as_set: false
+  def subject
+    @model.title
+  end
+
+  filters :title, :author, :tags, :comments
+  filter :id
+end
+
+...
+
+module Api
+  module V1
+    class PostResource < JSONAPI::Resource
+      # V1 replaces the non-namespaced resource
+      # V1 no longer supports tags and now calls author 'writer'
+      attribute :id
+      attribute :title
+      attribute :body
+      attribute :subject
+
+      has_one :writer, foreign_key: 'author_id'
+      has_one :section
+      has_many :comments, acts_as_set: false
+
+      def subject
+        @model.title
+      end
+
+      filters :writer
+    end
+
+    class WriterResource < JSONAPI::Resource
+      attributes :id, :name, :email
+      model_name 'Person'
+      has_many :posts
+
+      filter :name
+    end
+  end
+end
+```
+
+The following controllers are used:
+
+```ruby
+class PostsController < JSONAPI::ResourceController
+end
+
+module Api
+  module V1
+    class PostsController < JSONAPI::ResourceController
+    end
+  end
+end
+```
+
+You will also need to namespace your routes:
+
+```ruby
+Rails.application.routes.draw do
+
+  jsonapi_resources :posts
+
+  namespace :api do
+    namespace :v1 do
+      jsonapi_resources :posts
+    end
+  end
+end
+```
+
+When a namespaced `resource` is used, any related `resources` must also be in the same namespace.
+
 #### Error codes
 
 Error codes are provided for each error object returned, based on the error. These errors are:

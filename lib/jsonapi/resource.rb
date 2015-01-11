@@ -398,6 +398,10 @@ module JSONAPI
         _allowed_filters.include?(filter)
       end
 
+      def module_path
+        @module_path ||= self.name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').downcase : ''
+      end
+
       private
 
       def check_reserved_resource_name(type, name)
@@ -441,8 +445,8 @@ module JSONAPI
 
           if @_associations[attr].is_a?(JSONAPI::Association::HasOne)
             define_method attr do
-              type_name = self.class._associations[attr].type
-              resource_class = self.class.resource_for(type_name)
+              type_name = self.class._associations[attr].type.to_s
+              resource_class = self.class.resource_for(self.class.module_path + type_name)
               if resource_class
                 associated_model = @model.send attr
                 return associated_model ? resource_class.new(associated_model, @context) : nil
@@ -450,8 +454,8 @@ module JSONAPI
             end unless method_defined?(attr)
           elsif @_associations[attr].is_a?(JSONAPI::Association::HasMany)
             define_method attr do
-              type_name = self.class._associations[attr].type
-              resource_class = self.class.resource_for(type_name)
+              type_name = self.class._associations[attr].type.to_s
+              resource_class = self.class.resource_for(self.class.module_path + type_name)
               resources = []
               if resource_class
                 associated_models = @model.send attr

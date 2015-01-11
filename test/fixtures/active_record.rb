@@ -121,6 +121,7 @@ end
 
 class Post < ActiveRecord::Base
   belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
+  belongs_to :writer, class_name: 'Person', foreign_key: 'author_id'
   has_many :comments
   has_and_belongs_to_many :tags, join_table: :posts_tags
   belongs_to :section
@@ -373,11 +374,7 @@ class AuthorResource < JSONAPI::Resource
   end
 
   def fetchable_fields
-    if (@model.id % 2) == 1
-      super - [:email]
-    else
-      super
-    end
+    super - [:email]
   end
 end
 
@@ -544,6 +541,53 @@ class FactResource < JSONAPI::Resource
   attribute :bedtime
   attribute :photo
   attribute :cool
+end
+
+module Api
+  module V1
+    class WriterResource < JSONAPI::Resource
+      attributes :id, :name, :email
+      model_name 'Person'
+      has_many :posts
+
+      filter :name
+    end
+
+    class PostResource < JSONAPI::Resource
+      # V1 no longer supports tags and now calls author 'writer'
+      attribute :id
+      attribute :title
+      attribute :body
+      attribute :subject
+
+      has_one :writer, foreign_key: 'author_id'
+      has_one :section
+      has_many :comments, acts_as_set: false
+
+      def subject
+        @model.title
+      end
+
+      filters :writer
+    end
+  end
+end
+
+module Api
+  module V2
+    class PreferencesResource < PreferencesResource
+    end
+  end
+end
+
+module Api
+  module V4
+    class IsoCurrencyResource < IsoCurrencyResource
+    end
+
+    class ExpenseEntryResource < ExpenseEntryResource
+    end
+  end
 end
 
 warn 'start testing Name Collisions'
