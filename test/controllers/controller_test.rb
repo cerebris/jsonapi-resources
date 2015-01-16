@@ -414,7 +414,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_create_simple_missing_posts
     set_content_type_header!
-     post :create,
+    post :create,
          {
            data_spelled_wrong: {
              type: 'posts',

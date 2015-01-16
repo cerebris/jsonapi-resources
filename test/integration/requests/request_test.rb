@@ -48,11 +48,12 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_put_single_without_content_type
     put '/posts/3',
         {
-          'posts' => {
+          'data' => {
+            'type' => 'posts',
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => [3, 4]
+              'tags' => {type: 'tags', ids: [3, 4]}
             }
           }
         }.to_json, "CONTENT_TYPE" => "application/json"
