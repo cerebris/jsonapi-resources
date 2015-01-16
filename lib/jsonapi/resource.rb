@@ -107,6 +107,10 @@ module JSONAPI
       self.class.fields
     end
 
+    def self_href(base_path = '')
+      "#{base_path}/#{self.class.module_path}#{self.class._type.to_s}/#{id}"
+    end
+
     private
     def save
       run_callbacks :save do
@@ -215,6 +219,8 @@ module JSONAPI
         type = base.name.demodulize.sub(/Resource$/, '').underscore
         base._type = type.pluralize.to_sym
 
+        attribute :id, format: :id
+
         check_reserved_resource_name(base._type, base.name)
 
         # If eager loading is on this is how all the resource types are setup
@@ -251,6 +257,7 @@ module JSONAPI
       def attribute(attr, options = {})
         check_reserved_attribute_name(attr)
 
+        @_attributes ||= {}
         @_attributes[attr] = options
         define_method attr do
           @model.send(attr)
@@ -342,7 +349,15 @@ module JSONAPI
 
         resources = []
         order_options = construct_order_options(sort_params)
-        records.order(order_options).includes(includes).each do |model|
+
+        records = records.order(order_options).includes(includes)
+
+        paginator = options[:paginator]
+        if paginator
+          records = paginator.apply(records)
+        end
+
+        records.each do |model|
           resources.push self.new(model, context)
         end
 
@@ -478,6 +493,14 @@ module JSONAPI
           @@resource_types[type] = class_name
         end
         return class_name
+      end
+
+      def _paginator
+        @_paginator ||= JSONAPI.configuration.default_paginator
+      end
+
+      def paginator(paginator)
+        @_paginator = paginator
       end
 
       # :nocov:

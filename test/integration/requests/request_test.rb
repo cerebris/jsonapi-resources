@@ -12,30 +12,30 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.json_key_format = :underscored_key
     get '/iso_currencies'
     assert_equal 200, status
-    assert_equal 3, json_response['iso_currencies'].size
+    assert_equal 3, json_response['data'].size
   end
 
   def test_get_underscored_key_filtered
     JSONAPI.configuration.json_key_format = :underscored_key
     get '/iso_currencies?country_name=Canada'
     assert_equal 200, status
-    assert_equal 1, json_response['iso_currencies'].size
-    assert_equal 'Canada', json_response['iso_currencies'][0]['country_name']
+    assert_equal 1, json_response['data'].size
+    assert_equal 'Canada', json_response['data'][0]['country_name']
   end
 
   def test_get_camelized_key_filtered
     JSONAPI.configuration.json_key_format = :camelized_key
     get '/iso_currencies?countryName=Canada'
     assert_equal 200, status
-    assert_equal 1, json_response['isoCurrencies'].size
-    assert_equal 'Canada', json_response['isoCurrencies'][0]['countryName']
+    assert_equal 1, json_response['data'].size
+    assert_equal 'Canada', json_response['data'][0]['countryName']
   end
 
   def test_get_camelized_route_and_key_filtered
     get '/api/v4/isoCurrencies?countryName=Canada'
     assert_equal 200, status
-    assert_equal 1, json_response['isoCurrencies'].size
-    assert_equal 'Canada', json_response['isoCurrencies'][0]['countryName']
+    assert_equal 1, json_response['data'].size
+    assert_equal 'Canada', json_response['data'][0]['countryName']
   end
 
   def test_get_camelized_route_and_links
@@ -63,11 +63,12 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_put_single
     put '/posts/3',
         {
-          'posts' => {
+          'data' => {
+            'type' => 'posts',
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => [3, 4]
+              'tags' => {type: 'tags', ids: [3, 4]}
             }
           }
         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -92,11 +93,12 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_post_single
     post '/posts',
       {
-        'posts' => {
+        'data' => {
+          'type' => 'posts',
           'title' => 'A great new Post',
           'body' => 'JSONAPIResources is the greatest thing since unsliced bread.',
           'links' => {
-            'author' => '3'
+            'author' => {type: 'people', id: '3'}
           }
         }
       }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -106,14 +108,14 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_create_association_without_content_type
     ruby = Section.find_by(name: 'ruby')
-    put '/posts/3/links/section', { 'sections' => ruby.id.to_s }.to_json
+    put '/posts/3/links/section', { 'sections' => {type: 'sections', id: ruby.id.to_s }}.to_json
 
     assert_equal 415, status
   end
 
   def test_create_association
     ruby = Section.find_by(name: 'ruby')
-    put '/posts/3/links/section', { 'sections' => ruby.id.to_s }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    put '/posts/3/links/section', { 'sections' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
   end
@@ -131,11 +133,12 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_put_content_type
     put '/posts/3',
         {
-          'posts' => {
+          'data' => {
+            'type' => 'posts',
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => [3, 4]
+              'tags' => {type: 'tags', ids: [3, 4]}
             }
           }
         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -146,10 +149,11 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_post_correct_content_type
     post '/posts',
       {
-       'posts' => {
+       'data' => {
+         'type' => 'posts',
          'title' => 'A great new Post',
          'links' => {
-           'author' => '3'
+           'author' => {type: 'people', id: '3'}
          }
        }
      }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
