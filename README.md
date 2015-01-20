@@ -124,7 +124,7 @@ class ContactResource < JSONAPI::Resource
     super - [:full_name]
   end
 
-  def self.createable_fields(keys, context)
+  def self.createable_fields(context)
     super - [:full_name]
   end
 end
