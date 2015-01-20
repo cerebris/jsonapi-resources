@@ -177,6 +177,9 @@ end
 class Fact < ActiveRecord::Base
 end
 
+class Like < ActiveRecord::Base
+end
+
 class Breed
 
   def initialize(id = nil, name = nil)
@@ -287,6 +290,9 @@ module Api
     end
 
     class MoonsController < JSONAPI::ResourceController
+    end
+
+    class LikesController < JSONAPI::ResourceController
     end
   end
 
@@ -553,6 +559,9 @@ module Api
       filter :name
     end
 
+    class LikeResource < JSONAPI::Resource
+    end
+
     class PostResource < JSONAPI::Resource
       # V1 no longer supports tags and now calls author 'writer'
       attribute :id
@@ -570,23 +579,49 @@ module Api
 
       filters :writer
     end
+
+    AuthorResource = AuthorResource.dup
+    PersonResource = PersonResource.dup
+    CommentResource = CommentResource.dup
+    TagResource = TagResource.dup
+    SectionResource = SectionResource.dup
+    IsoCurrencyResource = IsoCurrencyResource.dup
+    ExpenseEntryResource = ExpenseEntryResource.dup
+    BreedResource = BreedResource.dup
+    PlanetResource = PlanetResource.dup
+    PlanetTypeResource = PlanetTypeResource.dup
+    MoonResource = MoonResource.dup
+    PreferencesResource = PreferencesResource.dup
   end
 end
 
 module Api
   module V2
-    class PreferencesResource < PreferencesResource
-    end
+    PreferencesResource = PreferencesResource.dup
+    AuthorResource = AuthorResource.dup
+    PostResource = PostResource.dup
+  end
+end
+
+module Api
+  module V3
+    PostResource = PostResource.dup
   end
 end
 
 module Api
   module V4
-    class IsoCurrencyResource < IsoCurrencyResource
-    end
+    PostResource = PostResource.dup
+    ExpenseEntryResource = ExpenseEntryResource.dup
+    IsoCurrencyResource = IsoCurrencyResource.dup
+  end
+end
 
-    class ExpenseEntryResource < ExpenseEntryResource
-    end
+module Api
+  module V5
+    PostResource = PostResource.dup
+    ExpenseEntryResource = ExpenseEntryResource.dup
+    IsoCurrencyResource = IsoCurrencyResource.dup
   end
 end
 

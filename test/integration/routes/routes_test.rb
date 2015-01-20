@@ -84,9 +84,9 @@ class RoutesTest < ActionDispatch::IntegrationTest
                    {action: 'destroy', controller: 'api/v1/posts', id: '1'})
   end
 
-  def test_routing_v1_posts_links_author_show
-    assert_routing({path: '/api/v1/posts/1/links/author', method: :get},
-                   {controller: 'api/v1/posts', action: 'show_association', post_id: '1', association: 'author'})
+  def test_routing_v1_posts_links_writer_show
+    assert_routing({path: '/api/v1/posts/1/links/writer', method: :get},
+                   {controller: 'api/v1/posts', action: 'show_association', post_id: '1', association: 'writer'})
   end
 
   # V2
@@ -148,7 +148,7 @@ class RoutesTest < ActionDispatch::IntegrationTest
     assert_routing({path: '/api/v5/expense-entries/1/links/iso-currency', method: :get},
                    {controller: 'api/v5/expense_entries', action: 'show_association', expense_entry_id: '1', association: 'iso_currency'})
   end
-  
+
   #primary_key
   def test_routing_primary_key_jsonapi_resources
     assert_routing({path: '/iso_currencies/USD', method: :get},
