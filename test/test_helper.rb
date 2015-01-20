@@ -72,6 +72,7 @@ TestApp.routes.draw do
       jsonapi_resources :planet_types
       jsonapi_resources :moons
       jsonapi_resources :preferences
+      jsonapi_resources :likes
     end
 
     namespace :v2 do

@@ -45,7 +45,11 @@ module ActionDispatch
 
         def jsonapi_resources(*resources, &block)
           resource_type = resources.first
-          res = JSONAPI::Resource.resource_for(resource_type)
+          resource_type_with_module_prefix = [
+            @scope[:module],
+            resource_type
+          ].compact.collect(&:to_s).join("/")
+          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix)
 
           options = resources.extract_options!.dup
           options[:controller] ||= resource_type
