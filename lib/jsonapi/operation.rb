@@ -40,7 +40,7 @@ module JSONAPI
 
     def apply(context)
       resource = @resource_klass.find_by_key(@resource_id, context: context)
-      resource.remove
+      resource.remove(context)
 
       return JSONAPI::OperationResult.new(:no_content)
 

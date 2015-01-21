@@ -79,7 +79,7 @@ class ResourceTest < MiniTest::Unit::TestCase
     end
   end
 
-  def test_save_with_before_save_returning_false
+  def test_save_with_before_save_exception
     author = Person.new
     resource = PersonResource.new(author)
     resource.define_singleton_method :before_save do |context|
@@ -87,6 +87,17 @@ class ResourceTest < MiniTest::Unit::TestCase
     end
     assert_raises JSONAPI::Resource::BeforeSaveError do
       resource.save
+    end
+  end
+
+  def test_remove_with_before_save_exception
+    author = Person.new
+    resource = PersonResource.new(author)
+    resource.define_singleton_method :before_save do |context|
+      raise JSONAPI::Resource::BeforeSaveError
+    end
+    assert_raises JSONAPI::Resource::BeforeSaveError do
+      resource.remove
     end
   end
 

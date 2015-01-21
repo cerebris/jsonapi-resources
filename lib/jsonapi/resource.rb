@@ -16,7 +16,8 @@ module JSONAPI
       @context = context
     end
 
-    def remove
+    def remove(context = nil)
+      before_save(context)
       @model.destroy
     end
 
