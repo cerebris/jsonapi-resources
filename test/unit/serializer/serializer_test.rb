@@ -595,7 +595,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                     name: 'Beta X',
                     description: 'Newly discovered Planet Z',
                     links: {
-                      planetType: '1',
+                      planetType: '5',
                       tags: [],
                       moons: []
                     }
@@ -612,7 +612,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                   }],
         linked: {
           planetTypes: [
-            { id: '1', name: "Gas Giant" }
+            { id: '5', name: "unknown" }
           ]
         }
       }, planet_hash)

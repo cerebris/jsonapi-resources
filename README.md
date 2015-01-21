@@ -132,6 +132,22 @@ end
 
 The `context` is not by default used by the `ResourceController`, but may be used if you override the controller methods. By using the context you have the option to determine the createable and updateable fields based on the user.
 
+##### Before Save Callback
+
+The `before_save` method is called (with the `context`) before a resource is saved. This provides a hook into the create/update/destroy process to perform actions like authorization. If you would like to prevent the save, you should raise an exception and rescue in your controller.
+
+This example prevents a save if the user is not authorized:
+
+```ruby
+class JSONAPI::Resource
+
+  def before_save(context)
+    raise NotAuthorizedError unless authorized?(context[:current_user])
+  end
+end
+
+```
+
 ##### Sortable Attributes
 
 JR supports [sorting primary resources by multiple sort criteria](http://jsonapi.org/format/#fetching-sorting).

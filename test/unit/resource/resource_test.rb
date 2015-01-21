@@ -18,6 +18,8 @@ class CatResource < JSONAPI::Resource
   has_one :father, class_name: 'Cat'
 end
 
+class JSONAPI::Resource::BeforeSaveError < StandardError; end
+
 class ResourceTest < MiniTest::Unit::TestCase
   def setup
     @post = Post.first
@@ -75,5 +77,22 @@ class ResourceTest < MiniTest::Unit::TestCase
     assert_raises JSONAPI::Exceptions::RecordNotFound do
       ArticleResource.find_by_keys([1, 3], context: author).model
     end
+  end
+
+  def test_save_with_before_save_returning_false
+    author = Person.new
+    resource = PersonResource.new(author)
+    resource.define_singleton_method :before_save do |context|
+      raise JSONAPI::Resource::BeforeSaveError
+    end
+    assert_raises JSONAPI::Resource::BeforeSaveError do
+      resource.save
+    end
+  end
+
+  def test_save
+    author = Person.find(1)
+    resource = PersonResource.new(author)
+    assert_equal(resource.save, true)
   end
 end
