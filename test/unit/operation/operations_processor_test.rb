@@ -42,7 +42,7 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
 
     operation = JSONAPI::CreateResourceOperation.new(PlanetResource, {attributes: {'name' => 'earth', 'description' => 'The best planet ever.'}})
 
-    PlanetResource.send(:define_method, :before_save, -> (context) { raise JSONAPI::Operation::AuthorizeError })
+    PlanetResource.send(:define_method, :before_save, lambda { |context| raise JSONAPI::Operation::AuthorizeError })
 
     request = JSONAPI::Request.new
     request.operations = [operation]
