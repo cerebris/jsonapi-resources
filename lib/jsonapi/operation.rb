@@ -22,7 +22,7 @@ module JSONAPI
     def apply(context)
       resource = @resource_klass.create(context)
       resource.replace_fields(@values)
-      resource.save
+      resource.save(context)
 
       return JSONAPI::OperationResult.new(:created, resource)
 
@@ -64,7 +64,7 @@ module JSONAPI
     def apply(context)
       resource = @resource_klass.find_by_key(@resource_id, context: context)
       resource.replace_fields(values)
-      resource.save
+      resource.save(context)
 
       return JSONAPI::OperationResult.new(:ok, resource)
     end
@@ -83,7 +83,7 @@ module JSONAPI
     def apply(context)
       resource = @resource_klass.find_by_key(@resource_id, context: context)
       resource.create_has_one_link(@association_type, @key_value)
-      resource.save
+      resource.save(context)
 
       return JSONAPI::OperationResult.new(:no_content)
     end
@@ -102,7 +102,7 @@ module JSONAPI
     def apply(context)
       resource = @resource_klass.find_by_key(@resource_id, context: context)
       resource.replace_has_one_link(@association_type, @key_value)
-      resource.save
+      resource.save(context)
 
       return JSONAPI::OperationResult.new(:no_content)
     end
@@ -141,7 +141,7 @@ module JSONAPI
     def apply(context)
       resource = @resource_klass.find_by_key(@resource_id, context: context)
       resource.replace_has_many_links(@association_type, @key_values)
-      resource.save
+      resource.save(context)
 
       return JSONAPI::OperationResult.new(:no_content)
     end
@@ -180,7 +180,7 @@ module JSONAPI
     def apply(context)
       resource = @resource_klass.find_by_key(@resource_id, context: context)
       resource.remove_has_one_link(@association_type)
-      resource.save
+      resource.save(context)
 
       return JSONAPI::OperationResult.new(:no_content)
     end
