@@ -606,6 +606,7 @@ end
 module Api
   module V3
     PostResource = PostResource.dup
+    PreferencesResource = PreferencesResource.dup
   end
 end
 
