@@ -108,18 +108,18 @@ module JSONAPI
     end
 
     private
-      def save
-        run_callbacks :save do
-          _save
-        end
+    def save
+      run_callbacks :save do
+        _save
       end
+    end
 
-      def _save
-        @model.save!
-        @save_needed = false
-      rescue ActiveRecord::RecordInvalid => e
-        raise JSONAPI::Exceptions::ValidationErrors.new(e.record.errors.messages)
-      end
+    def _save
+      @model.save!
+      @save_needed = false
+    rescue ActiveRecord::RecordInvalid => e
+      raise JSONAPI::Exceptions::ValidationErrors.new(e.record.errors.messages)
+    end
 
     def _remove
       @model.destroy
