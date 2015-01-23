@@ -19,7 +19,7 @@ module ActionDispatch
 
         def jsonapi_resource(*resources, &block)
           resource_type = resources.first
-          res = JSONAPI::Resource.resource_for(resource_type)
+          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(resources.first))
 
           options = resources.extract_options!.dup
           options[:controller] ||= resource_type
@@ -45,11 +45,7 @@ module ActionDispatch
 
         def jsonapi_resources(*resources, &block)
           resource_type = resources.first
-          resource_type_with_module_prefix = [
-            @scope[:module],
-            resource_type
-          ].compact.collect(&:to_s).join("/")
-          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix)
+          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(resources.first))
 
           options = resources.extract_options!.dup
           options[:controller] ||= resource_type
@@ -93,28 +89,28 @@ module ActionDispatch
           formatted_association_name = format_route(link_type)
           options = links.extract_options!.dup
 
-          res = JSONAPI::Resource.resource_for(@scope[:jsonapi_resource])
+          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix)
 
           methods = links_methods(options)
 
           if methods.include?(:show)
             match "links/#{formatted_association_name}", controller: res._type.to_s,
-                  action: 'show_association', association: link_type.to_s, via: [:get]
+            action: 'show_association', association: link_type.to_s, via: [:get]
           end
 
           if methods.include?(:create)
             match "links/#{formatted_association_name}", controller: res._type.to_s,
-                  action: 'create_association', association: link_type.to_s, via: [:post]
+            action: 'create_association', association: link_type.to_s, via: [:post]
           end
 
           if methods.include?(:update)
             match "links/#{formatted_association_name}", controller: res._type.to_s,
-                  action: 'update_association', association: link_type.to_s, via: [:put]
+            action: 'update_association', association: link_type.to_s, via: [:put]
           end
 
           if methods.include?(:destroy)
             match "links/#{formatted_association_name}", controller: res._type.to_s,
-                  action: 'destroy_association', association: link_type.to_s, via: [:delete]
+            action: 'destroy_association', association: link_type.to_s, via: [:delete]
           end
         end
 
@@ -123,29 +119,34 @@ module ActionDispatch
           formatted_association_name = format_route(link_type)
           options = links.extract_options!.dup
 
-          res = JSONAPI::Resource.resource_for(@scope[:jsonapi_resource])
+          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix)
 
           methods = links_methods(options)
 
           if methods.include?(:show)
             match "links/#{formatted_association_name}", controller: res._type.to_s,
-                  action: 'show_association', association: link_type.to_s, via: [:get]
+            action: 'show_association', association: link_type.to_s, via: [:get]
           end
 
           if methods.include?(:create)
             match "links/#{formatted_association_name}", controller: res._type.to_s,
-                  action: 'create_association', association: link_type.to_s, via: [:post]
+            action: 'create_association', association: link_type.to_s, via: [:post]
           end
 
           if methods.include?(:update) && res._association(link_type).acts_as_set
             match "links/#{formatted_association_name}", controller: res._type.to_s,
-                  action: 'update_association', association: link_type.to_s, via: [:put]
+            action: 'update_association', association: link_type.to_s, via: [:put]
           end
 
           if methods.include?(:destroy)
             match "links/#{formatted_association_name}/:keys", controller: res._type.to_s,
-                  action: 'destroy_association', association: link_type.to_s, via: [:delete]
+            action: 'destroy_association', association: link_type.to_s, via: [:delete]
           end
+        end
+
+        def resource_type_with_module_prefix(resource = nil)
+          resource_name = resource || @scope[:jsonapi_resource]
+          [@scope[:module], resource_name].compact.collect(&:to_s).join("/")
         end
       end
     end
