@@ -16,7 +16,8 @@ module JSONAPI
       @context = context
     end
 
-    def remove
+    def remove(context = nil)
+      before_save(context)
       @model.destroy
     end
 
@@ -97,10 +98,15 @@ module JSONAPI
       end if field_data[:has_many]
     end
 
-    def save
+    def save(context = nil)
+      before_save(context)
       @model.save!
     rescue ActiveRecord::RecordInvalid => e
       raise JSONAPI::Exceptions::ValidationErrors.new(e.record.errors.messages)
+    end
+
+    def before_save(context)
+      # noop
     end
 
     # Override this on a resource instance to override the fetchable keys

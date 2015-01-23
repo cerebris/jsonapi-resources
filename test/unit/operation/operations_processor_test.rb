@@ -5,6 +5,8 @@ require 'jsonapi/operation'
 require 'jsonapi/operation_result'
 require 'jsonapi/operations_processor'
 
+class JSONAPI::Operation::AuthorizeError < StandardError; end
+
 class OperationsProcessorTest < MiniTest::Unit::TestCase
   def setup
     betax = Planet.find(5)
@@ -32,6 +34,24 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
     assert_equal(:created, results[0].code)
     assert_equal(results.size, 1)
     assert_equal(Planet.count, count + 1)
+  end
+
+  def test_create_single_resource_with_before_save_exception
+    op = JSONAPI::OperationsProcessor.new()
+    count = Planet.count
+
+    operation = JSONAPI::CreateResourceOperation.new(PlanetResource, {attributes: {'name' => 'earth', 'description' => 'The best planet ever.'}})
+
+    PlanetResource.send(:define_method, :before_save, lambda { |context| raise JSONAPI::Operation::AuthorizeError })
+
+    request = JSONAPI::Request.new
+    request.operations = [operation]
+    begin
+      results = op.process(request)
+    rescue JSONAPI::Operation::AuthorizeError
+    end
+    assert_equal(Planet.count, count)
+    PlanetResource.send(:define_method, :before_save, -> (context) { true })
   end
 
   def test_create_multiple_resources
@@ -63,7 +83,6 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
     planetoid = PlanetType.find(2)
     assert_equal(saturn.planet_type_id, planetoid.id)
 
-
     operations = [
       JSONAPI::ReplaceHasOneAssociationOperation.new(PlanetResource, saturn.id, :planet_type, gas_giant.id)
     ]
@@ -71,14 +90,19 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
     request = JSONAPI::Request.new
     request.operations = operations
 
-    results = op.process(request)
+    Planet.transaction do
+      results = op.process(request)
 
-    assert_kind_of(Array, results)
-    assert_kind_of(JSONAPI::OperationResult, results[0])
-    assert_equal(:no_content, results[0].code)
+      assert_kind_of(Array, results)
+      assert_kind_of(JSONAPI::OperationResult, results[0])
+      assert_equal(:no_content, results[0].code)
 
+      saturn.reload
+      assert_equal(saturn.planet_type_id, gas_giant.id)
+      raise ActiveRecord::Rollback
+    end
     saturn.reload
-    assert_equal(saturn.planet_type_id, gas_giant.id)
+    assert_equal(saturn.planet_type_id, planetoid.id)
   end
 
   def test_create_has_many_association
@@ -92,26 +116,29 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
     betax.planet_type_id = unknown.id
     betay.planet_type_id = unknown.id
     betaz.planet_type_id = unknown.id
-    betax.save!
-    betay.save!
-    betaz.save!
+    Planet.transaction do
+      betax.save!
+      betay.save!
+      betaz.save!
 
-    operations = [
-      JSONAPI::CreateHasManyAssociationOperation.new(PlanetTypeResource, gas_giant.id, :planets, [betax.id, betay.id, betaz.id])
-    ]
+      operations = [
+        JSONAPI::CreateHasManyAssociationOperation.new(PlanetTypeResource, gas_giant.id, :planets, [betax.id, betay.id, betaz.id])
+      ]
 
-    request = JSONAPI::Request.new
-    request.operations = operations
+      request = JSONAPI::Request.new
+      request.operations = operations
 
-    results = op.process(request)
+      results = op.process(request)
 
-    betax.reload
-    betay.reload
-    betaz.reload
+      betax.reload
+      betay.reload
+      betaz.reload
 
-    assert_equal(betax.planet_type_id, gas_giant.id)
-    assert_equal(betay.planet_type_id, gas_giant.id)
-    assert_equal(betaz.planet_type_id, gas_giant.id)
+      assert_equal(betax.planet_type_id, gas_giant.id)
+      assert_equal(betay.planet_type_id, gas_giant.id)
+      assert_equal(betaz.planet_type_id, gas_giant.id)
+      raise ActiveRecord::Rollback
+    end
   end
 
   def test_replace_has_many_association
@@ -125,26 +152,29 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
     betax.planet_type_id = unknown.id
     betay.planet_type_id = unknown.id
     betaz.planet_type_id = unknown.id
-    betax.save!
-    betay.save!
-    betaz.save!
+    Planet.transaction do
+      betax.save!
+      betay.save!
+      betaz.save!
 
-    operations = [
-      JSONAPI::ReplaceHasManyAssociationOperation.new(PlanetTypeResource, gas_giant.id, :planets, [betax.id, betay.id, betaz.id])
-    ]
+      operations = [
+        JSONAPI::ReplaceHasManyAssociationOperation.new(PlanetTypeResource, gas_giant.id, :planets, [betax.id, betay.id, betaz.id])
+      ]
 
-    request = JSONAPI::Request.new
-    request.operations = operations
+      request = JSONAPI::Request.new
+      request.operations = operations
 
-    results = op.process(request)
+      results = op.process(request)
 
-    betax.reload
-    betay.reload
-    betaz.reload
+      betax.reload
+      betay.reload
+      betaz.reload
 
-    assert_equal(betax.planet_type_id, gas_giant.id)
-    assert_equal(betay.planet_type_id, gas_giant.id)
-    assert_equal(betaz.planet_type_id, gas_giant.id)
+      assert_equal(betax.planet_type_id, gas_giant.id)
+      assert_equal(betay.planet_type_id, gas_giant.id)
+      assert_equal(betaz.planet_type_id, gas_giant.id)
+      raise ActiveRecord::Rollback
+    end
   end
 
   def test_replace_attributes
@@ -161,19 +191,22 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
     request = JSONAPI::Request.new
     request.operations = operations
 
-    results = op.process(request)
+    Planet.transaction do
+      results = op.process(request)
 
-    assert_kind_of(Array, results)
-    assert_equal(results.size, 1)
+      assert_kind_of(Array, results)
+      assert_equal(results.size, 1)
 
-    assert_kind_of(JSONAPI::OperationResult, results[0])
-    assert_equal(:ok, results[0].code)
+      assert_kind_of(JSONAPI::OperationResult, results[0])
+      assert_equal(:ok, results[0].code)
 
-    saturn = Planet.find(1)
+      saturn = Planet.find(1)
 
-    assert_equal(saturn.name, 'saturn')
+      assert_equal(saturn.name, 'saturn')
 
-    assert_equal(Planet.count, count)
+      assert_equal(Planet.count, count)
+      raise ActiveRecord::Rollback
+    end
   end
 
   def test_remove_resource
@@ -189,15 +222,17 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
 
     request = JSONAPI::Request.new
     request.operations = operations
+    Planet.transaction do
+      results = op.process(request)
 
-    results = op.process(request)
+      assert_kind_of(Array, results)
+      assert_equal(results.size, 1)
 
-    assert_kind_of(Array, results)
-    assert_equal(results.size, 1)
-
-    assert_kind_of(JSONAPI::OperationResult, results[0])
-    assert_equal(:no_content, results[0].code)
-    assert_equal(Planet.count, count - 1)
+      assert_kind_of(JSONAPI::OperationResult, results[0])
+      assert_equal(:no_content, results[0].code)
+      assert_equal(Planet.count, count - 1)
+      raise ActiveRecord::Rollback
+    end
   end
 
   def test_rollback_from_error
