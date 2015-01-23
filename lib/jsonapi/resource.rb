@@ -1,49 +1,154 @@
 require 'jsonapi/configuration'
 require 'jsonapi/resource_for'
 require 'jsonapi/association'
+require 'jsonapi/callbacks'
 
 module JSONAPI
   class Resource
     include ResourceFor
+    include Callbacks
 
     @@resource_types = {}
 
     attr :context
     attr_reader :model
 
+    define_jsonapi_resources_callbacks :create,
+                                       :update,
+                                       :remove,
+                                       :save,
+                                       :create_has_many_link,
+                                       :replace_has_many_links,
+                                       :create_has_one_link,
+                                       :replace_has_one_link,
+                                       :remove_has_many_link,
+                                       :remove_has_one_link,
+                                       :replace_fields
+
     def initialize(model, context = nil)
       @model = model
       @context = context
-    end
-
-    def remove
-      @model.destroy
     end
 
     def id
       model.send(self.class._primary_key)
     end
 
-    def create_has_many_link(association_type, association_key_value)
-      association = self.class._associations[association_type]
-      related_resource = self.class.resource_for(association.type).find_by_key(association_key_value, context: @context)
+    def is_new?
+      id.nil?
+    end
 
-      # ToDo: Add option to skip relations that already exist instead of returning an error?
-      relation = @model.send(association.type).where(association.primary_key => association_key_value).first
-      if relation.nil?
-        @model.send(association.type) << related_resource.model
+    def change(callback)
+      if @changing
+        run_callbacks callback do
+          yield
+        end
       else
-        raise JSONAPI::Exceptions::HasManyRelationExists.new(association_key_value)
+        run_callbacks is_new? ? :create : :update do
+          @changing = true
+          run_callbacks callback do
+            yield
+            save if @save_needed
+          end
+        end
+      end
+    end
+
+    def remove
+      run_callbacks :remove do
+        _remove
+      end
+    end
+
+    def create_has_many_links(association_type, association_key_values)
+      change :create_has_many_link do
+        _create_has_many_links(association_type, association_key_values)
       end
     end
 
     def replace_has_many_links(association_type, association_key_values)
-      association = self.class._associations[association_type]
-
-      send("#{association.foreign_key}=", association_key_values)
+      change :replace_has_many_links do
+        _replace_has_many_links(association_type, association_key_values)
+      end
     end
 
     def create_has_one_link(association_type, association_key_value)
+      change :create_has_one_link do
+        _create_has_one_link(association_type, association_key_value)
+      end
+    end
+
+    def replace_has_one_link(association_type, association_key_value)
+      change :replace_has_one_link do
+        _replace_has_one_link(association_type, association_key_value)
+      end
+    end
+
+    def remove_has_many_link(association_type, key)
+      change :remove_has_many_link do
+        _remove_has_many_link(association_type, key)
+      end
+    end
+
+    def remove_has_one_link(association_type)
+      change :remove_has_one_link do
+        _remove_has_one_link(association_type)
+      end
+    end
+
+    def replace_fields(field_data)
+      change :replace_fields do
+        _replace_fields(field_data)
+      end
+    end
+
+    # Override this on a resource instance to override the fetchable keys
+    def fetchable_fields
+      self.class.fields
+    end
+
+    private
+    def save
+      run_callbacks :save do
+        _save
+      end
+    end
+
+    def _save
+      @model.save!
+      @save_needed = false
+    rescue ActiveRecord::RecordInvalid => e
+      raise JSONAPI::Exceptions::ValidationErrors.new(e.record.errors.messages)
+    end
+
+    def _remove
+      @model.destroy
+    end
+
+    def _create_has_many_links(association_type, association_key_values)
+      association = self.class._associations[association_type]
+
+      association_key_values.each do |association_key_value|
+        related_resource = self.class.resource_for(association.type).find_by_key(association_key_value, context: @context)
+
+        # ToDo: Add option to skip relations that already exist instead of returning an error?
+        relation = @model.send(association.type).where(association.primary_key => association_key_value).first
+        if relation.nil?
+          @model.send(association.type) << related_resource.model
+        else
+          raise JSONAPI::Exceptions::HasManyRelationExists.new(association_key_value)
+        end
+      end
+    end
+
+    def _replace_has_many_links(association_type, association_key_values)
+      association = self.class._associations[association_type]
+
+      send("#{association.foreign_key}=", association_key_values)
+      @save_needed = true
+    end
+
+    def _create_has_one_link(association_type, association_key_value)
       association = self.class._associations[association_type]
 
       # ToDo: Add option to skip relations that already exist instead of returning an error?
@@ -53,30 +158,34 @@ module JSONAPI
       else
         raise JSONAPI::Exceptions::HasOneRelationExists.new
       end
+      @save_needed = true
     end
 
-    def replace_has_one_link(association_type, association_key_value)
+    def _replace_has_one_link(association_type, association_key_value)
       association = self.class._associations[association_type]
 
       send("#{association.foreign_key}=", association_key_value)
+      @save_needed = true
     end
 
-    def remove_has_many_link(association_type, key)
+    def _remove_has_many_link(association_type, key)
       association = self.class._associations[association_type]
 
       @model.send(association.type).delete(key)
     end
 
-    def remove_has_one_link(association_type)
+    def _remove_has_one_link(association_type)
       association = self.class._associations[association_type]
 
       send("#{association.foreign_key}=", nil)
+      @save_needed = true
     end
 
-    def replace_fields(field_data)
+    def _replace_fields(field_data)
       field_data[:attributes].each do |attribute, value|
         begin
           send "#{attribute}=", value
+          @save_needed = true
         rescue ArgumentError
           # :nocov: Will be thrown if an enum value isn't allowed for an enum. Currently not tested as enums are a rails 4.1 and higher feature
           raise JSONAPI::Exceptions::InvalidFieldValue.new(attribute, value)
@@ -95,17 +204,6 @@ module JSONAPI
       field_data[:has_many].each do |association_type, values|
         replace_has_many_links(association_type, values)
       end if field_data[:has_many]
-    end
-
-    def save
-      @model.save!
-    rescue ActiveRecord::RecordInvalid => e
-      raise JSONAPI::Exceptions::ValidationErrors.new(e.record.errors.messages)
-    end
-
-    # Override this on a resource instance to override the fetchable keys
-    def fetchable_fields
-      self.class.fields
     end
 
     class << self

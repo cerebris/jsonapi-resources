@@ -5,6 +5,56 @@ require 'jsonapi/operation'
 require 'jsonapi/operation_result'
 require 'jsonapi/operations_processor'
 
+class TestOperationsProcessor < JSONAPI::OperationsProcessor
+  before_operation :log_before_operation
+
+  after_operation :log_after_operation
+
+  around_operation :log_around_operation
+
+  def log_before_operation
+    msg = "Before Operation"
+    # puts msg
+  end
+
+  def log_around_operation
+    msg = "Starting... #{@operation.class.name}"
+    # puts msg
+    yield
+    msg = "... Finishing #{@operation.class.name}"
+    # puts msg
+  end
+
+  def log_after_operation
+    msg = "After Operation"
+    # puts msg
+  end
+
+  before_operations :log_before_operations
+
+  after_operations :log_after_operations
+
+  around_operations :log_around_operations
+
+  def log_before_operations
+    msg = "Before #{@operations.count} Operation(s)"
+    # puts msg
+  end
+
+  def log_around_operations
+    msg = "Starting #{@operations.count} Operation(s)..."
+    # puts msg
+    yield
+    msg = "...Finishing Up Operations"
+    # puts msg
+  end
+
+  def log_after_operations
+    msg =  "After Operations"
+    # puts msg
+  end
+end
+
 class OperationsProcessorTest < MiniTest::Unit::TestCase
   def setup
     betax = Planet.find(5)
@@ -14,7 +64,7 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
   end
 
   def test_create_single_resource
-    op = JSONAPI::OperationsProcessor.new()
+    op = TestOperationsProcessor.new()
 
     count = Planet.count
 
