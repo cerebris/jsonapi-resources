@@ -330,6 +330,49 @@ class AuthorResource < JSONAPI::Resource
 end
 ```
 
+#### Callbacks
+
+`ActiveSupport::Callbacks` is used to provide callback functionality, so the behavior is very similar to what you may be used to from `ActiveRecord`.
+
+For example, you might use a callback to perform authorization on your resource before an action.
+
+```ruby
+class BaseResource < JSONAPI::Resource
+  before_create :authorize_create
+
+  def authorize_create
+    # ...
+  end
+end
+```
+
+The types of supported callbacks are:
+- `before`
+- `after`
+- `around`
+
+##### `JSONAPI::Resource` Callbacks
+
+Callbacks can be defined for the following `JSONAPI::Resource` events:
+
+- `:create`
+- `:update`
+- `:remove`
+- `:save`
+- `:create_has_many_link`
+- `:replace_has_many_links`
+- `:create_has_one_link`
+- `:replace_has_one_link`
+- `:remove_has_many_link`
+- `:remove_has_one_link`
+- `:replace_fields`
+
+##### `JSONAPI::OperationsProcessor` Callbacks
+
+Callbacks can also be defined for `JSONAPI::OperationsProcessor` events:
+- `:operations`: The set of operations.
+- `:operation`: The individual operations.
+
 ### Controllers
 
 `JSONAPI::Resources` provides a class, `ResourceController`, that can be used as the base class for your controllers. `ResourceController` supports `index`, `show`, `create`, `update`, and `destroy` methods. Just deriving your controller from `ResourceController` will give you a fully functional controller.
