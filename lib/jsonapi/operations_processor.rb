@@ -1,35 +1,33 @@
 require 'jsonapi/operation_result'
+require 'jsonapi/callbacks'
 
 module JSONAPI
   class OperationsProcessor
+    include Callbacks
+    define_jsonapi_resources_callbacks :operation, :operations
 
     def process(request)
       @results = []
-      @resources = []
+      @request = request
+      @context = request.context
+      @operations = request.operations
 
-      context = request.context
-
-      transaction {
-        request.operations.each do |operation|
-          before_operation(context, operation)
-
-          result = operation.apply(context)
-
-          after_operation(context, result)
-
-          @results.push(result)
-          if result.has_errors?
-            rollback
+      run_callbacks :operations do
+        transaction do
+          @operations.each do |operation|
+            @operation = operation
+            @result = nil
+            run_callbacks :operation do
+              @result = @operation.apply(@context)
+              @results.push(@result)
+              if @result.has_errors?
+                rollback
+              end
+            end
           end
         end
-      }
+      end
       @results
-    end
-
-    def before_operation(context, operation)
-    end
-
-    def after_operation(context, result)
     end
 
     private
