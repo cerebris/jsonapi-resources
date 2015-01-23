@@ -60,14 +60,69 @@ module JSONAPI
       end
     end
 
-    def _remove
-      @model.destroy
-    end
-
     def create_has_many_links(association_type, association_key_values)
       change :create_has_many_link do
         _create_has_many_links(association_type, association_key_values)
       end
+    end
+
+    def replace_has_many_links(association_type, association_key_values)
+      change :replace_has_many_links do
+        _replace_has_many_links(association_type, association_key_values)
+      end
+    end
+
+    def create_has_one_link(association_type, association_key_value)
+      change :create_has_one_link do
+        _create_has_one_link(association_type, association_key_value)
+      end
+    end
+
+    def replace_has_one_link(association_type, association_key_value)
+      change :replace_has_one_link do
+        _replace_has_one_link(association_type, association_key_value)
+      end
+    end
+
+    def remove_has_many_link(association_type, key)
+      change :remove_has_many_link do
+        _remove_has_many_link(association_type, key)
+      end
+    end
+
+    def remove_has_one_link(association_type)
+      change :remove_has_one_link do
+        _remove_has_one_link(association_type)
+      end
+    end
+
+    def replace_fields(field_data)
+      change :replace_fields do
+        _replace_fields(field_data)
+      end
+    end
+
+    # Override this on a resource instance to override the fetchable keys
+    def fetchable_fields
+      self.class.fields
+    end
+
+    private
+      def save
+        run_callbacks :save do
+          _save
+        end
+      end
+
+      def _save
+        @model.save!
+        @save_needed = false
+      rescue ActiveRecord::RecordInvalid => e
+        raise JSONAPI::Exceptions::ValidationErrors.new(e.record.errors.messages)
+      end
+
+    def _remove
+      @model.destroy
     end
 
     def _create_has_many_links(association_type, association_key_values)
@@ -86,23 +141,11 @@ module JSONAPI
       end
     end
 
-    def replace_has_many_links(association_type, association_key_values)
-      change :replace_has_many_links do
-        _replace_has_many_links(association_type, association_key_values)
-      end
-    end
-
     def _replace_has_many_links(association_type, association_key_values)
       association = self.class._associations[association_type]
 
       send("#{association.foreign_key}=", association_key_values)
       @save_needed = true
-    end
-
-    def create_has_one_link(association_type, association_key_value)
-      change :create_has_one_link do
-        _create_has_one_link(association_type, association_key_value)
-      end
     end
 
     def _create_has_one_link(association_type, association_key_value)
@@ -118,23 +161,11 @@ module JSONAPI
       @save_needed = true
     end
 
-    def replace_has_one_link(association_type, association_key_value)
-      change :replace_has_one_link do
-        _replace_has_one_link(association_type, association_key_value)
-      end
-    end
-
     def _replace_has_one_link(association_type, association_key_value)
       association = self.class._associations[association_type]
 
       send("#{association.foreign_key}=", association_key_value)
       @save_needed = true
-    end
-
-    def remove_has_many_link(association_type, key)
-      change :remove_has_many_link do
-        _remove_has_many_link(association_type, key)
-      end
     end
 
     def _remove_has_many_link(association_type, key)
@@ -143,23 +174,11 @@ module JSONAPI
       @model.send(association.type).delete(key)
     end
 
-    def remove_has_one_link(association_type)
-      change :remove_has_one_link do
-        _remove_has_one_link(association_type)
-      end
-    end
-
     def _remove_has_one_link(association_type)
       association = self.class._associations[association_type]
 
       send("#{association.foreign_key}=", nil)
       @save_needed = true
-    end
-
-    def replace_fields(field_data)
-      change :replace_fields do
-        _replace_fields(field_data)
-      end
     end
 
     def _replace_fields(field_data)
@@ -187,26 +206,6 @@ module JSONAPI
       end if field_data[:has_many]
     end
 
-    # Override this on a resource instance to override the fetchable keys
-    def fetchable_fields
-      self.class.fields
-    end
-
-    private
-      def save
-        run_callbacks :save do
-          _save
-        end
-      end
-
-      def _save
-        @model.save!
-        @save_needed = false
-      rescue ActiveRecord::RecordInvalid => e
-        raise JSONAPI::Exceptions::ValidationErrors.new(e.record.errors.messages)
-      end
-
-    public
     class << self
       def inherited(base)
         base._attributes = (_attributes || {}).dup
