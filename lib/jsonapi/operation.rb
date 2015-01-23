@@ -116,9 +116,7 @@ module JSONAPI
 
     def apply(context)
       resource = @resource_klass.find_by_key(@resource_id, context: context)
-      @key_values.each do |value|
-        resource.create_has_many_link(@association_type, value)
-      end
+      resource.create_has_many_links(@association_type, @key_values)
 
       return JSONAPI::OperationResult.new(:no_content)
     end

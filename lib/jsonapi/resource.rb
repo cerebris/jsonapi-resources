@@ -64,22 +64,25 @@ module JSONAPI
       @model.destroy
     end
 
-    def create_has_many_link(association_type, association_key_value)
+    def create_has_many_links(association_type, association_key_values)
       change :create_has_many_link do
-        _create_has_many_link(association_type, association_key_value)
+        _create_has_many_links(association_type, association_key_values)
       end
     end
 
-    def _create_has_many_link(association_type, association_key_value)
+    def _create_has_many_links(association_type, association_key_values)
       association = self.class._associations[association_type]
-      related_resource = self.class.resource_for(association.type).find_by_key(association_key_value, context: @context)
 
-      # ToDo: Add option to skip relations that already exist instead of returning an error?
-      relation = @model.send(association.type).where(association.primary_key => association_key_value).first
-      if relation.nil?
-        @model.send(association.type) << related_resource.model
-      else
-        raise JSONAPI::Exceptions::HasManyRelationExists.new(association_key_value)
+      association_key_values.each do |association_key_value|
+        related_resource = self.class.resource_for(association.type).find_by_key(association_key_value, context: @context)
+
+        # ToDo: Add option to skip relations that already exist instead of returning an error?
+        relation = @model.send(association.type).where(association.primary_key => association_key_value).first
+        if relation.nil?
+          @model.send(association.type) << related_resource.model
+        else
+          raise JSONAPI::Exceptions::HasManyRelationExists.new(association_key_value)
+        end
       end
     end
 
