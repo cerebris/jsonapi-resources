@@ -229,7 +229,7 @@ module JSONAPI
         @@resource_types[base._type] ||= base.name.demodulize
       end
 
-      attr_accessor :_attributes, :_associations, :_allowed_filters , :_type
+      attr_accessor :_attributes, :_associations, :_allowed_filters , :_type, :_paginator
 
       def create(context)
         self.new(self.create_model, context)
