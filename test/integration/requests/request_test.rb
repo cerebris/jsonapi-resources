@@ -45,6 +45,21 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 'USD', json_response['isoCurrency']
   end
 
+  def test_put_single_without_content_type
+    put '/posts/3',
+        {
+          'posts' => {
+            'id' => '3',
+            'title' => 'A great new Post',
+            'links' => {
+              'tags' => [3, 4]
+            }
+          }
+        }.to_json, "CONTENT_TYPE" => "application/json"
+
+    assert_equal 415, status
+  end
+
   def test_put_single
     put '/posts/3',
         {
@@ -55,8 +70,38 @@ class RequestTest < ActionDispatch::IntegrationTest
               'tags' => [3, 4]
             }
           }
-        }
+        }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
     assert_equal 200, status
+  end
+
+  def test_post_single_without_content_type
+    post '/posts',
+      {
+        'posts' => {
+          'title' => 'A great new Post',
+          'links' => {
+            'tags' => [3, 4]
+          }
+        }
+      }.to_json, "CONTENT_TYPE" => "application/json"
+
+    assert_equal 415, status
+  end
+
+  def test_post_single
+    post '/posts',
+      {
+        'posts' => {
+          'title' => 'A great new Post',
+          'body' => 'JSONAPIResources is the greatest thing since unsliced bread.',
+          'links' => {
+            'author' => '3'
+          }
+        }
+      }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 201, status
   end
 
   def test_destroy_single

@@ -14,6 +14,7 @@ require 'rails/all'
 require 'jsonapi/routing_ext'
 require 'jsonapi/configuration'
 require 'jsonapi/formatter'
+require 'jsonapi/mime_types'
 
 require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/hash_helpers', __FILE__)

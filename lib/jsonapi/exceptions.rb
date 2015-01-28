@@ -30,6 +30,20 @@ module JSONAPI
       end
     end
 
+    class UnsupportedMediaTypeError < Error
+      attr_accessor :media_type
+      def initialize(media_type)
+        @media_type = media_type
+      end
+
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::UNSUPPORTED_MEDIA_TYPE,
+                             status: :unsupported_media_type,
+                             title: 'Unsupported media type',
+                             detail: "All requests that create or update resources must use the '#{JSONAPI::MEDIA_TYPE}' Content-Type. This request specified '#{media_type}.'")]
+      end
+    end
+
     class HasManyRelationExists < Error
       attr_accessor :id
       def initialize(id)
