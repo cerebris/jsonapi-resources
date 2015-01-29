@@ -117,7 +117,7 @@ module JSONAPI
     def _save
       @model.save!
       @save_needed = false
-    rescue ActiveRecord::RecordInvalid => e
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
       raise JSONAPI::Exceptions::ValidationErrors.new(e.record.errors.messages)
     end
 
