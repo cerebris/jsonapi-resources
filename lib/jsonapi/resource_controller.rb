@@ -13,6 +13,7 @@ module JSONAPI
   class ResourceController < ActionController::Base
     include ResourceFor
 
+    before_filter :ensure_correct_media_type, only: [:create, :update, :create_association, :update_association]
     before_filter :setup_request
 
     def index
@@ -105,6 +106,16 @@ module JSONAPI
 
     def resource_klass_name
       @resource_klass_name ||= "#{self.class.name.sub(/Controller$/, '').singularize}Resource"
+    end
+
+    def ensure_correct_media_type
+      unless request.content_type == JSONAPI::MEDIA_TYPE
+        raise JSONAPI::Exceptions::UnsupportedMediaTypeError.new(request.content_type)
+      end
+    rescue => e
+      # :nocov:
+      handle_exceptions(e)
+      # :nocov:
     end
 
     def setup_request
