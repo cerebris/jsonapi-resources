@@ -15,6 +15,7 @@ module JSONAPI
 
     before_filter :ensure_correct_media_type, only: [:create, :update, :create_association, :update_association]
     before_filter :setup_request
+    before_filter :setup_response, only: [:index, :show, :create, :update, :create_association, :update_association]
 
     def index
       render json: JSONAPI::ResourceSerializer.new(resource_klass).serialize_to_hash(
@@ -128,6 +129,10 @@ module JSONAPI
       # :nocov:
       handle_exceptions(e)
       # :nocov:
+    end
+
+    def setup_response
+      response.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
     end
 
     def parse_key_array(raw)
