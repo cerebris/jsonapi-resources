@@ -160,6 +160,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_destroy_single
     delete '/posts/7'
     assert_equal 204, status
+    assert_nil headers['Content-Type']
   end
 
   def test_destroy_multiple
