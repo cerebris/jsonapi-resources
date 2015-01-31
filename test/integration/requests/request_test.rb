@@ -104,6 +104,20 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 201, status
   end
 
+  def test_create_association_without_content_type
+    ruby = Section.find_by(name: 'ruby')
+    put '/posts/3/links/section', { 'sections' => ruby.id.to_s }.to_json
+
+    assert_equal 415, status
+  end
+
+  def test_create_association
+    ruby = Section.find_by(name: 'ruby')
+    put '/posts/3/links/section', { 'sections' => ruby.id.to_s }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 204, status
+  end
+
   def test_destroy_single
     delete '/posts/7'
     assert_equal 204, status

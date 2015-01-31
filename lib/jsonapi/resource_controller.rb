@@ -13,7 +13,7 @@ module JSONAPI
   class ResourceController < ActionController::Base
     include ResourceFor
 
-    before_filter :ensure_correct_media_type, only: [:create, :update]
+    before_filter :ensure_correct_media_type, only: [:create, :update, :create_association, :update_association]
     before_filter :setup_request
 
     def index
