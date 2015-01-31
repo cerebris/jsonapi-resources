@@ -118,9 +118,49 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 204, status
   end
 
+  def test_index_content_type
+    get '/posts'
+    assert_match JSONAPI::MEDIA_TYPE, headers['Content-Type']
+  end
+
+  def test_get_content_type
+    get '/posts/3'
+    assert_match JSONAPI::MEDIA_TYPE, headers['Content-Type']
+  end
+
+  def test_put_content_type
+    put '/posts/3',
+        {
+          'posts' => {
+            'id' => '3',
+            'title' => 'A great new Post',
+            'links' => {
+              'tags' => [3, 4]
+            }
+          }
+        }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_match JSONAPI::MEDIA_TYPE, headers['Content-Type']
+  end
+
+  def test_post_correct_content_type
+    post '/posts',
+      {
+       'posts' => {
+         'title' => 'A great new Post',
+         'links' => {
+           'author' => '3'
+         }
+       }
+     }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_match JSONAPI::MEDIA_TYPE, headers['Content-Type']
+  end
+
   def test_destroy_single
     delete '/posts/7'
     assert_equal 204, status
+    assert_nil headers['Content-Type']
   end
 
   def test_destroy_multiple
