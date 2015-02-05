@@ -40,7 +40,7 @@ module JSONAPI
           when 'create'
             parse_fields(params[:fields])
             parse_include(params[:include])
-            parse_add_operation(params)
+            parse_add_operation(params.require(:data))
           when 'create_association'
             parse_add_association_operation(params)
           when 'update_association'
@@ -55,6 +55,8 @@ module JSONAPI
             parse_remove_association_operation(params)
         end
       end
+    rescue ActionController::ParameterMissing => e
+      @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)
     end
 
     def parse_pagination(page)
@@ -180,22 +182,18 @@ module JSONAPI
       end
     end
 
-    def parse_add_operation(params)
-      object_params_raw = params.require(:data)
-
-      if object_params_raw.is_a?(Array)
-        object_params_raw.each do |p|
+    def parse_add_operation(data)
+      if data.is_a?(Array)
+        data.each do |p|
           @operations.push JSONAPI::CreateResourceOperation.new(@resource_klass,
                                                                 parse_params(verify_and_remove_type(p),
                                                                              @resource_klass.createable_fields(@context)))
         end
       else
         @operations.push JSONAPI::CreateResourceOperation.new(@resource_klass,
-                                                              parse_params(verify_and_remove_type(object_params_raw),
+                                                              parse_params(verify_and_remove_type(data),
                                                                            @resource_klass.createable_fields(@context)))
       end
-    rescue ActionController::ParameterMissing => e
-      @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)
     rescue JSONAPI::Exceptions::Error => e
       @errors.concat(e.errors)
     end
