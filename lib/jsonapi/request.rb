@@ -28,17 +28,17 @@ module JSONAPI
         case params[:action]
           when 'index'
             parse_fields(params)
-            parse_include(params)
+            parse_include(params[:include])
             parse_filters(params[:filter])
             parse_sort_params(params)
             parse_pagination(params)
           when 'show_associations'
           when 'show'
             parse_fields(params)
-            parse_include(params)
+            parse_include(params[:include])
           when 'create'
             parse_fields(params)
-            parse_include(params)
+            parse_include(params[:include])
             parse_add_operation(params)
           when 'create_association'
             parse_add_association_operation(params)
@@ -46,7 +46,7 @@ module JSONAPI
             parse_update_association_operation(params)
           when 'update'
             parse_fields(params)
-            parse_include(params)
+            parse_include(params[:include])
             parse_replace_operation(params)
           when 'destroy'
             parse_remove_operation(params)
@@ -127,13 +127,16 @@ module JSONAPI
       end
     end
 
-    def parse_include(params)
-      included_resources_raw = CSV.parse_line(params[:include]) unless params[:include].nil? || params[:include].empty?
+    def parse_include(include)
+      return if include.nil?
+
+      included_resources = CSV.parse_line(include)
+      return if included_resources.nil?
+
       @include = []
-      return if included_resources_raw.nil?
-      included_resources_raw.each do |include|
-        check_include(@resource_klass, include.partition('.'))
-        @include.push(unformat_key(include).to_s)
+      included_resources.each do |included_resource|
+        check_include(@resource_klass, included_resource.partition('.'))
+        @include.push(unformat_key(included_resource).to_s)
       end
     end
 
