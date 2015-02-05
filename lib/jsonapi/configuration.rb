@@ -13,10 +13,10 @@ module JSONAPI
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
-      self.json_key_format = :underscored_key
+      self.json_key_format = :dasherized_key
 
       #:underscored_route, :camelized_route, :dasherized_route, or custom
-      self.route_format = :underscored_route
+      self.route_format = :dasherized_route
 
       self.allowed_request_params = [:include, :fields, :format, :controller, :action, :sort, :page]
 

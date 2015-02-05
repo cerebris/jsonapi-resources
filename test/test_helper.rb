@@ -41,7 +41,7 @@ end
 TestApp.initialize!
 
 require File.expand_path('../fixtures/active_record', __FILE__)
-
+JSONAPI.configuration.route_format = :underscored_route
 TestApp.routes.draw do
   jsonapi_resources :authors
   jsonapi_resources :people

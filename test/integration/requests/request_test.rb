@@ -3,6 +3,10 @@ require File.expand_path('../../../fixtures/active_record', __FILE__)
 
 class RequestTest < ActionDispatch::IntegrationTest
 
+  def setup
+    JSONAPI.configuration.json_key_format = :underscored_key
+  end
+
   def after_teardown
     Api::V2::BookResource.paginator :offset
   end
@@ -36,6 +40,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_get_camelized_route_and_key_filtered
+    JSONAPI.configuration.json_key_format = :camelized_key
     get '/api/v4/isoCurrencies?countryName=Canada'
     assert_equal 200, status
     assert_equal 1, json_response['data'].size
