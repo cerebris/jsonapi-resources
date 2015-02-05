@@ -559,6 +559,7 @@ class PostsControllerTest < ActionController::TestCase
         {
           id: 3,
           data: {
+            id: '3',
             type: 'posts',
             title: 'A great new Post',
             links: {
@@ -585,6 +586,7 @@ class PostsControllerTest < ActionController::TestCase
           id: 3,
           data: {
             type: 'posts',
+            id: 3,
             title: 'A great new Post',
             links: {
               section: nil,
@@ -833,6 +835,7 @@ class PostsControllerTest < ActionController::TestCase
           id: 3,
           data: {
             type: 'posts',
+            id: '3',
             asdfg: 'aaaa',
             title: 'A great new Post',
             links: {
@@ -855,6 +858,7 @@ class PostsControllerTest < ActionController::TestCase
           id: 3,
           data: {
             type: 'posts',
+            id: '3',
             title: 'A great new Post',
             links: {
               asdfg: 'aaaa',
@@ -889,6 +893,22 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /The required parameter, data, is missing./, response.body
   end
 
+  def test_update_missing_key
+    set_content_type_header!
+
+    put :update,
+        {
+          id: 3,
+          data: {
+            type: 'posts',
+            title: 'A great new Post'
+          }
+        }
+
+    assert_response :bad_request
+    assert_match /The resource object does not contain a key/, response.body
+  end
+
   def test_update_missing_type
     set_content_type_header!
     javascript = Section.find_by(name: 'javascript')
@@ -897,6 +917,7 @@ class PostsControllerTest < ActionController::TestCase
         {
           id: 3,
           data: {
+            id: '3',
             type_spelled_wrong: 'posts',
             title: 'A great new Post',
             links: {
@@ -1056,6 +1077,7 @@ class PostsControllerTest < ActionController::TestCase
           id: 3,
           data: {
             type: 'posts',
+            id: '3',
             subject: 'A great new Post',
             links: {
               author: {type: 'people', id: '1'},
@@ -1438,6 +1460,7 @@ class PeopleControllerTest < ActionController::TestCase
         {
           id: 3,
           data: {
+            id: '3',
             type: 'people',
             name: ''
           }
@@ -1552,6 +1575,7 @@ class BreedsControllerTest < ActionController::TestCase
         {
           id: json_response['data']['id'],
           data: {
+            id: json_response['data']['id'],
             type: 'breeds',
             name: 'calico'
           }

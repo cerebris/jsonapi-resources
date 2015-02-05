@@ -48,7 +48,7 @@ module JSONAPI
           when 'update'
             parse_fields(params[:fields])
             parse_include(params[:include])
-            parse_replace_operation(params)
+            parse_replace_operation(params.require(:data), params.require(@resource_klass._primary_key))
           when 'destroy'
             parse_remove_operation(params)
           when 'destroy_association'
@@ -92,12 +92,12 @@ module JSONAPI
         rescue NameError
           @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
         end
-          if type_resource.nil? || !(@resource_klass._type == underscored_type ||
-                                     @resource_klass._has_association?(underscored_type))
-            @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
+        if type_resource.nil? || !(@resource_klass._type == underscored_type ||
+          @resource_klass._has_association?(underscored_type))
+          @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
         else
           unless values.nil?
-            valid_fields = type_resource.fields.collect {|key| format_key(key)}
+            valid_fields = type_resource.fields.collect { |key| format_key(key) }
             values.each do |field|
               if valid_fields.include?(field)
                 extracted_fields[type].push unformat_key(field)
@@ -111,7 +111,7 @@ module JSONAPI
         end
       end
 
-      @fields = extracted_fields.deep_transform_keys{ |key| unformat_key(key) }
+      @fields = extracted_fields.deep_transform_keys { |key| unformat_key(key) }
     end
 
     def check_include(resource_klass, include_parts)
@@ -124,7 +124,7 @@ module JSONAPI
         end
       else
         @errors.concat(JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type),
-                                                               include_parts.first, ).errors)
+                                                               include_parts.first,).errors)
       end
     end
 
@@ -178,7 +178,7 @@ module JSONAPI
 
       unless sortable_fields.include? sort_criteria.to_sym
         @errors.concat(JSONAPI::Exceptions::InvalidSortCriteria
-          .new(format_key(resource_klass._type), sort_criteria).errors)
+                         .new(format_key(resource_klass._type), sort_criteria).errors)
       end
     end
 
@@ -316,7 +316,7 @@ module JSONAPI
         'attributes' => checked_attributes,
         'has_one' => checked_has_one_associations,
         'has_many' => checked_has_many_associations
-      }.deep_transform_keys{ |key| unformat_key(key) }
+      }.deep_transform_keys { |key| unformat_key(key) }
     end
 
     def unformat_value(attribute, value)
@@ -325,7 +325,7 @@ module JSONAPI
     end
 
     def verify_permitted_params(params, allowed_fields)
-      formatted_allowed_fields = allowed_fields.collect {|field| format_key(field).to_sym}
+      formatted_allowed_fields = allowed_fields.collect { |field| format_key(field).to_sym }
       params_not_allowed = []
       params.keys.each do |key|
         params_not_allowed.push(key) unless formatted_allowed_fields.include?(key.to_sym)
@@ -351,9 +351,9 @@ module JSONAPI
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
         @operations.push JSONAPI::CreateHasOneAssociationOperation.new(resource_klass,
-                                                                      parent_key,
-                                                                      association_type,
-                                                                      verified_param_set[:has_one].values[0])
+                                                                       parent_key,
+                                                                       association_type,
+                                                                       verified_param_set[:has_one].values[0])
       else
         if params[association_type].nil?
           raise ActionController::ParameterMissing.new(association_type)
@@ -409,37 +409,38 @@ module JSONAPI
       @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)
     end
 
-    def parse_replace_operation(params)
-      object_params_raw = params.require(:data)
+    def parse_single_replace_operation(data, keys)
+      if data[@resource_klass._primary_key].nil?
+        raise JSONAPI::Exceptions::MissingKey.new
+      end
 
-      keys = params[@resource_klass._primary_key]
-      if object_params_raw.is_a?(Array)
-        if keys.count != object_params_raw.count
+      type = data[:type]
+      if type.nil? || type != @resource_klass._type.to_s
+        raise JSONAPI::Exceptions::ParameterMissing.new(:type)
+      end
+
+      key = data[@resource_klass._primary_key]
+      if !keys.include?(key)
+        raise JSONAPI::Exceptions::KeyNotIncludedInURL.new(key)
+      end
+
+      @operations.push(JSONAPI::ReplaceFieldsOperation.new(@resource_klass,
+                                                           key,
+                                                           parse_params(verify_and_remove_type(data),
+                                                                        @resource_klass.updateable_fields(@context))))
+    end
+
+    def parse_replace_operation(data, keys)
+      if data.is_a?(Array)
+        if keys.count != data.count
           raise JSONAPI::Exceptions::CountMismatch
         end
 
-        object_params_raw.each do |object_params|
-          if object_params[@resource_klass._primary_key].nil?
-            raise JSONAPI::Exceptions::MissingKey.new
-          end
-
-          if !keys.include?(object_params[@resource_klass._primary_key])
-            raise JSONAPI::Exceptions::KeyNotIncludedInURL.new(object_params[@resource_klass._primary_key])
-          end
-          @operations.push JSONAPI::ReplaceFieldsOperation.new(@resource_klass,
-                                                               object_params[@resource_klass._primary_key],
-                                                               parse_params(verify_and_remove_type(object_params),
-                                                                            @resource_klass.updateable_fields(@context)))
+        data.each do |object_params|
+          parse_single_replace_operation(object_params, keys)
         end
       else
-        if !object_params_raw[@resource_klass._primary_key].nil? && keys != object_params_raw[@resource_klass._primary_key]
-          raise JSONAPI::Exceptions::KeyNotIncludedInURL.new(object_params_raw[@resource_klass._primary_key])
-        end
-
-        @operations.push JSONAPI::ReplaceFieldsOperation.new(@resource_klass,
-                                                               params[@resource_klass._primary_key],
-                                                               parse_params(verify_and_remove_type(object_params_raw),
-                                                                            @resource_klass.updateable_fields(@context)))
+        parse_single_replace_operation(data, [keys])
       end
 
     rescue ActionController::ParameterMissing => e
@@ -470,14 +471,14 @@ module JSONAPI
         keys = parse_key_array(params[:keys])
         keys.each do |key|
           @operations.push JSONAPI::RemoveHasManyAssociationOperation.new(resource_klass,
-                                                                            parent_key,
-                                                                            association_type,
-                                                                            key)
+                                                                          parent_key,
+                                                                          association_type,
+                                                                          key)
         end
       else
         @operations.push JSONAPI::RemoveHasOneAssociationOperation.new(resource_klass,
-                                                                         parent_key,
-                                                                         association_type)
+                                                                       parent_key,
+                                                                       association_type)
       end
     end
 
