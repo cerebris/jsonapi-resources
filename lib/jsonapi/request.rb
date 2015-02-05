@@ -32,7 +32,7 @@ module JSONAPI
             parse_include(params[:include])
             parse_filters(params[:filter])
             parse_sort_criteria(params[:sort])
-            parse_pagination(params)
+            parse_pagination(params[:page])
           when 'show_associations'
           when 'show'
             parse_fields(params[:fields])
@@ -57,9 +57,9 @@ module JSONAPI
       end
     end
 
-    def parse_pagination(params)
+    def parse_pagination(page)
       paginator_name = @resource_klass._paginator
-      @paginator = JSONAPI::Paginator.paginator_for(paginator_name).new(params[:page]) unless paginator_name == :none
+      @paginator = JSONAPI::Paginator.paginator_for(paginator_name).new(page) unless paginator_name == :none
     rescue JSONAPI::Exceptions::Error => e
       @errors.concat(e.errors)
     end
