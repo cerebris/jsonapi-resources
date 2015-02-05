@@ -6,7 +6,7 @@ module JSONAPI
   class Request
     include ResourceFor
 
-    attr_accessor :fields, :include, :filters, :sort_params, :errors, :operations, :resource_klass, :context,
+    attr_accessor :fields, :include, :filters, :sort_criteria, :errors, :operations, :resource_klass, :context,
                   :paginator
 
     def initialize(params = nil, options = {})
@@ -17,6 +17,7 @@ module JSONAPI
       @fields = {}
       @include = []
       @filters = {}
+      @sort_criteria = []
 
       setup(params) if params
     end
@@ -30,7 +31,7 @@ module JSONAPI
             parse_fields(params[:fields])
             parse_include(params[:include])
             parse_filters(params[:filter])
-            parse_sort_params(params)
+            parse_sort_criteria(params[:sort])
             parse_pagination(params)
           when 'show_associations'
           when 'show'
@@ -151,33 +152,31 @@ module JSONAPI
       end
     end
 
-    def parse_sort_params(params)
-      @sort_params = if params[:sort].present?
-        CSV.parse_line(params[:sort]).collect do |sort_param|
-          # A parameter name may not start with a dash
-          # We need to preserve the dash as the sort direction before we unformat the string
-          if sort_param.start_with?('-')
-            unformatted_sort_param = unformat_key(sort_param[1..-1]).to_s
-            unformatted_sort_param.prepend('-')
-          else
-            unformatted_sort_param = unformat_key(sort_param).to_s
-          end
+    def parse_sort_criteria(sort_criteria)
+      return unless sort_criteria
 
-          check_sort_param(@resource_klass, unformatted_sort_param)
-          unformatted_sort_param
+      @sort_criteria = CSV.parse_line(sort_criteria).collect do |sort|
+        # A parameter name may not start with a dash
+        # We need to preserve the dash as the sort direction before we unformat the string
+        if sort.start_with?('-')
+          unformatted_sort_criteria = unformat_key(sort[1..-1]).to_s
+          unformatted_sort_criteria.prepend('-')
+        else
+          unformatted_sort_criteria = unformat_key(sort).to_s
         end
-      else
-        []
+
+        check_sort_criteria(@resource_klass, unformatted_sort_criteria)
+        unformatted_sort_criteria
       end
     end
 
-    def check_sort_param(resource_klass, sort_param)
-      sort_param = sort_param.sub(/\A-/, '')
+    def check_sort_criteria(resource_klass, sort_criteria)
+      sort_criteria = sort_criteria.sub(/\A-/, '')
       sortable_fields = resource_klass.sortable_fields(context)
 
-      unless sortable_fields.include? sort_param.to_sym
-        @errors.concat(JSONAPI::Exceptions::InvalidSortParam
-          .new(format_key(resource_klass._type), sort_param).errors)
+      unless sortable_fields.include? sort_criteria.to_sym
+        @errors.concat(JSONAPI::Exceptions::InvalidSortCriteria
+          .new(format_key(resource_klass._type), sort_criteria).errors)
       end
     end
 

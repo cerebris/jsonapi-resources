@@ -329,7 +329,7 @@ module JSONAPI
       # Override this method if you have more complex requirements than this basic find method provides
       def find(filters, options = {})
         context = options[:context]
-        sort_params = options.fetch(:sort_params) { [] }
+        sort_criteria = options.fetch(:sort_criteria) { [] }
         includes = []
 
         records = records(options)
@@ -348,7 +348,7 @@ module JSONAPI
         end
 
         resources = []
-        order_options = construct_order_options(sort_params)
+        order_options = construct_order_options(sort_criteria)
 
         records = records.order(order_options).includes(includes)
 

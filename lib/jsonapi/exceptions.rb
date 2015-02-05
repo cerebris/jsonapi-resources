@@ -172,18 +172,18 @@ module JSONAPI
       end
     end
 
-    class InvalidSortParam < Error
-      attr_accessor :sort_param, :resource
-      def initialize(resource, sort_param)
+    class InvalidSortCriteria < Error
+      attr_accessor :sort_criteria, :resource
+      def initialize(resource, sort_criteria)
         @resource = resource
-        @sort_param = sort_param
+        @sort_criteria = sort_criteria
       end
 
       def errors
-        [JSONAPI::Error.new(code: JSONAPI::INVALID_SORT_PARAM,
+        [JSONAPI::Error.new(code: JSONAPI::INVALID_SORT_CRITERIA,
                             status: :bad_request,
-                            title: 'Invalid sort param',
-                            detail: "#{sort_param} is not a valid sort param for #{resource}")]
+                            title: 'Invalid sort criteria',
+                            detail: "#{sort_criteria} is not a valid sort criteria for #{resource}")]
       end
     end
 
