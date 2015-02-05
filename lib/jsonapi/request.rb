@@ -27,17 +27,17 @@ module JSONAPI
       unless params.nil?
         case params[:action]
           when 'index'
-            parse_fields(params)
+            parse_fields(params[:fields])
             parse_include(params[:include])
             parse_filters(params[:filter])
             parse_sort_params(params)
             parse_pagination(params)
           when 'show_associations'
           when 'show'
-            parse_fields(params)
+            parse_fields(params[:fields])
             parse_include(params[:include])
           when 'create'
-            parse_fields(params)
+            parse_fields(params[:fields])
             parse_include(params[:include])
             parse_add_operation(params)
           when 'create_association'
@@ -45,7 +45,7 @@ module JSONAPI
           when 'update_association'
             parse_update_association_operation(params)
           when 'update'
-            parse_fields(params)
+            parse_fields(params[:fields])
             parse_include(params[:include])
             parse_replace_operation(params)
           when 'destroy'
@@ -63,29 +63,27 @@ module JSONAPI
       @errors.concat(e.errors)
     end
 
-    def parse_fields(params)
-      fields = {}
+    def parse_fields(fields)
+      return if fields.nil?
+
+      extracted_fields = {}
 
       # Extract the fields for each type from the fields parameters
-      unless params[:fields].nil?
-        if params[:fields].is_a?(String)
-          value = params[:fields]
+      if fields.is_a?(String)
+        resource_fields = fields.split(',') unless fields.empty?
+        type = @resource_klass._type
+        extracted_fields[type] = resource_fields
+      elsif fields.is_a?(ActionController::Parameters)
+        fields.each do |field, value|
           resource_fields = value.split(',') unless value.nil? || value.empty?
-          type = @resource_klass._type
-          fields[type] = resource_fields
-        elsif params[:fields].is_a?(ActionController::Parameters)
-          params[:fields].each do |param, value|
-            resource_fields = value.split(',') unless value.nil? || value.empty?
-            type = param
-            fields[type] = resource_fields
-          end
+          extracted_fields[field] = resource_fields
         end
       end
 
       # Validate the fields
-      fields.each do |type, values|
+      extracted_fields.each do |type, values|
         underscored_type = unformat_key(type)
-        fields[type] = []
+        extracted_fields[type] = []
         begin
           type_resource = self.class.resource_for(@resource_klass.module_path + underscored_type.to_s)
         rescue NameError
@@ -99,7 +97,7 @@ module JSONAPI
             valid_fields = type_resource.fields.collect {|key| format_key(key)}
             values.each do |field|
               if valid_fields.include?(field)
-                fields[type].push unformat_key(field)
+                extracted_fields[type].push unformat_key(field)
               else
                 @errors.concat(JSONAPI::Exceptions::InvalidField.new(type, field).errors)
               end
@@ -110,7 +108,7 @@ module JSONAPI
         end
       end
 
-      @fields = fields.deep_transform_keys{ |key| unformat_key(key) }
+      @fields = extracted_fields.deep_transform_keys{ |key| unformat_key(key) }
     end
 
     def check_include(resource_klass, include_parts)
