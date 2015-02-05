@@ -464,7 +464,7 @@ class PostResource < JSONAPI::Resource
   end
 
   filters :title, :author, :tags, :comments
-  filter :id
+  filters :id, :ids
 
   def self.updateable_fields(context)
     super(context) - [:author, :subject]
@@ -482,6 +482,9 @@ class PostResource < JSONAPI::Resource
     case filter
       when :id
         verify_keys(values, context)
+      when :ids #coerce :ids to :id
+        verify_keys(values, context)
+        return :id, values
     end
     return filter, values
   end

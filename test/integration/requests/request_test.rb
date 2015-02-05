@@ -25,7 +25,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_get_underscored_key_filtered
     JSONAPI.configuration.json_key_format = :underscored_key
-    get '/iso_currencies?country_name=Canada'
+    get '/iso_currencies?filter[country_name]=Canada'
     assert_equal 200, status
     assert_equal 1, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['country_name']
@@ -33,7 +33,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_get_camelized_key_filtered
     JSONAPI.configuration.json_key_format = :camelized_key
-    get '/iso_currencies?countryName=Canada'
+    get '/iso_currencies?filter[countryName]=Canada'
     assert_equal 200, status
     assert_equal 1, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['countryName']
@@ -41,7 +41,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_get_camelized_route_and_key_filtered
     JSONAPI.configuration.json_key_format = :camelized_key
-    get '/api/v4/isoCurrencies?countryName=Canada'
+    get '/api/v4/isoCurrencies?filter[countryName]=Canada'
     assert_equal 200, status
     assert_equal 1, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['countryName']

@@ -29,7 +29,7 @@ module JSONAPI
           when 'index'
             parse_fields(params)
             parse_include(params)
-            parse_filters(params)
+            parse_filters(params[:filter])
             parse_sort_params(params)
             parse_pagination(params)
           when 'show_associations'
@@ -137,28 +137,17 @@ module JSONAPI
       end
     end
 
-    def parse_filters(params)
-      # Coerce :ids -> :id
-      if params[:ids]
-        params[:id] = params[:ids]
-        params.delete(:ids)
-      end
-
-      filters = {}
-      params.each do |key, value|
-        filter = key.to_sym
-
-        # Ignore non-filter parameters
-        next if JSONAPI.configuration.allowed_request_params.include?(filter)
-
+    def parse_filters(filters)
+      return unless filters
+      @filters = {}
+      filters.each do |key, value|
         filter = unformat_key(key).to_sym
         if @resource_klass._allowed_filter?(filter)
-          filters[filter] = value
+          @filters[filter] = value
         else
           @errors.concat(JSONAPI::Exceptions::FilterNotAllowed.new(filter).errors)
         end
       end
-      @filters = filters
     end
 
     def parse_sort_params(params)

@@ -13,49 +13,49 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_index_filter_with_empty_result
-    get :index, {title: 'post that does not exist'}
+    get :index, {filter: {title: 'post that does not exist'}}
     assert_response :success
     assert json_response['data'].is_a?(Array)
     assert_equal 0, json_response['data'].size
   end
 
   def test_index_filter_by_id
-    get :index, {id: '1'}
+    get :index, {filter: {id: '1'}}
     assert_response :success
     assert json_response['data'].is_a?(Array)
     assert_equal 1, json_response['data'].size
   end
 
   def test_index_filter_by_title
-    get :index, {title: 'New post'}
+    get :index, {filter: {title: 'New post'}}
     assert_response :success
     assert json_response['data'].is_a?(Array)
     assert_equal 1, json_response['data'].size
   end
 
   def test_index_filter_by_ids
-    get :index, {ids: '1,2'}
+    get :index, {filter: {ids: '1,2'}}
     assert_response :success
     assert json_response['data'].is_a?(Array)
     assert_equal 2, json_response['data'].size
   end
 
   def test_index_filter_by_ids_and_include_related
-    get :index, ids: '2', include: 'comments'
+    get :index, {filter: {id: '2'}, include: 'comments'}
     assert_response :success
     assert_equal 1, json_response['data'].size
     assert_equal 1, json_response['linked'].size
   end
 
   def test_index_filter_by_ids_and_include_related_different_type
-    get :index, {ids: '1,2', include: 'author'}
+    get :index, {filter: {id: '1,2'}, include: 'author'}
     assert_response :success
     assert_equal 2, json_response['data'].size
     assert_equal 1, json_response['linked'].size
   end
 
   def test_index_filter_by_ids_and_fields
-    get :index, {ids: '1,2', 'fields' => 'id,title,author'}
+    get :index, {filter: {id: '1,2'}, 'fields' => 'id,title,author'}
     assert_response :success
     assert_equal 2, json_response['data'].size
 
@@ -68,7 +68,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_index_filter_by_ids_and_fields_specify_type
-    get :index, {ids: '1,2', 'fields' => {'posts' => 'id,title,author'}}
+    get :index, {filter: {id: '1,2'}, 'fields' => {'posts' => 'id,title,author'}}
     assert_response :success
     assert_equal 2, json_response['data'].size
 
@@ -81,13 +81,13 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_index_filter_by_ids_and_fields_specify_unrelated_type
-    get :index, {ids: '1,2', 'fields' => {'currencies' => 'code'}}
+    get :index, {filter: {id: '1,2'}, 'fields' => {'currencies' => 'code'}}
     assert_response :bad_request
     assert_match /currencies is not a valid resource./, json_response['errors'][0]['detail']
   end
 
   def test_index_filter_by_ids_and_fields_2
-    get :index, {ids: '1,2', 'fields' => 'author'}
+    get :index, {filter: {id: '1,2'}, 'fields' => 'author'}
     assert_response :success
     assert_equal 2, json_response['data'].size
 
@@ -99,7 +99,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_filter_association_single
-    get :index, {tags: '5,1'}
+    get :index, {filter: {tags: '5,1'}}
     assert_response :success
     assert_equal 3, json_response['data'].size
     assert_match /New post/, response.body
@@ -108,68 +108,68 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_filter_associations_multiple
-    get :index, {tags: '5,1', comments: '3'}
+    get :index, {filter: {tags: '5,1', comments: '3'}}
     assert_response :success
     assert_equal 1, json_response['data'].size
     assert_match /JR Solves your serialization woes!/, response.body
   end
 
   def test_filter_associations_multiple_not_found
-    get :index, {tags: '1', comments: '3'}
+    get :index, {filter: {tags: '1', comments: '3'}}
     assert_response :success
     assert_equal 0, json_response['data'].size
   end
 
   def test_bad_filter
-    get :index, {post_ids: '1,2'}
+    get :index, {filter: {post_ids: '1,2'}}
     assert_response :bad_request
     assert_match /post_ids is not allowed/, response.body
   end
 
   def test_bad_filter_value_not_integer_array
-    get :index, {ids: 'asdfg'}
+    get :index, {filter: {id: 'asdfg'}}
     assert_response :bad_request
     assert_match /asdfg is not a valid value for id/, response.body
   end
 
   def test_bad_filter_value_not_integer
-    get :index, {id: 'asdfg'}
+    get :index, {filter: {id: 'asdfg'}}
     assert_response :bad_request
     assert_match /asdfg is not a valid value for id/, response.body
   end
 
   def test_bad_filter_value_not_found_array
-    get :index, {ids: '5412333'}
+    get :index, {filter: {id: '5412333'}}
     assert_response :not_found
     assert_match /5412333 could not be found/, response.body
   end
 
   def test_bad_filter_value_not_found
-    get :index, {id: '5412333'}
+    get :index, {filter: {id: '5412333'}}
     assert_response :not_found
     assert_match /5412333 could not be found/, json_response['errors'][0]['detail']
   end
 
   def test_index_malformed_fields
-    get :index, {ids: '1,2', 'fields' => 'posts'}
+    get :index, {filter: {id: '1,2'}, 'fields' => 'posts'}
     assert_response :bad_request
     assert_match /posts is not a valid field for posts./, json_response['errors'][0]['detail']
   end
 
   def test_field_not_supported
-    get :index, {ids: '1,2', 'fields' => {'posts' => 'id,title,rank,author'}}
+    get :index, {filter: {id: '1,2'}, 'fields' => {'posts' => 'id,title,rank,author'}}
     assert_response :bad_request
     assert_match /rank is not a valid field for posts./, json_response['errors'][0]['detail']
   end
 
   def test_resource_not_supported
-    get :index, {ids: '1,2', 'fields' => {'posters' => 'id,title'}}
+    get :index, {filter: {id: '1,2'}, 'fields' => {'posters' => 'id,title'}}
     assert_response :bad_request
     assert_match /posters is not a valid resource./, json_response['errors'][0]['detail']
   end
 
   def test_index_filter_on_association
-    get :index, {author: '1'}
+    get :index, {filter: {author: '1'}}
     assert_response :success
     assert_equal 3, json_response['data'].size
   end
@@ -1130,7 +1130,7 @@ end
 
 class TagsControllerTest < ActionController::TestCase
   def test_tags_index
-    get :index, {ids: '6,7,8,9', include: 'posts,posts.tags,posts.author.posts'}
+    get :index, {filter: {id: '6,7,8,9'}, include: 'posts,posts.tags,posts.author.posts'}
     assert_response :success
     assert_equal 4, json_response['data'].size
     assert_equal 2, json_response['linked'].size
@@ -1375,7 +1375,7 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
 
   def test_currencies_json_key_underscored_filter
     JSONAPI.configuration.json_key_format = :underscored_key
-    get :index, {country_name: 'Canada'}
+    get :index, {filter: {country_name: 'Canada'}}
     assert_response :success
     assert_equal 1, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['country_name']
@@ -1383,7 +1383,7 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
 
   def test_currencies_json_key_camelized_key_filter
     JSONAPI.configuration.json_key_format = :camelized_key
-    get :index, {'countryName' => 'Canada'}
+    get :index, {filter: {'countryName' => 'Canada'}}
     assert_response :success
     assert_equal 1, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['countryName']
@@ -1391,7 +1391,7 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
 
   def test_currencies_json_key_custom_json_key_filter
     JSONAPI.configuration.json_key_format = :upper_camelized_key
-    get :index, {'CountryName' => 'Canada'}
+    get :index, {filter: {'CountryName' => 'Canada'}}
     assert_response :success
     assert_equal 1, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['CountryName']
@@ -1457,12 +1457,12 @@ class PeopleControllerTest < ActionController::TestCase
   end
 
   def test_invalid_filter_value
-    get :index, {name: 'L'}
+    get :index, {filter: {name: 'L'}}
     assert_response :bad_request
   end
 
   def test_valid_filter_value
-    get :index, {name: 'Joe Author'}
+    get :index, {filter: {name: 'Joe Author'}}
     assert_response :success
     assert_equal json_response['data'].size, 1
     assert_equal json_response['data'][0]['id'], '1'
@@ -1472,7 +1472,7 @@ end
 
 class AuthorsControllerTest < ActionController::TestCase
   def test_get_person_as_author
-    get :index, {id: '1'}
+    get :index, {filter: {id: '1'}}
     assert_response :success
     assert_equal 1, json_response['data'].size
     assert_equal '1', json_response['data'][0]['id']
@@ -1482,7 +1482,7 @@ class AuthorsControllerTest < ActionController::TestCase
   end
 
   def test_get_person_as_author_by_name_filter
-    get :index, {name: 'thor'}
+    get :index, {filter: {name: 'thor'}}
     assert_response :success
     assert_equal 3, json_response['data'].size
     assert_equal '1', json_response['data'][0]['id']
@@ -1595,7 +1595,7 @@ class Api::V1::PostsControllerTest < ActionController::TestCase
   end
 
   def test_index_filter_on_association_namespaced
-    get :index, {writer: '1'}
+    get :index, {filter: {writer: '1'}}
     assert_response :success
     assert_equal 3, json_response['data'].size
   end
