@@ -58,18 +58,6 @@ module JSONAPI
       end
     end
 
-    class HasOneRelationExists < Error
-      def initialize
-      end
-
-      def errors
-        [JSONAPI::Error.new(code: JSONAPI::RELATION_EXISTS,
-                            status: :bad_request,
-                            title: 'Relation exists',
-                            detail: 'The relation already exists.')]
-      end
-    end
-
     class FilterNotAllowed < Error
       attr_accessor :filter
       def initialize(filter)

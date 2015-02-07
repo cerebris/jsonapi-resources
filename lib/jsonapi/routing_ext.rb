@@ -98,11 +98,6 @@ module ActionDispatch
             action: 'show_association', association: link_type.to_s, via: [:get]
           end
 
-          if methods.include?(:create)
-            match "links/#{formatted_association_name}", controller: res._type.to_s,
-            action: 'create_association', association: link_type.to_s, via: [:post]
-          end
-
           if methods.include?(:update)
             match "links/#{formatted_association_name}", controller: res._type.to_s,
             action: 'update_association', association: link_type.to_s, via: [:put]

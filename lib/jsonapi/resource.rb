@@ -72,12 +72,6 @@ module JSONAPI
       end
     end
 
-    def create_has_one_link(association_type, association_key_value)
-      change :create_has_one_link do
-        _create_has_one_link(association_type, association_key_value)
-      end
-    end
-
     def replace_has_one_link(association_type, association_key_value)
       change :replace_has_one_link do
         _replace_has_one_link(association_type, association_key_value)
@@ -149,19 +143,6 @@ module JSONAPI
       association = self.class._associations[association_type]
 
       send("#{association.foreign_key}=", association_key_values)
-      @save_needed = true
-    end
-
-    def _create_has_one_link(association_type, association_key_value)
-      association = self.class._associations[association_type]
-
-      # ToDo: Add option to skip relations that already exist instead of returning an error?
-      relation = @model.send("#{association.foreign_key}")
-      if relation.nil?
-        send("#{association.foreign_key}=", association_key_value)
-      else
-        raise JSONAPI::Exceptions::HasOneRelationExists.new
-      end
       @save_needed = true
     end
 

@@ -68,24 +68,6 @@ module JSONAPI
     end
   end
 
-  class CreateHasOneAssociationOperation < Operation
-    attr_reader :resource_id, :association_type, :key_value
-
-    def initialize(resource_klass, resource_id, association_type, key_value)
-      @resource_id = resource_id
-      @key_value = key_value
-      @association_type = association_type.to_sym
-      super(resource_klass)
-    end
-
-    def apply(context)
-      resource = @resource_klass.find_by_key(@resource_id, context: context)
-      resource.create_has_one_link(@association_type, @key_value)
-
-      return JSONAPI::OperationResult.new(:no_content)
-    end
-  end
-
   class ReplaceHasOneAssociationOperation < Operation
     attr_reader :resource_id, :association_type, :key_value
 

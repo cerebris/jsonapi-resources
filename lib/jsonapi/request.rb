@@ -42,9 +42,13 @@ module JSONAPI
             parse_include(params[:include])
             parse_add_operation(params.require(:data))
           when 'create_association'
-            parse_add_association_operation(params)
+            parse_add_association_operation(params.require(:data),
+                                            params.require(:association),
+                                            params.require(@resource_klass._as_parent_key))
           when 'update_association'
-            parse_update_association_operation(params)
+            parse_update_association_operation(params.require(:data),
+                                               params.require(:association),
+                                               params.require(@resource_klass._as_parent_key))
           when 'update'
             parse_fields(params[:fields])
             parse_include(params[:include])
@@ -237,7 +241,7 @@ module JSONAPI
 
       links_object = {}
       if raw.is_a?(Hash)
-        if raw.length != 2 || !(raw.has_key?('type') && raw.has_key?('ids')) || !(raw[:ids].is_a?(Array))
+        if raw.length != 2 || !(raw.has_key?('type') && raw.has_key?('ids')) || !(raw['ids'].is_a?(Array))
           raise JSONAPI::Exceptions::InvalidLinksObject.new(raw)
         end
         links_object[raw['type']] = raw['ids']
@@ -254,13 +258,13 @@ module JSONAPI
     end
 
     def parse_params(params, allowed_fields)
-      # push links into top level param list with attributes in order to check for invalid params
-      if params[:links]
-        params[:links].each do |link, value|
-          params[link] = value
-        end
-        params.delete(:links)
-      end
+      # # push links into top level param list with attributes in order to check for invalid params
+      # if params[:links]
+      #   params[:links].each do |link, value|
+      #     params[link] = value
+      #   end
+      #   params.delete(:links)
+      # end
 
       verify_permitted_params(params, allowed_fields)
 
@@ -269,45 +273,54 @@ module JSONAPI
       checked_has_many_associations = {}
 
       params.each do |key, value|
-        param = unformat_key(key)
+        if key == 'links' || key == :links
+          value.each do |link_key, link_value|
+            param = unformat_key(link_key)
 
-        association = @resource_klass._association(param)
+            association = @resource_klass._association(param)
 
-        if association.is_a?(JSONAPI::Association::HasOne)
-          links_object = parse_has_one_links_object(value)
-          # Since we do not yet support polymorphic associations we will raise an error if the type does not match the
-          # association's type.
-          # ToDo: Support Polymorphic associations
-          if links_object[:type] && (links_object[:type] != association.type.to_s)
-            raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
-          end
+            if association.is_a?(JSONAPI::Association::HasOne)
+              links_object = parse_has_one_links_object(link_value)
+              # Since we do not yet support polymorphic associations we will raise an error if the type does not match the
+              # association's type.
+              # ToDo: Support Polymorphic associations
+              if links_object[:type] && (links_object[:type] != association.type.to_s)
+                raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
+              end
 
-          unless links_object[:id].nil?
-            association_resource = @resource_klass.resource_for(@resource_klass.module_path + links_object[:type])
-            checked_has_one_associations[param] = association_resource.verify_key(links_object[:id], @context)
-          else
-            checked_has_one_associations[param] = nil
-          end
-        elsif association.is_a?(JSONAPI::Association::HasMany)
-          links_object = parse_has_many_links_object(value)
+              unless links_object[:id].nil?
+                association_resource = @resource_klass.resource_for(@resource_klass.module_path + links_object[:type])
+                checked_has_one_associations[param] = association_resource.verify_key(links_object[:id], @context)
+              else
+                checked_has_one_associations[param] = nil
+              end
+            elsif association.is_a?(JSONAPI::Association::HasMany)
+              links_object = parse_has_many_links_object(link_value)
 
-          # Since we do not yet support polymorphic associations we will raise an error if the type does not match the
-          # association's type.
-          # ToDo: Support Polymorphic associations
+              # Since we do not yet support polymorphic associations we will raise an error if the type does not match the
+              # association's type.
+              # ToDo: Support Polymorphic associations
 
-          if links_object.length == 0
-            checked_has_many_associations[param] = []
-          else
-            if links_object.length > 1 || !links_object.has_key?(association.type.to_s)
-              raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
-            end
+              if links_object.length == 0
+                checked_has_many_associations[param] = []
+              else
+                if links_object.length > 1 || !links_object.has_key?(association.type.to_s)
+                  raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
+                end
 
-            links_object.each_pair do |type, keys|
-              association_resource = @resource_klass.resource_for(@resource_klass.module_path + type)
-              checked_has_many_associations[param] = association_resource.verify_keys(keys, @context)
+                links_object.each_pair do |type, keys|
+                  association_resource = @resource_klass.resource_for(@resource_klass.module_path + type)
+                  checked_has_many_associations[param] = association_resource.verify_keys(keys, @context)
+                end
+              end
+            else
+              # :nocov:
+              raise JSONAPI::Exceptions::InvalidLinksObject.new(key)
+              # :nocov:
             end
           end
         else
+          param = unformat_key(key)
           checked_attributes[param] = unformat_value(param, value)
         end
       end
@@ -327,65 +340,47 @@ module JSONAPI
     def verify_permitted_params(params, allowed_fields)
       formatted_allowed_fields = allowed_fields.collect { |field| format_key(field).to_sym }
       params_not_allowed = []
-      params.keys.each do |key|
-        params_not_allowed.push(key) unless formatted_allowed_fields.include?(key.to_sym)
+      params.each do |key, value|
+        if key == 'links' || key == :links
+          value.each_key do |links_key|
+            params_not_allowed.push(links_key) unless formatted_allowed_fields.include?(links_key.to_sym)
+          end
+        else
+          params_not_allowed.push(key) unless formatted_allowed_fields.include?(key.to_sym)
+        end
       end
       raise JSONAPI::Exceptions::ParametersNotAllowed.new(params_not_allowed) if params_not_allowed.length > 0
     end
 
-    def parse_add_association_operation(params)
-      association_type = params[:association]
-
-      parent_key = params[resource_klass._as_parent_key]
-
+    def parse_add_association_operation(data, association_type, parent_key)
       association = resource_klass._association(association_type)
 
-      if association.is_a?(JSONAPI::Association::HasOne)
-        plural_association_type = association_type.pluralize
+      if association.is_a?(JSONAPI::Association::HasMany)
+        ids = data.require(:ids)
+        type = data.require(:type)
 
-        if params[plural_association_type].nil?
-          raise ActionController::ParameterMissing.new(plural_association_type)
-        end
-
-        object_params = {links: {association_type => params[plural_association_type]}}
-        verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
-
-        @operations.push JSONAPI::CreateHasOneAssociationOperation.new(resource_klass,
-                                                                       parent_key,
-                                                                       association_type,
-                                                                       verified_param_set[:has_one].values[0])
-      else
-        if params[association_type].nil?
-          raise ActionController::ParameterMissing.new(association_type)
-        end
-
-        object_params = {links: {association_type => params[association_type]}}
+        object_params = {links: {association.name => {'type' => type, 'ids' => ids}}}
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
         @operations.push JSONAPI::CreateHasManyAssociationOperation.new(resource_klass,
                                                                         parent_key,
                                                                         association_type,
                                                                         verified_param_set[:has_many].values[0])
+      else
+        # :nocov:
+        @errors.concat(JSONAPI::Exceptions::InvalidLinksObject.new(:data).errors)
+        # :nocov:
       end
     rescue ActionController::ParameterMissing => e
       @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)
     end
 
-    def parse_update_association_operation(params)
-      association_type = params[:association]
-
-      parent_key = params[resource_klass._as_parent_key]
-
+    def parse_update_association_operation(data, association_type, parent_key)
       association = resource_klass._association(association_type)
 
       if association.is_a?(JSONAPI::Association::HasOne)
-        plural_association_type = association_type.pluralize
+        object_params = {links: {association.name => data}}
 
-        if params[plural_association_type].nil?
-          raise ActionController::ParameterMissing.new(plural_association_type)
-        end
-
-        object_params = {links: {association_type => params[plural_association_type]}}
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
         @operations.push JSONAPI::ReplaceHasOneAssociationOperation.new(resource_klass,
@@ -393,11 +388,7 @@ module JSONAPI
                                                                         association_type,
                                                                         verified_param_set[:has_one].values[0])
       else
-        if params[association_type].nil?
-          raise ActionController::ParameterMissing.new(association_type)
-        end
-
-        object_params = {links: {association_type => params[association_type]}}
+        object_params = {links: {association.name => data}}
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
         @operations.push JSONAPI::ReplaceHasManyAssociationOperation.new(resource_klass,
@@ -405,8 +396,6 @@ module JSONAPI
                                                                          association_type,
                                                                          verified_param_set[:has_many].values[0])
       end
-    rescue ActionController::ParameterMissing => e
-      @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)
     end
 
     def parse_single_replace_operation(data, keys)
@@ -443,8 +432,6 @@ module JSONAPI
         parse_single_replace_operation(data, [keys])
       end
 
-    rescue ActionController::ParameterMissing => e
-      @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)
     rescue JSONAPI::Exceptions::Error => e
       @errors.concat(e.errors)
     end

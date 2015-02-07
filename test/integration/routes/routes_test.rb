@@ -27,11 +27,6 @@ class RoutesTest < ActionDispatch::IntegrationTest
                    {controller: 'posts', action: 'destroy_association', post_id: '1', association: 'author'})
   end
 
-  def test_routing_posts_links_author_create
-    assert_routing({path: '/posts/1/links/author', method: :post},
-                   {controller: 'posts', action: 'create_association', post_id: '1', association: 'author'})
-  end
-
   def test_routing_posts_links_author_update
     assert_routing({path: '/posts/1/links/author', method: :put},
                    {controller: 'posts', action: 'update_association', post_id: '1', association: 'author'})

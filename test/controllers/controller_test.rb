@@ -611,82 +611,148 @@ class PostsControllerTest < ActionController::TestCase
     post_object = Post.find(3)
     assert_not_equal ruby.id, post_object.section_id
 
-    put :update_association, {post_id: 3, association: 'section', sections: {type: 'sections', id: "#{ruby.id}"}}
+    put :update_association, {post_id: 3, association: 'section', data: {type: 'sections', id: "#{ruby.id}"}}
 
     assert_response :no_content
     post_object = Post.find(3)
     assert_equal ruby.id, post_object.section_id
+  end
+
+  def test_update_relationship_has_one_invalid_links_hash_keys
+    set_content_type_header!
+    put :update_association, {post_id: 3, association: 'section', data: {types: 'sections', ids: 'foo'}}
+
+    assert_response :bad_request
+    assert_match /Invalid Links Object/, response.body
+  end
+
+  def test_update_relationship_has_one_invalid_links_hash_count
+    set_content_type_header!
+    put :update_association, {post_id: 3, association: 'section', data: {types: 'sections'}}
+
+    assert_response :bad_request
+    assert_match /Invalid Links Object/, response.body
+  end
+
+  def test_update_relationship_has_one_invalid_links_hash_keys
+    set_content_type_header!
+    put :update_association, {post_id: 3, association: 'section', data: {type: 'comment', id: '3'}}
+
+    assert_response :bad_request
+    assert_match /Type Mismatch/, response.body
+  end
+
+  def test_update_nil_has_many_links
+    set_content_type_header!
+    put :update,
+        {
+          id: 3,
+          data: {
+            type: 'posts',
+            id: 3,
+            links: {
+              tags: nil
+            }
+          }
+        }
+
+    assert_response :bad_request
+    assert_match /Invalid Links Object/, response.body
+  end
+
+  def test_update_bad_hash_has_many_links
+    set_content_type_header!
+    put :update,
+        {
+          id: 3,
+          data: {
+            type: 'posts',
+            id: 3,
+            links: {
+              tags: {typ: 'bad link', idd: 'as'}
+            }
+          }
+        }
+
+    assert_response :bad_request
+    assert_match /Invalid Links Object/, response.body
+  end
+
+  def test_update_other_has_many_links
+    set_content_type_header!
+    put :update,
+        {
+          id: 3,
+          data: {
+            type: 'posts',
+            id: 3,
+            links: {
+              tags: 'bad link'
+            }
+          }
+        }
+
+    assert_response :bad_request
+    assert_match /Invalid Links Object/, response.body
+  end
+
+  def test_update_relationship_has_one_singular_param_id_nil
+    set_content_type_header!
+    ruby = Section.find_by(name: 'ruby')
+    post_object = Post.find(3)
+    post_object.section_id = ruby.id
+    post_object.save!
+
+    put :update_association, {post_id: 3, association: 'section', data: {type: 'sections', id: nil}}
+
+    assert_response :no_content
+    post_object = Post.find(3)
+    assert_equal nil, post_object.section_id
+  end
+
+  def test_remove_relationship_has_one
+    set_content_type_header!
+    ruby = Section.find_by(name: 'ruby')
+    post_object = Post.find(3)
+    post_object.section_id = ruby.id
+    post_object.save!
+
+    put :destroy_association, {post_id: 3, association: 'section'}
+
+    assert_response :no_content
+    post_object = Post.find(3)
+    assert_equal nil, post_object.section_id
   end
 
   def test_update_relationship_has_one_singular_param
     set_content_type_header!
     ruby = Section.find_by(name: 'ruby')
     post_object = Post.find(3)
-
-    put :update_association, {post_id: 3, association: 'section', section: {type: 'sections', id: "#{ruby.id}"}}
-
-    assert_response :bad_request
-  end
-
-  def test_update_relationship_has_one_singular_param_relation_nil
-    set_content_type_header!
-    ruby = Section.find_by(name: 'ruby')
-    post_object = Post.find(3)
     post_object.section_id = nil
     post_object.save!
 
-    put :update_association, {post_id: 3, association: 'section', sections: {type: 'sections', id: "#{ruby.id}"}}
+    put :update_association, {post_id: 3, association: 'section', data: {type: 'sections', id: "#{ruby.id}"}}
 
     assert_response :no_content
     post_object = Post.find(3)
     assert_equal ruby.id, post_object.section_id
-  end
-
-  def test_create_relationship_has_one_singular_param_relation_nil
-    set_content_type_header!
-    ruby = Section.find_by(name: 'ruby')
-    post_object = Post.find(3)
-    post_object.section_id = nil
-    post_object.save!
-
-    post :create_association, {post_id: 3, association: 'section', sections: {type: 'sections', id: "#{ruby.id}"}}
-
-    assert_response :no_content
-    post_object = Post.find(3)
-    assert_equal ruby.id, post_object.section_id
-  end
-
-  def test_create_relationship_has_one_singular_param_relation_not_nil
-    set_content_type_header!
-    ruby = Section.find_by(name: 'ruby')
-    js = Section.find_by(name: 'javascript')
-    post_object = Post.find(3)
-    post_object.section_id = js.id
-    post_object.save!
-
-    post :create_association, {post_id: 3, association: 'section', sections: {type: 'sections', id: "#{ruby.id}"}}
-
-    assert_response :bad_request
-    assert_match /The relation already exists./, response.body
-    post_object = Post.find(3)
-    assert_equal js.id, post_object.section_id
   end
 
   def test_update_relationship_has_many_join_table_single
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', tags: {type: 'tags', ids: []}}
+    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: []}}
     assert_response :no_content
 
     post_object = Post.find(3)
     assert_equal 0, post_object.tags.length
 
-    put :update_association, {post_id: 3, association: 'tags', tags: {type: 'tags', ids: [2]}}
+    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [2]}}
 
     assert_response :no_content
     post_object = Post.find(3)
     assert_equal 1, post_object.tags.length
 
-    put :update_association, {post_id: 3, association: 'tags', tags: {type: 'tags', ids: [5]}}
+    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [5]}}
 
     assert_response :no_content
     post_object = Post.find(3)
@@ -695,9 +761,19 @@ class PostsControllerTest < ActionController::TestCase
     assert matches_array? [5], tags
   end
 
-  def test_update_relationship_has_many_join_table
+  def test_update_relationship_has_many_join_table_homogenous
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', tags: {type: 'tags', ids: [2, 3]}}
+    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
+
+    assert_response :no_content
+    post_object = Post.find(3)
+    assert_equal 2, post_object.tags.collect { |tag| tag.id }.length
+    assert matches_array? [2, 3], post_object.tags.collect { |tag| tag.id }
+  end
+
+  def test_update_relationship_has_many_join_table_heterogenous
+    set_content_type_header!
+    put :update_association, {post_id: 3, association: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
 
     assert_response :no_content
     post_object = Post.find(3)
@@ -707,14 +783,14 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_create_relationship_has_many_join_table
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', tags: {type: 'tags', ids: [2, 3]}}
+    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
 
     assert_response :no_content
     post_object = Post.find(3)
     assert_equal 2, post_object.tags.collect { |tag| tag.id }.length
     assert matches_array? [2, 3], post_object.tags.collect { |tag| tag.id }
 
-    post :create_association, {post_id: 3, association: 'tags', tags: {type: 'tags', ids: [5]}}
+    post :create_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [5]}}
 
     assert_response :no_content
     post_object = Post.find(3)
@@ -722,35 +798,49 @@ class PostsControllerTest < ActionController::TestCase
     assert matches_array? [2, 3, 5], post_object.tags.collect { |tag| tag.id }
   end
 
-  def test_create_relationship_has_many_missing_tags
+  def test_create_relationship_has_many_mismatched_type
+    set_content_type_header!
+    post :create_association, {post_id: 3, association: 'tags', data: {type: 'comments', ids: [5]}}
+
+    assert_response :bad_request
+    assert_match /Type Mismatch/, response.body
+  end
+
+  def test_create_relationship_has_many_missing_id
+    set_content_type_header!
+    post :create_association, {post_id: 3, association: 'tags', data: {type: 'tags', idds: [5]}}
+
+    assert_response :bad_request
+    assert_match /The required parameter, ids, is missing/, response.body
+  end
+
+  def test_create_relationship_has_many_missing_data
     set_content_type_header!
     post :create_association, {post_id: 3, association: 'tags'}
 
     assert_response :bad_request
-    assert_match /The required parameter, tags, is missing./, response.body
+    assert_match /The required parameter, data, is missing./, response.body
+  end
+
+  def test_create_relationship_has_many_join
+    set_content_type_header!
+    post :create_association, {post_id: 4, association: 'tags', data: {type: 'tags', ids: [1, 2, 3]}}
+    assert_response :no_content
   end
 
   def test_create_relationship_has_many_join_table_record_exists
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', tags: {type: 'tags', ids: [2, 3]}}
+    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
 
     assert_response :no_content
     post_object = Post.find(3)
     assert_equal 2, post_object.tags.collect { |tag| tag.id }.length
     assert matches_array? [2, 3], post_object.tags.collect { |tag| tag.id }
 
-    post :create_association, {post_id: 3, association: 'tags', tags: {type: 'tags', ids: [5, 2]}}
+    post :create_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [5, 2]}}
 
     assert_response :bad_request
     assert_match /The relation to 2 already exists./, response.body
-  end
-
-  def test_update_relationship_has_one_mismatch_params
-    set_content_type_header!
-    post :create_association, {post_id: 3, association: 'section', authors: 1}
-
-    assert_response :bad_request
-    assert_match /The required parameter, sections, is missing./, response.body
   end
 
   def test_update_relationship_has_many_missing_tags
@@ -758,27 +848,12 @@ class PostsControllerTest < ActionController::TestCase
     put :update_association, {post_id: 3, association: 'tags'}
 
     assert_response :bad_request
-    assert_match /The required parameter, tags, is missing./, response.body
-  end
-
-  def test_delete_relationship_has_one
-    set_content_type_header!
-    ruby = Section.find_by(name: 'ruby')
-
-    post :create_association, {post_id: 9, association: 'section', sections: {type: 'sections', id: "#{ruby.id}"}}
-
-    assert_response :no_content
-
-    delete :destroy_association, {post_id: 9, association: 'section'}
-
-    assert_response :no_content
-    post = Post.find(9)
-    assert_nil post.section
+    assert_match /The required parameter, data, is missing./, response.body
   end
 
   def test_delete_relationship_has_many
     set_content_type_header!
-    put :update_association, {post_id: 9, association: 'tags', tags: {type: 'tags', ids: [2, 3]}}
+    put :update_association, {post_id: 9, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
     assert_response :no_content
     p = Post.find(9)
     assert_equal [2, 3], p.tag_ids
@@ -792,7 +867,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_delete_relationship_has_many_does_not_exist
     set_content_type_header!
-    put :update_association, {post_id: 9, association: 'tags', tags: {type: 'tags', ids: [2, 3]}}
+    put :update_association, {post_id: 9, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
     assert_response :no_content
     p = Post.find(9)
     assert_equal [2, 3], p.tag_ids

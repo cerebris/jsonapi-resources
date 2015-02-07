@@ -116,16 +116,16 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 201, status
   end
 
-  def test_create_association_without_content_type
+  def test_update_association_without_content_type
     ruby = Section.find_by(name: 'ruby')
     put '/posts/3/links/section', { 'sections' => {type: 'sections', id: ruby.id.to_s }}.to_json
 
     assert_equal 415, status
   end
 
-  def test_create_association
+  def test_update_association_has_one
     ruby = Section.find_by(name: 'ruby')
-    put '/posts/3/links/section', { 'sections' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    put '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
   end
