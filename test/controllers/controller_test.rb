@@ -175,7 +175,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_sorting_asc
-    get :index, {sort: 'title'}
+    get :index, {sort: '+title'}
 
     assert_response :success
     assert_equal "Delete This Later - Multiple2-1", json_response['data'][0]['title']
@@ -189,21 +189,28 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_sorting_by_multiple_fields
-    get :index, {sort: 'title,body'}
+    get :index, {sort: '+title,+body'}
 
     assert_response :success
     assert_equal '8', json_response['data'][0]['id']
   end
 
   def test_invalid_sort_param
-    get :index, {sort: 'asdfg'}
+    get :index, {sort: '+asdfg'}
 
     assert_response :bad_request
     assert_match /asdfg is not a valid sort criteria for post/, response.body
   end
 
+  def test_invalid_sort_param_missing_direction
+    get :index, {sort: 'title'}
+
+    assert_response :bad_request
+    assert_match /title must start with a direction/, response.body
+  end
+
   def test_excluded_sort_param
-    get :index, {sort: 'id'}
+    get :index, {sort: '+id'}
 
     assert_response :bad_request
     assert_match /id is not a valid sort criteria for post/, response.body
@@ -1418,7 +1425,7 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
 
   def test_currencies_json_key_underscored_sort
     JSONAPI.configuration.json_key_format = :underscored_key
-    get :index, {sort: 'country_name'}
+    get :index, {sort: '+country_name'}
     assert_response :success
     assert_equal 3, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['country_name']
@@ -1436,7 +1443,7 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
 
   def test_currencies_json_key_dasherized_sort
     JSONAPI.configuration.json_key_format = :dasherized_key
-    get :index, {sort: 'country-name'}
+    get :index, {sort: '+country-name'}
     assert_response :success
     assert_equal 3, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['country-name']
@@ -1454,7 +1461,7 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
 
   def test_currencies_json_key_custom_json_key_sort
     JSONAPI.configuration.json_key_format = :upper_camelized_key
-    get :index, {sort: 'CountryName'}
+    get :index, {sort: '+CountryName'}
     assert_response :success
     assert_equal 3, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['CountryName']

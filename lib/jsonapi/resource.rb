@@ -572,12 +572,8 @@ module JSONAPI
       end
 
       def construct_order_options(sort_params)
-        sort_params.each_with_object({}) { |sort_key, order_hash|
-          if sort_key.starts_with?('-')
-            order_hash[sort_key.slice(1..-1)] = :desc
-          else
-            order_hash[sort_key] = :asc
-          end
+        sort_params.each_with_object({}) { |sort, order_hash|
+          order_hash[sort[:field]] = sort[:direction]
         }
       end
     end

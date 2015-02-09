@@ -162,27 +162,28 @@ module JSONAPI
       return unless sort_criteria
 
       @sort_criteria = CSV.parse_line(sort_criteria).collect do |sort|
-        # A parameter name may not start with a dash
-        # We need to preserve the dash as the sort direction before we unformat the string
-        if sort.start_with?('-')
-          unformatted_sort_criteria = unformat_key(sort[1..-1]).to_s
-          unformatted_sort_criteria.prepend('-')
+        sort_criteria = {field: unformat_key(sort[1..-1]).to_s}
+        if sort.start_with?('+')
+          sort_criteria[:direction] = :asc
+        elsif sort.start_with?('-')
+          sort_criteria[:direction] = :desc
         else
-          unformatted_sort_criteria = unformat_key(sort).to_s
+          @errors.concat(JSONAPI::Exceptions::InvalidSortFormat
+                           .new(format_key(resource_klass._type), sort).errors)
         end
 
-        check_sort_criteria(@resource_klass, unformatted_sort_criteria)
-        unformatted_sort_criteria
+        check_sort_criteria(@resource_klass, sort_criteria)
+        sort_criteria
       end
     end
 
     def check_sort_criteria(resource_klass, sort_criteria)
-      sort_criteria = sort_criteria.sub(/\A-/, '')
+      sort_field = sort_criteria[:field]
       sortable_fields = resource_klass.sortable_fields(context)
 
-      unless sortable_fields.include? sort_criteria.to_sym
+      unless sortable_fields.include? sort_field.to_sym
         @errors.concat(JSONAPI::Exceptions::InvalidSortCriteria
-                         .new(format_key(resource_klass._type), sort_criteria).errors)
+                         .new(format_key(resource_klass._type), sort_field).errors)
       end
     end
 
