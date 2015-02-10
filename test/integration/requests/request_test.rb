@@ -9,6 +9,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def after_teardown
     Api::V2::BookResource.paginator :offset
+    JSONAPI.configuration.route_format = :underscored_route
   end
 
   def test_get
@@ -49,9 +50,14 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_get_camelized_route_and_links
     JSONAPI.configuration.json_key_format = :camelized_key
+    JSONAPI.configuration.route_format = :camelized_route
     get '/api/v4/expenseEntries/1/links/isoCurrency'
     assert_equal 200, status
-    assert_equal 'USD', json_response['isoCurrency']
+    assert_hash_equals({'data' => {
+                          'type' => 'isoCurrencies',
+                          'id' => 'USD',
+                          'self' => 'http://www.example.com/api/v4/expenseEntries/1/links/isoCurrency',
+                          'resource' => 'http://www.example.com/api/v4/expenseEntries/1/isoCurrency'}}, json_response)
   end
 
   def test_put_single_without_content_type
@@ -218,4 +224,63 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books?page[irishsetter]=50&page[limit]=20'
     assert_equal 400, status
   end
+
+  def test_flow_self
+    get '/posts'
+    assert_equal 200, status
+    post_1 = json_response['data'][0]
+
+    get post_1['links']['self']
+    assert_equal 200, status
+    assert_hash_equals post_1, json_response['data']
+  end
+
+  def test_flow_link_has_one_self_link
+    get '/posts'
+    assert_equal 200, status
+    post_1 = json_response['data'][0]
+
+    get post_1['links']['author']['self']
+    assert_equal 200, status
+    assert_hash_equals(json_response, {'data' => post_1['links']['author']})
+  end
+
+  def test_flow_link_has_many_self_link
+    get '/posts'
+    assert_equal 200, status
+    post_1 = json_response['data'][0]
+
+    get post_1['links']['tags']['self']
+    assert_equal 200, status
+    assert_hash_equals(json_response,
+                       {'data' => {
+                          'self' => 'http://www.example.com/posts/1/links/tags',
+                          'resource' => 'http://www.example.com/posts/1/tags',
+                          'type' => 'tags', 'ids'=>['1', '2', '3']
+                         }
+                       })
+  end
+
+  def test_flow_link_has_many_self_link_put
+    get '/posts'
+    assert_equal 200, status
+    post_1 = json_response['data'][0]
+
+    post post_1['links']['tags']['self'],
+         {'data' => {'type' => 'tags', 'ids' => ['5']}}.to_json,
+         "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 204, status
+
+    get post_1['links']['tags']['self']
+    assert_equal 200, status
+    assert_hash_equals(json_response,
+                       {'data' => {
+                         'self' => 'http://www.example.com/posts/1/links/tags',
+                         'resource' => 'http://www.example.com/posts/1/tags',
+                         'type' => 'tags', 'ids'=>['1', '2', '3', '5']
+                       }
+                       })
+  end
+
 end

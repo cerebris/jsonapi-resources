@@ -1222,13 +1222,27 @@ class PostsControllerTest < ActionController::TestCase
   def test_show_has_one_relationship
     get :show_association, {post_id: '1', association: 'author'}
     assert_response :success
-    assert_equal 1, json_response['author']
+    assert_hash_equals json_response,
+                       {data: {
+                           type: 'people',
+                           id: '1',
+                           self: 'http://test.host/posts/1/links/author',
+                           resource: 'http://test.host/posts/1/author'
+                         }
+                       }
   end
 
   def test_show_has_many_relationship
     get :show_association, {post_id: '1', association: 'tags'}
     assert_response :success
-    assert_equal [1, 2, 3], json_response['tags']
+    assert_hash_equals json_response,
+                       {data: {
+                           type: 'tags',
+                           ids: ['1', '2', '3'],
+                           self: 'http://test.host/posts/1/links/tags',
+                           resource: 'http://test.host/posts/1/tags'
+                         }
+                       }
   end
 end
 

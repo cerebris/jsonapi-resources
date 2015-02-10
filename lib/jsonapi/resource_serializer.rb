@@ -1,12 +1,7 @@
 module JSONAPI
   class ResourceSerializer
 
-    def initialize(primary_resource_klass)
-      @primary_resource_klass = primary_resource_klass
-      @primary_class_name = @primary_resource_klass._type
-    end
-
-    # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
+    # Options can include
     # include:
     #     Purpose: determines which objects will be side loaded with the source objects in a linked section
     #     Example: ['comments','author','comments.tags','author.posts']
@@ -14,18 +9,27 @@ module JSONAPI
     #     Purpose: determines which fields are serialized for a resource type. This encompasses both attributes and
     #              association ids in the links section for a resource. Fields are global for a resource type.
     #     Example: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}
-    def serialize_to_hash(source, options = {})
-      is_resource_collection = source.respond_to?(:to_ary)
+    # key_formatter: KeyFormatter class to override the default configuration
+    # base_url: a string to prepend to generated resource links
+
+    def initialize(primary_resource_klass, options = {})
+      @primary_resource_klass = primary_resource_klass
+      @primary_class_name = @primary_resource_klass._type
 
       @fields =  options.fetch(:fields, {})
-      include = options.fetch(:include, [])
-
+      @include = options.fetch(:include, [])
       @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
+      @route_formatter = options.fetch(:route_formatter, JSONAPI.configuration.route_formatter)
       @base_url = options.fetch(:base_url, '')
+    end
+
+    # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
+    def serialize_to_hash(source)
+      is_resource_collection = source.respond_to?(:to_ary)
 
       @linked_objects = {}
 
-      requested_associations = parse_includes(include)
+      requested_associations = parse_includes(@include)
 
       process_primary(source, requested_associations)
 
@@ -49,6 +53,10 @@ module JSONAPI
         primary_hash
       end
       primary_hash
+    end
+
+    def serialize_to_links_hash(source, requested_association)
+      {data: link_object(source, requested_association, true)}
     end
 
     private
@@ -152,7 +160,7 @@ module JSONAPI
       included_associations = source.fetchable_fields & associations.keys
 
       links = {}
-      links[:self] = source.self_href(@base_url)
+      links[:self] = self_href(source)
 
       associations.each_with_object(links) do |(name, association), hash|
         if included_associations.include? name
@@ -199,21 +207,29 @@ module JSONAPI
       end
     end
 
+    def formatted_module_path(source)
+      source.class.name =~ /::[^:]+\Z/ ? (@route_formatter.format($`).freeze.gsub('::', '/') + '/').downcase : ''
+    end
+
+    def self_href(source)
+      "#{@base_url}/#{formatted_module_path(source)}#{@route_formatter.format(source.class._type.to_s)}/#{source.id}"
+    end
+
     def already_serialized?(type, id)
       type = format_key(type)
       return @linked_objects.key?(type) && @linked_objects[type].key?(id)
     end
 
     def format_route(route)
-      JSONAPI.configuration.route_formatter.format(route.to_s)
+      @route_formatter.format(route.to_s)
     end
 
     def link_object_has_one(source, association)
       route = association.name
 
       link_object_hash = {}
-      link_object_hash[:self] = "#{source.self_href(@base_url)}/links/#{format_route(route)}"
-      link_object_hash[:resource] = "#{source.self_href(@base_url)}/#{format_route(route)}"
+      link_object_hash[:self] = "#{self_href(source)}/links/#{format_route(route)}"
+      link_object_hash[:resource] = "#{self_href(source)}/#{format_route(route)}"
       # ToDo: Get correct formatting figured out
       link_object_hash[:type] = format_route(association.type)
       link_object_hash[:id] = foreign_key_value(source, association)
@@ -224,8 +240,8 @@ module JSONAPI
       route = association.name
 
       link_object_hash = {}
-      link_object_hash[:self] = "#{source.self_href(@base_url)}/links/#{format_route(route)}"
-      link_object_hash[:resource] = "#{source.self_href(@base_url)}/#{format_route(route)}"
+      link_object_hash[:self] = "#{self_href(source)}/links/#{format_route(route)}"
+      link_object_hash[:resource] = "#{self_href(source)}/#{format_route(route)}"
       if include_linked_object
         # ToDo: Get correct formatting figured out
         link_object_hash[:type] = format_route(association.type)

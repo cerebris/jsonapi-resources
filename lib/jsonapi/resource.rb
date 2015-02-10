@@ -101,10 +101,6 @@ module JSONAPI
       self.class.fields
     end
 
-    def self_href(base_path = '')
-      "#{base_path}/#{self.class.module_path}#{self.class._type.to_s}/#{id}"
-    end
-
     private
     def save
       run_callbacks :save do
