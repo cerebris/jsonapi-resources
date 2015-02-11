@@ -625,7 +625,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal ruby.id, post_object.section_id
   end
 
-  def test_update_relationship_has_one_invalid_links_hash_keys
+  def test_update_relationship_has_one_invalid_links_hash_keys_ids
     set_content_type_header!
     put :update_association, {post_id: 3, association: 'section', data: {types: 'sections', ids: 'foo'}}
 
