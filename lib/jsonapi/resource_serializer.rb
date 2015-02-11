@@ -166,11 +166,11 @@ module JSONAPI
         if included_associations.include? name
           ia = requested_associations.is_a?(Hash) ? requested_associations[name] : nil
 
-          include_linked_object = ia && ia[:include]
+          include_linkage = ia && ia[:include]
           include_linked_children = ia && ia[:include_children]
 
           if field_set.include?(name)
-            hash[format_key(name)] = link_object(source, association, include_linked_object)
+            hash[format_key(name)] = link_object(source, association, include_linkage)
           end
 
           type = association.type
@@ -178,13 +178,13 @@ module JSONAPI
           # If the object has been serialized once it will be in the related objects list,
           # but it's possible all children won't have been captured. So we must still go
           # through the associations.
-          if include_linked_object || include_linked_children
+          if include_linkage || include_linked_children
             if association.is_a?(JSONAPI::Association::HasOne)
               resource = source.send(name)
               if resource
                 id = resource.id
                 associations_only = already_serialized?(type, id)
-                if include_linked_object && !associations_only
+                if include_linkage && !associations_only
                   add_linked_object(type, id, object_hash(resource, ia[:include_related]))
                 elsif include_linked_children || associations_only
                   links_hash(resource, ia[:include_related])
@@ -195,7 +195,7 @@ module JSONAPI
               resources.each do |resource|
                 id = resource.id
                 associations_only = already_serialized?(type, id)
-                if include_linked_object && !associations_only
+                if include_linkage && !associations_only
                   add_linked_object(type, id, object_hash(resource, ia[:include_related]))
                 elsif include_linked_children || associations_only
                   links_hash(resource, ia[:include_related])
@@ -236,13 +236,13 @@ module JSONAPI
       link_object_hash
     end
 
-    def link_object_has_many(source, association, include_linked_object)
+    def link_object_has_many(source, association, include_linkage)
       route = association.name
 
       link_object_hash = {}
       link_object_hash[:self] = "#{self_href(source)}/links/#{format_route(route)}"
       link_object_hash[:resource] = "#{self_href(source)}/#{format_route(route)}"
-      if include_linked_object
+      if include_linkage
         # ToDo: Get correct formatting figured out
         link_object_hash[:type] = format_route(association.type)
         link_object_hash[:ids] = foreign_key_value(source, association)
@@ -250,11 +250,11 @@ module JSONAPI
       link_object_hash
     end
 
-    def link_object(source, association, include_linked_object = false)
+    def link_object(source, association, include_linkage = false)
       if association.is_a?(JSONAPI::Association::HasOne)
         link_object_has_one(source, association)
       elsif association.is_a?(JSONAPI::Association::HasMany)
-        link_object_has_many(source, association, include_linked_object)
+        link_object_has_many(source, association, include_linkage)
       end
     end
 
