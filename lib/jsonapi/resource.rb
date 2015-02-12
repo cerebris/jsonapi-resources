@@ -282,7 +282,7 @@ module JSONAPI
 
       # Override in your resource to filter the updateable keys
       def updateable_fields(context = nil)
-        _updateable_associations | _attributes.keys
+        _updateable_associations | _attributes.keys - [@_primary_key]
       end
 
       # Override in your resource to filter the createable keys
