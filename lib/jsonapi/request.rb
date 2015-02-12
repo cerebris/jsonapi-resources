@@ -266,6 +266,7 @@ module JSONAPI
       #   end
       #   params.delete(:links)
       # end
+
       verify_permitted_params(params, allowed_fields)
 
       checked_attributes = {}
@@ -340,7 +341,6 @@ module JSONAPI
     def verify_permitted_params(params, allowed_fields)
       formatted_allowed_fields = allowed_fields.collect { |field| format_key(field).to_sym }
       params_not_allowed = []
-
       params.each do |key, value|
         if key == 'links' || key == :links
           value.each_key do |links_key|
