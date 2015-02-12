@@ -266,7 +266,6 @@ module JSONAPI
       #   end
       #   params.delete(:links)
       # end
-      params.delete(:id)
       verify_permitted_params(params, allowed_fields)
 
       checked_attributes = {}
@@ -413,6 +412,10 @@ module JSONAPI
       key = data[@resource_klass._primary_key]
       if !keys.include?(key)
         raise JSONAPI::Exceptions::KeyNotIncludedInURL.new(key)
+      end
+
+      if !keys.include?(@resource_klass._primary_key)
+        data.delete(:id)
       end
 
       @operations.push(JSONAPI::ReplaceFieldsOperation.new(@resource_klass,
