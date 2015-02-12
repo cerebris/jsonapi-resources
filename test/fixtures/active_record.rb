@@ -467,11 +467,11 @@ class PostResource < JSONAPI::Resource
   filters :id, :ids
 
   def self.updateable_fields(context)
-    super(context) - [:author, :subject]
+    super(context) - [:author, :subject, :id]
   end
 
   def self.createable_fields(context)
-    super(context) - [:subject]
+    super(context) - [:subject, :id]
   end
 
   def self.sortable_fields(context)
