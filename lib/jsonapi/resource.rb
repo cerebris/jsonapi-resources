@@ -196,7 +196,7 @@ module JSONAPI
         type = base.name.demodulize.sub(/Resource$/, '').underscore
         base._type = type.pluralize.to_sym
 
-        attribute :id, format: :id
+        base.attribute :id, format: :id
 
         check_reserved_resource_name(base._type, base.name)
 
