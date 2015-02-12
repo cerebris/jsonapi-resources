@@ -76,4 +76,8 @@ class ResourceTest < MiniTest::Unit::TestCase
       ArticleResource.find_by_keys([1, 3], context: author).model
     end
   end
+
+  def test_updateable_fields_does_not_include_id
+    assert(!CatResource.updateable_fields.include?(:id))
+  end
 end

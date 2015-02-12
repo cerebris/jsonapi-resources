@@ -414,6 +414,10 @@ module JSONAPI
         raise JSONAPI::Exceptions::KeyNotIncludedInURL.new(key)
       end
 
+      if !keys.include?(@resource_klass._primary_key)
+        data.delete(:id)
+      end
+
       @operations.push(JSONAPI::ReplaceFieldsOperation.new(@resource_klass,
                                                            key,
                                                            parse_params(verify_and_remove_type(data),

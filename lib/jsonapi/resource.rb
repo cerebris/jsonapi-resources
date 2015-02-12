@@ -196,7 +196,7 @@ module JSONAPI
         type = base.name.demodulize.sub(/Resource$/, '').underscore
         base._type = type.pluralize.to_sym
 
-        attribute :id, format: :id
+        base.attribute :id, format: :id
 
         check_reserved_resource_name(base._type, base.name)
 
@@ -282,7 +282,7 @@ module JSONAPI
 
       # Override in your resource to filter the updateable keys
       def updateable_fields(context = nil)
-        _updateable_associations | _attributes.keys
+        _updateable_associations | _attributes.keys - [_primary_key]
       end
 
       # Override in your resource to filter the createable keys
