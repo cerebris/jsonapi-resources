@@ -78,6 +78,6 @@ class ResourceTest < MiniTest::Unit::TestCase
   end
 
   def test_updateable_fields_does_not_include_id
-    assert(!ArticleResource.updateable_fields.include?(:id))
+    assert(!CatResource.updateable_fields.include?(:id))
   end
 end
