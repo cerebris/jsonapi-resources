@@ -299,22 +299,27 @@ module JSONAPI
         _associations.keys | _attributes.keys
       end
 
+      def apply_pagination(records, paginator)
+        if paginator
+          records = paginator.apply(records)
+        end
+        records
+      end
+
+      def apply_sort(records, order_options)
+        records.order(order_options)
+      end
+
       def apply_filter(records, filter, value)
         records.where(filter => value)
       end
 
-      # Override this method if you have more complex requirements than this basic find method provides
-      def find(filters, options = {})
-        context = options[:context]
-        sort_criteria = options.fetch(:sort_criteria) { [] }
-        includes = []
-
-        records = records(options)
-
+      def apply_filters(records, filters)
+        required_includes = []
         filters.each do |filter, value|
           if _associations.include?(filter)
             if _associations[filter].is_a?(JSONAPI::Association::HasMany)
-              includes.push(filter)
+              required_includes.push(filter)
               records = apply_filter(records, "#{filter}.#{_associations[filter].primary_key}", value)
             else
               records = apply_filter(records, "#{_associations[filter].foreign_key}", value)
@@ -323,16 +328,20 @@ module JSONAPI
             records = apply_filter(records, filter, value)
           end
         end
+        records.includes(required_includes)
+      end
+
+      # Override this method if you have more complex requirements than this basic find method provides
+      def find(filters, options = {})
+        context = options[:context]
+        sort_criteria = options.fetch(:sort_criteria) { [] }
 
         resources = []
-        order_options = construct_order_options(sort_criteria)
 
-        records = records.order(order_options).includes(includes)
-
-        paginator = options[:paginator]
-        if paginator
-          records = paginator.apply(records)
-        end
+        records = records(options)
+        records = apply_filters(records, filters)
+        records = apply_sort(records, construct_order_options(sort_criteria))
+        records = apply_pagination(records, options[:paginator])
 
         records.each do |model|
           resources.push self.new(model, context)
@@ -500,8 +509,13 @@ module JSONAPI
         @module_path ||= self.name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').downcase : ''
       end
 
-      private
+      def construct_order_options(sort_params)
+        sort_params.each_with_object({}) { |sort, order_hash|
+          order_hash[sort[:field]] = sort[:direction]
+        }
+      end
 
+      private
       def check_reserved_resource_name(type, name)
         if [:ids, :types, :hrefs, :links].include?(type)
           warn "[NAME COLLISION] `#{name}` is a reserved resource name."
@@ -551,26 +565,27 @@ module JSONAPI
               end
             end unless method_defined?(attr)
           elsif @_associations[attr].is_a?(JSONAPI::Association::HasMany)
-            define_method attr do
+            define_method attr do |options = {}|
               type_name = self.class._associations[attr].type.to_s
               resource_class = self.class.resource_for(self.class.module_path + type_name)
+              filters = options.fetch(:filters, {})
+              sort_criteria =  options.fetch(:sort_criteria, {})
+              paginator = options.fetch(:paginator, nil)
+
               resources = []
               if resource_class
-                associated_models = @model.send attr
-                associated_models.each do |associated_model|
-                  resources.push resource_class.new(associated_model, @context)
+                records = @model.send attr
+                records = self.class.apply_filters(records, filters)
+                records = self.class.apply_sort(records, self.class.construct_order_options(sort_criteria))
+                records = self.class.apply_pagination(records, paginator)
+                records.each do |record|
+                  resources.push resource_class.new(record, @context)
                 end
               end
               return resources
             end unless method_defined?(attr)
           end
         end
-      end
-
-      def construct_order_options(sort_params)
-        sort_params.each_with_object({}) { |sort, order_hash|
-          order_hash[sort[:field]] = sort[:direction]
-        }
       end
     end
   end

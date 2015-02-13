@@ -33,7 +33,15 @@ module JSONAPI
             parse_filters(params[:filter])
             parse_sort_criteria(params[:sort])
             parse_pagination(params[:page])
-          when 'show_associations'
+          when 'get_related_resource', 'get_related_resources'
+            # Reset resource class to the related_resource
+            association = @resource_klass._associations[params.require(:association).to_sym]
+            @resource_klass = Resource.resource_for(@resource_klass.module_path + association.type.to_s)
+            parse_fields(params[:fields])
+            parse_include(params[:include])
+            parse_filters(params[:filter])
+            parse_sort_criteria(params[:sort])
+            parse_pagination(params[:page])
           when 'show'
             parse_fields(params[:fields])
             parse_include(params[:include])

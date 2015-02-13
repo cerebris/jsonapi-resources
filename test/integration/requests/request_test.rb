@@ -17,6 +17,21 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
   end
 
+  def test_get_nested_has_one
+    get '/posts/1/author'
+    assert_equal 200, status
+  end
+
+  def test_get_nested_has_many
+    get '/posts/1/comments'
+    assert_equal 200, status
+  end
+
+  def test_get_nested_has_many_bad_param
+    get '/posts/1/comments?association=books'
+    assert_equal 200, status
+  end
+
   def test_get_underscored_key
     JSONAPI.configuration.json_key_format = :underscored_key
     get '/iso_currencies'
@@ -223,6 +238,33 @@ class RequestTest < ActionDispatch::IntegrationTest
     Api::V2::BookResource.paginator :offset
     get '/api/v2/books?page[irishsetter]=50&page[limit]=20'
     assert_equal 400, status
+  end
+
+  def test_pagination_related_resources_link
+    Api::V2::BookResource.paginator :offset
+    get '/api/v2/books?page[limit]=2'
+    assert_equal 200, status
+    assert_equal 2, json_response['data'].size
+    assert_equal 'http://www.example.com/api/v2/books/1/book_comments',
+                 json_response['data'][0]['links']['book_comments']['resource']
+  end
+
+  def test_pagination_related_resources_data
+    Api::V2::BookResource.paginator :offset
+    Api::V2::BookCommentResource.paginator :offset
+    get '/api/v2/books/1/book_comments?page[limit]=10'
+    assert_equal 200, status
+    assert_equal 10, json_response['data'].size
+    assert_equal 'This is comment 9 on book 0.', json_response['data'][9]['body']
+  end
+
+  def test_pagination_related_resources_data_includes
+    Api::V2::BookResource.paginator :offset
+    Api::V2::BookCommentResource.paginator :offset
+    get '/api/v2/books/1/book_comments?page[limit]=10&include=author,book'
+    assert_equal 200, status
+    assert_equal 10, json_response['data'].size
+    assert_equal 'This is comment 9 on book 0.', json_response['data'][9]['body']
   end
 
   def test_flow_self

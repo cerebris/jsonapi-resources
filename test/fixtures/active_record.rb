@@ -110,6 +110,13 @@ ActiveRecord::Schema.define do
     t.string :title
     t.string :isbn
   end
+
+  create_table :book_comments, force: true do |t|
+    t.text       :body
+    t.belongs_to :book, index: true
+    t.integer    :author_id
+    t.timestamps
+  end
 end
 
 ### MODELS
@@ -208,6 +215,12 @@ class Breed
 end
 
 class Book < ActiveRecord::Base
+  has_many :book_comments
+end
+
+class BookComment < ActiveRecord::Base
+  belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
+  belongs_to :book
 end
 
 class BreedData
@@ -643,11 +656,20 @@ module Api
   module V2
     PreferencesResource = PreferencesResource.dup
     AuthorResource = AuthorResource.dup
+    PersonResource = PersonResource.dup
     PostResource = PostResource.dup
 
     class BookResource < JSONAPI::Resource
       attribute :title
       attribute :isbn
+
+      has_many :book_comments
+    end
+
+    class BookCommentResource < JSONAPI::Resource
+      attributes :body
+      has_one :book
+      has_one :author, class_name: 'Person'
     end
   end
 end
@@ -862,6 +884,13 @@ fact = Fact.create(spouse_name: 'Jane Author',
                    cool: false
 )
 
-for pos in 0..999
-  Book.create(title: "Book #{pos}", isbn: "12345-#{pos}-67890")
+for book_num in 0..999
+  Book.create(title: "Book #{book_num}", isbn: "12345-#{book_num}-67890") do |book|
+    book.save
+    if book_num < 5
+      for comment_num in 0..50
+        book.book_comments.create(body: "This is comment #{comment_num} on book #{book_num}.", author_id: a.id, book_id: book.id)
+      end
+    end
+  end
 end

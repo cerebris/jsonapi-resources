@@ -102,6 +102,50 @@ module JSONAPI
       process_request_operations
     end
 
+    def get_related_resource
+      association_type = params[:association]
+      association = resource_klass._association(association_type)
+
+      parent_key = params[resource_klass._as_parent_key]
+      parent_resource = resource_klass.find_by_key(parent_key, context: context)
+
+      resource_record = parent_resource.send(association.name)
+
+      serializer = JSONAPI::ResourceSerializer.new(@request.resource_klass,
+                                                   include: @request.include,
+                                                   fields: @request.fields,
+                                                   base_url: base_url,
+                                                   key_formatter: key_formatter,
+                                                   route_formatter: route_formatter)
+
+      render json: serializer.serialize_to_hash(resource_record)
+    end
+
+    def get_related_resources
+      association_type = params[:association]
+      association = resource_klass._association(association_type)
+
+      parent_key = params[resource_klass._as_parent_key]
+      parent_resource = resource_klass.find_by_key(parent_key, context: context)
+
+      related_resource_klass = @request.resource_klass
+      resource_records = parent_resource.send(association.name,
+                                              {
+                                                filters: related_resource_klass.verify_filters(@request.filters, context),
+                                                sort_criteria: @request.sort_criteria,
+                                                paginator: @request.paginator
+                                              })
+
+      serializer = JSONAPI::ResourceSerializer.new(related_resource_klass,
+                                                   include: @request.include,
+                                                   fields: @request.fields,
+                                                   base_url: base_url,
+                                                   key_formatter: key_formatter,
+                                                   route_formatter: route_formatter)
+
+      render json: serializer.serialize_to_hash(resource_records)
+    end
+
     # Override this to use another operations processor
     def create_operations_processor
       JSONAPI::ActiveRecordOperationsProcessor.new
