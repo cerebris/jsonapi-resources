@@ -6,8 +6,8 @@ module JSONAPI
   class Request
     include ResourceFor
 
-    attr_accessor :fields, :include, :filters, :sort_criteria, :errors, :operations, :resource_klass, :context,
-                  :paginator
+    attr_accessor :fields, :include, :filters, :sort_criteria, :errors, :operations,
+                  :resource_klass, :context, :paginator, :source_klass, :source_id
 
     def initialize(params = nil, options = {})
       @context = options.fetch(:context, nil)
@@ -18,6 +18,8 @@ module JSONAPI
       @include = []
       @filters = {}
       @sort_criteria = []
+      @source_klass = nil
+      @source_id = nil
 
       setup(params) if params
     end
@@ -34,9 +36,8 @@ module JSONAPI
             parse_sort_criteria(params[:sort])
             parse_pagination(params[:page])
           when 'get_related_resource', 'get_related_resources'
-            # Reset resource class to the related_resource
-            association = @resource_klass._associations[params.require(:association).to_sym]
-            @resource_klass = Resource.resource_for(@resource_klass.module_path + association.type.to_s)
+            @source_klass = self.class.resource_for(params.require(:source))
+            @source_id = params.require(@source_klass._as_parent_key)
             parse_fields(params[:fields])
             parse_include(params[:include])
             parse_filters(params[:filter])
