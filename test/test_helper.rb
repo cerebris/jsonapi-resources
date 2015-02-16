@@ -36,6 +36,8 @@ class TestApp < Rails::Application
 
   #Raise errors on unsupported parameters
   config.action_controller.action_on_unpermitted_parameters = :raise
+
+  config.active_record.schema_format = :none
 end
 
 TestApp.initialize!
@@ -76,10 +78,17 @@ TestApp.routes.draw do
       jsonapi_resources :likes
     end
 
+    JSONAPI.configuration.route_format = :underscored_route
     namespace :v2 do
-      jsonapi_resources :authors
-      jsonapi_resources :posts
+      jsonapi_resources :authors do
+      end
+
+      jsonapi_resources :posts do
+        jsonapi_link :author, except: [:destroy]
+      end
+
       jsonapi_resource :preferences
+
       jsonapi_resources :books
       jsonapi_resources :book_comments
     end
@@ -97,15 +106,28 @@ TestApp.routes.draw do
 
     JSONAPI.configuration.route_format = :camelized_route
     namespace :v4 do
-      jsonapi_resources :posts
-      jsonapi_resources :expense_entries
-      jsonapi_resources :iso_currencies
+      jsonapi_resources :posts do
+      end
+
+      jsonapi_resources :expense_entries do
+        jsonapi_link :iso_currency
+        jsonapi_related_resource :iso_currency
+      end
+
+      jsonapi_resources :iso_currencies do
+      end
     end
+
     JSONAPI.configuration.route_format = :dasherized_route
     namespace :v5 do
-      jsonapi_resources :posts
+      jsonapi_resources :posts do
+      end
+
       jsonapi_resources :expense_entries
       jsonapi_resources :iso_currencies
+
+      jsonapi_resources :employees
+
     end
     JSONAPI.configuration.route_format = :underscored_route
   end
