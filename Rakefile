@@ -3,12 +3,7 @@ require "bundler/gem_tasks"
 require "rake/testtask"
 require './test/test_helper.rb'
 
-desc 'Run tests'
-test_task = Rake::TestTask.new(:test) do |t|
-  t.libs << 'test'
-  t.pattern = 'test/**/*_test.rb'
-  t.verbose = true
-end
+TestApp.load_tasks
 
 task default: :test
 
@@ -23,5 +18,3 @@ namespace :test do
     end
   end
 end
-
-TestApp.load_tasks
