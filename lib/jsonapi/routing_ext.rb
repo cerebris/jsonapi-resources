@@ -141,26 +141,35 @@ module ActionDispatch
           end
         end
 
-        def jsonapi_related_resource(*links)
-          link_type = links.first
-          formatted_association_name = format_route(link_type)
+        def jsonapi_related_resource(*association)
+          source = JSONAPI::Resource.resource_for(resource_type_with_module_prefix)
 
-          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix)
+          association_name = association.first
+          association = source._associations[association_name]
 
-          match "#{formatted_association_name}", controller: res._type.to_s,
-                action: 'get_related_resource', association: link_type.to_s, via: [:get]
+          formatted_association_name = format_route(association.name)
+          related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(association.name.pluralize))
+
+          match "#{formatted_association_name}", controller: related_resource._type.to_s,
+                association: association.name, source: resource_type_with_module_prefix(source._type),
+                action: 'get_related_resource', via: [:get]
         end
 
-        def jsonapi_related_resources(*links)
-          link_type = links.first
-          formatted_association_name = format_route(link_type)
+        def jsonapi_related_resources(*association)
+          source = JSONAPI::Resource.resource_for(resource_type_with_module_prefix)
 
-          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix)
+          association_name = association.first
+          association = source._associations[association_name]
 
-          match "#{formatted_association_name}", controller: res._type.to_s,
-                action: 'get_related_resources', association: link_type.to_s, via: [:get]
+          formatted_association_name = format_route(association.name)
+          related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(association.name))
+
+          match "#{formatted_association_name}", controller: related_resource._type.to_s,
+                association: association.name, source: resource_type_with_module_prefix(source._type),
+                action: 'get_related_resources', via: [:get]
         end
 
+        private
         def resource_type_with_module_prefix(resource = nil)
           resource_name = resource || @scope[:jsonapi_resource]
           [@scope[:module], resource_name].compact.collect(&:to_s).join("/")
