@@ -1,6 +1,7 @@
 #!/usr/bin/env rake
 require "bundler/gem_tasks"
 require "rake/testtask"
+require './test/test_helper.rb'
 
 desc 'Run tests'
 test_task = Rake::TestTask.new(:test) do |t|
@@ -22,3 +23,5 @@ namespace :test do
     end
   end
 end
+
+TestApp.load_tasks
