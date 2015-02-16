@@ -255,14 +255,18 @@ $breed_data.add(Breed.new(3, 'to_delete'))
 
 ### CONTROLLERS
 class AuthorsController < JSONAPI::ResourceController
-
 end
 
 class PeopleController < JSONAPI::ResourceController
-
 end
 
 class PostsController < JSONAPI::ResourceController
+end
+
+class CommentsController < JSONAPI::ResourceController
+end
+
+class SectionsController < JSONAPI::ResourceController
 end
 
 class TagsController < JSONAPI::ResourceController
@@ -331,6 +335,9 @@ module Api
     end
 
     class BooksController < JSONAPI::ResourceController
+    end
+
+    class BookCommentsController < JSONAPI::ResourceController
     end
   end
 
@@ -532,6 +539,14 @@ class ExpenseEntryResource < JSONAPI::Resource
   has_one :employee, class_name: 'Person'
 end
 
+class EmployeeResource < JSONAPI::Resource
+  attributes :name, :email
+  model_name 'Person'
+end
+
+class FriendResource < JSONAPI::Resource
+end
+
 class BreedResource < JSONAPI::Resource
   attribute :id, format_misspelled: :does_not_exist
   attribute :name, format: :title
@@ -588,7 +603,7 @@ class PreferencesResource < JSONAPI::Resource
   attribute :advanced_mode
 
   has_one :author, foreign_key: :person_id
-  has_many :friends
+  has_many :friends, class_name: 'Person'
 
   def self.find_by_key(key, options = {})
     new(Preferences.first)
@@ -649,6 +664,8 @@ module Api
     PlanetTypeResource = PlanetTypeResource.dup
     MoonResource = MoonResource.dup
     PreferencesResource = PreferencesResource.dup
+    EmployeeResource = EmployeeResource.dup
+    FriendResource = FriendResource.dup
   end
 end
 
@@ -695,9 +712,11 @@ end
 
 module Api
   module V5
+    AuthorResource = AuthorResource.dup
     PostResource = PostResource.dup
     ExpenseEntryResource = ExpenseEntryResource.dup
     IsoCurrencyResource = IsoCurrencyResource.dup
+    EmployeeResource = EmployeeResource.dup
   end
 end
 
