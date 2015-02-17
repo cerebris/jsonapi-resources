@@ -268,14 +268,6 @@ module JSONAPI
     end
 
     def parse_params(params, allowed_fields)
-      # # push links into top level param list with attributes in order to check for invalid params
-      # if params[:links]
-      #   params[:links].each do |link, value|
-      #     params[link] = value
-      #   end
-      #   params.delete(:links)
-      # end
-
       verify_permitted_params(params, allowed_fields)
 
       checked_attributes = {}
