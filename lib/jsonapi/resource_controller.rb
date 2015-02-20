@@ -18,32 +18,40 @@ module JSONAPI
     after_filter :setup_response
 
     def index
-      render json: JSONAPI::ResourceSerializer.new(resource_klass).serialize_to_hash(
-          resource_klass.find(resource_klass.verify_filters(@request.filters, context),
-            context: context, sort_params: @request.sort_params),
-          include: @request.include,
-          fields: @request.fields,
-          attribute_formatters: attribute_formatters,
-          key_formatter: key_formatter)
+      serializer = JSONAPI::ResourceSerializer.new(resource_klass,
+                                                   include: @request.include,
+                                                   fields: @request.fields,
+                                                   base_url: base_url,
+                                                   key_formatter: key_formatter,
+                                                   route_formatter: route_formatter)
+
+      resource_records = resource_klass.find(resource_klass.verify_filters(@request.filters, context),
+                                             context: context,
+                                             sort_criteria: @request.sort_criteria,
+                                             paginator: @request.paginator)
+
+      render json: serializer.serialize_to_hash(resource_records)
     rescue => e
       handle_exceptions(e)
     end
 
     def show
+      serializer = JSONAPI::ResourceSerializer.new(resource_klass,
+                                                   include: @request.include,
+                                                   fields: @request.fields,
+                                                   base_url: base_url,
+                                                   key_formatter: key_formatter,
+                                                   route_formatter: route_formatter)
+
       keys = parse_key_array(params[resource_klass._primary_key])
 
-      resources = if keys.length > 1
-                    resource_klass.find_by_keys(keys, context: context)
-                  else
-                    resource_klass.find_by_key(keys[0], context: context)
-                  end
+      resource_records = if keys.length > 1
+                           resource_klass.find_by_keys(keys, context: context)
+                         else
+                           resource_klass.find_by_key(keys[0], context: context)
+                         end
 
-      render json: JSONAPI::ResourceSerializer.new(resource_klass).serialize_to_hash(
-          resources,
-          include: @request.include,
-          fields: @request.fields,
-          attribute_formatters: attribute_formatters,
-          key_formatter: key_formatter)
+      render json: serializer.serialize_to_hash(resource_records)
     rescue => e
       handle_exceptions(e)
     end
@@ -56,7 +64,14 @@ module JSONAPI
       parent_resource = resource_klass.find_by_key(parent_key, context: context)
 
       association = resource_klass._association(association_type)
-      render json: { key_formatter.format(association_type) => parent_resource.send(association.foreign_key)}
+
+      serializer = JSONAPI::ResourceSerializer.new(resource_klass,
+                                                   fields: @request.fields,
+                                                   base_url: base_url,
+                                                   key_formatter: key_formatter,
+                                                   route_formatter: route_formatter)
+
+      render json: serializer.serialize_to_links_hash(parent_resource, association)
     rescue => e
       # :nocov:
       handle_exceptions(e)
@@ -87,6 +102,41 @@ module JSONAPI
       process_request_operations
     end
 
+    def get_related_resource
+      association_type = params[:association]
+      source_resource = @request.source_klass.find_by_key(@request.source_id, context: context)
+
+      serializer = JSONAPI::ResourceSerializer.new(@request.source_klass,
+                                                   include: @request.include,
+                                                   fields: @request.fields,
+                                                   base_url: base_url,
+                                                   key_formatter: key_formatter,
+                                                   route_formatter: route_formatter)
+
+      render json: serializer.serialize_to_hash(source_resource.send(association_type))
+    end
+
+    def get_related_resources
+      association_type = params[:association]
+      source_resource = @request.source_klass.find_by_key(@request.source_id, context: context)
+
+      related_resources = source_resource.send(association_type,
+                                               {
+                                                 filters:  @request.source_klass.verify_filters(@request.filters, context),
+                                                 sort_criteria: @request.sort_criteria,
+                                                 paginator: @request.paginator
+                                               })
+
+      serializer = JSONAPI::ResourceSerializer.new(@request.source_klass,
+                                                   include: @request.include,
+                                                   fields: @request.fields,
+                                                   base_url: base_url,
+                                                   key_formatter: key_formatter,
+                                                   route_formatter: route_formatter)
+
+      render json: serializer.serialize_to_hash(related_resources)
+    end
+
     # Override this to use another operations processor
     def create_operations_processor
       JSONAPI::ActiveRecordOperationsProcessor.new
@@ -104,6 +154,10 @@ module JSONAPI
       end
     end
     # :nocov:
+
+    def base_url
+      @base_url ||= request.protocol + request.host_with_port
+    end
 
     def resource_klass_name
       @resource_klass_name ||= "#{self.class.name.sub(/Controller$/, '').singularize}Resource"
@@ -149,6 +203,7 @@ module JSONAPI
 
     # Control by setting in an initializer:
     #     JSONAPI.configuration.json_key_format = :camelized_key
+    #     JSONAPI.configuration.route = :camelized_route
     #
     # Override if you want to set a per controller key format.
     # Must return a class derived from KeyFormatter.
@@ -156,9 +211,8 @@ module JSONAPI
       JSONAPI.configuration.key_formatter
     end
 
-    # override to setup custom attribute_formatters
-    def attribute_formatters
-      {}
+    def route_formatter
+      JSONAPI.configuration.route_formatter
     end
 
     def render_errors(errors)
@@ -185,13 +239,15 @@ module JSONAPI
         render status: errors[0].status, json: {errors: errors}
       else
         if results.length > 0 && resources.length > 0
+          serializer = JSONAPI::ResourceSerializer.new(resource_klass,
+                                                       include: @request.include,
+                                                       fields: @request.fields,
+                                                       base_url: base_url,
+                                                       key_formatter: key_formatter,
+                                                       route_formatter: route_formatter)
+
           render status: results[0].code,
-                 json: JSONAPI::ResourceSerializer.new(resource_klass).serialize_to_hash(
-                   resources.length > 1 ? resources : resources[0],
-                   include: @request.include,
-                   fields: @request.fields,
-                   attribute_formatters: attribute_formatters,
-                   key_formatter: key_formatter)
+                 json: serializer.serialize_to_hash(resources.length > 1 ? resources : resources[0])
         else
           render status: results[0].code, json: nil
         end

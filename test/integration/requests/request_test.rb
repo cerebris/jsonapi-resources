@@ -3,8 +3,32 @@ require File.expand_path('../../../fixtures/active_record', __FILE__)
 
 class RequestTest < ActionDispatch::IntegrationTest
 
+  def setup
+    JSONAPI.configuration.json_key_format = :underscored_key
+  end
+
+  def after_teardown
+    Api::V2::BookResource.paginator :offset
+    JSONAPI.configuration.route_format = :underscored_route
+  end
+
   def test_get
     get '/posts'
+    assert_equal 200, status
+  end
+
+  def test_get_nested_has_one
+    get '/posts/1/author'
+    assert_equal 200, status
+  end
+
+  def test_get_nested_has_many
+    get '/posts/1/comments'
+    assert_equal 200, status
+  end
+
+  def test_get_nested_has_many_bad_param
+    get '/posts/1/comments?association=books'
     assert_equal 200, status
   end
 
@@ -12,47 +36,54 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.json_key_format = :underscored_key
     get '/iso_currencies'
     assert_equal 200, status
-    assert_equal 3, json_response['iso_currencies'].size
+    assert_equal 3, json_response['data'].size
   end
 
   def test_get_underscored_key_filtered
     JSONAPI.configuration.json_key_format = :underscored_key
-    get '/iso_currencies?country_name=Canada'
+    get '/iso_currencies?filter[country_name]=Canada'
     assert_equal 200, status
-    assert_equal 1, json_response['iso_currencies'].size
-    assert_equal 'Canada', json_response['iso_currencies'][0]['country_name']
+    assert_equal 1, json_response['data'].size
+    assert_equal 'Canada', json_response['data'][0]['country_name']
   end
 
   def test_get_camelized_key_filtered
     JSONAPI.configuration.json_key_format = :camelized_key
-    get '/iso_currencies?countryName=Canada'
+    get '/iso_currencies?filter[countryName]=Canada'
     assert_equal 200, status
-    assert_equal 1, json_response['isoCurrencies'].size
-    assert_equal 'Canada', json_response['isoCurrencies'][0]['countryName']
+    assert_equal 1, json_response['data'].size
+    assert_equal 'Canada', json_response['data'][0]['countryName']
   end
 
   def test_get_camelized_route_and_key_filtered
-    get '/api/v4/isoCurrencies?countryName=Canada'
+    JSONAPI.configuration.json_key_format = :camelized_key
+    get '/api/v4/isoCurrencies?filter[countryName]=Canada'
     assert_equal 200, status
-    assert_equal 1, json_response['isoCurrencies'].size
-    assert_equal 'Canada', json_response['isoCurrencies'][0]['countryName']
+    assert_equal 1, json_response['data'].size
+    assert_equal 'Canada', json_response['data'][0]['countryName']
   end
 
   def test_get_camelized_route_and_links
     JSONAPI.configuration.json_key_format = :camelized_key
+    JSONAPI.configuration.route_format = :camelized_route
     get '/api/v4/expenseEntries/1/links/isoCurrency'
     assert_equal 200, status
-    assert_equal 'USD', json_response['isoCurrency']
+    assert_hash_equals({'data' => {
+                          'type' => 'isoCurrencies',
+                          'id' => 'USD',
+                          'self' => 'http://www.example.com/api/v4/expenseEntries/1/links/isoCurrency',
+                          'resource' => 'http://www.example.com/api/v4/expenseEntries/1/isoCurrency'}}, json_response)
   end
 
   def test_put_single_without_content_type
     put '/posts/3',
         {
-          'posts' => {
+          'data' => {
+            'type' => 'posts',
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => [3, 4]
+              'tags' => {type: 'tags', ids: [3, 4]}
             }
           }
         }.to_json, "CONTENT_TYPE" => "application/json"
@@ -63,11 +94,12 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_put_single
     put '/posts/3',
         {
-          'posts' => {
+          'data' => {
+            'type' => 'posts',
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => [3, 4]
+              'tags' => {type: 'tags', ids: [3, 4]}
             }
           }
         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -92,11 +124,12 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_post_single
     post '/posts',
       {
-        'posts' => {
+        'data' => {
+          'type' => 'posts',
           'title' => 'A great new Post',
           'body' => 'JSONAPIResources is the greatest thing since unsliced bread.',
           'links' => {
-            'author' => '3'
+            'author' => {type: 'people', id: '3'}
           }
         }
       }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -104,16 +137,16 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 201, status
   end
 
-  def test_create_association_without_content_type
+  def test_update_association_without_content_type
     ruby = Section.find_by(name: 'ruby')
-    put '/posts/3/links/section', { 'sections' => ruby.id.to_s }.to_json
+    put '/posts/3/links/section', { 'sections' => {type: 'sections', id: ruby.id.to_s }}.to_json
 
     assert_equal 415, status
   end
 
-  def test_create_association
+  def test_update_association_has_one
     ruby = Section.find_by(name: 'ruby')
-    put '/posts/3/links/section', { 'sections' => ruby.id.to_s }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    put '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
   end
@@ -131,11 +164,12 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_put_content_type
     put '/posts/3',
         {
-          'posts' => {
+          'data' => {
+            'type' => 'posts',
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => [3, 4]
+              'tags' => {type: 'tags', ids: [3, 4]}
             }
           }
         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -146,10 +180,11 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_post_correct_content_type
     post '/posts',
       {
-       'posts' => {
+       'data' => {
+         'type' => 'posts',
          'title' => 'A great new Post',
          'links' => {
-           'author' => '3'
+           'author' => {type: 'people', id: '3'}
          }
        }
      }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -167,4 +202,127 @@ class RequestTest < ActionDispatch::IntegrationTest
     delete '/posts/8,9'
     assert_equal 204, status
   end
+
+  def test_pagination_none
+    Api::V2::BookResource.paginator :none
+    get '/api/v2/books'
+    assert_equal 200, status
+    assert_equal 1000, json_response['data'].size
+  end
+
+  def test_pagination_offset_style
+    Api::V2::BookResource.paginator :offset
+    get '/api/v2/books'
+    assert_equal 200, status
+    assert_equal JSONAPI.configuration.default_page_size, json_response['data'].size
+    assert_equal 'Book 0', json_response['data'][0]['title']
+  end
+
+  def test_pagination_offset_style_offset
+    Api::V2::BookResource.paginator :offset
+    get '/api/v2/books?page[offset]=50'
+    assert_equal 200, status
+    assert_equal JSONAPI.configuration.default_page_size, json_response['data'].size
+    assert_equal 'Book 50', json_response['data'][0]['title']
+  end
+
+  def test_pagination_offset_style_offset_limit
+    Api::V2::BookResource.paginator :offset
+    get '/api/v2/books?page[offset]=50&page[limit]=20'
+    assert_equal 200, status
+    assert_equal 20, json_response['data'].size
+    assert_equal 'Book 50', json_response['data'][0]['title']
+  end
+
+  def test_pagination_offset_bad_param
+    Api::V2::BookResource.paginator :offset
+    get '/api/v2/books?page[irishsetter]=50&page[limit]=20'
+    assert_equal 400, status
+  end
+
+  def test_pagination_related_resources_link
+    Api::V2::BookResource.paginator :offset
+    get '/api/v2/books?page[limit]=2'
+    assert_equal 200, status
+    assert_equal 2, json_response['data'].size
+    assert_equal 'http://www.example.com/api/v2/books/1/book_comments',
+                 json_response['data'][0]['links']['book_comments']['resource']
+  end
+
+  def test_pagination_related_resources_data
+    Api::V2::BookResource.paginator :offset
+    Api::V2::BookCommentResource.paginator :offset
+    get '/api/v2/books/1/book_comments?page[limit]=10'
+    assert_equal 200, status
+    assert_equal 10, json_response['data'].size
+    assert_equal 'This is comment 9 on book 0.', json_response['data'][9]['body']
+  end
+
+  def test_pagination_related_resources_data_includes
+    Api::V2::BookResource.paginator :offset
+    Api::V2::BookCommentResource.paginator :offset
+    get '/api/v2/books/1/book_comments?page[limit]=10&include=author,book'
+    assert_equal 200, status
+    assert_equal 10, json_response['data'].size
+    assert_equal 'This is comment 9 on book 0.', json_response['data'][9]['body']
+  end
+
+  def test_flow_self
+    get '/posts'
+    assert_equal 200, status
+    post_1 = json_response['data'][0]
+
+    get post_1['links']['self']
+    assert_equal 200, status
+    assert_hash_equals post_1, json_response['data']
+  end
+
+  def test_flow_link_has_one_self_link
+    get '/posts'
+    assert_equal 200, status
+    post_1 = json_response['data'][0]
+
+    get post_1['links']['author']['self']
+    assert_equal 200, status
+    assert_hash_equals(json_response, {'data' => post_1['links']['author']})
+  end
+
+  def test_flow_link_has_many_self_link
+    get '/posts'
+    assert_equal 200, status
+    post_1 = json_response['data'][0]
+
+    get post_1['links']['tags']['self']
+    assert_equal 200, status
+    assert_hash_equals(json_response,
+                       {'data' => {
+                          'self' => 'http://www.example.com/posts/1/links/tags',
+                          'resource' => 'http://www.example.com/posts/1/tags',
+                          'type' => 'tags', 'ids'=>['1', '2', '3']
+                         }
+                       })
+  end
+
+  def test_flow_link_has_many_self_link_put
+    get '/posts'
+    assert_equal 200, status
+    post_1 = json_response['data'][0]
+
+    post post_1['links']['tags']['self'],
+         {'data' => {'type' => 'tags', 'ids' => ['5']}}.to_json,
+         "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 204, status
+
+    get post_1['links']['tags']['self']
+    assert_equal 200, status
+    assert_hash_equals(json_response,
+                       {'data' => {
+                         'self' => 'http://www.example.com/posts/1/links/tags',
+                         'resource' => 'http://www.example.com/posts/1/tags',
+                         'type' => 'tags', 'ids'=>['1', '2', '3', '5']
+                       }
+                       })
+  end
+
 end

@@ -105,6 +105,18 @@ ActiveRecord::Schema.define do
     t.binary   :photo, limit: 1.kilobyte
     t.boolean  :cool
   end
+
+  create_table :books, force: true do |t|
+    t.string :title
+    t.string :isbn
+  end
+
+  create_table :book_comments, force: true do |t|
+    t.text       :body
+    t.belongs_to :book, index: true
+    t.integer    :author_id
+    t.timestamps
+  end
 end
 
 ### MODELS
@@ -202,6 +214,15 @@ class Breed
   end
 end
 
+class Book < ActiveRecord::Base
+  has_many :book_comments
+end
+
+class BookComment < ActiveRecord::Base
+  belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
+  belongs_to :book
+end
+
 class BreedData
   def initialize
     @breeds = {}
@@ -234,14 +255,18 @@ $breed_data.add(Breed.new(3, 'to_delete'))
 
 ### CONTROLLERS
 class AuthorsController < JSONAPI::ResourceController
-
 end
 
 class PeopleController < JSONAPI::ResourceController
-
 end
 
 class PostsController < JSONAPI::ResourceController
+end
+
+class CommentsController < JSONAPI::ResourceController
+end
+
+class SectionsController < JSONAPI::ResourceController
 end
 
 class TagsController < JSONAPI::ResourceController
@@ -308,6 +333,12 @@ module Api
 
     class PreferencesController < JSONAPI::ResourceController
     end
+
+    class BooksController < JSONAPI::ResourceController
+    end
+
+    class BookCommentsController < JSONAPI::ResourceController
+    end
   end
 
   module V3
@@ -323,6 +354,9 @@ module Api
     end
 
     class IsoCurrenciesController < JSONAPI::ResourceController
+    end
+
+    class BooksController < JSONAPI::ResourceController
     end
   end
 
@@ -362,7 +396,7 @@ class PersonResource < JSONAPI::Resource
 end
 
 class AuthorResource < JSONAPI::Resource
-  attributes :id, :name, :email
+  attributes :name, :email
   model_name 'Person'
   has_many :posts
 
@@ -385,14 +419,14 @@ class AuthorResource < JSONAPI::Resource
 end
 
 class CommentResource < JSONAPI::Resource
-  attributes :id, :body
+  attributes :body
   has_one :post
   has_one :author, class_name: 'Person'
   has_many :tags
 end
 
 class TagResource < JSONAPI::Resource
-  attributes :id, :name
+  attributes :name
 
   has_many :posts
   # Not including the planets association so they don't get output
@@ -404,7 +438,6 @@ class SectionResource < JSONAPI::Resource
 end
 
 class PostResource < JSONAPI::Resource
-  attribute :id
   attribute :title
   attribute :body
   attribute :subject
@@ -451,7 +484,7 @@ class PostResource < JSONAPI::Resource
   end
 
   filters :title, :author, :tags, :comments
-  filter :id
+  filters :id, :ids
 
   def self.updateable_fields(context)
     super(context) - [:author, :subject]
@@ -469,6 +502,9 @@ class PostResource < JSONAPI::Resource
     case filter
       when :id
         verify_keys(values, context)
+      when :ids #coerce :ids to :id
+        verify_keys(values, context)
+        return :id, values
     end
     return filter, values
   end
@@ -490,17 +526,25 @@ end
 
 class IsoCurrencyResource < JSONAPI::Resource
   primary_key :code
-  attributes :id, :name, :country_name, :minor_unit
+  attributes :name, :country_name, :minor_unit
 
   filter :country_name
 end
 
 class ExpenseEntryResource < JSONAPI::Resource
-  attributes :id, :cost
+  attributes :cost
   attribute :transaction_date, format: :date
 
   has_one :iso_currency, foreign_key: 'currency_code'
   has_one :employee, class_name: 'Person'
+end
+
+class EmployeeResource < JSONAPI::Resource
+  attributes :name, :email
+  model_name 'Person'
+end
+
+class FriendResource < JSONAPI::Resource
 end
 
 class BreedResource < JSONAPI::Resource
@@ -528,7 +572,6 @@ class BreedResource < JSONAPI::Resource
 end
 
 class PlanetResource < JSONAPI::Resource
-  attribute :id
   attribute :name
   attribute :description
 
@@ -539,18 +582,17 @@ class PlanetResource < JSONAPI::Resource
 end
 
 class PropertyResource < JSONAPI::Resource
-  attributes :id, :name
+  attributes :name
 
   has_many :planets
 end
 
 class PlanetTypeResource < JSONAPI::Resource
-  attributes :id, :name
+  attributes :name
   has_many :planets
 end
 
 class MoonResource < JSONAPI::Resource
-  attribute :id
   attribute :name
   attribute :description
 
@@ -558,11 +600,10 @@ class MoonResource < JSONAPI::Resource
 end
 
 class PreferencesResource < JSONAPI::Resource
-  attribute :id
   attribute :advanced_mode
 
   has_one :author, foreign_key: :person_id
-  has_many :friends
+  has_many :friends, class_name: 'Person'
 
   def self.find_by_key(key, options = {})
     new(Preferences.first)
@@ -570,7 +611,6 @@ class PreferencesResource < JSONAPI::Resource
 end
 
 class FactResource < JSONAPI::Resource
-  attribute :id
   attribute :spouse_name
   attribute :bio
   attribute :quality_rating
@@ -585,7 +625,7 @@ end
 module Api
   module V1
     class WriterResource < JSONAPI::Resource
-      attributes :id, :name, :email
+      attributes :name, :email
       model_name 'Person'
       has_many :posts
 
@@ -597,7 +637,6 @@ module Api
 
     class PostResource < JSONAPI::Resource
       # V1 no longer supports tags and now calls author 'writer'
-      attribute :id
       attribute :title
       attribute :body
       attribute :subject
@@ -625,6 +664,8 @@ module Api
     PlanetTypeResource = PlanetTypeResource.dup
     MoonResource = MoonResource.dup
     PreferencesResource = PreferencesResource.dup
+    EmployeeResource = EmployeeResource.dup
+    FriendResource = FriendResource.dup
   end
 end
 
@@ -632,7 +673,21 @@ module Api
   module V2
     PreferencesResource = PreferencesResource.dup
     AuthorResource = AuthorResource.dup
+    PersonResource = PersonResource.dup
     PostResource = PostResource.dup
+
+    class BookResource < JSONAPI::Resource
+      attribute :title
+      attribute :isbn
+
+      has_many :book_comments
+    end
+
+    class BookCommentResource < JSONAPI::Resource
+      attributes :body
+      has_one :book
+      has_one :author, class_name: 'Person'
+    end
   end
 end
 
@@ -648,14 +703,20 @@ module Api
     PostResource = PostResource.dup
     ExpenseEntryResource = ExpenseEntryResource.dup
     IsoCurrencyResource = IsoCurrencyResource.dup
+
+    class BookResource < Api::V2::BookResource
+      paginator :paged
+    end
   end
 end
 
 module Api
   module V5
+    AuthorResource = AuthorResource.dup
     PostResource = PostResource.dup
     ExpenseEntryResource = ExpenseEntryResource.dup
     IsoCurrencyResource = IsoCurrencyResource.dup
+    EmployeeResource = EmployeeResource.dup
   end
 end
 
@@ -841,3 +902,14 @@ fact = Fact.create(spouse_name: 'Jane Author',
                    photo: "abc",
                    cool: false
 )
+
+for book_num in 0..999
+  Book.create(title: "Book #{book_num}", isbn: "12345-#{book_num}-67890") do |book|
+    book.save
+    if book_num < 5
+      for comment_num in 0..50
+        book.book_comments.create(body: "This is comment #{comment_num} on book #{book_num}.", author_id: a.id, book_id: book.id)
+      end
+    end
+  end
+end

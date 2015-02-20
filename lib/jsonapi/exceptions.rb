@@ -58,18 +58,6 @@ module JSONAPI
       end
     end
 
-    class HasOneRelationExists < Error
-      def initialize
-      end
-
-      def errors
-        [JSONAPI::Error.new(code: JSONAPI::RELATION_EXISTS,
-                            status: :bad_request,
-                            title: 'Relation exists',
-                            detail: 'The relation already exists.')]
-      end
-    end
-
     class FilterNotAllowed < Error
       attr_accessor :filter
       def initialize(filter)
@@ -114,6 +102,34 @@ module JSONAPI
       end
     end
 
+    class InvalidLinksObject < Error
+      attr_accessor :value
+      def initialize(value)
+        @value = value
+      end
+
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::INVALID_LINKS_OBJECT,
+                            status: :bad_request,
+                            title: 'Invalid Links Object',
+                            detail: "#{value} is not a valid Links Object.")]
+      end
+    end
+
+    class TypeMismatch < Error
+      attr_accessor :type
+      def initialize(type)
+        @type = type
+      end
+
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::TYPE_MISMATCH,
+                            status: :bad_request,
+                            title: 'Type Mismatch',
+                            detail: "#{type} is not a valid type for this operation.")]
+      end
+    end
+
     class InvalidField < Error
       attr_accessor :field, :type
       def initialize(type, field)
@@ -144,18 +160,33 @@ module JSONAPI
       end
     end
 
-    class InvalidSortParam < Error
-      attr_accessor :sort_param, :resource
-      def initialize(resource, sort_param)
+    class InvalidSortCriteria < Error
+      attr_accessor :sort_criteria, :resource
+      def initialize(resource, sort_criteria)
         @resource = resource
-        @sort_param = sort_param
+        @sort_criteria = sort_criteria
       end
 
       def errors
-        [JSONAPI::Error.new(code: JSONAPI::INVALID_SORT_PARAM,
+        [JSONAPI::Error.new(code: JSONAPI::INVALID_SORT_CRITERIA,
                             status: :bad_request,
-                            title: 'Invalid sort param',
-                            detail: "#{sort_param} is not a valid sort param for #{resource}")]
+                            title: 'Invalid sort criteria',
+                            detail: "#{sort_criteria} is not a valid sort criteria for #{resource}")]
+      end
+    end
+
+    class InvalidSortFormat < Error
+      attr_accessor :sort_criteria, :resource
+      def initialize(resource, sort_criteria)
+        @resource = resource
+        @sort_criteria = sort_criteria
+      end
+
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::INVALID_SORT_FORMAT,
+                            status: :bad_request,
+                            title: 'Invalid sort format',
+                            detail: "#{sort_criteria} must start with a direction (+ or -)")]
       end
     end
 
@@ -257,5 +288,47 @@ module JSONAPI
       end
     end
 
+    class InvalidPageObject < Error
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::INVALID_PAGE_OBJECT,
+                            status: :bad_request,
+                            title: 'Invalid Page Object',
+                            detail: 'Invalid Page Object.')]
+      end
+    end
+
+
+    class PageParametersNotAllowed < Error
+      attr_accessor :params
+      def initialize(params)
+        @params = params
+      end
+
+      def errors
+        params.collect { |param|
+          JSONAPI::Error.new(code: JSONAPI::PARAM_NOT_ALLOWED,
+                             status: :bad_request,
+                             title: 'Page parameter not allowed',
+                             detail: "#{param} is not an allowed page parameter.")
+        }
+
+      end
+    end
+
+    class InvalidPageValue < Error
+      attr_accessor :page, :value
+      def initialize(page, value, msg = nil)
+        @page = page
+        @value = value
+        @msg = msg.nil? ? "#{value} is not a valid value for #{page} page parameter." : msg
+      end
+
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::INVALID_PAGE_VALUE,
+                            status: :bad_request,
+                            title: 'Invalid page value',
+                            detail: @msg)]
+      end
+    end
   end
 end
