@@ -529,6 +529,10 @@ class IsoCurrencyResource < JSONAPI::Resource
   attributes :name, :country_name, :minor_unit
 
   filter :country_name
+
+  def self.verify_key(key, context = nil)
+    key && String(key)
+  end
 end
 
 class ExpenseEntryResource < JSONAPI::Resource
@@ -564,10 +568,6 @@ class BreedResource < JSONAPI::Resource
 
   def self.find_by_key(id, options = {})
     BreedResource.new($breed_data.breeds[id.to_i], options[:context])
-  end
-
-  def self.find_by_keys(keys, options = {})
-    keys.map { |key| self.find_by_key(key, options) }
   end
 end
 

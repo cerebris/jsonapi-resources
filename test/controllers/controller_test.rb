@@ -1268,23 +1268,26 @@ class TagsControllerTest < ActionController::TestCase
 
   def test_tags_show_multiple
     get :show, {id: '6,7,8,9'}
-    assert_response :success
-    assert json_response['data'].is_a?(Array)
-    assert_equal 4, json_response['data'].size
+    assert_response :bad_request
+    assert_match /6,7,8,9 is not a valid value for id/, response.body
   end
 
   def test_tags_show_multiple_with_include
     get :show, {id: '6,7,8,9', include: 'posts,posts.tags,posts.author.posts'}
-    assert_response :success
-    assert json_response['data'].is_a?(Array)
-    assert_equal 4, json_response['data'].size
-    assert_equal 2, json_response['linked'].size
+    assert_response :bad_request
+    assert_match /6,7,8,9 is not a valid value for id/, response.body
   end
 
   def test_tags_show_multiple_with_nonexistent_ids
     get :show, {id: '6,99,9,100'}
-    assert_response :not_found
-    assert_match /The record identified by 99 could not be found./, json_response['errors'][0]['detail']
+    assert_response :bad_request
+    assert_match /6,99,9,100 is not a valid value for id/, response.body
+  end
+
+  def test_tags_show_multiple_with_nonexistent_ids_at_the_beginning
+    get :show, {id: '99,9,100'}
+    assert_response :bad_request
+    assert_match /99,9,100 is not a valid value for id/, response.body
   end
 end
 
@@ -1641,13 +1644,9 @@ class BreedsControllerTest < ActionController::TestCase
 
   def test_poro_show_multiple
     get :show, {id: '0,2'}
-    assert_response :success
-    assert json_response['data'].is_a?(Array)
-    assert_equal 2, json_response['data'].size
-    assert_equal '0', json_response['data'][0]['id']
-    assert_equal 'Persian', json_response['data'][0]['name']
-    assert_equal '2', json_response['data'][1]['id']
-    assert_equal 'Sphinx', json_response['data'][1]['name']
+
+    assert_response :bad_request
+    assert_match /0,2 is not a valid value for id/, response.body
   end
 
   def test_poro_create_simple

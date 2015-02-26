@@ -43,15 +43,11 @@ module JSONAPI
                                                    key_formatter: key_formatter,
                                                    route_formatter: route_formatter)
 
-      keys = parse_key_array(params[resource_klass._primary_key])
+      key = resource_klass.verify_key(params[resource_klass._primary_key], context)
 
-      resource_records = if keys.length > 1
-                           resource_klass.find_by_keys(keys, context: context)
-                         else
-                           resource_klass.find_by_key(keys[0], context: context)
-                         end
+      resource_record = resource_klass.find_by_key(key, context: context)
 
-      render json: serializer.serialize_to_hash(resource_records)
+      render json: serializer.serialize_to_hash(resource_record)
     rescue => e
       handle_exceptions(e)
     end
@@ -189,11 +185,6 @@ module JSONAPI
       if response.body.size > 0
         response.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
       end
-    end
-
-    def parse_key_array(raw)
-      keys = raw.nil? || raw.empty? ? [] : raw.split(',')
-      resource_klass.verify_keys(keys, context)
     end
 
     # override to set context

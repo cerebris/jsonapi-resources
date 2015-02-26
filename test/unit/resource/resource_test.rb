@@ -66,17 +66,6 @@ class ResourceTest < MiniTest::Unit::TestCase
     end
   end
 
-  def test_find_by_keys_with_customized_base_records
-    author = Person.find(1)
-
-    posts = ArticleResource.find_by_keys([1, 2], context: author)
-    assert_equal(posts.length, 2)
-
-    assert_raises JSONAPI::Exceptions::RecordNotFound do
-      ArticleResource.find_by_keys([1, 3], context: author).model
-    end
-  end
-
   def test_updateable_fields_does_not_include_id
     assert(!CatResource.updateable_fields.include?(:id))
   end
