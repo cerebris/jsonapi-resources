@@ -627,7 +627,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_relationship_has_one_invalid_links_hash_keys_ids
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'section', data: {types: 'sections', ids: 'foo'}}
+    put :update_association, {post_id: 3, association: 'section', data: {type: 'sections', ids: 'foo'}}
 
     assert_response :bad_request
     assert_match /Invalid Links Object/, response.body
@@ -635,7 +635,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_relationship_has_one_invalid_links_hash_count
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'section', data: {types: 'sections'}}
+    put :update_association, {post_id: 3, association: 'section', data: {type: 'sections'}}
 
     assert_response :bad_request
     assert_match /Invalid Links Object/, response.body
@@ -707,14 +707,26 @@ class PostsControllerTest < ActionController::TestCase
     set_content_type_header!
     ruby = Section.find_by(name: 'ruby')
     post_object = Post.find(3)
-    post_object.section_id = ruby.id
+    post_object.section = ruby
     post_object.save!
 
     put :update_association, {post_id: 3, association: 'section', data: {type: 'sections', id: nil}}
 
     assert_response :no_content
+    assert_equal nil, post_object.reload.section_id
+  end
+
+  def test_update_relationship_has_one_data_nil
+    set_content_type_header!
+    ruby = Section.find_by(name: 'ruby')
     post_object = Post.find(3)
-    assert_equal nil, post_object.section_id
+    post_object.section = ruby
+    post_object.save!
+
+    put :update_association, {post_id: 3, association: 'section', data: nil}
+
+    assert_response :no_content
+    assert_equal nil, post_object.reload.section_id
   end
 
   def test_remove_relationship_has_one

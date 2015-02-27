@@ -55,7 +55,7 @@ module JSONAPI
                                             params.require(:association),
                                             params.require(@resource_klass._as_parent_key))
           when 'update_association'
-            parse_update_association_operation(params.require(:data),
+            parse_update_association_operation(params.fetch(:data),
                                                params.require(:association),
                                                params.require(@resource_klass._as_parent_key))
           when 'update'
