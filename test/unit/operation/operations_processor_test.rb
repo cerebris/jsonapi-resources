@@ -129,6 +129,18 @@ class OperationsProcessorTest < MiniTest::Unit::TestCase
     saturn.reload
     assert_equal(saturn.planet_type_id, gas_giant.id)
 
+    # Remove link
+    operations = [
+      JSONAPI::ReplaceHasOneAssociationOperation.new(PlanetResource, saturn.id, :planet_type, nil)
+    ]
+
+    request = JSONAPI::Request.new
+    request.operations = operations
+
+    results = op.process(request)
+    saturn.reload
+    assert_equal(saturn.planet_type_id, nil)
+
     # Reset
     operations = [
       JSONAPI::ReplaceHasOneAssociationOperation.new(PlanetResource, saturn.id, :planet_type, 5)
