@@ -286,7 +286,7 @@ The `apply_filter` method is called to apply each filter to the `Arel` relation.
 This example shows how you can implement different approaches for different filters.
 
 ```ruby
-def apply_filter(records, filter, value)
+def self.apply_filter(records, filter, value)
   case filter
     when :visibility
       records.where('users.publicly_visible = ?', value == :public)
