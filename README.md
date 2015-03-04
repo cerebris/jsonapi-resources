@@ -828,9 +828,9 @@ This way all DateTime values will be formatted to display in the specified timez
 
 #### Key Format
 
-JSONAPI is agnostic on the format of the keys used in the responses. By default JR uses underscored keys which match the attribute names used by Rails models.  This can be changed by specifying a different key formatter.
+By default JR uses dasherized keys as per the [JSON API naming recommendations](http://jsonapi.org/recommendations/#naming).  This can be changed by specifying a different key formatter.
 
-For example to use camel cased keys with an initial lowercase character (JSON's default) create an initializer and add the following:
+For example, to use camel cased keys with an initial lowercase character (JSON's default) create an initializer and add the following:
 
 ```
 JSONAPI.configure do |config|
@@ -839,7 +839,7 @@ JSONAPI.configure do |config|
 end
 ```
 
-This will cause the serializer to use the `CamelizedKeyFormatter`. Besides `UnderscoredKeyFormatter` and `CamelizedKeyFormatter` JR defines the `DasherizedKeyFormatter`. You can also create your own `KeyFormatter`, for example:
+This will cause the serializer to use the `CamelizedKeyFormatter`. You can also create your own `KeyFormatter`, for example:
 
 ```ruby
 class UpperCamelizedKeyFormatter < JSONAPI::KeyFormatter
