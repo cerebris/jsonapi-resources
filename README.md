@@ -10,6 +10,10 @@ JR is designed to work with Rails, and provides custom routes, controllers, and 
 
 We have a simple demo app, called [Peeps](https://github.com/cerebris/peeps), available to show how JR is used.
 
+## Client Libraries
+
+Any libraries listed on [JSONAPI Examples](http://jsonapi.org/examples/) should be compatible with this jsonapi-resources. For Ruby/Rails, [jsonapi_consumer](https://github.com/jsmestad/jsonapi_consumer) is a good place to start.
+
 ## Installation
 
 Add JR to your application's `Gemfile`:
