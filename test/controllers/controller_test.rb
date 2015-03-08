@@ -1601,7 +1601,7 @@ class PeopleControllerTest < ActionController::TestCase
   end
 end
 
-class AuthorsControllerTest < ActionController::TestCase
+class Api::V5::AuthorsControllerTest < ActionController::TestCase
   def test_get_person_as_author
     get :index, {filter: {id: '1'}}
     assert_response :success

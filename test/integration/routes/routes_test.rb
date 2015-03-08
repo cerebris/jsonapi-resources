@@ -52,22 +52,6 @@ class RoutesTest < ActionDispatch::IntegrationTest
                    {controller: 'posts', action: 'update_association', post_id: '1', association: 'tags'})
   end
 
-  def test_routing_authors_show
-    assert_routing({path: '/authors/1', method: :get},
-                   {action: 'show', controller: 'authors', id: '1'})
-  end
-
-  def test_routing_author_links_posts_create_not_acts_as_set
-    assert_routing({path: '/authors/1/links/posts', method: :post},
-                   {controller: 'authors', action: 'create_association', author_id: '1', association: 'posts'})
-  end
-
-  # ToDo: Test that non acts as set has_many association update route is not created
-  # def test_routing_author_links_posts_update_not_acts_as_set
-  #   refute_routing({ path: '/authors/1/links/posts', method: :put },
-  #                  { controller: 'authors', action: 'update_association', author_id: '1', association: 'posts' })
-  # end
-
   # V1
   def test_routing_v1_posts_show
     assert_routing({path: '/api/v1/posts/1', method: :get},
@@ -85,10 +69,10 @@ class RoutesTest < ActionDispatch::IntegrationTest
   end
 
   # V2
-  def test_routing_v2_posts_show
-    assert_routing({path: '/api/v2/authors/1', method: :get},
-                   {action: 'show', controller: 'api/v2/authors', id: '1'})
-  end
+  # def test_routing_v2_posts_show
+  #   assert_routing({path: '/api/v2/authors/1', method: :get},
+  #                  {action: 'show', controller: 'api/v2/authors', id: '1'})
+  # end
 
   def test_routing_v2_posts_links_author_show
     assert_routing({path: '/api/v2/posts/1/links/author', method: :get},
@@ -142,6 +126,16 @@ class RoutesTest < ActionDispatch::IntegrationTest
 
     assert_routing({path: '/api/v5/expense-entries/1/links/iso-currency', method: :get},
                    {controller: 'api/v5/expense_entries', action: 'show_association', expense_entry_id: '1', association: 'iso_currency'})
+  end
+
+  def test_routing_authors_show
+    assert_routing({path: '/api/v5/authors/1', method: :get},
+                   {action: 'show', controller: 'api/v5/authors', id: '1'})
+  end
+
+  def test_routing_author_links_posts_create_not_acts_as_set
+    assert_routing({path: '/api/v5/authors/1/links/posts', method: :post},
+                   {controller: 'api/v5/authors', action: 'create_association', author_id: '1', association: 'posts'})
   end
 
   #primary_key

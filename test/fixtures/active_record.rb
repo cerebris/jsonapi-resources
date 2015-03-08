@@ -361,6 +361,9 @@ module Api
   end
 
   module V5
+    class AuthorsController < JSONAPI::ResourceController
+    end
+
     class PostsController < JSONAPI::ResourceController
     end
 
@@ -392,29 +395,6 @@ class PersonResource < JSONAPI::Resource
         end
     end
     return filter, values
-  end
-end
-
-class AuthorResource < JSONAPI::Resource
-  attributes :name, :email
-  model_name 'Person'
-  has_many :posts
-
-  filter :name
-
-  def self.find(filters, options = {})
-    resources = []
-
-    filters.each do |attr, filter|
-      _model_class.where("\"#{attr}\" LIKE \"%#{filter[0]}%\"").each do |model|
-        resources.push self.new(model, options[:context])
-      end
-    end
-    return resources
-  end
-
-  def fetchable_fields
-    super - [:email]
   end
 end
 
@@ -602,7 +582,7 @@ end
 class PreferencesResource < JSONAPI::Resource
   attribute :advanced_mode
 
-  has_one :author, foreign_key: :person_id
+  has_one :author, foreign_key: :person_id, class_name: 'Person'
   has_many :friends, class_name: 'Person'
 
   def self.find_by_key(key, options = {})
@@ -652,7 +632,7 @@ module Api
       filters :writer
     end
 
-    AuthorResource = AuthorResource.dup
+    # AuthorResource = AuthorResource.dup
     PersonResource = PersonResource.dup
     CommentResource = CommentResource.dup
     TagResource = TagResource.dup
@@ -672,7 +652,7 @@ end
 module Api
   module V2
     PreferencesResource = PreferencesResource.dup
-    AuthorResource = AuthorResource.dup
+    # AuthorResource = AuthorResource.dup
     PersonResource = PersonResource.dup
     PostResource = PostResource.dup
 
@@ -712,7 +692,30 @@ end
 
 module Api
   module V5
-    AuthorResource = AuthorResource.dup
+    class AuthorResource < JSONAPI::Resource
+      attributes :name, :email
+      model_name 'Person'
+      has_many :posts
+
+      filter :name
+
+      def self.find(filters, options = {})
+        resources = []
+
+        filters.each do |attr, filter|
+          _model_class.where("\"#{attr}\" LIKE \"%#{filter[0]}%\"").each do |model|
+            resources.push self.new(model, options[:context])
+          end
+        end
+        return resources
+      end
+
+      def fetchable_fields
+        super - [:email]
+      end
+    end
+
+    PersonResource = PersonResource.dup
     PostResource = PostResource.dup
     ExpenseEntryResource = ExpenseEntryResource.dup
     IsoCurrencyResource = IsoCurrencyResource.dup
