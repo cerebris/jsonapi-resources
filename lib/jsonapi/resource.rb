@@ -359,20 +359,8 @@ module JSONAPI
         self.new(model, context)
       end
 
-      def find_by_keys(keys, options = {})
-        context = options[:context]
-        _models = records(options).where({_primary_key => keys})
-
-        unless _models.length == keys.length
-          key = (keys - _models.pluck(_primary_key).map(&:to_s)).first
-          raise JSONAPI::Exceptions::RecordNotFound.new(key)
-        end
-
-        _models.map { |model| self.new(model, context) }
-      end
-
       # Override this method if you want to customize the relation for
-      # finder methods (find, find_by_key, find_by_keys)
+      # finder methods (find, find_by_key)
       def records(options = {})
         _model_class
       end
@@ -403,7 +391,9 @@ module JSONAPI
 
       # override to allow for key processing and checking
       def verify_key(key, context = nil)
-        return key
+        key && Integer(key)
+      rescue
+        raise JSONAPI::Exceptions::InvalidFieldValue.new(_primary_key, key)
       end
 
       # override to allow for key processing and checking

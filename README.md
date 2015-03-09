@@ -166,6 +166,7 @@ The system will lookup a value formatter named `DateWithTimezoneValueFormatter` 
 #### Primary Key
 
 Resources are always represented using a key of `id`. If the underlying model does not use `id` as the primary key you can use the `primary_key` method to tell the resource which field on the model to use as the primary key. Note: this doesn't have to be the actual primary key of the model. For example you may wish to use integers internally and a different scheme publicly.
+By default only integer values are allowed for primary key. To change this behavior you can override `verify_key` class method:
 
 ```ruby
 class CurrencyResource < JSONAPI::Resource
@@ -173,8 +174,11 @@ class CurrencyResource < JSONAPI::Resource
   attributes :code, :name
 
   has_many :expense_entries
-end
 
+  def self.verify_key(key, context = nil)
+    key && String(key)
+  end
+end
 ```
 
 #### Model Name
@@ -260,11 +264,11 @@ end
 
 ##### Finders
 
-Basic finding by filters is supported by resources. This is implemented in the `find`, `find_by_key` and `find_by_keys` finder methods. Currently this is implemented for `ActiveRecord` based resources. The finder methods rely on the `records` method to get an `Arel` relation. It is therefore possible to override `records` to affect the three find related methods.
+Basic finding by filters is supported by resources. This is implemented in the `find` and `find_by_key` finder methods. Currently this is implemented for `ActiveRecord` based resources. The finder methods rely on the `records` method to get an `Arel` relation. It is therefore possible to override `records` to affect the three find related methods.
 
 ###### Customizing base records for finder methods
 
-If you need to change the base records on which `find`, `find_by_key` and `find_by_keys` operate, you can override the `records` method on the resource class.
+If you need to change the base records on which `find` and `find_by_key` operate, you can override the `records` method on the resource class.
 
 For example to allow a user to only retrieve his own posts you can do the following:
 
@@ -307,7 +311,7 @@ end
 
 ###### Override finder methods
 
-Finally if you have more complex requirements for finding you can override the `find`, `find_by_key` and `find_by_keys` methods on the resource class.
+Finally if you have more complex requirements for finding you can override the `find` and `find_by_key` methods on the resource class.
 
 Here's an example that defers the `find` operation to a `current_user` set on the `context` option:
 
