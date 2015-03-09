@@ -27,28 +27,28 @@ module JSONAPI
     def serialize_to_hash(source)
       is_resource_collection = source.respond_to?(:to_ary)
 
-      @linked_objects = {}
+      @included_objects = {}
 
       requested_associations = parse_includes(@include)
 
       process_primary(source, requested_associations)
 
-      linked_objects = []
+      included_objects = []
       primary_objects = []
-      @linked_objects.each_value do |objects|
+      @included_objects.each_value do |objects|
         objects.each_value do |object|
           if object[:primary]
             primary_objects.push(object[:object_hash])
           else
-            linked_objects.push(object[:object_hash])
+            included_objects.push(object[:object_hash])
           end
         end
       end
 
       primary_hash = {data: is_resource_collection ? primary_objects : primary_objects[0]}
 
-      if linked_objects.size > 0
-        primary_hash[:linked] = linked_objects
+      if included_objects.size > 0
+        primary_hash[:included] = included_objects
       else
         primary_hash
       end
@@ -95,7 +95,7 @@ module JSONAPI
             set_primary(@primary_class_name, id)
           end
 
-          add_linked_object(@primary_class_name, id, object_hash(resource,  requested_associations), true)
+          add_included_object(@primary_class_name, id, object_hash(resource,  requested_associations), true)
         end
       else
         resource = source
@@ -105,7 +105,7 @@ module JSONAPI
         #   set_primary(@primary_class_name, id)
         # end
 
-        add_linked_object(@primary_class_name, id, object_hash(source,  requested_associations), true)
+        add_included_object(@primary_class_name, id, object_hash(source,  requested_associations), true)
       end
     end
 
@@ -185,7 +185,7 @@ module JSONAPI
                 id = resource.id
                 associations_only = already_serialized?(type, id)
                 if include_linkage && !associations_only
-                  add_linked_object(type, id, object_hash(resource, ia[:include_related]))
+                  add_included_object(type, id, object_hash(resource, ia[:include_related]))
                 elsif include_linked_children || associations_only
                   links_hash(resource, ia[:include_related])
                 end
@@ -196,7 +196,7 @@ module JSONAPI
                 id = resource.id
                 associations_only = already_serialized?(type, id)
                 if include_linkage && !associations_only
-                  add_linked_object(type, id, object_hash(resource, ia[:include_related]))
+                  add_included_object(type, id, object_hash(resource, ia[:include_related]))
                 elsif include_linked_children || associations_only
                   links_hash(resource, ia[:include_related])
                 end
@@ -217,7 +217,7 @@ module JSONAPI
 
     def already_serialized?(type, id)
       type = format_key(type)
-      return @linked_objects.key?(type) && @linked_objects[type].key?(id)
+      return @included_objects.key?(type) && @included_objects[type].key?(id)
     end
 
     def format_route(route)
@@ -229,7 +229,7 @@ module JSONAPI
 
       link_object_hash = {}
       link_object_hash[:self] = "#{self_href(source)}/links/#{format_route(route)}"
-      link_object_hash[:resource] = "#{self_href(source)}/#{format_route(route)}"
+      link_object_hash[:related] = "#{self_href(source)}/#{format_route(route)}"
       # ToDo: Get correct formatting figured out
       link_object_hash[:type] = format_route(association.type)
       link_object_hash[:id] = foreign_key_value(source, association)
@@ -241,7 +241,7 @@ module JSONAPI
 
       link_object_hash = {}
       link_object_hash[:self] = "#{self_href(source)}/links/#{format_route(route)}"
-      link_object_hash[:resource] = "#{self_href(source)}/#{format_route(route)}"
+      link_object_hash[:related] = "#{self_href(source)}/#{format_route(route)}"
       if include_linkage
         # ToDo: Get correct formatting figured out
         link_object_hash[:type] = format_route(association.type)
@@ -273,15 +273,15 @@ module JSONAPI
     # Sets that an object should be included in the primary document of the response.
     def set_primary(type, id)
       type = format_key(type)
-      @linked_objects[type][id][:primary] = true
+      @included_objects[type][id][:primary] = true
     end
 
     # Collects the hashes for all objects processed by the serializer
-    def add_linked_object(type, id, object_hash, primary = false)
+    def add_included_object(type, id, object_hash, primary = false)
       type = format_key(type)
 
-      unless @linked_objects.key?(type)
-        @linked_objects[type] = {}
+      unless @included_objects.key?(type)
+        @included_objects[type] = {}
       end
 
       if already_serialized?(type, id)
@@ -289,7 +289,7 @@ module JSONAPI
           set_primary(type, id)
         end
       else
-        @linked_objects[type].store(id, {primary: primary, object_hash: object_hash})
+        @included_objects[type].store(id, {primary: primary, object_hash: object_hash})
       end
     end
 

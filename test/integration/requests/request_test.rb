@@ -72,7 +72,7 @@ class RequestTest < ActionDispatch::IntegrationTest
                           'type' => 'isoCurrencies',
                           'id' => 'USD',
                           'self' => 'http://www.example.com/api/v4/expenseEntries/1/links/isoCurrency',
-                          'resource' => 'http://www.example.com/api/v4/expenseEntries/1/isoCurrency'}}, json_response)
+                          'related' => 'http://www.example.com/api/v4/expenseEntries/1/isoCurrency'}}, json_response)
   end
 
   def test_put_single_without_content_type
@@ -246,7 +246,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
     assert_equal 2, json_response['data'].size
     assert_equal 'http://www.example.com/api/v2/books/1/book_comments',
-                 json_response['data'][0]['links']['book_comments']['resource']
+                 json_response['data'][0]['links']['book_comments']['related']
   end
 
   def test_pagination_related_resources_data
@@ -297,7 +297,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_hash_equals(json_response,
                        {'data' => {
                           'self' => 'http://www.example.com/posts/1/links/tags',
-                          'resource' => 'http://www.example.com/posts/1/tags',
+                          'related' => 'http://www.example.com/posts/1/tags',
                           'type' => 'tags', 'ids'=>['1', '2', '3']
                          }
                        })
@@ -319,7 +319,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_hash_equals(json_response,
                        {'data' => {
                          'self' => 'http://www.example.com/posts/1/links/tags',
-                         'resource' => 'http://www.example.com/posts/1/tags',
+                         'related' => 'http://www.example.com/posts/1/tags',
                          'type' => 'tags', 'ids'=>['1', '2', '3', '5']
                        }
                        })

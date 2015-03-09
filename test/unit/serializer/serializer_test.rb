@@ -31,23 +31,23 @@ class SerializerTest < MiniTest::Unit::TestCase
             self: 'http://example.com/posts/1',
             section: {
               self: 'http://example.com/posts/1/links/section',
-              resource: 'http://example.com/posts/1/section',
+              related: 'http://example.com/posts/1/section',
               type: 'sections',
               id: nil
             },
             author: {
               self: 'http://example.com/posts/1/links/author',
-              resource: 'http://example.com/posts/1/author',
+              related: 'http://example.com/posts/1/author',
               type: 'people',
               id: '1'
             },
             tags: {
               self: 'http://example.com/posts/1/links/tags',
-              resource: 'http://example.com/posts/1/tags'
+              related: 'http://example.com/posts/1/tags'
             },
             comments: {
               self: 'http://example.com/posts/1/links/comments',
-              resource: 'http://example.com/posts/1/comments'
+              related: 'http://example.com/posts/1/comments'
             }
           }
         }
@@ -70,19 +70,19 @@ class SerializerTest < MiniTest::Unit::TestCase
             self: 'http://example.com/api/v1/posts/1',
             section: {
               self: 'http://example.com/api/v1/posts/1/links/section',
-              resource: 'http://example.com/api/v1/posts/1/section',
+              related: 'http://example.com/api/v1/posts/1/section',
               type: 'sections',
               id: nil
             },
             writer: {
               self: 'http://example.com/api/v1/posts/1/links/writer',
-              resource: 'http://example.com/api/v1/posts/1/writer',
+              related: 'http://example.com/api/v1/posts/1/writer',
               type: 'writers',
               id: '1'
             },
             comments: {
               self: 'http://example.com/api/v1/posts/1/links/comments',
-              resource: 'http://example.com/api/v1/posts/1/comments'
+              related: 'http://example.com/api/v1/posts/1/comments'
             }
           }
         }
@@ -105,7 +105,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             self: '/posts/1',
             author: {
               self: '/posts/1/links/author',
-              resource: '/posts/1/author',
+              related: '/posts/1/author',
               type: 'people',
               id: '1'
             }
@@ -131,27 +131,27 @@ class SerializerTest < MiniTest::Unit::TestCase
             self: '/posts/1',
             section: {
               self: '/posts/1/links/section',
-              resource: '/posts/1/section',
+              related: '/posts/1/section',
               type: 'sections',
               id: nil
             },
             author: {
               self: '/posts/1/links/author',
-              resource: '/posts/1/author',
+              related: '/posts/1/author',
               type: 'people',
               id: '1'
             },
             tags: {
               self: '/posts/1/links/tags',
-              resource: '/posts/1/tags'
+              related: '/posts/1/tags'
             },
             comments: {
               self: '/posts/1/links/comments',
-              resource: '/posts/1/comments'
+              related: '/posts/1/comments'
             }
           }
         },
-        linked: [
+        included: [
           {
             type: 'people',
             id: '1',
@@ -162,11 +162,11 @@ class SerializerTest < MiniTest::Unit::TestCase
              self: '/people/1',
              comments: {
                self: '/people/1/links/comments',
-               resource: '/people/1/comments'
+               related: '/people/1/comments'
              },
              posts: {
                self: '/people/1/links/posts',
-               resource: '/people/1/posts'
+               related: '/people/1/posts'
              }
             }
           }
@@ -190,27 +190,27 @@ class SerializerTest < MiniTest::Unit::TestCase
             self: '/posts/1',
             section: {
               self: '/posts/1/links/section',
-              resource: '/posts/1/section',
+              related: '/posts/1/section',
               type: 'sections',
               id: nil
             },
             author: {
               self: '/posts/1/links/author',
-              resource: '/posts/1/author',
+              related: '/posts/1/author',
               type: 'people',
               id: '1'
             },
             tags: {
               self: '/posts/1/links/tags',
-              resource: '/posts/1/tags'
+              related: '/posts/1/tags'
             },
             comments: {
               self: '/posts/1/links/comments',
-              resource: '/posts/1/comments'
+              related: '/posts/1/comments'
             }
           }
         },
-        linked: [
+        included: [
           {
             type: 'people',
             id: '1',
@@ -221,11 +221,11 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/people/1',
               comments: {
                 self: '/people/1/links/comments',
-                resource: '/people/1/comments'
+                related: '/people/1/comments'
               },
               posts: {
                 self: '/people/1/links/posts',
-                resource: '/people/1/posts'
+                related: '/people/1/posts'
               }
             }
           }
@@ -251,29 +251,29 @@ class SerializerTest < MiniTest::Unit::TestCase
             self: '/posts/1',
             section: {
               self: '/posts/1/links/section',
-              resource: '/posts/1/section',
+              related: '/posts/1/section',
               type: 'sections',
               id: nil
             },
             author: {
               self: '/posts/1/links/author',
-              resource: '/posts/1/author',
+              related: '/posts/1/author',
               type: 'people',
               id: '1'
             },
             tags: {
               self: '/posts/1/links/tags',
-              resource: '/posts/1/tags'
+              related: '/posts/1/tags'
             },
             comments: {
               self: '/posts/1/links/comments',
-              resource: '/posts/1/comments',
+              related: '/posts/1/comments',
               type: 'comments',
               ids: ['1', '2']
             }
           }
         },
-        linked: [
+        included: [
             {
               type: 'tags',
               id: '1',
@@ -282,7 +282,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                 self: '/tags/1',
                 posts: {
                   self: '/tags/1/links/posts',
-                  resource: '/tags/1/posts'
+                  related: '/tags/1/posts'
                 }
               }
             },
@@ -294,7 +294,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                 self: '/tags/2',
                 posts: {
                   self: '/tags/2/links/posts',
-                  resource: '/tags/2/posts'
+                  related: '/tags/2/posts'
                 }
               }
             },
@@ -306,7 +306,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                 self: '/tags/4',
                 posts: {
                   self: '/tags/4/links/posts',
-                  resource: '/tags/4/posts',
+                  related: '/tags/4/posts',
                 }
               }
             },
@@ -318,19 +318,19 @@ class SerializerTest < MiniTest::Unit::TestCase
                 self: '/comments/1',
                 author: {
                   self: '/comments/1/links/author',
-                  resource: '/comments/1/author',
+                  related: '/comments/1/author',
                   type: 'people',
                   id: '1'
                 },
                 post: {
                   self: '/comments/1/links/post',
-                  resource: '/comments/1/post',
+                  related: '/comments/1/post',
                   type: 'posts',
                   id: '1'
                 },
                 tags: {
                   self: '/comments/1/links/tags',
-                  resource: '/comments/1/tags',
+                  related: '/comments/1/tags',
                   type: 'tags',
                   ids: ['1', '2']
                 }
@@ -344,19 +344,19 @@ class SerializerTest < MiniTest::Unit::TestCase
                 self: '/comments/2',
                 author: {
                   self: '/comments/2/links/author',
-                  resource: '/comments/2/author',
+                  related: '/comments/2/author',
                   type: 'people',
                   id: '2'
                 },
                 post: {
                   self: '/comments/2/links/post',
-                  resource: '/comments/2/post',
+                  related: '/comments/2/post',
                   type: 'posts',
                   id: '1'
                 },
                 tags: {
                   self: '/comments/2/links/tags',
-                  resource: '/comments/2/tags',
+                  related: '/comments/2/tags',
                   type: 'tags',
                   ids: ['4', '1']
                 }
@@ -383,27 +383,27 @@ class SerializerTest < MiniTest::Unit::TestCase
             self: '/posts/1',
             section: {
               self: '/posts/1/links/section',
-              resource: '/posts/1/section',
+              related: '/posts/1/section',
               type: 'sections',
               id: nil
             },
             author: {
               self: '/posts/1/links/author',
-              resource: '/posts/1/author',
+              related: '/posts/1/author',
               type: 'people',
               id: '1'
             },
             tags: {
               self: '/posts/1/links/tags',
-              resource: '/posts/1/tags'
+              related: '/posts/1/tags'
             },
             comments: {
               self: '/posts/1/links/comments',
-              resource: '/posts/1/comments'
+              related: '/posts/1/comments'
             }
           }
         },
-        linked: [
+        included: [
           {
             type: 'tags',
             id: '1',
@@ -412,7 +412,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/tags/1',
               posts: {
                 self: '/tags/1/links/posts',
-                resource: '/tags/1/posts'
+                related: '/tags/1/posts'
               }
             }
           },
@@ -424,7 +424,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/tags/2',
               posts: {
                 self: '/tags/2/links/posts',
-                resource: '/tags/2/posts'
+                related: '/tags/2/posts'
               }
             }
           },
@@ -436,7 +436,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/tags/4',
               posts: {
                 self: '/tags/4/links/posts',
-                resource: '/tags/4/posts',
+                related: '/tags/4/posts',
               }
             }
           }
@@ -460,27 +460,27 @@ class SerializerTest < MiniTest::Unit::TestCase
             self: '/posts/1',
             section: {
               self: '/posts/1/links/section',
-              resource: '/posts/1/section',
+              related: '/posts/1/section',
               type: 'sections',
               id: nil
             },
             author: {
               self: '/posts/1/links/author',
-              resource: '/posts/1/author',
+              related: '/posts/1/author',
               type: 'people',
               id: '1'
             },
             tags: {
               self: '/posts/1/links/tags',
-              resource: '/posts/1/tags'
+              related: '/posts/1/tags'
             },
             comments: {
               self: '/posts/1/links/comments',
-              resource: '/posts/1/comments'
+              related: '/posts/1/comments'
             }
           }
         },
-        linked: [
+        included: [
           {
             type: 'comments',
             id: '1',
@@ -489,19 +489,19 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/comments/1',
               author: {
                 self: '/comments/1/links/author',
-                resource: '/comments/1/author',
+                related: '/comments/1/author',
                 type: 'people',
                 id: '1'
               },
               post: {
                 self: '/comments/1/links/post',
-                resource: '/comments/1/post',
+                related: '/comments/1/post',
                 type: 'posts',
                 id: '1'
               },
               tags: {
                 self: '/comments/1/links/tags',
-                resource: '/comments/1/tags'
+                related: '/comments/1/tags'
               }
             }
           }
@@ -526,17 +526,17 @@ class SerializerTest < MiniTest::Unit::TestCase
             self: '/people/2',
             posts: {
               self: '/people/2/links/posts',
-              resource: '/people/2/posts'
+              related: '/people/2/posts'
             },
             comments: {
               self: '/people/2/links/comments',
-              resource: '/people/2/comments',
+              related: '/people/2/comments',
               type: 'comments',
               ids: ['2', '3']
             }
           }
         },
-        linked: [
+        included: [
           {
             type: 'comments',
             id: '2',
@@ -545,19 +545,19 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/comments/2',
               author: {
                 self: '/comments/2/links/author',
-                resource: '/comments/2/author',
+                related: '/comments/2/author',
                 type: 'people',
                 id: '2'
               },
               post: {
                 self: '/comments/2/links/post',
-                resource: '/comments/2/post',
+                related: '/comments/2/post',
                 type: 'posts',
                 id: '1'
               },
               tags: {
                 self: '/comments/2/links/tags',
-                resource: '/comments/2/tags'
+                related: '/comments/2/tags'
               }
             }
           },
@@ -569,19 +569,19 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/comments/3',
               author: {
                 self: '/comments/3/links/author',
-                resource: '/comments/3/author',
+                related: '/comments/3/author',
                 type: 'people',
                 id: '2'
               },
               post: {
                 self: '/comments/3/links/post',
-                resource: '/comments/3/post',
+                related: '/comments/3/post',
                 type: 'posts',
                 id: '2'
               },
               tags: {
                 self: '/comments/3/links/tags',
-                resource: '/comments/3/tags'
+                related: '/comments/3/tags'
               }
             }
           }
@@ -611,23 +611,23 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/posts/1',
               section: {
                 self: '/posts/1/links/section',
-                resource: '/posts/1/section',
+                related: '/posts/1/section',
                 type: 'sections',
                 id: nil
               },
               author: {
                 self: '/posts/1/links/author',
-                resource: '/posts/1/author',
+                related: '/posts/1/author',
                 type: 'people',
                 id: '1'
               },
               tags: {
                 self: '/posts/1/links/tags',
-                resource: '/posts/1/tags'
+                related: '/posts/1/tags'
               },
               comments: {
                 self: '/posts/1/links/comments',
-                resource: '/posts/1/comments',
+                related: '/posts/1/comments',
                 type: 'comments',
                 ids: ['1', '2']
               }
@@ -643,30 +643,30 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/posts/2',
               section: {
                 self: '/posts/2/links/section',
-                resource: '/posts/2/section',
+                related: '/posts/2/section',
                 type: 'sections',
                 id: '3'
               },
               author: {
                 self: '/posts/2/links/author',
-                resource: '/posts/2/author',
+                related: '/posts/2/author',
                 type: 'people',
                 id: '1'
               },
               tags: {
                 self: '/posts/2/links/tags',
-                resource: '/posts/2/tags'
+                related: '/posts/2/tags'
               },
               comments: {
                 self: '/posts/2/links/comments',
-                resource: '/posts/2/comments',
+                related: '/posts/2/comments',
                 type: 'comments',
                 ids: ['3']
               }
             }
           }
         ],
-        linked: [
+        included: [
           {
             type: 'tags',
             id: '1',
@@ -675,7 +675,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/tags/1',
               posts: {
                 self: '/tags/1/links/posts',
-                resource: '/tags/1/posts'
+                related: '/tags/1/posts'
               }
             }
           },
@@ -687,7 +687,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/tags/2',
               posts: {
                 self: '/tags/2/links/posts',
-                resource: '/tags/2/posts'
+                related: '/tags/2/posts'
               }
             }
           },
@@ -699,7 +699,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/tags/4',
               posts: {
                 self: '/tags/4/links/posts',
-                resource: '/tags/4/posts',
+                related: '/tags/4/posts',
               }
             }
           },
@@ -711,7 +711,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/tags/5',
               posts: {
                 self: '/tags/5/links/posts',
-                resource: '/tags/5/posts',
+                related: '/tags/5/posts',
               }
             }
           },
@@ -723,19 +723,19 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/comments/1',
               author: {
                 self: '/comments/1/links/author',
-                resource: '/comments/1/author',
+                related: '/comments/1/author',
                 type: 'people',
                 id: '1'
               },
               post: {
                 self: '/comments/1/links/post',
-                resource: '/comments/1/post',
+                related: '/comments/1/post',
                 type: 'posts',
                 id: '1'
               },
               tags: {
                 self: '/comments/1/links/tags',
-                resource: '/comments/1/tags',
+                related: '/comments/1/tags',
                 type: 'tags',
                 ids: ['1', '2']
               }
@@ -749,19 +749,19 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/comments/2',
               author: {
                 self: '/comments/2/links/author',
-                resource: '/comments/2/author',
+                related: '/comments/2/author',
                 type: 'people',
                 id: '2'
               },
               post: {
                 self: '/comments/2/links/post',
-                resource: '/comments/2/post',
+                related: '/comments/2/post',
                 type: 'posts',
                 id: '1'
               },
               tags: {
                 self: '/comments/2/links/tags',
-                resource: '/comments/2/tags',
+                related: '/comments/2/tags',
                 type: 'tags',
                 ids: ['4', '1']
               }
@@ -775,19 +775,19 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/comments/3',
               author: {
                 self: '/comments/3/links/author',
-                resource: '/comments/3/author',
+                related: '/comments/3/author',
                 type: 'people',
                 id: '2'
               },
               post: {
                 self: '/comments/3/links/post',
-                resource: '/comments/3/post',
+                related: '/comments/3/post',
                 type: 'posts',
                 id: '2'
               },
               tags: {
                 self: '/comments/3/links/tags',
-                resource: '/comments/3/tags',
+                related: '/comments/3/tags',
                 type: 'tags',
                 ids: ['5']
               }
@@ -818,7 +818,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/posts/1',
               author: {
                 self: '/posts/1/links/author',
-                resource: '/posts/1/author',
+                related: '/posts/1/author',
                 type: 'people',
                 id: '1'
               }
@@ -832,14 +832,14 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/posts/2',
               author: {
                 self: '/posts/2/links/author',
-                resource: '/posts/2/author',
+                related: '/posts/2/author',
                 type: 'people',
                 id: '1'
               }
             }
           }
         ],
-        linked: [
+        included: [
           {
             type: 'posts',
             id: '11',
@@ -848,7 +848,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/posts/11',
               author: {
                 self: '/posts/11/links/author',
-                resource: '/posts/11/author',
+                related: '/posts/11/author',
                 type: 'people',
                 id: '1'
               }
@@ -862,7 +862,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/people/1',
               comments: {
                 self: '/people/1/links/comments',
-                resource: '/people/1/comments'
+                related: '/people/1/comments'
               }
             }
           },
@@ -906,7 +906,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/comments/1',
               post: {
                 self: '/comments/1/links/post',
-                resource: '/comments/1/post',
+                related: '/comments/1/post',
                 type: 'posts',
                 id: '1'
               }
@@ -920,7 +920,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/comments/2',
               post: {
                 self: '/comments/2/links/post',
-                resource: '/comments/2/post',
+                related: '/comments/2/post',
                 type: 'posts',
                 id: '1'
               }
@@ -934,7 +934,7 @@ class SerializerTest < MiniTest::Unit::TestCase
               self: '/comments/3',
               post: {
                 self: '/comments/3/links/post',
-                resource: '/comments/3/post',
+                related: '/comments/3/post',
                 type: 'posts',
                 id: '2'
               }
@@ -965,19 +965,19 @@ class SerializerTest < MiniTest::Unit::TestCase
             self: '/expense_entries/1',
             isoCurrency: {
               self: '/expense_entries/1/links/iso_currency',
-              resource: '/expense_entries/1/iso_currency',
+              related: '/expense_entries/1/iso_currency',
               type: 'iso_currencies',
               id: 'USD'
             },
             employee: {
               self: '/expense_entries/1/links/employee',
-              resource: '/expense_entries/1/employee',
+              related: '/expense_entries/1/employee',
               type: 'people',
               id: '3'
             }
           }
         },
-        linked: [
+        included: [
           {
             type: 'iso_currencies',
             id: 'USD',
@@ -1022,17 +1022,17 @@ class SerializerTest < MiniTest::Unit::TestCase
             self: '/planets/8',
             planetType: {
               self: '/planets/8/links/planet_type',
-              resource: '/planets/8/planet_type',
+              related: '/planets/8/planet_type',
               type: 'planet_types',
               id: nil
             },
             tags: {
               self: '/planets/8/links/tags',
-              resource: '/planets/8/tags'
+              related: '/planets/8/tags'
             },
             moons: {
               self: '/planets/8/links/moons',
-              resource: '/planets/8/moons'
+              related: '/planets/8/moons'
             }
           }
         }
@@ -1060,17 +1060,17 @@ class SerializerTest < MiniTest::Unit::TestCase
             self: '/planets/7',
             planetType: {
               self: '/planets/7/links/planet_type',
-              resource: '/planets/7/planet_type',
+              related: '/planets/7/planet_type',
               type: 'planet_types',
               id: '5'
             },
             tags: {
               self: '/planets/7/links/tags',
-              resource: '/planets/7/tags'
+              related: '/planets/7/tags'
             },
             moons: {
               self: '/planets/7/links/moons',
-              resource: '/planets/7/moons'
+              related: '/planets/7/moons'
             }
           }
         },
@@ -1083,22 +1083,22 @@ class SerializerTest < MiniTest::Unit::TestCase
             self: '/planets/8',
             planetType: {
               self: '/planets/8/links/planet_type',
-              resource: '/planets/8/planet_type',
+              related: '/planets/8/planet_type',
               type: 'planet_types',
               id: nil
             },
             tags: {
               self: '/planets/8/links/tags',
-              resource: '/planets/8/tags'
+              related: '/planets/8/tags'
             },
             moons: {
               self: '/planets/8/links/moons',
-              resource: '/planets/8/moons'
+              related: '/planets/8/moons'
             }
           }
         }
       ],
-      linked: [
+      included: [
         {
           type: 'planet_types',
           id: '5',
@@ -1126,13 +1126,13 @@ class SerializerTest < MiniTest::Unit::TestCase
             self: '/preferences/1',
             author: {
               self: '/preferences/1/links/author',
-              resource: '/preferences/1/author',
+              related: '/preferences/1/author',
               type: 'people',
               id: nil
             },
             friends: {
               self: '/preferences/1/links/friends',
-              resource: '/preferences/1/friends'
+              related: '/preferences/1/friends'
             }
           }
         }

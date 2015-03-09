@@ -634,7 +634,7 @@ The `serialize_to_hash` method also takes some optional parameters:
 
 An array of resources. Nested resources can be specified with dot notation.
 
-  *Purpose*: determines which objects will be side loaded with the source objects in a linked section
+  *Purpose*: determines which objects will be side loaded with the source objects in an `included` section
 
   *Example*: ```include: ['comments','author','comments.tags','author.posts']```
 
