@@ -69,11 +69,6 @@ class RoutesTest < ActionDispatch::IntegrationTest
   end
 
   # V2
-  # def test_routing_v2_posts_show
-  #   assert_routing({path: '/api/v2/authors/1', method: :get},
-  #                  {action: 'show', controller: 'api/v2/authors', id: '1'})
-  # end
-
   def test_routing_v2_posts_links_author_show
     assert_routing({path: '/api/v2/posts/1/links/author', method: :get},
                    {controller: 'api/v2/posts', action: 'show_association', post_id: '1', association: 'author'})
