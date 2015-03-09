@@ -151,7 +151,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             }
           }
         },
-        linked: [
+        included: [
           {
             type: 'people',
             id: '1',
@@ -210,7 +210,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             }
           }
         },
-        linked: [
+        included: [
           {
             type: 'people',
             id: '1',
@@ -273,7 +273,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             }
           }
         },
-        linked: [
+        included: [
             {
               type: 'tags',
               id: '1',
@@ -403,7 +403,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             }
           }
         },
-        linked: [
+        included: [
           {
             type: 'tags',
             id: '1',
@@ -480,7 +480,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             }
           }
         },
-        linked: [
+        included: [
           {
             type: 'comments',
             id: '1',
@@ -536,7 +536,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             }
           }
         },
-        linked: [
+        included: [
           {
             type: 'comments',
             id: '2',
@@ -666,7 +666,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             }
           }
         ],
-        linked: [
+        included: [
           {
             type: 'tags',
             id: '1',
@@ -839,7 +839,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             }
           }
         ],
-        linked: [
+        included: [
           {
             type: 'posts',
             id: '11',
@@ -977,7 +977,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             }
           }
         },
-        linked: [
+        included: [
           {
             type: 'iso_currencies',
             id: 'USD',
@@ -1098,7 +1098,7 @@ class SerializerTest < MiniTest::Unit::TestCase
           }
         }
       ],
-      linked: [
+      included: [
         {
           type: 'planet_types',
           id: '5',

@@ -44,14 +44,14 @@ class PostsControllerTest < ActionController::TestCase
     get :index, {filter: {id: '2'}, include: 'comments'}
     assert_response :success
     assert_equal 1, json_response['data'].size
-    assert_equal 1, json_response['linked'].size
+    assert_equal 1, json_response['included'].size
   end
 
   def test_index_filter_by_ids_and_include_related_different_type
     get :index, {filter: {id: '1,2'}, include: 'author'}
     assert_response :success
     assert_equal 2, json_response['data'].size
-    assert_equal 1, json_response['linked'].size
+    assert_equal 1, json_response['included'].size
   end
 
   def test_index_filter_by_ids_and_fields
@@ -228,7 +228,7 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['data'].is_a?(Hash)
     assert_equal 'New post', json_response['data']['title']
     assert_equal 'A body!!!', json_response['data']['body']
-    assert_nil json_response['linked']
+    assert_nil json_response['included']
   end
 
   def test_show_single_with_includes
@@ -239,7 +239,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 'A body!!!', json_response['data']['body']
     assert_nil json_response['data']['links']['tags']['ids']
     assert_equal ['1', '2'], json_response['data']['links']['comments']['ids']
-    assert_equal 2, json_response['linked'].size
+    assert_equal 2, json_response['included'].size
   end
 
   def test_show_single_with_fields
@@ -555,7 +555,7 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['data'].is_a?(Hash)
     assert_equal '3', json_response['data']['links']['author']['id']
     assert_equal 'JR is Great!', json_response['data']['title']
-    assert_not_nil json_response['linked'].size
+    assert_not_nil json_response['included'].size
   end
 
   def test_update_with_links
@@ -1263,7 +1263,7 @@ class TagsControllerTest < ActionController::TestCase
     get :index, {filter: {id: '6,7,8,9'}, include: 'posts,posts.tags,posts.author.posts'}
     assert_response :success
     assert_equal 4, json_response['data'].size
-    assert_equal 2, json_response['linked'].size
+    assert_equal 2, json_response['included'].size
   end
 
   def test_tags_show_multiple
@@ -1313,7 +1313,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     get :show, {id: 1, include: 'isoCurrency,employee'}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
-    assert_equal 2, json_response['linked'].size
+    assert_equal 2, json_response['included'].size
   end
 
   def test_expense_entries_show_bad_include_missing_association
@@ -1341,7 +1341,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     assert_response :success
     assert json_response['data'].is_a?(Hash)
     assert json_response['data'].has_key?('transactionDate')
-    assert_equal 2, json_response['linked'].size
+    assert_equal 2, json_response['included'].size
   end
 
   def test_expense_entries_show_fields_type_many
@@ -1350,7 +1350,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     assert_response :success
     assert json_response['data'].is_a?(Hash)
     assert json_response['data'].has_key?('transactionDate')
-    assert_equal 2, json_response['linked'].size
+    assert_equal 2, json_response['included'].size
   end
 
   def test_create_expense_entries_underscored
@@ -1720,9 +1720,9 @@ class Api::V1::PostsControllerTest < ActionController::TestCase
     assert_response :success
     assert_equal '1', json_response['data']['links']['writer']['id']
     assert_nil json_response['data']['links']['tags']
-    assert_equal '1', json_response['linked'][0]['id']
-    assert_equal 'writers', json_response['linked'][0]['type']
-    assert_equal 'joe@xyz.fake', json_response['linked'][0]['email']
+    assert_equal '1', json_response['included'][0]['id']
+    assert_equal 'writers', json_response['included'][0]['type']
+    assert_equal 'joe@xyz.fake', json_response['included'][0]['email']
   end
 
   def test_index_filter_on_association_namespaced
