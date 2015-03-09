@@ -12,7 +12,7 @@ We have a simple demo app, called [Peeps](https://github.com/cerebris/peeps), av
 
 ## Client Libraries
 
-Any libraries listed on [JSONAPI Examples](http://jsonapi.org/examples/) should be compatible with this jsonapi-resources. For Ruby/Rails, [jsonapi_consumer](https://github.com/jsmestad/jsonapi-consumer) is a good place to start.
+Any libraries listed on [JSONAPI Examples](http://jsonapi.org/examples/) should be compatible with this jsonapi-resources.
 
 ## Installation
 
