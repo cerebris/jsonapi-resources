@@ -898,6 +898,20 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal [2, 3], p.tag_ids
   end
 
+  def test_delete_relationship_has_many_with_empty_data
+    set_content_type_header!
+    put :update_association, {post_id: 9, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
+    assert_response :no_content
+    p = Post.find(9)
+    assert_equal [2, 3], p.tag_ids
+
+    put :update_association, {post_id: 9, association: 'tags', data: [] }
+
+    p.reload
+    assert_response :no_content
+    assert_equal [], p.tag_ids
+  end
+
   def test_update_mismatched_keys
     set_content_type_header!
     javascript = Section.find_by(name: 'javascript')
