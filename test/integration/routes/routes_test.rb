@@ -7,8 +7,8 @@ class RoutesTest < ActionDispatch::IntegrationTest
                    {controller: 'posts', action: 'create'})
   end
 
-  def test_routing_put
-    assert_routing({path: '/posts/1', method: :put},
+  def test_routing_patch
+    assert_routing({path: '/posts/1', method: :patch},
                    {controller: 'posts', action: 'update', id: '1'})
   end
 
@@ -28,7 +28,7 @@ class RoutesTest < ActionDispatch::IntegrationTest
   end
 
   def test_routing_posts_links_author_update
-    assert_routing({path: '/posts/1/links/author', method: :put},
+    assert_routing({path: '/posts/1/links/author', method: :patch},
                    {controller: 'posts', action: 'update_association', post_id: '1', association: 'author'})
   end
 
@@ -48,7 +48,7 @@ class RoutesTest < ActionDispatch::IntegrationTest
   end
 
   def test_routing_posts_links_tags_update_acts_as_set
-    assert_routing({path: '/posts/1/links/tags', method: :put},
+    assert_routing({path: '/posts/1/links/tags', method: :patch},
                    {controller: 'posts', action: 'update_association', post_id: '1', association: 'tags'})
   end
 

@@ -102,7 +102,7 @@ module ActionDispatch
 
           if methods.include?(:update)
             match "links/#{formatted_association_name}", controller: res._type.to_s,
-                  action: 'update_association', association: link_type.to_s, via: [:put]
+                  action: 'update_association', association: link_type.to_s, via: [:put, :patch]
           end
 
           if methods.include?(:destroy)
@@ -132,7 +132,7 @@ module ActionDispatch
 
           if methods.include?(:update) && res._association(link_type).acts_as_set
             match "links/#{formatted_association_name}", controller: res._type.to_s,
-                  action: 'update_association', association: link_type.to_s, via: [:put]
+                  action: 'update_association', association: link_type.to_s, via: [:put, :patch]
           end
 
           if methods.include?(:destroy)
