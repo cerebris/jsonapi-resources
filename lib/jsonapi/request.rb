@@ -1,11 +1,8 @@
-require 'jsonapi/resource_for'
 require 'jsonapi/operation'
 require 'jsonapi/paginator'
 
 module JSONAPI
   class Request
-    include ResourceFor
-
     attr_accessor :fields, :include, :filters, :sort_criteria, :errors, :operations,
                   :resource_klass, :context, :paginator, :source_klass, :source_id
 
@@ -25,7 +22,7 @@ module JSONAPI
     end
 
     def setup(params)
-      @resource_klass ||= self.class.resource_for(params[:controller]) if params[:controller]
+      @resource_klass ||= Resource.resource_for(params[:controller]) if params[:controller]
 
       unless params.nil?
         case params[:action]
@@ -36,7 +33,7 @@ module JSONAPI
             parse_sort_criteria(params[:sort])
             parse_pagination(params[:page])
           when 'get_related_resource', 'get_related_resources'
-            @source_klass = self.class.resource_for(params.require(:source))
+            @source_klass = Resource.resource_for(params.require(:source))
             @source_id = params.require(@source_klass._as_parent_key)
             parse_fields(params[:fields])
             parse_include(params[:include])
@@ -101,7 +98,7 @@ module JSONAPI
         underscored_type = unformat_key(type)
         extracted_fields[type] = []
         begin
-          type_resource = self.class.resource_for(@resource_klass.module_path + underscored_type.to_s)
+          type_resource = Resource.resource_for(@resource_klass.module_path + underscored_type.to_s)
         rescue NameError
           @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
         end
@@ -291,7 +288,7 @@ module JSONAPI
               end
 
               unless links_object[:id].nil?
-                association_resource = @resource_klass.resource_for(@resource_klass.module_path + links_object[:type])
+                association_resource = Resource.resource_for(@resource_klass.module_path + links_object[:type])
                 checked_has_one_associations[param] = association_resource.verify_key(links_object[:id], @context)
               else
                 checked_has_one_associations[param] = nil
@@ -311,7 +308,7 @@ module JSONAPI
                 end
 
                 links_object.each_pair do |type, keys|
-                  association_resource = @resource_klass.resource_for(@resource_klass.module_path + type)
+                  association_resource = Resource.resource_for(@resource_klass.module_path + type)
                   checked_has_many_associations[param] = association_resource.verify_keys(keys, @context)
                 end
               end

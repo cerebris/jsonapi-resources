@@ -9,19 +9,10 @@ module JSONAPI
         arg
       end
 
-      # :nocov:
-      if RUBY_VERSION >= '2.0'
-        def formatter_for(format)
-          formatter_class_name = "#{format.to_s.camelize}Formatter"
-          Object.const_get formatter_class_name if formatter_class_name
-        end
-      else
-        def formatter_for(format)
-          formatter_class_name = "#{format.to_s.camelize}Formatter"
-          formatter_class_name.safe_constantize if formatter_class_name
-        end
+      def formatter_for(format)
+        formatter_class_name = "#{format.to_s.camelize}Formatter"
+        formatter_class_name.safe_constantize if formatter_class_name
       end
-      # :nocov:
     end
   end
 
