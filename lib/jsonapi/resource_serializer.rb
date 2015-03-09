@@ -229,7 +229,7 @@ module JSONAPI
 
       link_object_hash = {}
       link_object_hash[:self] = "#{self_href(source)}/links/#{format_route(route)}"
-      link_object_hash[:resource] = "#{self_href(source)}/#{format_route(route)}"
+      link_object_hash[:related] = "#{self_href(source)}/#{format_route(route)}"
       # ToDo: Get correct formatting figured out
       link_object_hash[:type] = format_route(association.type)
       link_object_hash[:id] = foreign_key_value(source, association)
@@ -241,7 +241,7 @@ module JSONAPI
 
       link_object_hash = {}
       link_object_hash[:self] = "#{self_href(source)}/links/#{format_route(route)}"
-      link_object_hash[:resource] = "#{self_href(source)}/#{format_route(route)}"
+      link_object_hash[:related] = "#{self_href(source)}/#{format_route(route)}"
       if include_linkage
         # ToDo: Get correct formatting figured out
         link_object_hash[:type] = format_route(association.type)

@@ -1239,7 +1239,7 @@ class PostsControllerTest < ActionController::TestCase
                            type: 'people',
                            id: '1',
                            self: 'http://test.host/posts/1/links/author',
-                           resource: 'http://test.host/posts/1/author'
+                           related: 'http://test.host/posts/1/author'
                          }
                        }
   end
@@ -1252,7 +1252,7 @@ class PostsControllerTest < ActionController::TestCase
                            type: 'tags',
                            ids: ['1', '2', '3'],
                            self: 'http://test.host/posts/1/links/tags',
-                           resource: 'http://test.host/posts/1/tags'
+                           related: 'http://test.host/posts/1/tags'
                          }
                        }
   end
