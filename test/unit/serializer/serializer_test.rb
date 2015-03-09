@@ -1127,7 +1127,7 @@ class SerializerTest < MiniTest::Unit::TestCase
             author: {
               self: '/preferences/1/links/author',
               resource: '/preferences/1/author',
-              type: 'authors',
+              type: 'people',
               id: nil
             },
             friends: {

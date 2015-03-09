@@ -45,7 +45,6 @@ TestApp.initialize!
 require File.expand_path('../fixtures/active_record', __FILE__)
 JSONAPI.configuration.route_format = :underscored_route
 TestApp.routes.draw do
-  jsonapi_resources :authors
   jsonapi_resources :people
   jsonapi_resources :comments
   jsonapi_resources :tags
@@ -62,7 +61,6 @@ TestApp.routes.draw do
 
   namespace :api do
     namespace :v1 do
-      jsonapi_resources :authors
       jsonapi_resources :people
       jsonapi_resources :comments
       jsonapi_resources :tags
@@ -80,9 +78,6 @@ TestApp.routes.draw do
 
     JSONAPI.configuration.route_format = :underscored_route
     namespace :v2 do
-      jsonapi_resources :authors do
-      end
-
       jsonapi_resources :posts do
         jsonapi_link :author, except: [:destroy]
       end
@@ -123,6 +118,7 @@ TestApp.routes.draw do
       jsonapi_resources :posts do
       end
 
+      jsonapi_resources :authors
       jsonapi_resources :expense_entries
       jsonapi_resources :iso_currencies
 

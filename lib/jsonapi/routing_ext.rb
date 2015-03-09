@@ -148,7 +148,7 @@ module ActionDispatch
           association = source._associations[association_name]
 
           formatted_association_name = format_route(association.name)
-          related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(association.name.pluralize))
+          related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(association.class_name.underscore.pluralize))
 
           match "#{formatted_association_name}", controller: related_resource._type.to_s,
                 association: association.name, source: resource_type_with_module_prefix(source._type),
@@ -162,7 +162,7 @@ module ActionDispatch
           association = source._associations[association_name]
 
           formatted_association_name = format_route(association.name)
-          related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(association.name))
+          related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(association.class_name.underscore))
 
           match "#{formatted_association_name}", controller: related_resource._type.to_s,
                 association: association.name, source: resource_type_with_module_prefix(source._type),
