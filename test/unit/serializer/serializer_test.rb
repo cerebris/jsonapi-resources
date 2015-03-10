@@ -167,6 +167,12 @@ class SerializerTest < MiniTest::Unit::TestCase
              posts: {
                self: '/people/1/links/posts',
                related: '/people/1/posts'
+             },
+             preferences: {
+               self: "/people/1/links/preferences",
+               related: "/people/1/preferences",
+               type: "preferences",
+               id: "1"
              }
             }
           }
@@ -226,6 +232,12 @@ class SerializerTest < MiniTest::Unit::TestCase
               posts: {
                 self: '/people/1/links/posts',
                 related: '/people/1/posts'
+              },
+              preferences: {
+                self: "/people/1/links/preferences",
+                related: "/people/1/preferences",
+                type: "preferences",
+                id: "1"
               }
             }
           }
@@ -533,6 +545,12 @@ class SerializerTest < MiniTest::Unit::TestCase
               related: '/people/2/comments',
               type: 'comments',
               ids: ['2', '3']
+            },
+            preferences: {
+              self: "/people/2/links/preferences",
+              related: "/people/2/preferences",
+              type: "preferences",
+              id: nil
             }
           }
         },

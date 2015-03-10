@@ -383,6 +383,8 @@ class PersonResource < JSONAPI::Resource
   has_many :comments
   has_many :posts
 
+  has_one :preferences
+
   filter :name
 
   def self.verify_custom_filter(filter, values, context)

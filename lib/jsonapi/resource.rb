@@ -101,6 +101,12 @@ module JSONAPI
       self.class.fields
     end
 
+    # Override this on a resource to customize how the associated records
+    # are fetched for a model. Particularly helpful for authoriztion.
+    def associated_records(association_name, options = {})
+      model.send association_name
+    end
+
     private
     def save
       run_callbacks :save do
@@ -550,7 +556,7 @@ module JSONAPI
               type_name = self.class._associations[attr].type.to_s
               resource_class = self.class.resource_for(self.class.module_path + type_name)
               if resource_class
-                associated_model = @model.send attr
+                associated_model = associated_records(attr, context: @context)
                 return associated_model ? resource_class.new(associated_model, @context) : nil
               end
             end unless method_defined?(attr)
@@ -564,7 +570,7 @@ module JSONAPI
 
               resources = []
               if resource_class
-                records = @model.send attr
+                records = associated_records(attr, context: @context)
                 records = self.class.apply_filters(records, filters)
                 records = self.class.apply_sort(records, self.class.construct_order_options(sort_criteria))
                 records = self.class.apply_pagination(records, paginator)

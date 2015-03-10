@@ -18,6 +18,19 @@ class CatResource < JSONAPI::Resource
   has_one :father, class_name: 'Cat'
 end
 
+class PersonWithCustomAssociatedRecordsResource < PersonResource
+  def associated_records(association_name, context)
+    :associated_records
+  end
+end
+
+class PersonWithCustomAssociatedRecordsErrorResource < PersonResource
+  class AuthorizationError < StandardError; end
+  def associated_records(association_name, context)
+    raise AuthorizationError
+  end
+end
+
 class ResourceTest < MiniTest::Unit::TestCase
   def setup
     @post = Post.first
@@ -53,6 +66,23 @@ class ResourceTest < MiniTest::Unit::TestCase
 
     assert(posts.include?(Post.find(1)))
     refute(posts.include?(Post.find(3)))
+  end
+
+  def test_associated_records
+    author = Person.find(1)
+    preferences = Preferences.first
+    refute(preferences == nil)
+    author.update! preferences: preferences
+    author_resource = PersonResource.new(author)
+    assert_equal(author_resource.preferences.model, preferences)
+
+    author_resource = PersonWithCustomAssociatedRecordsResource.new(author)
+    assert_equal(author_resource.preferences.model, :associated_records)
+
+    author_resource = PersonWithCustomAssociatedRecordsErrorResource.new(author)
+    assert_raises PersonWithCustomAssociatedRecordsErrorResource::AuthorizationError do
+      author_resource.posts
+    end
   end
 
   def test_find_by_key_with_customized_base_records

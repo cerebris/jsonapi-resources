@@ -283,6 +283,25 @@ class PostResource < JSONAPI::Resource
 end
 ```
 
+You can also customize how associated records are found by overriding the `associated_records` method in the resource class.
+
+For example, raise an error if the user is not authorized to view the association records.
+
+```ruby
+class PostResource < JSONAPI::Resource
+  def associated_records(association_name, options={})
+    context = options[:context]
+    records = model.public_send(association_name)
+
+    unless context.current_user.can_view?(records)
+      raise NotAuthorizedError
+    end
+
+    records
+  end
+end
+```
+
 ###### Applying Filters
 
 The `apply_filter` method is called to apply each filter to the `Arel` relation. You may override this method to gain control over how the filters are applied to the `Arel` relation.
