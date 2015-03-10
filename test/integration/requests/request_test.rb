@@ -139,12 +139,19 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_update_association_without_content_type
     ruby = Section.find_by(name: 'ruby')
-    put '/posts/3/links/section', { 'sections' => {type: 'sections', id: ruby.id.to_s }}.to_json
+    patch '/posts/3/links/section', { 'sections' => {type: 'sections', id: ruby.id.to_s }}.to_json
 
     assert_equal 415, status
   end
 
-  def test_update_association_has_one
+  def test_patch_update_association_has_one
+    ruby = Section.find_by(name: 'ruby')
+    patch '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 204, status
+  end
+
+  def test_put_update_association_has_one
     ruby = Section.find_by(name: 'ruby')
     put '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
@@ -163,6 +170,22 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_put_content_type
     put '/posts/3',
+        {
+          'data' => {
+            'type' => 'posts',
+            'id' => '3',
+            'title' => 'A great new Post',
+            'links' => {
+              'tags' => {type: 'tags', ids: [3, 4]}
+            }
+          }
+        }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_match JSONAPI::MEDIA_TYPE, headers['Content-Type']
+  end
+
+  def test_patch_content_type
+    patch '/posts/3',
         {
           'data' => {
             'type' => 'posts',
