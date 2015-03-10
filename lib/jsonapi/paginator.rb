@@ -10,19 +10,10 @@ module JSONAPI
     end
 
     class << self
-      # :nocov:
-      if RUBY_VERSION >= '2.0'
-        def paginator_for(paginator)
-          paginator_class_name = "#{paginator.to_s.camelize}Paginator"
-          Object.const_get(paginator_class_name) if paginator_class_name
-        end
-      else
-        def paginator_for(paginator)
-          paginator_class_name = "#{paginator.to_s.camelize}Paginator"
-          paginator_class_name.safe_constantize if paginator_class_name
-        end
+      def paginator_for(paginator)
+        paginator_class_name = "#{paginator.to_s.camelize}Paginator"
+        paginator_class_name.safe_constantize if paginator_class_name
       end
-      # :nocov:
     end
   end
 end

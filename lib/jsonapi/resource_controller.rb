@@ -1,4 +1,3 @@
-require 'jsonapi/resource_for'
 require 'jsonapi/resource_serializer'
 require 'action_controller'
 require 'jsonapi/exceptions'
@@ -11,8 +10,6 @@ require 'csv'
 
 module JSONAPI
   class ResourceController < ActionController::Base
-    include ResourceFor
-
     before_filter :ensure_correct_media_type, only: [:create, :update, :create_association, :update_association]
     before_filter :setup_request
     after_filter :setup_response
@@ -139,17 +136,9 @@ module JSONAPI
     end
 
     private
-    # :nocov:
-    if RUBY_VERSION >= '2.0'
-      def resource_klass
-        @resource_klass ||= Object.const_get resource_klass_name
-      end
-    else
-      def resource_klass
-        @resource_klass ||= resource_klass_name.safe_constantize
-      end
+    def resource_klass
+      @resource_klass ||= resource_klass_name.safe_constantize
     end
-    # :nocov:
 
     def base_url
       @base_url ||= request.protocol + request.host_with_port

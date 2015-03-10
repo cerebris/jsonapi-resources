@@ -1,11 +1,9 @@
 require 'jsonapi/configuration'
-require 'jsonapi/resource_for'
 require 'jsonapi/association'
 require 'jsonapi/callbacks'
 
 module JSONAPI
   class Resource
-    include ResourceFor
     include Callbacks
 
     @@resource_types = {}
@@ -123,7 +121,7 @@ module JSONAPI
       association = self.class._associations[association_type]
 
       association_key_values.each do |association_key_value|
-        related_resource = self.class.resource_for(association.type).find_by_key(association_key_value, context: @context)
+        related_resource = Resource.resource_for(association.type).find_by_key(association_key_value, context: @context)
 
         # ToDo: Add option to skip relations that already exist instead of returning an error?
         relation = @model.send(association.type).where(association.primary_key => association_key_value).first
@@ -204,6 +202,15 @@ module JSONAPI
         # If eager loading is off some resource types will be initialized in
         # _resource_name_from_type
         @@resource_types[base._type] ||= base.name.demodulize
+      end
+
+      def resource_for(type)
+        resource_name = JSONAPI::Resource._resource_name_from_type(type)
+        resource = resource_name.safe_constantize if resource_name
+        if resource.nil?
+          raise NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
+        end
+        resource
       end
 
       attr_accessor :_attributes, :_associations, :_allowed_filters , :_type, :_paginator
@@ -479,17 +486,9 @@ module JSONAPI
         @_paginator = paginator
       end
 
-      # :nocov:
-      if RUBY_VERSION >= '2.0'
-        def _model_class
-          @model ||= Object.const_get(_model_name.to_s)
-        end
-      else
-        def _model_class
-          @model ||= _model_name.to_s.safe_constantize
-        end
+      def _model_class
+        @model ||= _model_name.to_s.safe_constantize
       end
-      # :nocov:
 
       def _allowed_filter?(filter)
         _allowed_filters.include?(filter)
@@ -548,7 +547,7 @@ module JSONAPI
           if @_associations[attr].is_a?(JSONAPI::Association::HasOne)
             define_method attr do
               type_name = self.class._associations[attr].type.to_s
-              resource_class = self.class.resource_for(self.class.module_path + type_name)
+              resource_class = Resource.resource_for(self.class.module_path + type_name)
               if resource_class
                 associated_model = @model.send attr
                 return associated_model ? resource_class.new(associated_model, @context) : nil
@@ -557,7 +556,7 @@ module JSONAPI
           elsif @_associations[attr].is_a?(JSONAPI::Association::HasMany)
             define_method attr do |options = {}|
               type_name = self.class._associations[attr].type.to_s
-              resource_class = self.class.resource_for(self.class.module_path + type_name)
+              resource_class = Resource.resource_for(self.class.module_path + type_name)
               filters = options.fetch(:filters, {})
               sort_criteria =  options.fetch(:sort_criteria, {})
               paginator = options.fetch(:paginator, nil)
