@@ -371,15 +371,15 @@ end
 
 ##### Paginator Configuration
 
-The default paginator, which will be used for all resources, is set using `JSONAPI.configure`. For example:
+The default paginator, which will be used for all resources, is set using `JSONAPI.configure`. For example, in your `config/initializers/jsonapi_resources.rb`:
 
 ```ruby
 JSONAPI.configure do |config|
   # built in paginators are :none, :offset, :cursor, :paged
-  self.default_paginator = :offset
+  config.default_paginator = :offset
 
-  self.default_page_size = 10
-  self.maximum_page_size = 20
+  config.default_page_size = 10
+  config.maximum_page_size = 20
 end
 ```
 
