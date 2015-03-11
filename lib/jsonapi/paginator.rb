@@ -4,9 +4,7 @@ module JSONAPI
     end
 
     def apply(relation)
-      # :nocov:
-      relation
-      # :nocov:
+      # relation
     end
 
     class << self
