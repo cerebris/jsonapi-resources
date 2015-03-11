@@ -1396,7 +1396,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     assert json_response['data'].is_a?(Hash)
     assert_equal '3', json_response['data']['links']['employee']['id']
     assert_equal 'USD', json_response['data']['links']['iso_currency']['id']
-    assert_equal 50.58, json_response['data']['cost']
+    assert_equal '50.58', json_response['data']['cost']
 
     delete :destroy, {id: json_response['data']['id']}
     assert_response :no_content
@@ -1425,7 +1425,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     assert json_response['data'].is_a?(Hash)
     assert_equal '3', json_response['data']['links']['employee']['id']
     assert_equal 'USD', json_response['data']['links']['isoCurrency']['id']
-    assert_equal 50.58, json_response['data']['cost']
+    assert_equal '50.58', json_response['data']['cost']
 
     delete :destroy, {id: json_response['data']['id']}
     assert_response :no_content
@@ -1454,7 +1454,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     assert json_response['data'].is_a?(Hash)
     assert_equal '3', json_response['data']['links']['employee']['id']
     assert_equal 'USD', json_response['data']['links']['iso-currency']['id']
-    assert_equal 50.58, json_response['data']['cost']
+    assert_equal '50.58', json_response['data']['cost']
 
     delete :destroy, {id: json_response['data']['id']}
     assert_response :no_content
@@ -1790,7 +1790,7 @@ class FactsControllerTest < ActionController::TestCase
     assert_equal 'Jane Author', json_response['data']['spouseName']
     assert_equal 'First man to run across Antartica.', json_response['data']['bio']
     assert_equal 23.89/45.6, json_response['data']['qualityRating']
-    assert_equal 47000.56, json_response['data']['salary']
+    assert_equal '47000.56', json_response['data']['salary']
     assert_equal '2013-08-07T20:25:00.000Z', json_response['data']['dateTimeJoined']
     assert_equal '1965-06-30', json_response['data']['birthday']
     assert_equal '2000-01-01T20:00:00Z', json_response['data']['bedtime']

@@ -32,8 +32,6 @@ class TestApp < Rails::Application
   config.session_store :cookie_store, key: 'session'
   config.secret_key_base = 'secret'
 
-  ActiveSupport::JSON::Encoding.encode_big_decimal_as_string = false
-
   #Raise errors on unsupported parameters
   config.action_controller.action_on_unpermitted_parameters = :raise
 
