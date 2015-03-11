@@ -282,13 +282,6 @@ module JSONAPI
         @_allowed_filters.add(attr.to_sym)
       end
 
-      def key(key)
-        # :nocov:
-        warn '[DEPRECATION] `key` is deprecated.  Please use `primary_key` instead.'
-        @_primary_key = key.to_sym
-        # :nocov:
-      end
-
       def primary_key(key)
         @_primary_key = key.to_sym
       end
@@ -454,13 +447,6 @@ module JSONAPI
 
       def _model_name
         @_model_name ||= self.name.demodulize.sub(/Resource$/, '')
-      end
-
-      def _key
-        # :nocov:
-        warn '[DEPRECATION] `_key` is deprecated.  Please use `_primary_key` instead.'
-        _primary_key
-        # :nocov:
       end
 
       def _primary_key

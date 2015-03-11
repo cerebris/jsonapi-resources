@@ -6,15 +6,7 @@ module JSONAPI
       @name                = name.to_s
       @options             = options
       @acts_as_set         = options.fetch(:acts_as_set, false) == true
-      @key                 = options[:key] ? options[:key].to_sym : nil
-
-      if @key.nil?
-        @foreign_key  = options[:foreign_key ] ? options[:foreign_key ].to_sym : nil
-      else
-        # :nocov:
-        warn '[DEPRECATION] `key` is deprecated in associations.  Please use `foreign_key` instead.'
-        # :nocov:
-      end
+      @foreign_key         = options[:foreign_key ] ? options[:foreign_key ].to_sym : nil
     end
 
     def primary_key
