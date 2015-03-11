@@ -312,10 +312,6 @@ module JSONAPI
                   checked_has_many_associations[param] = association_resource.verify_keys(keys, @context)
                 end
               end
-            else
-              # :nocov:
-              raise JSONAPI::Exceptions::InvalidLinksObject.new(key)
-              # :nocov:
             end
           end
         else
@@ -365,10 +361,6 @@ module JSONAPI
                                                                         parent_key,
                                                                         association_type,
                                                                         verified_param_set[:has_many].values[0])
-      else
-        # :nocov:
-        @errors.concat(JSONAPI::Exceptions::InvalidLinksObject.new(:data).errors)
-        # :nocov:
       end
     rescue ActionController::ParameterMissing => e
       @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)
