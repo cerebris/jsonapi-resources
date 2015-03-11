@@ -34,7 +34,7 @@ module JSONAPI
             parse_pagination(params[:page])
           when 'get_related_resource', 'get_related_resources'
             @source_klass = Resource.resource_for(params.require(:source))
-            @source_id = params.require(@source_klass._as_parent_key)
+            @source_id = @source_klass.verify_key(params.require(@source_klass._as_parent_key), @context)
             parse_fields(params[:fields])
             parse_include(params[:include])
             parse_filters(params[:filter])

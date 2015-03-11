@@ -1270,6 +1270,12 @@ class PostsControllerTest < ActionController::TestCase
                          }
                        }
   end
+
+  def test_show_has_many_relationship_invalid_id
+    get :show_association, {post_id: '2,1', association: 'tags'}
+    assert_response :bad_request
+    assert_match /2,1 is not a valid value for id/, response.body
+  end
 end
 
 class TagsControllerTest < ActionController::TestCase
