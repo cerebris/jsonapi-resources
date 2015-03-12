@@ -283,13 +283,29 @@ class PostResource < JSONAPI::Resource
 end
 ```
 
-You can also customize how associated records are found by overriding the `associated_records` method in the resource class.
-
-For example, raise an error if the user is not authorized to view the association records.
+When you create a relationship, a method is created to fetch record(s) for that relationship. This method calls `records_for(association_name)` by default.
 
 ```ruby
 class PostResource < JSONAPI::Resource
-  def associated_records(association_name, options={})
+  has_one :author
+  has_many :comments
+
+  # def record_for_author(options = {})
+  #   records_for("author", options)
+  # end
+
+  # def records_for_comments(options = {})
+  #   records_for("comments", options)
+  # end
+end
+
+```
+
+For example, you may want raise an error if the user is not authorized to view the associated records.
+
+```ruby
+class BaseResource < JSONAPI::Resource
+  def records_for(association_name, options={})
     context = options[:context]
     records = model.public_send(association_name)
 
