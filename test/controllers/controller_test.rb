@@ -1629,7 +1629,6 @@ end
 class Api::V5::PostsControllerTest < ActionController::TestCase
   def test_limit_fields_in_included_resource_that_is_not_a_direct_relationship
     get :show, { id: "1", include: "author.preferences" }
-    puts response.body
     assert_equal response.status, 200
   end
 end
