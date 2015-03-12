@@ -1619,6 +1619,22 @@ class PeopleControllerTest < ActionController::TestCase
 end
 
 class Api::V5::AuthorsControllerTest < ActionController::TestCase
+  def test_preferences_include
+    get :show, { id: '1', include: "preferences" }
+    assert_equal response.status, 200
+    assert_equal 1, json_response['included'].size
+  end
+end
+
+class Api::V5::PostsControllerTest < ActionController::TestCase
+  def test_limit_fields_in_included_resource_that_is_not_a_direct_relationship
+    get :show, { id: "1", include: "author.preferences" }
+    puts response.body
+    assert_equal response.status, 200
+  end
+end
+
+class Api::V5::AuthorsControllerTest < ActionController::TestCase
   def test_get_person_as_author
     get :index, {filter: {id: '1'}}
     assert_response :success

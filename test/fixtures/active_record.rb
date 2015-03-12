@@ -696,6 +696,7 @@ module Api
       attributes :name, :email
       model_name 'Person'
       has_many :posts
+      has_one :preferences
 
       filter :name
 
@@ -720,6 +721,7 @@ module Api
     ExpenseEntryResource = ExpenseEntryResource.dup
     IsoCurrencyResource = IsoCurrencyResource.dup
     EmployeeResource = EmployeeResource.dup
+    PreferencesResource = PreferencesResource.dup
   end
 end
 
@@ -744,9 +746,12 @@ warn 'end testing Name Collisions'
 javascript = Section.create(name: 'javascript')
 ruby = Section.create(name: 'ruby')
 
+preferences = Preferences.create
+
 a = Person.create(name: 'Joe Author',
                  email: 'joe@xyz.fake',
-                 date_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00'))
+                 date_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00'),
+                 preferences: preferences)
 
 b = Person.create(name: 'Fred Reader',
                  email: 'fred@xyz.fake',
@@ -892,8 +897,6 @@ betax = Planet.create(name: 'Beta X', description: 'Newly discovered Planet X', 
 betay = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Y', planet_type_id: unknown.id)
 betaz = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Z', planet_type_id: unknown.id)
 betaw = Planet.create(name: 'Beta W', description: 'Newly discovered Planet W')
-
-preference = Preferences.create
 
 fact = Fact.create(spouse_name: 'Jane Author',
                    bio: 'First man to run across Antartica.',
