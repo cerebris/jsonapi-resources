@@ -283,6 +283,41 @@ class PostResource < JSONAPI::Resource
 end
 ```
 
+When you create a relationship, a method is created to fetch record(s) for that relationship. This method calls `records_for(association_name)` by default.
+
+```ruby
+class PostResource < JSONAPI::Resource
+  has_one :author
+  has_many :comments
+
+  # def record_for_author(options = {})
+  #   records_for("author", options)
+  # end
+
+  # def records_for_comments(options = {})
+  #   records_for("comments", options)
+  # end
+end
+
+```
+
+For example, you may want raise an error if the user is not authorized to view the associated records.
+
+```ruby
+class BaseResource < JSONAPI::Resource
+  def records_for(association_name, options={})
+    context = options[:context]
+    records = model.public_send(association_name)
+
+    unless context.current_user.can_view?(records)
+      raise NotAuthorizedError
+    end
+
+    records
+  end
+end
+```
+
 ###### Applying Filters
 
 The `apply_filter` method is called to apply each filter to the `Arel` relation. You may override this method to gain control over how the filters are applied to the `Arel` relation.

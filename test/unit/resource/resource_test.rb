@@ -18,6 +18,28 @@ class CatResource < JSONAPI::Resource
   has_one :father, class_name: 'Cat'
 end
 
+class PersonWithCustomRecordsForResource < PersonResource
+  def records_for(association_name, context)
+    :records_for
+  end
+end
+
+class PersonWithCustomRecordsForRelationshipsResource < PersonResource
+  def records_for_posts(options = {})
+    :records_for_posts
+  end
+  def record_for_preferences(options = {})
+    :record_for_preferences
+  end
+end
+
+class PersonWithCustomRecordsForErrorResource < PersonResource
+  class AuthorizationError < StandardError; end
+  def records_for(association_name, context)
+    raise AuthorizationError
+  end
+end
+
 class ResourceTest < MiniTest::Unit::TestCase
   def setup
     @post = Post.first
@@ -53,6 +75,51 @@ class ResourceTest < MiniTest::Unit::TestCase
 
     assert(posts.include?(Post.find(1)))
     refute(posts.include?(Post.find(3)))
+  end
+
+  def test_records_for
+    author = Person.find(1)
+    preferences = Preferences.first
+    refute(preferences == nil)
+    author.update! preferences: preferences
+    author_resource = PersonResource.new(author)
+    assert_equal(author_resource.preferences.model, preferences)
+
+    author_resource = PersonWithCustomRecordsForResource.new(author)
+    assert_equal(author_resource.preferences.model, :records_for)
+
+    author_resource = PersonWithCustomRecordsForErrorResource.new(author)
+    assert_raises PersonWithCustomRecordsForErrorResource::AuthorizationError do
+      author_resource.posts
+    end
+  end
+
+  def test_records_for_meta_method_for_has_one
+    author = Person.find(1)
+    author.update! preferences: Preferences.first
+    author_resource = PersonWithCustomRecordsForRelationshipsResource.new(author)
+    assert_equal(author_resource.record_for_preferences, :record_for_preferences)
+  end
+
+  def test_records_for_meta_method_for_has_one_calling_records_for
+    author = Person.find(1)
+    author.update! preferences: Preferences.first
+    author_resource = PersonWithCustomRecordsForResource.new(author)
+    assert_equal(author_resource.record_for_preferences, :records_for)
+  end
+
+  def test_associated_records_meta_method_for_has_many
+    author = Person.find(1)
+    author.posts << Post.find(1)
+    author_resource = PersonWithCustomRecordsForRelationshipsResource.new(author)
+    assert_equal(author_resource.records_for_posts, :records_for_posts)
+  end
+
+  def test_associated_records_meta_method_for_has_many_calling_records_for
+    author = Person.find(1)
+    author.posts << Post.find(1)
+    author_resource = PersonWithCustomRecordsForResource.new(author)
+    assert_equal(author_resource.records_for_posts, :records_for)
   end
 
   def test_find_by_key_with_customized_base_records

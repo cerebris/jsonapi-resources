@@ -99,6 +99,12 @@ module JSONAPI
       self.class.fields
     end
 
+    # Override this on a resource to customize how the associated records
+    # are fetched for a model. Particularly helpful for authoriztion.
+    def records_for(association_name, options = {})
+      model.send association_name
+    end
+
     private
     def save
       run_callbacks :save do
@@ -544,12 +550,21 @@ module JSONAPI
             @model.method("#{foreign_key}=").call(value)
           end unless method_defined?("#{foreign_key}=")
 
+          associated_records_method_name = case @_associations[attr]
+          when JSONAPI::Association::HasOne then "record_for_#{attr}"
+          when JSONAPI::Association::HasMany then "records_for_#{attr}"
+          end
+
+          define_method associated_records_method_name do |options={}|
+            records_for(attr, options)
+          end unless method_defined?(associated_records_method_name)
+
           if @_associations[attr].is_a?(JSONAPI::Association::HasOne)
             define_method attr do
               type_name = self.class._associations[attr].type.to_s
               resource_class = Resource.resource_for(self.class.module_path + type_name)
               if resource_class
-                associated_model = @model.send attr
+                associated_model = public_send(associated_records_method_name)
                 return associated_model ? resource_class.new(associated_model, @context) : nil
               end
             end unless method_defined?(attr)
@@ -563,7 +578,7 @@ module JSONAPI
 
               resources = []
               if resource_class
-                records = @model.send attr
+                records = public_send(associated_records_method_name)
                 records = self.class.apply_filters(records, filters)
                 records = self.class.apply_sort(records, self.class.construct_order_options(sort_criteria))
                 records = self.class.apply_pagination(records, paginator)
