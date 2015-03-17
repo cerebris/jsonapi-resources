@@ -1,5 +1,4 @@
 require File.expand_path('../../../test_helper', __FILE__)
-require File.expand_path('../../../fixtures/active_record', __FILE__)
 
 require 'jsonapi/operation'
 require 'jsonapi/operation_result'
@@ -55,7 +54,7 @@ class TestOperationsProcessor < JSONAPI::OperationsProcessor
   end
 end
 
-class OperationsProcessorTest < MiniTest::Unit::TestCase
+class OperationsProcessorTest < Minitest::Test
   def setup
     betax = Planet.find(5)
     betay = Planet.find(6)

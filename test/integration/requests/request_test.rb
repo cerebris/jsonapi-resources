@@ -269,7 +269,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
     assert_equal 2, json_response['data'].size
     assert_equal 'http://www.example.com/api/v2/books/1/book_comments',
-                 json_response['data'][0]['links']['book_comments']['related']
+                 json_response['data'][1]['links']['book_comments']['related']
   end
 
   def test_pagination_related_resources_data
@@ -278,7 +278,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books/1/book_comments?page[limit]=10'
     assert_equal 200, status
     assert_equal 10, json_response['data'].size
-    assert_equal 'This is comment 9 on book 0.', json_response['data'][9]['body']
+    assert_equal 'This is comment 9 on book 1.', json_response['data'][9]['body']
   end
 
   def test_pagination_related_resources_data_includes
@@ -287,7 +287,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books/1/book_comments?page[limit]=10&include=author,book'
     assert_equal 200, status
     assert_equal 10, json_response['data'].size
-    assert_equal 'This is comment 9 on book 0.', json_response['data'][9]['body']
+    assert_equal 'This is comment 9 on book 1.', json_response['data'][9]['body']
   end
 
   def test_flow_self
@@ -329,10 +329,10 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_flow_link_has_many_self_link_put
     get '/posts'
     assert_equal 200, status
-    post_1 = json_response['data'][0]
+    post_1 = json_response['data'][4]
 
     post post_1['links']['tags']['self'],
-         {'data' => {'type' => 'tags', 'ids' => ['5']}}.to_json,
+         {'data' => {'type' => 'tags', 'ids' => ['10']}}.to_json,
          "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
@@ -341,9 +341,9 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
     assert_hash_equals(json_response,
                        {'data' => {
-                         'self' => 'http://www.example.com/posts/1/links/tags',
-                         'related' => 'http://www.example.com/posts/1/tags',
-                         'type' => 'tags', 'ids'=>['1', '2', '3', '5']
+                         'self' => 'http://www.example.com/posts/5/links/tags',
+                         'related' => 'http://www.example.com/posts/5/tags',
+                         'type' => 'tags', 'ids'=>['10']
                        }
                        })
   end

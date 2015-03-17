@@ -1,9 +1,8 @@
 require File.expand_path('../../../test_helper', __FILE__)
-require File.expand_path('../../../fixtures/active_record', __FILE__)
 require 'jsonapi-resources'
 require 'json'
 
-class SerializerTest < MiniTest::Unit::TestCase
+class SerializerTest < ActionDispatch::IntegrationTest
   def setup
     @post = Post.find(1)
     @fred = Person.find_by(name: 'Fred Reader')
@@ -663,7 +662,7 @@ class SerializerTest < MiniTest::Unit::TestCase
                 self: '/posts/2/links/section',
                 related: '/posts/2/section',
                 type: 'sections',
-                id: '3'
+                id: '2'
               },
               author: {
                 self: '/posts/2/links/author',

@@ -1,5 +1,4 @@
 require File.expand_path('../../test_helper', __FILE__)
-require File.expand_path('../../fixtures/active_record', __FILE__)
 
 def set_content_type_header!
   @request.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
@@ -178,7 +177,7 @@ class PostsControllerTest < ActionController::TestCase
     get :index, {sort: '+title'}
 
     assert_response :success
-    assert_equal "Delete This Later - Multiple2-1", json_response['data'][0]['title']
+    assert_equal "A First Post", json_response['data'][0]['title']
   end
 
   def test_sorting_desc
@@ -192,7 +191,7 @@ class PostsControllerTest < ActionController::TestCase
     get :index, {sort: '+title,+body'}
 
     assert_response :success
-    assert_equal '8', json_response['data'][0]['id']
+    assert_equal '14', json_response['data'][0]['id']
   end
 
   def test_invalid_sort_param
@@ -615,13 +614,13 @@ class PostsControllerTest < ActionController::TestCase
   def test_update_relationship_has_one
     set_content_type_header!
     ruby = Section.find_by(name: 'ruby')
-    post_object = Post.find(3)
+    post_object = Post.find(4)
     assert_not_equal ruby.id, post_object.section_id
 
-    put :update_association, {post_id: 3, association: 'section', data: {type: 'sections', id: "#{ruby.id}"}}
+    put :update_association, {post_id: 4, association: 'section', data: {type: 'sections', id: "#{ruby.id}"}}
 
     assert_response :no_content
-    post_object = Post.find(3)
+    post_object = Post.find(4)
     assert_equal ruby.id, post_object.section_id
   end
 
@@ -872,12 +871,12 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_delete_relationship_has_many
     set_content_type_header!
-    put :update_association, {post_id: 9, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
+    put :update_association, {post_id: 14, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
     assert_response :no_content
-    p = Post.find(9)
+    p = Post.find(14)
     assert_equal [2, 3], p.tag_ids
 
-    delete :destroy_association, {post_id: 9, association: 'tags', keys: '3'}
+    delete :destroy_association, {post_id: 14, association: 'tags', keys: '3'}
 
     p.reload
     assert_response :no_content
@@ -886,12 +885,12 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_delete_relationship_has_many_does_not_exist
     set_content_type_header!
-    put :update_association, {post_id: 9, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
+    put :update_association, {post_id: 14, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
     assert_response :no_content
-    p = Post.find(9)
+    p = Post.find(14)
     assert_equal [2, 3], p.tag_ids
 
-    delete :destroy_association, {post_id: 9, association: 'tags', keys: '4'}
+    delete :destroy_association, {post_id: 14, association: 'tags', keys: '4'}
 
     p.reload
     assert_response :not_found
@@ -900,12 +899,12 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_delete_relationship_has_many_with_empty_data
     set_content_type_header!
-    put :update_association, {post_id: 9, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
+    put :update_association, {post_id: 14, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
     assert_response :no_content
-    p = Post.find(9)
+    p = Post.find(14)
     assert_equal [2, 3], p.tag_ids
 
-    put :update_association, {post_id: 9, association: 'tags', data: [] }
+    put :update_association, {post_id: 14, association: 'tags', data: [] }
 
     p.reload
     assert_response :no_content
@@ -1045,7 +1044,7 @@ class PostsControllerTest < ActionController::TestCase
 
     put :update,
         {
-          id: [3, 9],
+          id: [3, 16],
           data: [
             {
               type: 'posts',
@@ -1058,7 +1057,7 @@ class PostsControllerTest < ActionController::TestCase
             },
             {
               type: 'posts',
-              id: 9,
+              id: 16,
               title: 'A great new Post ASDFG',
               links: {
                 section: {type: 'sections', id: "#{javascript.id}"},
@@ -1080,7 +1079,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal json_response['data'][1]['links']['author']['id'], '3'
     assert_equal json_response['data'][1]['links']['section']['id'], javascript.id.to_s
     assert_equal json_response['data'][1]['title'], 'A great new Post ASDFG'
-    assert_equal json_response['data'][1]['body'], 'AAAA'
+    assert_equal json_response['data'][1]['body'], 'Not First!!!!'
     assert_equal json_response['data'][1]['links']['tags']['ids'], ['3', '4']
   end
 
@@ -1259,14 +1258,14 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_show_has_many_relationship
-    get :show_association, {post_id: '1', association: 'tags'}
+    get :show_association, {post_id: '2', association: 'tags'}
     assert_response :success
     assert_hash_equals json_response,
                        {data: {
                            type: 'tags',
-                           ids: ['1', '2', '3'],
-                           self: 'http://test.host/posts/1/links/tags',
-                           related: 'http://test.host/posts/1/tags'
+                           ids: ['5'],
+                           self: 'http://test.host/posts/2/links/tags',
+                           related: 'http://test.host/posts/2/tags'
                          }
                        }
   end
@@ -1312,7 +1311,7 @@ class TagsControllerTest < ActionController::TestCase
 end
 
 class ExpenseEntriesControllerTest < ActionController::TestCase
-  def after_teardown
+  def setup
     JSONAPI.configuration.json_key_format = :camelized_key
   end
 
@@ -1552,6 +1551,10 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
 end
 
 class PeopleControllerTest < ActionController::TestCase
+  def setup
+    JSONAPI.configuration.json_key_format = :camelized_key
+  end
+
   def test_create_validations
     set_content_type_header!
     post :create,
@@ -1783,6 +1786,10 @@ class Api::V1::PostsControllerTest < ActionController::TestCase
 end
 
 class FactsControllerTest < ActionController::TestCase
+  def setup
+    JSONAPI.configuration.json_key_format = :camelized_key
+  end
+
   def test_type_formatting
     get :show, {id: '1'}
     assert_response :success
@@ -1791,7 +1798,7 @@ class FactsControllerTest < ActionController::TestCase
     assert_equal 'First man to run across Antartica.', json_response['data']['bio']
     assert_equal 23.89/45.6, json_response['data']['qualityRating']
     assert_equal '47000.56', json_response['data']['salary']
-    assert_equal '2013-08-07T20:25:00.000Z', json_response['data']['dateTimeJoined']
+    assert_equal '2013-08-07T20:25:00Z', json_response['data']['dateTimeJoined']
     assert_equal '1965-06-30', json_response['data']['birthday']
     assert_equal '2000-01-01T20:00:00Z', json_response['data']['bedtime']
     assert_equal 'abc', json_response['data']['photo']
