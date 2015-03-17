@@ -36,11 +36,31 @@ class TestApp < Rails::Application
   config.action_controller.action_on_unpermitted_parameters = :raise
 
   config.active_record.schema_format = :none
+  config.active_support.test_order = :random
+
+  # Turn off millisecond precision to maintain Rails 4.0 and 4.1 compatibility in test results
+  ActiveSupport::JSON::Encoding.time_precision = 0 if Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR >= 1
+end
+
+# Patch RAILS 4.0 to not use millisecond precision
+if Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR < 1
+  module ActiveSupport
+    class TimeWithZone
+      def as_json(options = nil)
+        if ActiveSupport::JSON::Encoding.use_standard_json_time_format
+          xmlschema
+        else
+          %(#{time.strftime("%Y/%m/%d %H:%M:%S")} #{formatted_offset(false)})
+        end
+      end
+    end
+  end
 end
 
 TestApp.initialize!
 
 require File.expand_path('../fixtures/active_record', __FILE__)
+
 JSONAPI.configuration.route_format = :underscored_route
 TestApp.routes.draw do
   jsonapi_resources :people
@@ -127,16 +147,28 @@ TestApp.routes.draw do
   end
 end
 
-class MiniTest::Unit::TestCase
+# Ensure backward compatibility with Minitest 4
+Minitest::Test = MiniTest::Unit::TestCase unless defined?(Minitest::Test)
+
+class Minitest::Test
   include Helpers::HashHelpers
   include Helpers::ValueMatchers
   include Helpers::FunctionalHelpers
 end
 
 class ActiveSupport::TestCase
+  self.fixture_path = "#{Rails.root}/fixtures"
+  # self.use_transactional_fixtures = false
+  fixtures :all
   setup do
     @routes = TestApp.routes
   end
+end
+
+class ActionDispatch::IntegrationTest
+  self.fixture_path = "#{Rails.root}/fixtures"
+  # self.use_transactional_fixtures = false
+  fixtures :all
 end
 
 class UpperCamelizedKeyFormatter < JSONAPI::KeyFormatter
