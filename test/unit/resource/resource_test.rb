@@ -62,7 +62,7 @@ class ResourceTest < ActiveSupport::TestCase
     assert_equal(attrs.keys.size, 3)
   end
 
-  def test_class_assosications
+  def test_class_associations
     associations = CatResource._associations
     assert_kind_of(Hash, associations)
     assert_equal(associations.size, 2)
