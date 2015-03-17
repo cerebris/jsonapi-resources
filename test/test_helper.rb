@@ -21,6 +21,8 @@ JSONAPI.configure do |config|
   config.json_key_format = :camelized_key
 end
 
+puts "Testing With RAILS VERSION #{Rails.version}"
+
 class TestApp < Rails::Application
   config.eager_load = false
   config.root = File.dirname(__FILE__)
