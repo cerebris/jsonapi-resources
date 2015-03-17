@@ -69,18 +69,22 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v4/expenseEntries/1/links/isoCurrency'
     assert_equal 200, status
     assert_hash_equals({'data' => {
-                          'type' => 'isoCurrencies',
-                          'id' => 'USD',
-                          'self' => 'http://www.example.com/api/v4/expenseEntries/1/links/isoCurrency',
-                          'related' => 'http://www.example.com/api/v4/expenseEntries/1/isoCurrency'}}, json_response)
+                         'linkage' => {
+                            'type' => 'isoCurrencies',
+                            'id' => 'USD'
+                         },
+                         'self' => 'http://www.example.com/api/v4/expenseEntries/1/links/isoCurrency',
+                         'related' => 'http://www.example.com/api/v4/expenseEntries/1/isoCurrency'}}, json_response)
   end
 
   def test_put_single_without_content_type
     put '/posts/3',
         {
           'data' => {
-            'type' => 'posts',
-            'id' => '3',
+            'linkage' => {
+              'type' => 'posts',
+              'id' => '3',
+            },
             'title' => 'A great new Post',
             'links' => {
               'tags' => {type: 'tags', ids: [3, 4]}
@@ -321,7 +325,10 @@ class RequestTest < ActionDispatch::IntegrationTest
                        {'data' => {
                           'self' => 'http://www.example.com/posts/1/links/tags',
                           'related' => 'http://www.example.com/posts/1/tags',
-                          'type' => 'tags', 'ids'=>['1', '2', '3']
+                          'linkage' => {
+                            'type' => 'tags',
+                            'ids'=>['1', '2', '3']
+                          }
                          }
                        })
   end
@@ -343,7 +350,10 @@ class RequestTest < ActionDispatch::IntegrationTest
                        {'data' => {
                          'self' => 'http://www.example.com/posts/5/links/tags',
                          'related' => 'http://www.example.com/posts/5/tags',
-                         'type' => 'tags', 'ids'=>['10']
+                         'linkage' => {
+                          'type' => 'tags',
+                          'ids'=>['10']
+                         }
                        }
                        })
   end
