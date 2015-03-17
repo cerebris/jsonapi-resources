@@ -168,10 +168,10 @@ class SerializerTest < ActionDispatch::IntegrationTest
                related: '/people/1/posts'
              },
              preferences: {
-               self: "/people/1/links/preferences",
-               related: "/people/1/preferences",
-               type: "preferences",
-               id: "1"
+               self: '/people/1/links/preferences',
+               related: '/people/1/preferences',
+               type: 'preferences',
+               id: '1'
              }
             }
           }
@@ -233,10 +233,10 @@ class SerializerTest < ActionDispatch::IntegrationTest
                 related: '/people/1/posts'
               },
               preferences: {
-                self: "/people/1/links/preferences",
-                related: "/people/1/preferences",
-                type: "preferences",
-                id: "1"
+                self: '/people/1/links/preferences',
+                related: '/people/1/preferences',
+                type: 'preferences',
+                id: '1'
               }
             }
           }
