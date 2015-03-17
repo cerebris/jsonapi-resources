@@ -158,7 +158,6 @@ end
 
 class ActiveSupport::TestCase
   self.fixture_path = "#{Rails.root}/fixtures"
-  # self.use_transactional_fixtures = false
   fixtures :all
   setup do
     @routes = TestApp.routes
@@ -167,7 +166,6 @@ end
 
 class ActionDispatch::IntegrationTest
   self.fixture_path = "#{Rails.root}/fixtures"
-  # self.use_transactional_fixtures = false
   fixtures :all
 end
 
