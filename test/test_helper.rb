@@ -1,7 +1,10 @@
 require 'simplecov'
 
-# To run tests with coverage
+# To run tests with coverage:
 # COVERAGE=true rake test
+# To Switch rails versions and run a particular test order:
+# export RAILS_VERSION=4.2; bundle update rails; bundle exec rake TESTOPTS="--seed=39333" test
+
 if ENV['COVERAGE']
   SimpleCov.start do
   end
