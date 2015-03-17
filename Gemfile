@@ -20,4 +20,3 @@ rails = case version
           "~> #{version}"
         end
 gem 'rails', rails
-gem 'minitest'
