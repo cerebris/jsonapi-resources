@@ -39,8 +39,6 @@ Resources must be derived from `JSONAPI::Resource`, or a class that is itself de
 For example:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
 end
 ```
@@ -52,8 +50,6 @@ Any of a resource's attributes that are accessible must be explicitly declared. 
 For example:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
   attribute :id
   attribute :name_first
@@ -68,8 +64,6 @@ A resource object wraps a Ruby object, usually an `ActiveModel` record, which is
 For example, a computed attribute for `full_name` could be defined as such:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
   attributes :id, :name_first, :name_last, :email, :twitter
   attribute :full_name
@@ -111,8 +105,6 @@ By default all attributes are assumed to be updateable and creatable. To prevent
 This example prevents `full_name` from being set:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
   attributes :id, :name_first, :name_last, :full_name
 
@@ -252,8 +244,6 @@ resource class.
 For example:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
   attributes :id, :name_first, :name_last, :email, :twitter
 

@@ -1,6 +1,6 @@
 require File.expand_path('../../../test_helper', __FILE__)
 require File.expand_path('../../../fixtures/active_record', __FILE__)
-require 'jsonapi-resources'
+require 'jsonapi/resources'
 require 'json'
 
 class SerializerTest < MiniTest::Unit::TestCase
