@@ -756,16 +756,3 @@ betax = Planet.create(name: 'Beta X', description: 'Newly discovered Planet X', 
 betay = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Y', planet_type_id: unknown.id)
 betaz = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Z', planet_type_id: unknown.id)
 betaw = Planet.create(name: 'Beta W', description: 'Newly discovered Planet W')
-
-preference = Preferences.create
-
-fact = Fact.create(spouse_name: 'Jane Author',
-                   bio: 'First man to run across Antartica.',
-                   quality_rating: 23.89/45.6,
-                   salary: BigDecimal('47000.56'),
-                   date_time_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00'),
-                   birthday: Date.parse('1965-06-30'),
-                   bedtime: Time.parse('2000-01-01 20:00:00 UTC +00:00'),
-                   photo: "abc",
-                   cool: false
-)
