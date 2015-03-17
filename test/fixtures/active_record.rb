@@ -1,9 +1,5 @@
 require 'active_record'
-require 'jsonapi/resource_controller'
-require 'jsonapi/resource'
-require 'jsonapi/exceptions'
-require 'rails'
-require 'rails/all'
+require 'jsonapi-resources'
 
 ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.uncountable 'preferences'
