@@ -12,7 +12,7 @@ ActiveRecord::Schema.define do
     t.string     :email
     t.datetime   :date_joined
     t.belongs_to :preferences
-    t.timestamps
+    t.timestamps null: false
   end
 
   create_table :posts, force: true do |t|
@@ -20,14 +20,14 @@ ActiveRecord::Schema.define do
     t.text       :body
     t.integer    :author_id
     t.belongs_to :section, index: true
-    t.timestamps
+    t.timestamps null: false
   end
 
   create_table :comments, force: true do |t|
     t.text       :body
     t.belongs_to :post, index: true
     t.integer    :author_id
-    t.timestamps
+    t.timestamps null: false
   end
 
   create_table :tags, force: true do |t|
@@ -52,7 +52,7 @@ ActiveRecord::Schema.define do
     t.string :name
     t.string :country_name
     t.string :minor_unit
-    t.timestamps
+    t.timestamps null: false
   end
   add_index :iso_currencies, :code, unique: true
 
@@ -111,7 +111,7 @@ ActiveRecord::Schema.define do
     t.text       :body
     t.belongs_to :book, index: true
     t.integer    :author_id
-    t.timestamps
+    t.timestamps null: false
   end
 end
 
