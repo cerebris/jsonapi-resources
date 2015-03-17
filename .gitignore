@@ -18,3 +18,5 @@ test/version_tmp
 tmp
 coverage
 test/log
+test_db
+test_db-journal
