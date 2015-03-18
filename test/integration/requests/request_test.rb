@@ -68,13 +68,15 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.route_format = :camelized_route
     get '/api/v4/expenseEntries/1/links/isoCurrency'
     assert_equal 200, status
-    assert_hash_equals({'data' => {
-                         'linkage' => {
-                            'type' => 'isoCurrencies',
-                            'id' => 'USD'
-                         },
+    assert_hash_equals({'links' => {
                          'self' => 'http://www.example.com/api/v4/expenseEntries/1/links/isoCurrency',
-                         'related' => 'http://www.example.com/api/v4/expenseEntries/1/isoCurrency'}}, json_response)
+                         'related' => 'http://www.example.com/api/v4/expenseEntries/1/isoCurrency'
+                       },
+                       'data' => {
+                          'type' => 'isoCurrencies',
+                          'id' => 'USD'
+                         }
+                       }, json_response)
   end
 
   def test_put_single_without_content_type
@@ -87,7 +89,10 @@ class RequestTest < ActionDispatch::IntegrationTest
             },
             'title' => 'A great new Post',
             'links' => {
-              'tags' => {type: 'tags', ids: [3, 4]}
+              'tags' => [
+                {type: 'tags', id: 3},
+                {type: 'tags', id: 4}
+              ]
             }
           }
         }.to_json, "CONTENT_TYPE" => "application/json"
@@ -103,7 +108,10 @@ class RequestTest < ActionDispatch::IntegrationTest
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => {type: 'tags', ids: [3, 4]}
+              'tags' => [
+                {type: 'tags', id: 3},
+                {type: 'tags', id: 4}
+              ]
             }
           }
         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -117,7 +125,10 @@ class RequestTest < ActionDispatch::IntegrationTest
         'posts' => {
           'title' => 'A great new Post',
           'links' => {
-            'tags' => [3, 4]
+            'tags' => [
+              {type: 'tags', id: 3},
+              {type: 'tags', id: 4}
+            ]
           }
         }
       }.to_json, "CONTENT_TYPE" => "application/json"
@@ -180,7 +191,10 @@ class RequestTest < ActionDispatch::IntegrationTest
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => {type: 'tags', ids: [3, 4]}
+              'tags' => [
+                {type: 'tags', id: 3},
+                {type: 'tags', id: 4}
+              ]
             }
           }
         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -196,7 +210,10 @@ class RequestTest < ActionDispatch::IntegrationTest
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => {type: 'tags', ids: [3, 4]}
+              'tags' => [
+                {type: 'tags', id: 3},
+                {type: 'tags', id: 4}
+              ]
             }
           }
         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -311,7 +328,13 @@ class RequestTest < ActionDispatch::IntegrationTest
 
     get post_1['links']['author']['self']
     assert_equal 200, status
-    assert_hash_equals(json_response, {'data' => post_1['links']['author']})
+    assert_hash_equals(json_response, {
+                                      'links' => {
+                                        'self' => 'http://www.example.com/posts/1/links/author',
+                                        'related' => 'http://www.example.com/posts/1/author'
+                                      },
+                                      'data' => {type: 'people', id: '1'}
+                                    })
   end
 
   def test_flow_link_has_many_self_link
@@ -322,14 +345,16 @@ class RequestTest < ActionDispatch::IntegrationTest
     get post_1['links']['tags']['self']
     assert_equal 200, status
     assert_hash_equals(json_response,
-                       {'data' => {
-                          'self' => 'http://www.example.com/posts/1/links/tags',
-                          'related' => 'http://www.example.com/posts/1/tags',
-                          'linkage' => {
-                            'type' => 'tags',
-                            'ids'=>['1', '2', '3']
-                          }
-                         }
+                       {
+                         'links' => {
+                           'self' => 'http://www.example.com/posts/1/links/tags',
+                           'related' => 'http://www.example.com/posts/1/tags'
+                          },
+                          'data' => [
+                            {type: 'tags', id: '1'},
+                            {type: 'tags', id: '2'},
+                            {type: 'tags', id: '3'}
+                          ]
                        })
   end
 
@@ -339,7 +364,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     post_1 = json_response['data'][4]
 
     post post_1['links']['tags']['self'],
-         {'data' => {'type' => 'tags', 'ids' => ['10']}}.to_json,
+         {'data' => [{'type' => 'tags', 'id' => '10'}]}.to_json,
          "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
@@ -347,14 +372,14 @@ class RequestTest < ActionDispatch::IntegrationTest
     get post_1['links']['tags']['self']
     assert_equal 200, status
     assert_hash_equals(json_response,
-                       {'data' => {
-                         'self' => 'http://www.example.com/posts/5/links/tags',
-                         'related' => 'http://www.example.com/posts/5/tags',
-                         'linkage' => {
-                          'type' => 'tags',
-                          'ids'=>['10']
-                         }
-                       }
+                       {
+                         'links' => {
+                           'self' => 'http://www.example.com/posts/5/links/tags',
+                           'related' => 'http://www.example.com/posts/5/tags'
+                         },
+                         'data' => [
+                           {type: 'tags', id: '10'}
+                         ]
                        })
   end
 

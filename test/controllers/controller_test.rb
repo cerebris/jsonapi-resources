@@ -215,12 +215,6 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /id is not a valid sort criteria for post/, response.body
   end
 
-  # ToDo: test validating the parameter values
-  # def test_index_invalid_filter_value
-  #   get :index, {ids: [1,'asdfg1']}
-  #   assert_response :bad_request
-  # end
-
   def test_show_single
     get :show, {id: '1'}
     assert_response :success
@@ -237,7 +231,8 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 'New post', json_response['data']['title']
     assert_equal 'A body!!!', json_response['data']['body']
     assert_nil json_response['data']['links']['tags']['linkage']
-    assert_equal ['1', '2'], json_response['data']['links']['comments']['linkage']['ids']
+    assert matches_array?([{'type' => 'comments', 'id' => '1'}, {'type' => 'comments', 'id' => '2'}],
+                          json_response['data']['links']['comments']['linkage'])
     assert_equal 2, json_response['included'].size
   end
 
@@ -499,7 +494,7 @@ class PostsControllerTest < ActionController::TestCase
              body: 'JSONAPIResources is the greatest thing since unsliced bread.',
              links: {
                author: {type: 'people', id: '3'},
-               tags: {type: 'tags', ids: [3, 4]}
+               tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
              }
            }
          }
@@ -543,7 +538,7 @@ class PostsControllerTest < ActionController::TestCase
              body: 'JSONAPIResources is the greatest thing since unsliced bread!',
              links: {
                author: {type: 'people', id: '3'},
-               tags: {type: 'tags', ids: [3, 4]}
+               tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
              }
            },
            include: 'author,author.posts',
@@ -570,7 +565,7 @@ class PostsControllerTest < ActionController::TestCase
             title: 'A great new Post',
             links: {
               section: {type: 'sections', id: "#{javascript.id}"},
-              tags: {type: 'tags', ids: [3, 4]}
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
             }
           },
           include: 'tags'
@@ -582,7 +577,8 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal javascript.id.to_s, json_response['data']['links']['section']['linkage']['id']
     assert_equal 'A great new Post', json_response['data']['title']
     assert_equal 'AAAA', json_response['data']['body']
-    assert matches_array?(['3', '4'], json_response['data']['links']['tags']['linkage']['ids'])
+    assert matches_array?([{'type' => 'tags', 'id' => '3'}, {'type' => 'tags', 'id' => '4'}],
+                          json_response['data']['links']['tags']['linkage'])
   end
 
   def test_update_remove_links
@@ -608,7 +604,8 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal nil, json_response['data']['links']['section']['linkage']['id']
     assert_equal 'A great new Post', json_response['data']['title']
     assert_equal 'AAAA', json_response['data']['body']
-    assert matches_array?([], json_response['data']['links']['tags']['linkage']['ids'])
+    assert matches_array?([],
+                          json_response['data']['links']['tags']['linkage'])
   end
 
   def test_update_relationship_has_one
@@ -635,6 +632,14 @@ class PostsControllerTest < ActionController::TestCase
   def test_update_relationship_has_one_invalid_links_hash_count
     set_content_type_header!
     put :update_association, {post_id: 3, association: 'section', data: {type: 'sections'}}
+
+    assert_response :bad_request
+    assert_match /Invalid Links Object/, response.body
+  end
+
+  def test_update_relationship_has_many_not_array
+    set_content_type_header!
+    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', id: 2}}
 
     assert_response :bad_request
     assert_match /Invalid Links Object/, response.body
@@ -758,19 +763,19 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_relationship_has_many_join_table_single
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: []}}
+    put :update_association, {post_id: 3, association: 'tags', data: []}
     assert_response :no_content
 
     post_object = Post.find(3)
     assert_equal 0, post_object.tags.length
 
-    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [2]}}
+    put :update_association, {post_id: 3, association: 'tags', data: [{type: 'tags', id: 2}]}
 
     assert_response :no_content
     post_object = Post.find(3)
     assert_equal 1, post_object.tags.length
 
-    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [5]}}
+    put :update_association, {post_id: 3, association: 'tags', data: [{type: 'tags', id: 5}]}
 
     assert_response :no_content
     post_object = Post.find(3)
@@ -779,17 +784,7 @@ class PostsControllerTest < ActionController::TestCase
     assert matches_array? [5], tags
   end
 
-  def test_update_relationship_has_many_join_table_homogenous
-    set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
-
-    assert_response :no_content
-    post_object = Post.find(3)
-    assert_equal 2, post_object.tags.collect { |tag| tag.id }.length
-    assert matches_array? [2, 3], post_object.tags.collect { |tag| tag.id }
-  end
-
-  def test_update_relationship_has_many_join_table_heterogenous
+  def test_update_relationship_has_many
     set_content_type_header!
     put :update_association, {post_id: 3, association: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
 
@@ -801,14 +796,14 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_create_relationship_has_many_join_table
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
+    put :update_association, {post_id: 3, association: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
 
     assert_response :no_content
     post_object = Post.find(3)
     assert_equal 2, post_object.tags.collect { |tag| tag.id }.length
     assert matches_array? [2, 3], post_object.tags.collect { |tag| tag.id }
 
-    post :create_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [5]}}
+    post :create_association, {post_id: 3, association: 'tags', data: [{type: 'tags', id: 5}]}
 
     assert_response :no_content
     post_object = Post.find(3)
@@ -818,7 +813,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_create_relationship_has_many_mismatched_type
     set_content_type_header!
-    post :create_association, {post_id: 3, association: 'tags', data: {type: 'comments', ids: [5]}}
+    post :create_association, {post_id: 3, association: 'tags', data: [{type: 'comments', id: 5}]}
 
     assert_response :bad_request
     assert_match /Type Mismatch/, response.body
@@ -826,10 +821,18 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_create_relationship_has_many_missing_id
     set_content_type_header!
-    post :create_association, {post_id: 3, association: 'tags', data: {type: 'tags', idds: [5]}}
+    post :create_association, {post_id: 3, association: 'tags', data: [{type: 'tags', idd: 5}]}
 
     assert_response :bad_request
-    assert_match /The required parameter, ids, is missing/, response.body
+    assert_match /Data is not a valid Links Object./, response.body
+  end
+
+  def test_create_relationship_has_many_not_array
+    set_content_type_header!
+    post :create_association, {post_id: 3, association: 'tags', data: {type: 'tags', id: 5}}
+
+    assert_response :bad_request
+    assert_match /Data is not a valid Links Object./, response.body
   end
 
   def test_create_relationship_has_many_missing_data
@@ -842,20 +845,20 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_create_relationship_has_many_join
     set_content_type_header!
-    post :create_association, {post_id: 4, association: 'tags', data: {type: 'tags', ids: [1, 2, 3]}}
+    post :create_association, {post_id: 4, association: 'tags', data: [{type: 'tags', id: 1}, {type: 'tags', id: 2}, {type: 'tags', id: 3}]}
     assert_response :no_content
   end
 
   def test_create_relationship_has_many_join_table_record_exists
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
+    put :update_association, {post_id: 3, association: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
 
     assert_response :no_content
     post_object = Post.find(3)
     assert_equal 2, post_object.tags.collect { |tag| tag.id }.length
     assert matches_array? [2, 3], post_object.tags.collect { |tag| tag.id }
 
-    post :create_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [5, 2]}}
+    post :create_association, {post_id: 3, association: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 5}]}
 
     assert_response :bad_request
     assert_match /The relation to 2 already exists./, response.body
@@ -871,7 +874,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_delete_relationship_has_many
     set_content_type_header!
-    put :update_association, {post_id: 14, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
+    put :update_association, {post_id: 14, association: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
     assert_response :no_content
     p = Post.find(14)
     assert_equal [2, 3], p.tag_ids
@@ -885,7 +888,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_delete_relationship_has_many_does_not_exist
     set_content_type_header!
-    put :update_association, {post_id: 14, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
+    put :update_association, {post_id: 14, association: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
     assert_response :no_content
     p = Post.find(14)
     assert_equal [2, 3], p.tag_ids
@@ -899,7 +902,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_delete_relationship_has_many_with_empty_data
     set_content_type_header!
-    put :update_association, {post_id: 14, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
+    put :update_association, {post_id: 14, association: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
     assert_response :no_content
     p = Post.find(14)
     assert_equal [2, 3], p.tag_ids
@@ -924,7 +927,7 @@ class PostsControllerTest < ActionController::TestCase
             title: 'A great new Post',
             links: {
               section: {type: 'sections', id: "#{javascript.id}"},
-              tags: {type: 'tags', ids: [3, 4]}
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
             }
           }
         }
@@ -947,7 +950,7 @@ class PostsControllerTest < ActionController::TestCase
             title: 'A great new Post',
             links: {
               section: {type: 'sections', id: "#{javascript.id}"},
-              tags: {type: 'tags', ids: [3, 4]}
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
             }
           }
         }
@@ -970,7 +973,7 @@ class PostsControllerTest < ActionController::TestCase
             links: {
               asdfg: 'aaaa',
               section: {type: 'sections', id: "#{javascript.id}"},
-              tags: {type: 'tags', ids: [3, 4]}
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
             }
           }
         }
@@ -991,7 +994,7 @@ class PostsControllerTest < ActionController::TestCase
             title: 'A great new Post',
             links: {
               section: {type: 'sections', id: "#{javascript.id}"},
-              tags: {type: 'tags', ids: [3, 4]}
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
             }
           }
         }
@@ -1029,7 +1032,7 @@ class PostsControllerTest < ActionController::TestCase
             title: 'A great new Post',
             links: {
               section: {type: 'sections', id: "#{javascript.id}"},
-              tags: {type: 'tags', ids: [3, 4]}
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
             }
           }
         }
@@ -1052,7 +1055,7 @@ class PostsControllerTest < ActionController::TestCase
               title: 'A great new Post QWERTY',
               links: {
                 section: {type: 'sections', id: "#{javascript.id}"},
-                tags: {type: 'tags', ids: [3, 4]}
+                tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
               }
             },
             {
@@ -1061,7 +1064,7 @@ class PostsControllerTest < ActionController::TestCase
               title: 'A great new Post ASDFG',
               links: {
                 section: {type: 'sections', id: "#{javascript.id}"},
-                tags: {type: 'tags', ids: [3, 4]}
+                tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
               }
             }
           ],
@@ -1074,13 +1077,15 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal json_response['data'][0]['links']['section']['linkage']['id'], javascript.id.to_s
     assert_equal json_response['data'][0]['title'], 'A great new Post QWERTY'
     assert_equal json_response['data'][0]['body'], 'AAAA'
-    assert_equal json_response['data'][0]['links']['tags']['linkage']['ids'], ['3', '4']
+    assert matches_array?([{'type' => 'tags', 'id' => '3'}, {'type' => 'tags', 'id' => '4'}],
+                          json_response['data'][0]['links']['tags']['linkage'])
 
     assert_equal json_response['data'][1]['links']['author']['linkage']['id'], '3'
     assert_equal json_response['data'][1]['links']['section']['linkage']['id'], javascript.id.to_s
     assert_equal json_response['data'][1]['title'], 'A great new Post ASDFG'
     assert_equal json_response['data'][1]['body'], 'Not First!!!!'
-    assert_equal json_response['data'][1]['links']['tags']['linkage']['ids'], ['3', '4']
+    assert matches_array?([{'type' => 'tags', 'id' => '3'}, {'type' => 'tags', 'id' => '4'}],
+                          json_response['data'][1]['links']['tags']['linkage'])
   end
 
   def test_update_multiple_missing_keys
@@ -1096,7 +1101,7 @@ class PostsControllerTest < ActionController::TestCase
               title: 'A great new Post ASDFG',
               links: {
                 section: {type: 'sections', id: "#{javascript.id}"},
-                tags: {type: 'tags', ids: [3, 4]}
+                tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
               }
             },
             {
@@ -1104,7 +1109,7 @@ class PostsControllerTest < ActionController::TestCase
               title: 'A great new Post QWERTY',
               links: {
                 section: {type: 'sections', id: "#{javascript.id}"},
-                tags: {type: 'tags', ids: [3, 4]}
+                tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
               }
             }
           ]}
@@ -1127,7 +1132,7 @@ class PostsControllerTest < ActionController::TestCase
               title: 'A great new Post ASDFG',
               links: {
                 section: {type: 'sections', id: "#{javascript.id}"},
-                tags: {type: 'tags', ids: [3, 4]}
+                tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
               }
             },
             {
@@ -1136,7 +1141,7 @@ class PostsControllerTest < ActionController::TestCase
               title: 'A great new Post QWERTY',
               links: {
                 section: {type: 'sections', id: "#{javascript.id}"},
-                tags: {type: 'tags', ids: [3, 4]}
+                tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
               }
             }
           ]}
@@ -1159,7 +1164,7 @@ class PostsControllerTest < ActionController::TestCase
               title: 'A great new Post QWERTY',
               links: {
                 section: {type: 'sections', id: "#{javascript.id}"},
-                tags: {type: 'tags', ids: [3, 4]}
+                tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
               }
             },
             {
@@ -1168,7 +1173,7 @@ class PostsControllerTest < ActionController::TestCase
               title: 'A great new Post ASDFG',
               links: {
                 section: {type: 'sections', id: "#{javascript.id}"},
-                tags: {type: 'tags', ids: [3, 4]}
+                tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
               }
             }
           ]}
@@ -1188,7 +1193,7 @@ class PostsControllerTest < ActionController::TestCase
             subject: 'A great new Post',
             links: {
               author: {type: 'people', id: '1'},
-              tags: {type: 'tags', ids: [3, 4]}
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
             }
           }
         }
@@ -1208,7 +1213,7 @@ class PostsControllerTest < ActionController::TestCase
             subject: 'A great new Post',
             linked_objects: {
               author: {type: 'people', id: '1'},
-              tags: {type: 'tags', ids: [3, 4]}
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
             }
           }
         }
@@ -1249,12 +1254,12 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :success
     assert_hash_equals json_response,
                        {data: {
-                         linkage: {
-                           type: 'people',
-                           id: '1'
-                         },
-                         self: 'http://test.host/posts/1/links/author',
-                         related: 'http://test.host/posts/1/author'
+                          type: 'people',
+                          id: '1'
+                        },
+                        links: {
+                          self: 'http://test.host/posts/1/links/author',
+                          related: 'http://test.host/posts/1/author'
                         }
                        }
   end
@@ -1263,11 +1268,11 @@ class PostsControllerTest < ActionController::TestCase
     get :show_association, {post_id: '2', association: 'tags'}
     assert_response :success
     assert_hash_equals json_response,
-                       {data: {
-                           linkage: {
-                             type: 'tags',
-                             ids: ['5']
-                           },
+                       {
+                         data: [
+                           {type: 'tags', id: '5'}
+                         ],
+                         links: {
                            self: 'http://test.host/posts/2/links/tags',
                            related: 'http://test.host/posts/2/tags'
                          }

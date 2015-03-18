@@ -294,10 +294,10 @@ class SerializerTest < ActionDispatch::IntegrationTest
             comments: {
               self: '/posts/1/links/comments',
               related: '/posts/1/comments',
-              linkage: {
-                type: 'comments',
-                ids: ['1', '2']
-              }
+              linkage: [
+                {type: 'comments', id: '1'},
+                {type: 'comments', id: '2'}
+              ]
             }
           }
         },
@@ -363,10 +363,10 @@ class SerializerTest < ActionDispatch::IntegrationTest
                 tags: {
                   self: '/comments/1/links/tags',
                   related: '/comments/1/tags',
-                  linkage: {
-                    type: 'tags',
-                    ids: ['1', '2']
-                  }
+                  linkage: [
+                    {type: 'tags', id: '1'},
+                    {type: 'tags', id: '2'}
+                  ]
                 }
               }
             },
@@ -395,10 +395,10 @@ class SerializerTest < ActionDispatch::IntegrationTest
                 tags: {
                   self: '/comments/2/links/tags',
                   related: '/comments/2/tags',
-                  linkage: {
-                    type: 'tags',
-                    ids: ['4', '1']
-                  }
+                  linkage: [
+                    {type: 'tags', id: '1'},
+                    {type: 'tags', id: '4'}
+                  ]
                 }
               }
             }
@@ -579,10 +579,10 @@ class SerializerTest < ActionDispatch::IntegrationTest
             comments: {
               self: '/people/2/links/comments',
               related: '/people/2/comments',
-              linkage: {
-                type: 'comments',
-                ids: ['2', '3']
-              }
+              linkage: [
+                {type: 'comments', id: '2'},
+                {type: 'comments', id: '3'}
+              ]
             },
             preferences: {
               self: "/people/2/links/preferences",
@@ -694,10 +694,10 @@ class SerializerTest < ActionDispatch::IntegrationTest
               comments: {
                 self: '/posts/1/links/comments',
                 related: '/posts/1/comments',
-                linkage: {
-                  type: 'comments',
-                  ids: ['1', '2']
-                }
+                linkage: [
+                  {type: 'comments', id: '1'},
+                  {type: 'comments', id: '2'}
+                ]
               }
             }
           },
@@ -732,10 +732,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
               comments: {
                 self: '/posts/2/links/comments',
                 related: '/posts/2/comments',
-                linkage: {
-                  type: 'comments',
-                  ids: ['3']
-                }
+                linkage: [
+                  {type: 'comments', id: '3'}
+                ]
               }
             }
           }
@@ -814,10 +813,10 @@ class SerializerTest < ActionDispatch::IntegrationTest
               tags: {
                 self: '/comments/1/links/tags',
                 related: '/comments/1/tags',
-                linkage: {
-                  type: 'tags',
-                  ids: ['1', '2']
-                }
+                linkage: [
+                  {type: 'tags', id: '1'},
+                  {type: 'tags', id: '2'}
+                ]
               }
             }
           },
@@ -846,10 +845,10 @@ class SerializerTest < ActionDispatch::IntegrationTest
               tags: {
                 self: '/comments/2/links/tags',
                 related: '/comments/2/tags',
-                linkage: {
-                  type: 'tags',
-                  ids: ['4', '1']
-                }
+                linkage: [
+                  {type: 'tags', id: '4'},
+                  {type: 'tags', id: '1'}
+                ]
               }
             }
           },
@@ -878,10 +877,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
               tags: {
                 self: '/comments/3/links/tags',
                 related: '/comments/3/tags',
-                linkage: {
-                  type: 'tags',
-                  ids: ['5']
-                }
+                linkage: [
+                  {type: 'tags', id: '5'}
+                ]
               }
             }
           }

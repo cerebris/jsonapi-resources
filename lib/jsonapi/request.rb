@@ -232,7 +232,7 @@ module JSONAPI
       end
 
       if !raw.is_a?(Hash) || raw.length != 2 || !(raw.has_key?('type') && raw.has_key?('id'))
-        raise JSONAPI::Exceptions::InvalidLinksObject.new(raw)
+        raise JSONAPI::Exceptions::InvalidLinksObject.new
       end
 
       {
@@ -243,23 +243,18 @@ module JSONAPI
 
     def parse_has_many_links_object(raw)
       if raw.nil?
-        raise JSONAPI::Exceptions::InvalidLinksObject.new(raw)
+        raise JSONAPI::Exceptions::InvalidLinksObject.new
       end
 
       links_object = {}
-      if raw.is_a?(Hash)
-        if raw.length != 2 || !(raw.has_key?('type') && raw.has_key?('ids')) || !(raw['ids'].is_a?(Array))
-          raise JSONAPI::Exceptions::InvalidLinksObject.new(raw)
-        end
-        links_object[raw['type']] = raw['ids']
-      elsif raw.is_a?(Array)
+      if raw.is_a?(Array)
         raw.each do |link|
           link_object = parse_has_one_links_object(link)
           links_object[link_object[:type]] ||= []
           links_object[link_object[:type]].push(link_object[:id])
         end
       else
-        raise JSONAPI::Exceptions::InvalidLinksObject.new(raw)
+        raise JSONAPI::Exceptions::InvalidLinksObject.new
       end
       links_object
     end
@@ -351,10 +346,7 @@ module JSONAPI
       association = resource_klass._association(association_type)
 
       if association.is_a?(JSONAPI::Association::HasMany)
-        ids = data.require(:ids)
-        type = data.require(:type)
-
-        object_params = {links: {association.name => {'type' => type, 'ids' => ids}}}
+        object_params = {links: {association.name => data}}
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
         @operations.push JSONAPI::CreateHasManyAssociationOperation.new(resource_klass,
@@ -362,8 +354,6 @@ module JSONAPI
                                                                         association_type,
                                                                         verified_param_set[:has_many].values[0])
       end
-    rescue ActionController::ParameterMissing => e
-      @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)
     end
 
     def parse_update_association_operation(data, association_type, parent_key)
