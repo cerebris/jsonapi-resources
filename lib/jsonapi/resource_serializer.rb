@@ -56,7 +56,19 @@ module JSONAPI
     end
 
     def serialize_to_links_hash(source, requested_association)
-      {data: link_object(source, requested_association, true)}
+      if requested_association.is_a?(JSONAPI::Association::HasOne)
+        data = has_one_linkage(source, requested_association)
+      else
+        data = has_many_linkage(source, requested_association)
+      end
+
+      {
+        links: {
+          self: self_link(source, requested_association),
+          related: related_link(source, requested_association)
+        },
+        data: data
+      }
     end
 
     private
@@ -224,29 +236,46 @@ module JSONAPI
       @route_formatter.format(route.to_s)
     end
 
-    def link_object_has_one(source, association)
-      route = association.name
+    def self_link(source, association)
+      "#{self_href(source)}/links/#{format_route(association.name)}"
+    end
 
+    def related_link(source, association)
+      "#{self_href(source)}/#{format_route(association.name)}"
+    end
+
+    def has_one_linkage(source, association)
+      linkage = {}
+      linkage_id = foreign_key_value(source, association)
+      if linkage_id
+        linkage[:type] = format_route(association.type)
+        linkage[:id] = linkage_id
+      end
+      linkage
+    end
+
+    def has_many_linkage(source, association)
+      linkage = []
+      linkage_ids = foreign_key_value(source, association)
+      linkage_ids.each do |linkage_id|
+        linkage.append({type: format_route(association.type), id: linkage_id})
+      end
+      linkage
+    end
+
+    def link_object_has_one(source, association)
       link_object_hash = {}
-      link_object_hash[:self] = "#{self_href(source)}/links/#{format_route(route)}"
-      link_object_hash[:related] = "#{self_href(source)}/#{format_route(route)}"
-      # ToDo: Get correct formatting figured out
-      link_object_hash[:type] = format_route(association.type)
-      link_object_hash[:id] = foreign_key_value(source, association)
+      link_object_hash[:self] = self_link(source, association)
+      link_object_hash[:related] = related_link(source, association)
+      link_object_hash[:linkage] = has_one_linkage(source, association)
       link_object_hash
     end
 
     def link_object_has_many(source, association, include_linkage)
-      route = association.name
-
       link_object_hash = {}
-      link_object_hash[:self] = "#{self_href(source)}/links/#{format_route(route)}"
-      link_object_hash[:related] = "#{self_href(source)}/#{format_route(route)}"
-      if include_linkage
-        # ToDo: Get correct formatting figured out
-        link_object_hash[:type] = format_route(association.type)
-        link_object_hash[:ids] = foreign_key_value(source, association)
-      end
+      link_object_hash[:self] = self_link(source, association)
+      link_object_hash[:related] = related_link(source, association)
+      link_object_hash[:linkage] = has_many_linkage(source, association) if include_linkage
       link_object_hash
     end
 

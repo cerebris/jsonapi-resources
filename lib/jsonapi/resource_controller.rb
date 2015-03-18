@@ -52,7 +52,7 @@ module JSONAPI
     def show_association
       association_type = params[:association]
 
-      parent_key = params[resource_klass._as_parent_key]
+      parent_key = resource_klass.verify_key(params[resource_klass._as_parent_key], context)
 
       parent_resource = resource_klass.find_by_key(parent_key, context: context)
 
@@ -66,9 +66,7 @@ module JSONAPI
 
       render json: serializer.serialize_to_links_hash(parent_resource, association)
     rescue => e
-      # :nocov:
       handle_exceptions(e)
-      # :nocov:
     end
 
     def create
@@ -153,9 +151,7 @@ module JSONAPI
         raise JSONAPI::Exceptions::UnsupportedMediaTypeError.new(request.content_type)
       end
     rescue => e
-      # :nocov:
       handle_exceptions(e)
-      # :nocov:
     end
 
     def setup_request
@@ -165,9 +161,7 @@ module JSONAPI
       })
       render_errors(@request.errors) unless @request.errors.empty?
     rescue => e
-      # :nocov:
       handle_exceptions(e)
-      # :nocov:
     end
 
     def setup_response

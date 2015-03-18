@@ -1,5 +1,4 @@
 require File.expand_path('../../../test_helper', __FILE__)
-require File.expand_path('../../../fixtures/active_record', __FILE__)
 
 class ArticleResource < JSONAPI::Resource
   model_name 'Post'
@@ -40,7 +39,7 @@ class PersonWithCustomRecordsForErrorResource < PersonResource
   end
 end
 
-class ResourceTest < MiniTest::Unit::TestCase
+class ResourceTest < ActiveSupport::TestCase
   def setup
     @post = Post.first
   end
@@ -63,7 +62,7 @@ class ResourceTest < MiniTest::Unit::TestCase
     assert_equal(attrs.keys.size, 3)
   end
 
-  def test_class_assosications
+  def test_class_associations
     associations = CatResource._associations
     assert_kind_of(Hash, associations)
     assert_equal(associations.size, 2)

@@ -1,4 +1,5 @@
 require 'jsonapi/resource'
+require 'jsonapi/resource_controller'
 require 'jsonapi/resources/version'
 require 'jsonapi/configuration'
 require 'jsonapi/paginator'

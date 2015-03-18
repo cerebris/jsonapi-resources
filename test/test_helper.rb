@@ -1,20 +1,18 @@
 require 'simplecov'
 
-# To run tests with coverage
+# To run tests with coverage:
 # COVERAGE=true rake test
+# To Switch rails versions and run a particular test order:
+# export RAILS_VERSION=4.2; bundle update rails; bundle exec rake TESTOPTS="--seed=39333" test
+
 if ENV['COVERAGE']
   SimpleCov.start do
   end
 end
 
-require 'minitest/autorun'
-require 'minitest/spec'
 require 'rails/all'
-
-require 'jsonapi/routing_ext'
-require 'jsonapi/configuration'
-require 'jsonapi/formatter'
-require 'jsonapi/mime_types'
+require 'rails/test_help'
+require 'jsonapi-resources'
 
 require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/hash_helpers', __FILE__)
@@ -26,23 +24,43 @@ JSONAPI.configure do |config|
   config.json_key_format = :camelized_key
 end
 
+puts "Testing With RAILS VERSION #{Rails.version}"
+
 class TestApp < Rails::Application
   config.eager_load = false
   config.root = File.dirname(__FILE__)
   config.session_store :cookie_store, key: 'session'
   config.secret_key_base = 'secret'
 
-  ActiveSupport::JSON::Encoding.encode_big_decimal_as_string = false
-
   #Raise errors on unsupported parameters
   config.action_controller.action_on_unpermitted_parameters = :raise
 
   config.active_record.schema_format = :none
+  config.active_support.test_order = :random
+
+  # Turn off millisecond precision to maintain Rails 4.0 and 4.1 compatibility in test results
+  ActiveSupport::JSON::Encoding.time_precision = 0 if Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR >= 1
+end
+
+# Patch RAILS 4.0 to not use millisecond precision
+if Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR < 1
+  module ActiveSupport
+    class TimeWithZone
+      def as_json(options = nil)
+        if ActiveSupport::JSON::Encoding.use_standard_json_time_format
+          xmlschema
+        else
+          %(#{time.strftime("%Y/%m/%d %H:%M:%S")} #{formatted_offset(false)})
+        end
+      end
+    end
+  end
 end
 
 TestApp.initialize!
 
 require File.expand_path('../fixtures/active_record', __FILE__)
+
 JSONAPI.configuration.route_format = :underscored_route
 TestApp.routes.draw do
   jsonapi_resources :people
@@ -129,16 +147,26 @@ TestApp.routes.draw do
   end
 end
 
-class MiniTest::Unit::TestCase
+# Ensure backward compatibility with Minitest 4
+Minitest::Test = MiniTest::Unit::TestCase unless defined?(Minitest::Test)
+
+class Minitest::Test
   include Helpers::HashHelpers
   include Helpers::ValueMatchers
   include Helpers::FunctionalHelpers
 end
 
 class ActiveSupport::TestCase
+  self.fixture_path = "#{Rails.root}/fixtures"
+  fixtures :all
   setup do
     @routes = TestApp.routes
   end
+end
+
+class ActionDispatch::IntegrationTest
+  self.fixture_path = "#{Rails.root}/fixtures"
+  fixtures :all
 end
 
 class UpperCamelizedKeyFormatter < JSONAPI::KeyFormatter

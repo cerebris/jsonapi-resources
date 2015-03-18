@@ -103,16 +103,11 @@ module JSONAPI
     end
 
     class InvalidLinksObject < Error
-      attr_accessor :value
-      def initialize(value)
-        @value = value
-      end
-
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_LINKS_OBJECT,
                             status: :bad_request,
                             title: 'Invalid Links Object',
-                            detail: "#{value} is not a valid Links Object.")]
+                            detail: 'Data is not a valid Links Object.')]
       end
     end
 

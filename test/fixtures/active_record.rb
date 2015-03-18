@@ -1,9 +1,5 @@
 require 'active_record'
-require 'jsonapi/resource_controller'
-require 'jsonapi/resource'
-require 'jsonapi/exceptions'
-require 'rails'
-require 'rails/all'
+require 'jsonapi-resources'
 
 ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.uncountable 'preferences'
@@ -16,7 +12,7 @@ ActiveRecord::Schema.define do
     t.string     :email
     t.datetime   :date_joined
     t.belongs_to :preferences
-    t.timestamps
+    t.timestamps null: false
   end
 
   create_table :posts, force: true do |t|
@@ -24,14 +20,14 @@ ActiveRecord::Schema.define do
     t.text       :body
     t.integer    :author_id
     t.belongs_to :section, index: true
-    t.timestamps
+    t.timestamps null: false
   end
 
   create_table :comments, force: true do |t|
     t.text       :body
     t.belongs_to :post, index: true
     t.integer    :author_id
-    t.timestamps
+    t.timestamps null: false
   end
 
   create_table :tags, force: true do |t|
@@ -56,7 +52,7 @@ ActiveRecord::Schema.define do
     t.string :name
     t.string :country_name
     t.string :minor_unit
-    t.timestamps
+    t.timestamps null: false
   end
   add_index :iso_currencies, :code, unique: true
 
@@ -115,7 +111,7 @@ ActiveRecord::Schema.define do
     t.text       :body
     t.belongs_to :book, index: true
     t.integer    :author_id
-    t.timestamps
+    t.timestamps null: false
   end
 end
 
@@ -742,141 +738,7 @@ class BadlyNamedAttributesResource < JSONAPI::Resource
 end
 warn 'end testing Name Collisions'
 
-### DATA
-javascript = Section.create(name: 'javascript')
-ruby = Section.create(name: 'ruby')
-
-a = Person.create(name: 'Joe Author',
-                 email: 'joe@xyz.fake',
-                 date_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00'))
-
-b = Person.create(name: 'Fred Reader',
-                 email: 'fred@xyz.fake',
-                 date_joined: DateTime.parse('2013-10-31 20:25:00 UTC +00:00'))
-
-c = Person.create(name: 'Lazy Author',
-                  email: 'lazy@xyz.fake',
-                  date_joined: DateTime.parse('2013-10-31 21:25:00 UTC +00:00'))
-
-d = Person.create(name: 'Tag Crazy Author',
-                  email: 'taggy@xyz.fake',
-                  date_joined: DateTime.parse('2013-11-30 4:20:00 UTC +00:00'))
-
-short_tag = Tag.create(name: 'short')
-whiny_tag = Tag.create(name: 'whiny')
-grumpy_tag = Tag.create(name: 'grumpy')
-happy_tag = Tag.create(name: 'happy')
-jr_tag = Tag.create(name: 'JR')
-
-silly_tag = Tag.create(name: 'silly')
-sleepy_tag = Tag.create(name: 'sleepy')
-goofy_tag = Tag.create(name: 'goofy')
-wacky_tag = Tag.create(name: 'wacky')
-
-# id:1
-Post.create(title: 'New post',
-              body:  'A body!!!',
-              author_id: a.id).tap do |post|
-
-  post.tags.concat short_tag, whiny_tag, grumpy_tag
-
-  post.comments.create(body: 'what a dumb post', author_id: a.id, post_id: post.id).tap do |comment|
-    comment.tags.concat whiny_tag, short_tag
-  end
-
-  post.comments.create(body: 'i liked it', author_id: b.id, post_id: post.id).tap do |comment|
-    comment.tags.concat happy_tag, short_tag
-  end
-end
-
-# id:2
-Post.create(title: 'JR Solves your serialization woes!',
-              body:  'Use JR',
-              author_id: a.id,
-              section: Section.create(name: 'ruby')).tap do |post|
-
-  post.tags.concat jr_tag
-
-  post.comments.create(body: 'Thanks man. Great post. But what is JR?', author_id: b.id, post_id: post.id).tap do |comment|
-    comment.tags.concat jr_tag
-  end
-end
-
-# id:3
-Post.create(title: 'Update This Later',
-            body:  'AAAA',
-            author_id: c.id)
-
-# id:4
-Post.create(title: 'Delete This Later - Single',
-            body:  'AAAA',
-            author_id: c.id)
-
-# id:5
-Post.create(title: 'Delete This Later - Multiple1',
-            body:  'AAAA',
-            author_id: c.id)
-
-# id:6
-Post.create(title: 'Delete This Later - Multiple2',
-            body:  'AAAA',
-            author_id: c.id)
-
-# id:7
-Post.create(title: 'Delete This Later - Single2',
-            body:  'AAAA',
-            author_id: c.id)
-
-# id:8
-Post.create(title: 'Delete This Later - Multiple2-1',
-            body:  'AAAA',
-            author_id: c.id)
-
-# id:9
-Post.create(title: 'Delete This Later - Multiple2-2',
-            body:  'AAAA',
-            author_id: c.id)
-
-# id:9
-Post.create(title: 'Update This Later - Multiple',
-            body:  'AAAA',
-            author_id: c.id)
-
-# id:10
-Post.create(title: 'JR How To',
-            body:  'Use JR to write API apps',
-            author_id: a.id).tap do |post|
-  post.tags.concat jr_tag
-end
-
-IsoCurrency.create(code: 'USD', name: 'United States Dollar', country_name: 'United States', minor_unit: 'cent')
-IsoCurrency.create(code: 'EUR', name: 'Euro Member Countries', country_name: 'Euro Member Countries', minor_unit: 'cent')
-IsoCurrency.create(code: 'CAD', name: 'Canadian dollar', country_name: 'Canada', minor_unit: 'cent')
-
-ExpenseEntry.create(currency_code: 'USD',
-               employee_id: c.id,
-               cost: '12.05',
-               transaction_date: Date.parse('2014-04-15'))
-
-ExpenseEntry.create(currency_code: 'USD',
-               employee_id: c.id,
-               cost: '12.06',
-               transaction_date: Date.parse('2014-04-15'))
-
-# id:11
-Post.create(title: 'Tagged up post 1',
-            body:  'AAAA',
-            author_id: d.id,
-            tag_ids: [6,7,8,9]
-            )
-
-# id:12
-Post.create(title: 'Tagged up post 2',
-            body:  'BBBB',
-            author_id: d.id,
-            tag_ids: [6,7,8,9]
-)
-
+### PORO DATA
 gas_giant = PlanetType.create(name: 'Gas Giant')
 planetoid = PlanetType.create(name: 'Planetoid')
 terrestrial = PlanetType.create(name: 'Terrestrial')
@@ -894,27 +756,3 @@ betax = Planet.create(name: 'Beta X', description: 'Newly discovered Planet X', 
 betay = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Y', planet_type_id: unknown.id)
 betaz = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Z', planet_type_id: unknown.id)
 betaw = Planet.create(name: 'Beta W', description: 'Newly discovered Planet W')
-
-preference = Preferences.create
-
-fact = Fact.create(spouse_name: 'Jane Author',
-                   bio: 'First man to run across Antartica.',
-                   quality_rating: 23.89/45.6,
-                   salary: BigDecimal('47000.56'),
-                   date_time_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00'),
-                   birthday: Date.parse('1965-06-30'),
-                   bedtime: Time.parse('2000-01-01 20:00:00 UTC +00:00'),
-                   photo: "abc",
-                   cool: false
-)
-
-for book_num in 0..999
-  Book.create(title: "Book #{book_num}", isbn: "12345-#{book_num}-67890") do |book|
-    book.save
-    if book_num < 5
-      for comment_num in 0..50
-        book.book_comments.create(body: "This is comment #{comment_num} on book #{book_num}.", author_id: a.id, book_id: book.id)
-      end
-    end
-  end
-end

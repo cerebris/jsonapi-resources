@@ -68,22 +68,31 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.route_format = :camelized_route
     get '/api/v4/expenseEntries/1/links/isoCurrency'
     assert_equal 200, status
-    assert_hash_equals({'data' => {
+    assert_hash_equals({'links' => {
+                         'self' => 'http://www.example.com/api/v4/expenseEntries/1/links/isoCurrency',
+                         'related' => 'http://www.example.com/api/v4/expenseEntries/1/isoCurrency'
+                       },
+                       'data' => {
                           'type' => 'isoCurrencies',
-                          'id' => 'USD',
-                          'self' => 'http://www.example.com/api/v4/expenseEntries/1/links/isoCurrency',
-                          'related' => 'http://www.example.com/api/v4/expenseEntries/1/isoCurrency'}}, json_response)
+                          'id' => 'USD'
+                         }
+                       }, json_response)
   end
 
   def test_put_single_without_content_type
     put '/posts/3',
         {
           'data' => {
-            'type' => 'posts',
-            'id' => '3',
+            'linkage' => {
+              'type' => 'posts',
+              'id' => '3',
+            },
             'title' => 'A great new Post',
             'links' => {
-              'tags' => {type: 'tags', ids: [3, 4]}
+              'tags' => [
+                {type: 'tags', id: 3},
+                {type: 'tags', id: 4}
+              ]
             }
           }
         }.to_json, "CONTENT_TYPE" => "application/json"
@@ -99,7 +108,10 @@ class RequestTest < ActionDispatch::IntegrationTest
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => {type: 'tags', ids: [3, 4]}
+              'tags' => [
+                {type: 'tags', id: 3},
+                {type: 'tags', id: 4}
+              ]
             }
           }
         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -113,7 +125,10 @@ class RequestTest < ActionDispatch::IntegrationTest
         'posts' => {
           'title' => 'A great new Post',
           'links' => {
-            'tags' => [3, 4]
+            'tags' => [
+              {type: 'tags', id: 3},
+              {type: 'tags', id: 4}
+            ]
           }
         }
       }.to_json, "CONTENT_TYPE" => "application/json"
@@ -176,7 +191,10 @@ class RequestTest < ActionDispatch::IntegrationTest
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => {type: 'tags', ids: [3, 4]}
+              'tags' => [
+                {type: 'tags', id: 3},
+                {type: 'tags', id: 4}
+              ]
             }
           }
         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -192,7 +210,10 @@ class RequestTest < ActionDispatch::IntegrationTest
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => {type: 'tags', ids: [3, 4]}
+              'tags' => [
+                {type: 'tags', id: 3},
+                {type: 'tags', id: 4}
+              ]
             }
           }
         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -269,7 +290,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
     assert_equal 2, json_response['data'].size
     assert_equal 'http://www.example.com/api/v2/books/1/book_comments',
-                 json_response['data'][0]['links']['book_comments']['related']
+                 json_response['data'][1]['links']['book_comments']['related']
   end
 
   def test_pagination_related_resources_data
@@ -278,7 +299,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books/1/book_comments?page[limit]=10'
     assert_equal 200, status
     assert_equal 10, json_response['data'].size
-    assert_equal 'This is comment 9 on book 0.', json_response['data'][9]['body']
+    assert_equal 'This is comment 9 on book 1.', json_response['data'][9]['body']
   end
 
   def test_pagination_related_resources_data_includes
@@ -287,7 +308,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books/1/book_comments?page[limit]=10&include=author,book'
     assert_equal 200, status
     assert_equal 10, json_response['data'].size
-    assert_equal 'This is comment 9 on book 0.', json_response['data'][9]['body']
+    assert_equal 'This is comment 9 on book 1.', json_response['data'][9]['body']
   end
 
   def test_flow_self
@@ -307,7 +328,13 @@ class RequestTest < ActionDispatch::IntegrationTest
 
     get post_1['links']['author']['self']
     assert_equal 200, status
-    assert_hash_equals(json_response, {'data' => post_1['links']['author']})
+    assert_hash_equals(json_response, {
+                                      'links' => {
+                                        'self' => 'http://www.example.com/posts/1/links/author',
+                                        'related' => 'http://www.example.com/posts/1/author'
+                                      },
+                                      'data' => {type: 'people', id: '1'}
+                                    })
   end
 
   def test_flow_link_has_many_self_link
@@ -318,21 +345,26 @@ class RequestTest < ActionDispatch::IntegrationTest
     get post_1['links']['tags']['self']
     assert_equal 200, status
     assert_hash_equals(json_response,
-                       {'data' => {
-                          'self' => 'http://www.example.com/posts/1/links/tags',
-                          'related' => 'http://www.example.com/posts/1/tags',
-                          'type' => 'tags', 'ids'=>['1', '2', '3']
-                         }
+                       {
+                         'links' => {
+                           'self' => 'http://www.example.com/posts/1/links/tags',
+                           'related' => 'http://www.example.com/posts/1/tags'
+                          },
+                          'data' => [
+                            {type: 'tags', id: '1'},
+                            {type: 'tags', id: '2'},
+                            {type: 'tags', id: '3'}
+                          ]
                        })
   end
 
   def test_flow_link_has_many_self_link_put
     get '/posts'
     assert_equal 200, status
-    post_1 = json_response['data'][0]
+    post_1 = json_response['data'][4]
 
     post post_1['links']['tags']['self'],
-         {'data' => {'type' => 'tags', 'ids' => ['5']}}.to_json,
+         {'data' => [{'type' => 'tags', 'id' => '10'}]}.to_json,
          "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
@@ -340,11 +372,14 @@ class RequestTest < ActionDispatch::IntegrationTest
     get post_1['links']['tags']['self']
     assert_equal 200, status
     assert_hash_equals(json_response,
-                       {'data' => {
-                         'self' => 'http://www.example.com/posts/1/links/tags',
-                         'related' => 'http://www.example.com/posts/1/tags',
-                         'type' => 'tags', 'ids'=>['1', '2', '3', '5']
-                       }
+                       {
+                         'links' => {
+                           'self' => 'http://www.example.com/posts/5/links/tags',
+                           'related' => 'http://www.example.com/posts/5/tags'
+                         },
+                         'data' => [
+                           {type: 'tags', id: '10'}
+                         ]
                        })
   end
 
