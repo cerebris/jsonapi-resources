@@ -211,7 +211,7 @@ module JSONAPI
 
     def verify_and_remove_type(params)
       #remove type and verify it matches the resource
-      if params[:type] == @resource_klass._type.to_s
+      if unformat_key(params[:type]) == @resource_klass._type
         params.delete(:type)
       else
         if params[:type].nil?
