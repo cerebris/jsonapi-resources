@@ -155,7 +155,7 @@ module JSONAPI
       return unless filters
       @filters = {}
       filters.each do |key, value|
-        filter = unformat_key(key).to_sym
+        filter = unformat_key(key)
         if @resource_klass._allowed_filter?(filter)
           @filters[filter] = value
         else
@@ -463,7 +463,8 @@ module JSONAPI
     end
 
     def unformat_key(key)
-      @key_formatter.unformat(key)
+      unformatted_key = @key_formatter.unformat(key)
+      unformatted_key.nil? ? nil : unformatted_key.to_sym
     end
   end
 end
