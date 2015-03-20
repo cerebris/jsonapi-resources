@@ -128,7 +128,7 @@ module JSONAPI
       association_name = unformat_key(include_parts.first)
 
       association = resource_klass._association(association_name)
-      if association
+      if association && format_key(association_name) == include_parts.first
         unless include_parts.last.empty?
           check_include(Resource.resource_for(@resource_klass.module_path + association.class_name.to_s), include_parts.last.partition('.'))
         end
