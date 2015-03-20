@@ -54,7 +54,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_index_filter_by_ids_and_fields
-    get :index, {filter: {id: '1,2'}, 'fields' => 'id,title,author'}
+    get :index, {filter: {id: '1,2'}, fields: {posts: 'id,title,author'}}
     assert_response :success
     assert_equal 2, json_response['data'].size
 
@@ -86,7 +86,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_index_filter_by_ids_and_fields_2
-    get :index, {filter: {id: '1,2'}, 'fields' => 'author'}
+    get :index, {filter: {id: '1,2'}, fields: {posts: 'author'}}
     assert_response :success
     assert_equal 2, json_response['data'].size
 
@@ -147,12 +147,6 @@ class PostsControllerTest < ActionController::TestCase
     get :index, {filter: {id: '5412333'}}
     assert_response :not_found
     assert_match /5412333 could not be found/, json_response['errors'][0]['detail']
-  end
-
-  def test_index_malformed_fields
-    get :index, {filter: {id: '1,2'}, 'fields' => 'posts'}
-    assert_response :bad_request
-    assert_match /posts is not a valid field for posts./, json_response['errors'][0]['detail']
   end
 
   def test_field_not_supported
@@ -237,12 +231,18 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_show_single_with_fields
-    get :show, {id: '1', fields: 'author'}
+    get :show, {id: '1', fields: {posts: 'author'}}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
     assert_nil json_response['data']['title']
     assert_nil json_response['data']['body']
     assert_equal '1', json_response['data']['links']['author']['linkage']['id']
+  end
+
+  def test_show_single_with_fields_string
+    get :show, {id: '1', fields: 'author'}
+    assert_response :bad_request
+    assert_match /Fields must specify a type./, json_response['errors'][0]['detail']
   end
 
   def test_show_single_invalid_id_format
@@ -260,7 +260,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_show_malformed_fields_not_list
     get :show, {id: '1', 'fields' => ''}
     assert_response :bad_request
-    assert_match /nil is not a valid field for posts./, json_response['errors'][0]['detail']
+    assert_match /Fields must specify a type./, json_response['errors'][0]['detail']
   end
 
   def test_show_malformed_fields_type_not_list
@@ -542,7 +542,7 @@ class PostsControllerTest < ActionController::TestCase
              }
            },
            include: 'author,author.posts',
-           fields: 'id,title,author'
+           fields: {posts: 'id,title,author'}
          }
 
     assert_response :created
@@ -1358,13 +1358,6 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
   end
 
   def test_expense_entries_show_fields
-    get :show, {id: 1, include: 'isoCurrency,employee', 'fields' => 'transactionDate'}
-    assert_response :success
-    assert json_response['data'].is_a?(Hash)
-    assert json_response['data'].has_key?('transactionDate')
-  end
-
-  def test_expense_entries_show_fields_type
     get :show, {id: 1, include: 'isoCurrency,employee', 'fields' => {'expenseEntries' => 'transactionDate'}}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
@@ -1397,7 +1390,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
              }
            },
            include: 'iso_currency',
-           fields: 'id,transaction_date,iso_currency,cost,employee'
+           fields: {expense_entries: 'id,transaction_date,iso_currency,cost,employee'}
          }
 
     assert_response :created
@@ -1426,7 +1419,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
              }
            },
            include: 'isoCurrency',
-           fields: 'id,transactionDate,isoCurrency,cost,employee'
+           fields: {expenseEntries: 'id,transactionDate,isoCurrency,cost,employee'}
          }
 
     assert_response :created
@@ -1455,7 +1448,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
              }
            },
            include: 'iso-currency',
-           fields: 'id,transaction-date,iso-currency,cost,employee'
+           fields: {'expense-entries' => 'id,transaction-date,iso-currency,cost,employee'}
          }
 
     assert_response :created

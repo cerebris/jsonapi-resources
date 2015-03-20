@@ -82,15 +82,13 @@ module JSONAPI
       extracted_fields = {}
 
       # Extract the fields for each type from the fields parameters
-      if fields.is_a?(String)
-        resource_fields = fields.split(',') unless fields.empty?
-        type = @resource_klass._type
-        extracted_fields[type] = resource_fields
-      elsif fields.is_a?(ActionController::Parameters)
+      if fields.is_a?(ActionController::Parameters)
         fields.each do |field, value|
           resource_fields = value.split(',') unless value.nil? || value.empty?
           extracted_fields[field] = resource_fields
         end
+      else
+        raise JSONAPI::Exceptions::InvalidFieldFormat.new
       end
 
       # Validate the fields
@@ -98,10 +96,16 @@ module JSONAPI
         underscored_type = unformat_key(type)
         extracted_fields[type] = []
         begin
+          if type != format_key(type)
+            raise JSONAPI::Exceptions::InvalidResource.new(type)
+          end
           type_resource = Resource.resource_for(@resource_klass.module_path + underscored_type.to_s)
         rescue NameError
           @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
+        rescue JSONAPI::Exceptions::InvalidResource => e
+        @errors.concat(e.errors)
         end
+
         if type_resource.nil? || !(@resource_klass._type == underscored_type ||
           @resource_klass._has_association?(underscored_type))
           @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
