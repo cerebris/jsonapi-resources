@@ -102,6 +102,15 @@ module JSONAPI
       end
     end
 
+    class InvalidFieldFormat < Error
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::INVALID_FIELD_FORMAT,
+                            status: :bad_request,
+                            title: 'Invalid field format',
+                            detail: 'Fields must specify a type.')]
+      end
+    end
+
     class InvalidLinksObject < Error
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_LINKS_OBJECT,

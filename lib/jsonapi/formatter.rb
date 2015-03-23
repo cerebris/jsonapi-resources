@@ -23,7 +23,7 @@ module JSONAPI
       end
 
       def unformat(formatted_key)
-        super.to_sym
+        super
       end
     end
   end
@@ -35,7 +35,7 @@ module JSONAPI
       end
 
       def unformat(formatted_route)
-        super.to_sym
+        super
       end
     end
   end
@@ -68,7 +68,7 @@ class CamelizedKeyFormatter < JSONAPI::KeyFormatter
     end
 
     def unformat(formatted_key)
-      formatted_key.to_s.underscore.to_sym
+      formatted_key.to_s.underscore
     end
   end
 end
@@ -80,7 +80,7 @@ class DasherizedKeyFormatter < JSONAPI::KeyFormatter
     end
 
     def unformat(formatted_key)
-      formatted_key.to_s.underscore.to_sym
+      formatted_key.to_s.underscore
     end
   end
 end
@@ -112,7 +112,7 @@ class CamelizedRouteFormatter < JSONAPI::RouteFormatter
     end
 
     def unformat(formatted_route)
-      formatted_route.to_s.underscore.to_sym
+      formatted_route.to_s.underscore
     end
   end
 end
@@ -124,7 +124,7 @@ class DasherizedRouteFormatter < JSONAPI::RouteFormatter
     end
 
     def unformat(formatted_route)
-      formatted_route.to_s.underscore.to_sym
+      formatted_route.to_s.underscore
     end
   end
 end

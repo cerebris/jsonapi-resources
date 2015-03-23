@@ -82,15 +82,13 @@ module JSONAPI
       extracted_fields = {}
 
       # Extract the fields for each type from the fields parameters
-      if fields.is_a?(String)
-        resource_fields = fields.split(',') unless fields.empty?
-        type = @resource_klass._type
-        extracted_fields[type] = resource_fields
-      elsif fields.is_a?(ActionController::Parameters)
+      if fields.is_a?(ActionController::Parameters)
         fields.each do |field, value|
           resource_fields = value.split(',') unless value.nil? || value.empty?
           extracted_fields[field] = resource_fields
         end
+      else
+        raise JSONAPI::Exceptions::InvalidFieldFormat.new
       end
 
       # Validate the fields
@@ -98,10 +96,16 @@ module JSONAPI
         underscored_type = unformat_key(type)
         extracted_fields[type] = []
         begin
+          if type != format_key(type)
+            raise JSONAPI::Exceptions::InvalidResource.new(type)
+          end
           type_resource = Resource.resource_for(@resource_klass.module_path + underscored_type.to_s)
         rescue NameError
           @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
+        rescue JSONAPI::Exceptions::InvalidResource => e
+        @errors.concat(e.errors)
         end
+
         if type_resource.nil? || !(@resource_klass._type == underscored_type ||
           @resource_klass._has_association?(underscored_type))
           @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
@@ -128,7 +132,7 @@ module JSONAPI
       association_name = unformat_key(include_parts.first)
 
       association = resource_klass._association(association_name)
-      if association
+      if association && format_key(association_name) == include_parts.first
         unless include_parts.last.empty?
           check_include(Resource.resource_for(@resource_klass.module_path + association.class_name.to_s), include_parts.last.partition('.'))
         end
@@ -155,7 +159,7 @@ module JSONAPI
       return unless filters
       @filters = {}
       filters.each do |key, value|
-        filter = unformat_key(key).to_sym
+        filter = unformat_key(key)
         if @resource_klass._allowed_filter?(filter)
           @filters[filter] = value
         else
@@ -211,7 +215,7 @@ module JSONAPI
 
     def verify_and_remove_type(params)
       #remove type and verify it matches the resource
-      if params[:type] == @resource_klass._type.to_s
+      if unformat_key(params[:type]) == @resource_klass._type
         params.delete(:type)
       else
         if params[:type].nil?
@@ -463,7 +467,8 @@ module JSONAPI
     end
 
     def unformat_key(key)
-      @key_formatter.unformat(key)
+      unformatted_key = @key_formatter.unformat(key)
+      unformatted_key.nil? ? nil : unformatted_key.to_sym
     end
   end
 end

@@ -176,7 +176,7 @@ class UpperCamelizedKeyFormatter < JSONAPI::KeyFormatter
     end
 
     def unformat(formatted_key)
-      formatted_key.to_s.underscore.to_sym
+      formatted_key.to_s.underscore
     end
   end
 end
