@@ -197,7 +197,6 @@ module JSONAPI
       results   = create_operations_processor.process(@request)
       errors    = results.select(&:has_errors?).flat_map(&:errors).compact
       resources = results.reject(&:has_errors?).map(&:resource).compact
-      # puts "\n\n" + results.inspect + "\n" if errors.any?
 
       status, json = case
         when errors.any?
@@ -208,7 +207,6 @@ module JSONAPI
         else
           [results[0].code, nil]
       end
-      puts "\n" + json.inspect + "\n\n" if resources.length > 1
 
       render status: status, json: json
     rescue => e
