@@ -236,6 +236,8 @@ module JSONAPI
         }
       end
 
+      Rails.logger.debug raw
+
       if !raw.is_a?(Hash) || raw.length != 2 || !(raw.has_key?('type') && raw.has_key?('id'))
         raise JSONAPI::Exceptions::InvalidLinksObject.new
       end
