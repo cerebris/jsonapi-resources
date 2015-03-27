@@ -236,7 +236,7 @@ module JSONAPI
         }
       end
 
-      Rails.logger.debug raw
+      Rails.logger.debug "jsonapi-resources has_one: #{raw}"
 
       if !raw.is_a?(Hash) || raw.length != 2 || !(raw.has_key?('type') && raw.has_key?('id'))
         raise JSONAPI::Exceptions::InvalidLinksObject.new
@@ -252,6 +252,8 @@ module JSONAPI
       if raw.nil?
         raise JSONAPI::Exceptions::InvalidLinksObject.new
       end
+
+      Rails.logger.debug "jsonapi-resources has_many: #{raw}"
 
       links_object = {}
       if raw.is_a?(Array)
