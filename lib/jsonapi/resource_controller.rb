@@ -196,7 +196,7 @@ module JSONAPI
     def process_request_operations
       results   = create_operations_processor.process(@request)
       errors    = results.select(&:has_errors?).flat_map(&:errors).compact
-      resources = results.reject(&:has_errors?).map(&:resource).compact
+      resources = results.reject(&:has_errors?).flat_map(&:resource).compact
 
       status, json = case
         when errors.any?
