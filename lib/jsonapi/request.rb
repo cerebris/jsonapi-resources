@@ -228,6 +228,7 @@ module JSONAPI
     end
 
     def parse_has_one_links_object(raw)
+      raw = raw["linkage"]
       if raw.nil?
         return {
           type: nil,
