@@ -12,7 +12,7 @@ We have a simple demo app, called [Peeps](https://github.com/cerebris/peeps), av
 
 ## Client Libraries
 
-Any libraries listed on [JSONAPI Examples](http://jsonapi.org/examples/) should be compatible with this jsonapi-resources.
+JSON API maintains a (non-verified) listing of [client libraries](http://jsonapi.org/implementations/#client-libraries) which *should* be compatible with JSON API compliant server implementations such as JR.
 
 ## Installation
 
