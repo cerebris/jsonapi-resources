@@ -228,12 +228,13 @@ module JSONAPI
     end
 
     def parse_has_one_links_object(raw)
-      raw = raw["linkage"] if raw["linkage"]
       if raw.nil?
         return {
           type: nil,
           id: nil
         }
+      elsif raw.is_a?(Hash) && raw.has_key?('linkage')
+        raw = raw['linkage']
       end
 
       if !raw.is_a?(Hash) || raw.length != 2 || !(raw.has_key?('type') && raw.has_key?('id'))
@@ -247,9 +248,10 @@ module JSONAPI
     end
 
     def parse_has_many_links_object(raw)
-      raw = raw["linkage"] if raw["linkage"]
       if raw.nil?
         raise JSONAPI::Exceptions::InvalidLinksObject.new
+      elsif raw.is_a?(Hash) && raw.has_key?('linkage')
+        raw = raw['linkage']
       end
 
       links_object = {}
