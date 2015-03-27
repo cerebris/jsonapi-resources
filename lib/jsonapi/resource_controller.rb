@@ -194,40 +194,32 @@ module JSONAPI
     end
 
     def process_request_operations
-      op = create_operations_processor
+      results   = create_operations_processor.process(@request)
+      errors    = results.select(&:has_errors?).flat_map(&:errors)
+      resources = results.reject(&:has_errors?).flat_map(&:resource)
 
-      results = op.process(@request)
-
-      errors = []
-      resources = []
-
-      results.each do |result|
-        if result.has_errors?
-          errors.concat(result.errors)
+      status, json = case
+        when errors.any?
+          [errors[0].status, {errors: errors}]
+        when results.any? && resources.any?
+          res = resources.length > 1 ? resources : resources[0]
+          [results[0].code, processing_serializer.serialize_to_hash(res)]
         else
-          resources.push(result.resource) unless result.resource.nil?
-        end
+          [results[0].code, nil]
       end
 
-      if errors.count > 0
-        render status: errors[0].status, json: {errors: errors}
-      else
-        if results.length > 0 && resources.length > 0
-          serializer = JSONAPI::ResourceSerializer.new(resource_klass,
-                                                       include: @request.include,
-                                                       fields: @request.fields,
-                                                       base_url: base_url,
-                                                       key_formatter: key_formatter,
-                                                       route_formatter: route_formatter)
-
-          render status: results[0].code,
-                 json: serializer.serialize_to_hash(resources.length > 1 ? resources : resources[0])
-        else
-          render status: results[0].code, json: nil
-        end
-      end
+      render status: status, json: json
     rescue => e
       handle_exceptions(e)
+    end
+
+    def processing_serializer
+      JSONAPI::ResourceSerializer.new(resource_klass,
+                                      include: @request.include,
+                                      fields: @request.fields,
+                                      base_url: base_url,
+                                      key_formatter: key_formatter,
+                                      route_formatter: route_formatter)
     end
 
     # override this to process other exceptions
