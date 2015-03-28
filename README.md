@@ -487,6 +487,8 @@ Callbacks can also be defined for `JSONAPI::OperationsProcessor` events:
 For example:
 
 ```ruby
+require 'jsonapi/resource_controller'
+
 class PeopleController < JSONAPI::ResourceController
 
 end
@@ -499,6 +501,8 @@ The context that's used for serialization and resource configuration is set by t
 For example:
 
 ```ruby
+require 'jsonapi/resource_controller'
+
 class ApplicationController < JSONAPI::ResourceController
   def context
     {current_user: current_user}
