@@ -291,7 +291,7 @@ module JSONAPI
               end
 
               unless links_object[:id].nil?
-                association_resource = Resource.resource_for(@resource_klass.module_path + links_object[:type])
+                association_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(links_object[:type]).to_s)
                 checked_has_one_associations[param] = association_resource.verify_key(links_object[:id], @context)
               else
                 checked_has_one_associations[param] = nil
