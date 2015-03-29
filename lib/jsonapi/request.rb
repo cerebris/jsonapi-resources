@@ -282,12 +282,12 @@ module JSONAPI
               # Since we do not yet support polymorphic associations we will raise an error if the type does not match the
               # association's type.
               # ToDo: Support Polymorphic associations
-              if links_object[:type] && (links_object[:type] != association.type.to_s)
+              if links_object[:type] && (unformat_key(links_object[:type]).to_s != association.type.to_s)
                 raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
               end
 
               unless links_object[:id].nil?
-                association_resource = Resource.resource_for(@resource_klass.module_path + links_object[:type])
+                association_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(links_object[:type]).to_s)
                 checked_has_one_associations[param] = association_resource.verify_key(links_object[:id], @context)
               else
                 checked_has_one_associations[param] = nil
@@ -302,12 +302,12 @@ module JSONAPI
               if links_object.length == 0
                 checked_has_many_associations[param] = []
               else
-                if links_object.length > 1 || !links_object.has_key?(association.type.to_s)
+                if links_object.length > 1 || !links_object.has_key?(format_key(association.type).to_s)
                   raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
                 end
 
                 links_object.each_pair do |type, keys|
-                  association_resource = Resource.resource_for(@resource_klass.module_path + type)
+                  association_resource = Resource.resource_for(@resource_klass.module_path.to_s + unformat_key(type).to_s)
                   checked_has_many_associations[param] = association_resource.verify_keys(keys, @context)
                 end
               end
@@ -389,7 +389,7 @@ module JSONAPI
       end
 
       type = data[:type]
-      if type.nil? || type != @resource_klass._type.to_s
+      if type.nil? || unformat_key(type).to_s != @resource_klass._type.to_s
         raise JSONAPI::Exceptions::ParameterMissing.new(:type)
       end
 
