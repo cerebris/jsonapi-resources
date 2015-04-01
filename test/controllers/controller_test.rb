@@ -707,6 +707,24 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /Invalid Links Object/, response.body
   end
 
+  def test_update_other_has_many_links_linkage_nil
+    set_content_type_header!
+    put :update,
+        {
+          id: 3,
+          data: {
+            type: 'posts',
+            id: 3,
+            links: {
+              tags: {linkage: nil}
+            }
+          }
+        }
+
+    assert_response :bad_request
+    assert_match /Invalid Links Object/, response.body
+  end
+
   def test_update_relationship_has_one_singular_param_id_nil
     set_content_type_header!
     ruby = Section.find_by(name: 'ruby')
