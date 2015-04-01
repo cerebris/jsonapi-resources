@@ -108,10 +108,12 @@ class RequestTest < ActionDispatch::IntegrationTest
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => [
-                {type: 'tags', id: 3},
-                {type: 'tags', id: 4}
-              ]
+              'tags' => {
+                'linkage' => [
+                  {type: 'tags', id: 3},
+                  {type: 'tags', id: 4}
+                ]
+              }
             }
           }
         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -125,10 +127,12 @@ class RequestTest < ActionDispatch::IntegrationTest
         'posts' => {
           'title' => 'A great new Post',
           'links' => {
-            'tags' => [
-              {type: 'tags', id: 3},
-              {type: 'tags', id: 4}
-            ]
+            'tags' => {
+              'linkage' => [
+                  {type: 'tags', id: 3},
+                  {type: 'tags', id: 4}
+                ]
+            }
           }
         }
       }.to_json, "CONTENT_TYPE" => "application/json"
@@ -144,7 +148,7 @@ class RequestTest < ActionDispatch::IntegrationTest
           'title' => 'A great new Post',
           'body' => 'JSONAPIResources is the greatest thing since unsliced bread.',
           'links' => {
-            'author' => {type: 'people', id: '3'}
+            'author' => {'linkage' => {type: 'people', id: '3'}}
           }
         }
       }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -191,10 +195,12 @@ class RequestTest < ActionDispatch::IntegrationTest
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => [
-                {type: 'tags', id: 3},
-                {type: 'tags', id: 4}
-              ]
+              'tags' => {
+                'linkage' => [
+                  {type: 'tags', id: 3},
+                  {type: 'tags', id: 4}
+                ]
+              }
             }
           }
         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -210,10 +216,12 @@ class RequestTest < ActionDispatch::IntegrationTest
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => [
-                {type: 'tags', id: 3},
-                {type: 'tags', id: 4}
-              ]
+              'tags' => {
+                'linkage' => [
+                  {type: 'tags', id: 3},
+                  {type: 'tags', id: 4}
+                ]
+              }
             }
           }
         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -228,7 +236,7 @@ class RequestTest < ActionDispatch::IntegrationTest
          'type' => 'posts',
          'title' => 'A great new Post',
          'links' => {
-           'author' => {type: 'people', id: '3'}
+           'author' => {'linkage' => {type: 'people', id: '3'}}
          }
        }
      }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
