@@ -165,14 +165,14 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_patch_update_association_has_one
     ruby = Section.find_by(name: 'ruby')
-    patch '/posts/3/links/section', { 'data' => {linkage: {type: 'sections', id: ruby.id.to_s }}}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    patch '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
   end
 
   def test_put_update_association_has_one
     ruby = Section.find_by(name: 'ruby')
-    put '/posts/3/links/section', { 'data' => {linkage: {type: 'sections', id: ruby.id.to_s }}}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    put '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
   end
@@ -372,7 +372,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     post_1 = json_response['data'][4]
 
     post post_1['links']['tags']['self'],
-         {'data' => {'linkage' => [{'type' => 'tags', 'id' => '10'}]}}.to_json,
+         {'data' => [{'type' => 'tags', 'id' => '10'}]}.to_json,
          "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
