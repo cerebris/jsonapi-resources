@@ -587,6 +587,23 @@ class PostsControllerTest < ActionController::TestCase
         {
           id: 3,
           data: {
+            id: '3',
+            type: 'posts',
+            title: 'A great new Post',
+            links: {
+              section: {linkage: {type: 'sections', id: 1}},
+              tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
+            }
+          },
+          include: 'tags'
+        }
+
+    assert_response :success
+
+    put :update,
+        {
+          id: 3,
+          data: {
             type: 'posts',
             id: 3,
             title: 'A great new Post',
