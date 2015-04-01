@@ -108,10 +108,12 @@ class RequestTest < ActionDispatch::IntegrationTest
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => [
-                {type: 'tags', id: 3},
-                {type: 'tags', id: 4}
-              ]
+              'tags' => {
+                'linkage' => [
+                  {type: 'tags', id: 3},
+                  {type: 'tags', id: 4}
+                ]
+              }
             }
           }
         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -125,10 +127,12 @@ class RequestTest < ActionDispatch::IntegrationTest
         'posts' => {
           'title' => 'A great new Post',
           'links' => {
-            'tags' => [
-              {type: 'tags', id: 3},
-              {type: 'tags', id: 4}
-            ]
+            'tags' => {
+              'linkage' => [
+                  {type: 'tags', id: 3},
+                  {type: 'tags', id: 4}
+                ]
+            }
           }
         }
       }.to_json, "CONTENT_TYPE" => "application/json"
@@ -144,7 +148,7 @@ class RequestTest < ActionDispatch::IntegrationTest
           'title' => 'A great new Post',
           'body' => 'JSONAPIResources is the greatest thing since unsliced bread.',
           'links' => {
-            'author' => {type: 'people', id: '3'}
+            'author' => {'linkage' => {type: 'people', id: '3'}}
           }
         }
       }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -161,14 +165,14 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_patch_update_association_has_one
     ruby = Section.find_by(name: 'ruby')
-    patch '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    patch '/posts/3/links/section', { 'data' => {linkage: {type: 'sections', id: ruby.id.to_s }}}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
   end
 
   def test_put_update_association_has_one
     ruby = Section.find_by(name: 'ruby')
-    put '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    put '/posts/3/links/section', { 'data' => {linkage: {type: 'sections', id: ruby.id.to_s }}}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
   end
@@ -191,10 +195,12 @@ class RequestTest < ActionDispatch::IntegrationTest
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => [
-                {type: 'tags', id: 3},
-                {type: 'tags', id: 4}
-              ]
+              'tags' => {
+                'linkage' => [
+                  {type: 'tags', id: 3},
+                  {type: 'tags', id: 4}
+                ]
+              }
             }
           }
         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -210,10 +216,12 @@ class RequestTest < ActionDispatch::IntegrationTest
             'id' => '3',
             'title' => 'A great new Post',
             'links' => {
-              'tags' => [
-                {type: 'tags', id: 3},
-                {type: 'tags', id: 4}
-              ]
+              'tags' => {
+                'linkage' => [
+                  {type: 'tags', id: 3},
+                  {type: 'tags', id: 4}
+                ]
+              }
             }
           }
         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -228,7 +236,7 @@ class RequestTest < ActionDispatch::IntegrationTest
          'type' => 'posts',
          'title' => 'A great new Post',
          'links' => {
-           'author' => {type: 'people', id: '3'}
+           'author' => {'linkage' => {type: 'people', id: '3'}}
          }
        }
      }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -364,7 +372,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     post_1 = json_response['data'][4]
 
     post post_1['links']['tags']['self'],
-         {'data' => [{'type' => 'tags', 'id' => '10'}]}.to_json,
+         {'data' => {'linkage' => [{'type' => 'tags', 'id' => '10'}]}}.to_json,
          "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status

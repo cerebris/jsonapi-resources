@@ -233,37 +233,46 @@ module JSONAPI
           type: nil,
           id: nil
         }
-      elsif raw.is_a?(Hash) && raw.has_key?('linkage')
-        raw = raw['linkage']
-      end
-
-      if !raw.is_a?(Hash) || raw.length != 2 || !(raw.has_key?('type') && raw.has_key?('id'))
+      elsif raw.is_a?(Array) && !raw.any?
+        return raw
+      elsif raw.is_a?(Hash)
+        raw = raw.with_indifferent_access
+      else
         raise JSONAPI::Exceptions::InvalidLinksObject.new
       end
 
-      {
-        type: raw['type'],
-        id: raw['id']
-      }
+      if raw.has_key?('linkage') && (raw['linkage'].has_key?('type') && raw['linkage'].has_key?('id'))
+        {
+          type: raw['linkage']['type'],
+          id: raw['linkage']['id']
+        }
+      else
+        raise JSONAPI::Exceptions::InvalidLinksObject.new
+      end
     end
 
     def parse_has_many_links_object(raw)
       if raw.nil?
         raise JSONAPI::Exceptions::InvalidLinksObject.new
-      elsif raw.is_a?(Hash) && raw.has_key?('linkage')
-        raw = raw['linkage']
+      elsif raw.is_a?(Array) && !raw.any?
+        return raw
+      elsif raw.is_a?(Hash)
+        raw = raw.with_indifferent_access
+      else
+        raise JSONAPI::Exceptions::InvalidLinksObject.new
       end
 
       links_object = {}
-      if raw.is_a?(Array)
-        raw.each do |link|
-          link_object = parse_has_one_links_object(link)
+      if raw.has_key?('linkage') && raw['linkage'].is_a?(Array)
+        raw['linkage'].each do |link|
+          link_object = parse_has_one_links_object({'linkage' => link})
           links_object[link_object[:type]] ||= []
           links_object[link_object[:type]].push(link_object[:id])
         end
       else
         raise JSONAPI::Exceptions::InvalidLinksObject.new
       end
+
       links_object
     end
 

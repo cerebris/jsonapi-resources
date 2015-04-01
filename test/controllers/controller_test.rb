@@ -278,7 +278,7 @@ class PostsControllerTest < ActionController::TestCase
              title: 'JR is Great',
              body: 'JSONAPIResources is the greatest thing since unsliced bread.',
              links: {
-               author: {type: 'people', id: '3'}
+               author: {linkage: {type: 'people', id: '3'}}
              }
            }
          }
@@ -299,7 +299,7 @@ class PostsControllerTest < ActionController::TestCase
              title: 'JR is Great',
              body: 'JSONAPIResources is the greatest thing since unsliced bread.',
              links: {
-               author: {type: 'people', id: '304567'}
+               author: {linkage: {type: 'people', id: '304567'}}
              }
            }
          }
@@ -319,7 +319,7 @@ class PostsControllerTest < ActionController::TestCase
              title: 'JR is Great',
              body: 'JSONAPIResources is the greatest thing since unsliced bread.',
              links: {
-               author: {type: 'people', id: '3'}
+               author: {linkage: {type: 'people', id: '3'}}
              }
            }
          }
@@ -363,7 +363,7 @@ class PostsControllerTest < ActionController::TestCase
                title: 'JR is Great',
                body: 'JSONAPIResources is the greatest thing since unsliced bread.',
                links: {
-                 author: {type: 'people', id: '3'}
+                 author: {linkage: {type: 'people', id: '3'}}
                }
              },
              {
@@ -371,7 +371,7 @@ class PostsControllerTest < ActionController::TestCase
                title: 'Ember is Great',
                body: 'Ember is the greatest thing since unsliced bread.',
                links: {
-                 author: {type: 'people', id: '3'}
+                 author: {linkage: {type: 'people', id: '3'}}
                }
              }
            ]
@@ -395,7 +395,7 @@ class PostsControllerTest < ActionController::TestCase
                Title: 'JR is Great',
                body: 'JSONAPIResources is the greatest thing since unsliced bread.',
                links: {
-                 author: {type: 'people', id: '3'}
+                 author: {linkage: {type: 'people', id: '3'}}
                }
              },
              {
@@ -403,7 +403,7 @@ class PostsControllerTest < ActionController::TestCase
                title: 'Ember is Great',
                BODY: 'Ember is the greatest thing since unsliced bread.',
                links: {
-                 author: {type: 'people', id: '3'}
+                 author: {linkage: {type: 'people', id: '3'}}
                }
              }
            ]
@@ -422,7 +422,7 @@ class PostsControllerTest < ActionController::TestCase
              title: 'JR is Great',
              body: 'JSONAPIResources is the greatest thing since unsliced bread.',
              links: {
-               author: {type: 'people', id: '3'}
+               author: {linkage: {type: 'people', id: '3'}}
              }
            }
          }
@@ -440,7 +440,7 @@ class PostsControllerTest < ActionController::TestCase
              title: 'JR is Great',
              body: 'JSONAPIResources is the greatest thing since unsliced bread.',
              links: {
-               author: {type: 'people', id: '3'}
+               author: {linkage: {type: 'people', id: '3'}}
              }
            }
          }
@@ -457,7 +457,7 @@ class PostsControllerTest < ActionController::TestCase
              title: 'JR is Great',
              body: 'JSONAPIResources is the greatest thing since unsliced bread.',
              links: {
-               author: {type: 'people', id: '3'}
+               author: {linkage: {type: 'people', id: '3'}}
              }
            }
          }
@@ -475,7 +475,7 @@ class PostsControllerTest < ActionController::TestCase
              subject: 'JR is Great',
              body: 'JSONAPIResources is the greatest thing since unsliced bread.',
              links: {
-               author: {type: 'people', id: '3'}
+               author: {linkage: {type: 'people', id: '3'}}
              }
            }
          }
@@ -493,8 +493,8 @@ class PostsControllerTest < ActionController::TestCase
              title: 'JR is Great',
              body: 'JSONAPIResources is the greatest thing since unsliced bread.',
              links: {
-               author: {type: 'people', id: '3'},
-               tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
+               author: {linkage: {type: 'people', id: '3'}},
+               tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
              }
            }
          }
@@ -515,8 +515,8 @@ class PostsControllerTest < ActionController::TestCase
              title: 'JR is Great',
              body: 'JSONAPIResources is the greatest thing since unsliced bread.',
              links: {
-               author: {type: 'people', id: '3'},
-               tags: [{type: 'tags', id: '3'}, {type: 'tags', id: '4'}]
+               author: {linkage: {type: 'people', id: '3'}},
+               tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
              }
            }
          }
@@ -537,8 +537,8 @@ class PostsControllerTest < ActionController::TestCase
              title: 'JR is Great!',
              body: 'JSONAPIResources is the greatest thing since unsliced bread!',
              links: {
-               author: {type: 'people', id: '3'},
-               tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
+               author: {linkage: {type: 'people', id: '3'}},
+               tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
              }
            },
            include: 'author,author.posts',
@@ -564,8 +564,8 @@ class PostsControllerTest < ActionController::TestCase
             type: 'posts',
             title: 'A great new Post',
             links: {
-              section: {type: 'sections', id: "#{javascript.id}"},
-              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
+              section: {linkage: {type: 'sections', id: "#{javascript.id}"}},
+              tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
             }
           },
           include: 'tags'
@@ -614,7 +614,7 @@ class PostsControllerTest < ActionController::TestCase
     post_object = Post.find(4)
     assert_not_equal ruby.id, post_object.section_id
 
-    put :update_association, {post_id: 4, association: 'section', data: {type: 'sections', id: "#{ruby.id}"}}
+    put :update_association, {post_id: 4, association: 'section', data: {linkage: {type: 'sections', id: "#{ruby.id}"}}}
 
     assert_response :no_content
     post_object = Post.find(4)
@@ -623,7 +623,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_relationship_has_one_invalid_links_hash_keys_ids
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'section', data: {type: 'sections', ids: 'foo'}}
+    put :update_association, {post_id: 3, association: 'section', data: {linkage: {type: 'sections', ids: 'foo'}}}
 
     assert_response :bad_request
     assert_match /Invalid Links Object/, response.body
@@ -631,7 +631,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_relationship_has_one_invalid_links_hash_count
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'section', data: {type: 'sections'}}
+    put :update_association, {post_id: 3, association: 'section', data: {linkage: {type: 'sections'}}}
 
     assert_response :bad_request
     assert_match /Invalid Links Object/, response.body
@@ -639,7 +639,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_relationship_has_many_not_array
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', id: 2}}
+    put :update_association, {post_id: 3, association: 'tags', data: {linkage: {type: 'tags', id: 2}}}
 
     assert_response :bad_request
     assert_match /Invalid Links Object/, response.body
@@ -647,7 +647,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_relationship_has_one_invalid_links_hash_keys_type_mismatch
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'section', data: {type: 'comment', id: '3'}}
+    put :update_association, {post_id: 3, association: 'section', data: {linkage: {type: 'comment', id: '3'}}}
 
     assert_response :bad_request
     assert_match /Type Mismatch/, response.body
@@ -714,7 +714,7 @@ class PostsControllerTest < ActionController::TestCase
     post_object.section = ruby
     post_object.save!
 
-    put :update_association, {post_id: 3, association: 'section', data: {type: 'sections', id: nil}}
+    put :update_association, {post_id: 3, association: 'section', data: {linkage: {type: 'sections', id: nil}}}
 
     assert_response :no_content
     assert_equal nil, post_object.reload.section_id
@@ -754,7 +754,7 @@ class PostsControllerTest < ActionController::TestCase
     post_object.section_id = nil
     post_object.save!
 
-    put :update_association, {post_id: 3, association: 'section', data: {type: 'sections', id: "#{ruby.id}"}}
+    put :update_association, {post_id: 3, association: 'section', data: {linkage: {type: 'sections', id: "#{ruby.id}"}}}
 
     assert_response :no_content
     post_object = Post.find(3)
@@ -769,13 +769,13 @@ class PostsControllerTest < ActionController::TestCase
     post_object = Post.find(3)
     assert_equal 0, post_object.tags.length
 
-    put :update_association, {post_id: 3, association: 'tags', data: [{type: 'tags', id: 2}]}
+    put :update_association, {post_id: 3, association: 'tags', data: {linkage: [{type: 'tags', id: 2}]}}
 
     assert_response :no_content
     post_object = Post.find(3)
     assert_equal 1, post_object.tags.length
 
-    put :update_association, {post_id: 3, association: 'tags', data: [{type: 'tags', id: 5}]}
+    put :update_association, {post_id: 3, association: 'tags', data: {linkage: [{type: 'tags', id: 5}]}}
 
     assert_response :no_content
     post_object = Post.find(3)
@@ -786,7 +786,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_relationship_has_many
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
+    put :update_association, {post_id: 3, association: 'tags', data: {linkage: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}}
 
     assert_response :no_content
     post_object = Post.find(3)
@@ -796,14 +796,14 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_create_relationship_has_many_join_table
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
+    put :update_association, {post_id: 3, association: 'tags', data: {linkage: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}}
 
     assert_response :no_content
     post_object = Post.find(3)
     assert_equal 2, post_object.tags.collect { |tag| tag.id }.length
     assert matches_array? [2, 3], post_object.tags.collect { |tag| tag.id }
 
-    post :create_association, {post_id: 3, association: 'tags', data: [{type: 'tags', id: 5}]}
+    post :create_association, {post_id: 3, association: 'tags', data: {linkage: [{type: 'tags', id: 5}]}}
 
     assert_response :no_content
     post_object = Post.find(3)
@@ -813,7 +813,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_create_relationship_has_many_mismatched_type
     set_content_type_header!
-    post :create_association, {post_id: 3, association: 'tags', data: [{type: 'comments', id: 5}]}
+    post :create_association, {post_id: 3, association: 'tags', data: {linkage: [{type: 'comments', id: 5}]}}
 
     assert_response :bad_request
     assert_match /Type Mismatch/, response.body
@@ -821,7 +821,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_create_relationship_has_many_missing_id
     set_content_type_header!
-    post :create_association, {post_id: 3, association: 'tags', data: [{type: 'tags', idd: 5}]}
+    post :create_association, {post_id: 3, association: 'tags', data: {linkage: [{type: 'tags', idd: 5}]}}
 
     assert_response :bad_request
     assert_match /Data is not a valid Links Object./, response.body
@@ -829,7 +829,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_create_relationship_has_many_not_array
     set_content_type_header!
-    post :create_association, {post_id: 3, association: 'tags', data: {type: 'tags', id: 5}}
+    post :create_association, {post_id: 3, association: 'tags', data: {linkage: {type: 'tags', id: 5}}}
 
     assert_response :bad_request
     assert_match /Data is not a valid Links Object./, response.body
@@ -845,20 +845,20 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_create_relationship_has_many_join
     set_content_type_header!
-    post :create_association, {post_id: 4, association: 'tags', data: [{type: 'tags', id: 1}, {type: 'tags', id: 2}, {type: 'tags', id: 3}]}
+    post :create_association, {post_id: 4, association: 'tags', data: {linkage: [{type: 'tags', id: 1}, {type: 'tags', id: 2}, {type: 'tags', id: 3}]}}
     assert_response :no_content
   end
 
   def test_create_relationship_has_many_join_table_record_exists
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
+    put :update_association, {post_id: 3, association: 'tags', data: {linkage: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}}
 
     assert_response :no_content
     post_object = Post.find(3)
     assert_equal 2, post_object.tags.collect { |tag| tag.id }.length
     assert matches_array? [2, 3], post_object.tags.collect { |tag| tag.id }
 
-    post :create_association, {post_id: 3, association: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 5}]}
+    post :create_association, {post_id: 3, association: 'tags', data: {linkage: [{type: 'tags', id: 2}, {type: 'tags', id: 5}]}}
 
     assert_response :bad_request
     assert_match /The relation to 2 already exists./, response.body
@@ -874,7 +874,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_delete_relationship_has_many
     set_content_type_header!
-    put :update_association, {post_id: 14, association: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
+    put :update_association, {post_id: 14, association: 'tags', data: {linkage: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}}
     assert_response :no_content
     p = Post.find(14)
     assert_equal [2, 3], p.tag_ids
@@ -888,7 +888,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_delete_relationship_has_many_does_not_exist
     set_content_type_header!
-    put :update_association, {post_id: 14, association: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
+    put :update_association, {post_id: 14, association: 'tags', data: {linkage: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}}
     assert_response :no_content
     p = Post.find(14)
     assert_equal [2, 3], p.tag_ids
@@ -902,7 +902,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_delete_relationship_has_many_with_empty_data
     set_content_type_header!
-    put :update_association, {post_id: 14, association: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
+    put :update_association, {post_id: 14, association: 'tags', data: {linkage: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}}
     assert_response :no_content
     p = Post.find(14)
     assert_equal [2, 3], p.tag_ids
@@ -1054,8 +1054,8 @@ class PostsControllerTest < ActionController::TestCase
               id: 3,
               title: 'A great new Post QWERTY',
               links: {
-                section: {type: 'sections', id: "#{javascript.id}"},
-                tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
+                section: {linkage: {type: 'sections', id: "#{javascript.id}"}},
+                tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
               }
             },
             {
@@ -1063,8 +1063,8 @@ class PostsControllerTest < ActionController::TestCase
               id: 16,
               title: 'A great new Post ASDFG',
               links: {
-                section: {type: 'sections', id: "#{javascript.id}"},
-                tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
+                section: {linkage: {type: 'sections', id: "#{javascript.id}"}},
+                tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
               }
             }
           ],
@@ -1131,8 +1131,8 @@ class PostsControllerTest < ActionController::TestCase
               id: 3,
               title: 'A great new Post ASDFG',
               links: {
-                section: {type: 'sections', id: "#{javascript.id}"},
-                tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
+                section: {linkage: {type: 'sections', id: "#{javascript.id}"}},
+                tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
               }
             },
             {
@@ -1140,8 +1140,8 @@ class PostsControllerTest < ActionController::TestCase
               id: 8,
               title: 'A great new Post QWERTY',
               links: {
-                section: {type: 'sections', id: "#{javascript.id}"},
-                tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
+                section: {linkage: {type: 'sections', id: "#{javascript.id}"}},
+                tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
               }
             }
           ]}
@@ -1385,8 +1385,8 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
              transaction_date: '2014/04/15',
              cost: 50.58,
              links: {
-               employee: {type: 'people', id: '3'},
-               iso_currency: {type: 'iso_currencies', id: 'USD'}
+               employee: {linkage: {type: 'people', id: '3'}},
+               iso_currency: {linkage: {type: 'iso_currencies', id: 'USD'}}
              }
            },
            include: 'iso_currency',
@@ -1414,8 +1414,8 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
              transactionDate: '2014/04/15',
              cost: 50.58,
              links: {
-               employee: {type: 'people', id: '3'},
-               isoCurrency: {type: 'iso_currencies', id: 'USD'}
+               employee: {linkage: {type: 'people', id: '3'}},
+               isoCurrency: {linkage: {type: 'iso_currencies', id: 'USD'}}
              }
            },
            include: 'isoCurrency',
@@ -1443,8 +1443,8 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
              'transaction-date' => '2014/04/15',
              cost: 50.58,
              links: {
-               employee: {type: 'people', id: '3'},
-               'iso-currency' => {type: 'iso_currencies', id: 'USD'}
+               employee: {linkage: {type: 'people', id: '3'}},
+               'iso-currency' => {linkage: {type: 'iso_currencies', id: 'USD'}}
              }
            },
            include: 'iso-currency',
@@ -1772,7 +1772,7 @@ class Api::V1::PostsControllerTest < ActionController::TestCase
              title: 'JR - now with Namespacing',
              body: 'JSONAPIResources is the greatest thing since unsliced bread now that it has namespaced resources.',
              links: {
-               writer: {type: 'writers', id: '3'}
+               writer: { linkage: {type: 'writers', id: '3'}}
              }
            }
          }
