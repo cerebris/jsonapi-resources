@@ -732,6 +732,7 @@ class PostsControllerTest < ActionController::TestCase
     post_object.section = ruby
     post_object.save!
 
+    put :update_association, {post_id: 3, association: 'section', data: {type: 'sections', id: nil}}
 
     assert_response :no_content
     assert_equal nil, post_object.reload.section_id
