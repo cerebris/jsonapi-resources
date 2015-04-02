@@ -179,7 +179,7 @@ class PostsControllerTest < ActionController::TestCase
     get :index, {sort: ' title'}
 
     assert_response :success
-    assert_equal "Delete This Later - Multiple2-1", json_response['data'][0]['title']
+    assert_equal "A First Post", json_response['data'][0]['title']
   end
 
   # Plus symbol may be sent uriencoded ('%2b')
@@ -187,7 +187,7 @@ class PostsControllerTest < ActionController::TestCase
     get :index, {sort: '%2btitle'}
 
     assert_response :success
-    assert_equal "Delete This Later - Multiple2-1", json_response['data'][0]['title']
+    assert_equal "A First Post", json_response['data'][0]['title']
   end
 
   def test_sorting_desc
