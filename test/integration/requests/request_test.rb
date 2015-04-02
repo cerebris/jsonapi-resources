@@ -158,7 +158,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_update_association_without_content_type
     ruby = Section.find_by(name: 'ruby')
-    patch '/posts/3/links/section', { 'sections' => {type: 'sections', id: ruby.id.to_s }}.to_json
+    patch '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json
 
     assert_equal 415, status
   end
@@ -175,6 +175,27 @@ class RequestTest < ActionDispatch::IntegrationTest
     put '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
+  end
+
+  def test_patch_update_association_has_many
+    like = Comment.find_by(body: 'i liked it')
+    patch '/posts/3/links/comments', { 'data' => [{type: 'comments', id: like.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 204, status
+  end
+
+  def test_post_update_association_has_many
+    like = Comment.find_by(body: 'i liked it')
+    post '/posts/3/links/comments', { 'data' => [{type: 'comments', id: like.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    
+    assert_equal 204, status
+  end
+
+  def test_put_update_association_has_many
+    like = Comment.find_by(body: 'i liked it')
+    put '/posts/3/links/comments', { 'data' => [{type: 'comments', id: like.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 405, status
   end
 
   def test_index_content_type
