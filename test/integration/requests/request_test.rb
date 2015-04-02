@@ -180,15 +180,15 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_patch_update_association_has_many_acts_as_set
     # Comments are acts_as_set=false so PUT/PATCH should respond with 403
 
-    like = Comment.find_by(body: 'i liked it')
-    patch '/posts/3/links/comments', { 'data' => [{type: 'comments', id: like.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    rogue = Comment.find_by(body: 'Rogue Comment Here')
+    patch '/posts/5/links/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 403, status
   end
 
   def test_post_update_association_has_many
-    like = Comment.find_by(body: 'i liked it')
-    post '/posts/3/links/comments', { 'data' => [{type: 'comments', id: like.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    rogue = Comment.find_by(body: 'Rogue Comment Here')
+    post '/posts/5/links/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
     
     assert_equal 204, status
   end
@@ -196,8 +196,8 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_put_update_association_has_many_acts_as_set
     # Comments are acts_as_set=false so PUT/PATCH should respond with 403. Note: JR currently treats PUT and PATCH as equivalent
 
-    like = Comment.find_by(body: 'i liked it')
-    put '/posts/3/links/comments', { 'data' => [{type: 'comments', id: like.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    rogue = Comment.find_by(body: 'Rogue Comment Here')
+    put '/posts/5/links/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 403, status
   end
