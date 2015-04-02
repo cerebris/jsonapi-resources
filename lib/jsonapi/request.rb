@@ -171,9 +171,9 @@ module JSONAPI
     def parse_sort_criteria(sort_criteria)
       return unless sort_criteria
 
-      @sort_criteria = CSV.parse_line(sort_criteria).collect do |sort|
+      @sort_criteria = CSV.parse_line(URI.unescape(sort_criteria)).collect do |sort|
         sort_criteria = {field: unformat_key(sort[1..-1]).to_s}
-        if sort.start_with?('+')
+        if sort.start_with?('+', ' ')
           sort_criteria[:direction] = :asc
         elsif sort.start_with?('-')
           sort_criteria[:direction] = :desc
