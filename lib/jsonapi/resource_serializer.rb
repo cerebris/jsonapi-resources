@@ -250,6 +250,8 @@ module JSONAPI
       if linkage_id
         linkage[:type] = format_route(association.type)
         linkage[:id] = linkage_id
+      else
+        linkage = nil
       end
       linkage
     end
