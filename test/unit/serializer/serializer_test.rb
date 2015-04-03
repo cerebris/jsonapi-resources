@@ -31,7 +31,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
             section: {
               self: 'http://example.com/posts/1/links/section',
               related: 'http://example.com/posts/1/section',
-              linkage: { }
+              linkage: nil
             },
             author: {
               self: 'http://example.com/posts/1/links/author',
@@ -71,8 +71,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
             section: {
               self: 'http://example.com/api/v1/posts/1/links/section',
               related: 'http://example.com/api/v1/posts/1/section',
-              linkage: {
-              }
+              linkage: nil
             },
             writer: {
               self: 'http://example.com/api/v1/posts/1/links/writer',
@@ -136,8 +135,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
             section: {
               self: '/posts/1/links/section',
               related: '/posts/1/section',
-              linkage: {
-              }
+              linkage: nil
             },
             author: {
               self: '/posts/1/links/author',
@@ -205,8 +203,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
             section: {
               self: '/posts/1/links/section',
               related: '/posts/1/section',
-              linkage: {
-              }
+              linkage: nil
             },
             author: {
               self: '/posts/1/links/author',
@@ -276,8 +273,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
             section: {
               self: '/posts/1/links/section',
               related: '/posts/1/section',
-              linkage: {
-              }
+              linkage: nil
             },
             author: {
               self: '/posts/1/links/author',
@@ -424,8 +420,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
             section: {
               self: '/posts/1/links/section',
               related: '/posts/1/section',
-              linkage: {
-              }
+              linkage: nil
             },
             author: {
               self: '/posts/1/links/author',
@@ -503,8 +498,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
             section: {
               self: '/posts/1/links/section',
               related: '/posts/1/section',
-              linkage: {
-              }
+              linkage: nil
             },
             author: {
               self: '/posts/1/links/author',
@@ -587,8 +581,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
             preferences: {
               self: "/people/2/links/preferences",
               related: "/people/2/preferences",
-              linkage: {
-              }
+              linkage: nil
             }
           }
         },
@@ -676,8 +669,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
               section: {
                 self: '/posts/1/links/section',
                 related: '/posts/1/section',
-                linkage: {
-                }
+                linkage: nil
               },
               author: {
                 self: '/posts/1/links/author',
@@ -1129,8 +1121,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
             planetType: {
               self: '/planets/8/links/planet_type',
               related: '/planets/8/planet_type',
-              linkage: {
-              }
+              linkage: nil
             },
             tags: {
               self: '/planets/8/links/tags',
@@ -1192,8 +1183,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
             planetType: {
               self: '/planets/8/links/planet_type',
               related: '/planets/8/planet_type',
-              linkage: {
-              }
+              linkage: nil
             },
             tags: {
               self: '/planets/8/links/tags',
@@ -1235,8 +1225,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
             author: {
               self: '/preferences/1/links/author',
               related: '/preferences/1/author',
-              linkage: {
-              }
+              linkage: nil
             },
             friends: {
               self: '/preferences/1/links/friends',

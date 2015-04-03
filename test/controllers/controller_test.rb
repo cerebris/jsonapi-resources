@@ -634,7 +634,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :success
     assert json_response['data'].is_a?(Hash)
     assert_equal '3', json_response['data']['links']['author']['linkage']['id']
-    assert_equal nil, json_response['data']['links']['section']['linkage']['id']
+    assert_equal nil, json_response['data']['links']['section']['linkage']
     assert_equal 'A great new Post', json_response['data']['title']
     assert_equal 'AAAA', json_response['data']['body']
     assert matches_array?([],
