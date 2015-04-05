@@ -54,7 +54,7 @@ module ActionDispatch
           # Route using the primary_key. Can be overridden using routing_resource_options
           options[:param] ||= res._primary_key
 
-          options[:path] = format_route(resource_type)
+          options[:path] = format_route(options[:path] || resource_type)
 
           resources resource_type, options do
             @scope[:jsonapi_resource] = resource_type
