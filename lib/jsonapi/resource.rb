@@ -203,11 +203,6 @@ module JSONAPI
         base.attribute :id, format: :id
 
         check_reserved_resource_name(base._type, base.name)
-
-        # If eager loading is on this is how all the resource types are setup
-        # If eager loading is off some resource types will be initialized in
-        # _resource_name_from_type
-        @@resource_types[base._type] ||= base.name.demodulize
       end
 
       def resource_for(type)
