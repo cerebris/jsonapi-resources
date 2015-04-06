@@ -27,7 +27,6 @@ end
 puts "Testing With RAILS VERSION #{Rails.version}"
 
 class TestApp < Rails::Application
-  config.eager_load = false
   config.root = File.dirname(__FILE__)
   config.session_store :cookie_store, key: 'session'
   config.secret_key_base = 'secret'
