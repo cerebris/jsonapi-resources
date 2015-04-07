@@ -58,6 +58,15 @@ module JSONAPI
       end
     end
 
+    class HasManySetReplacementForbidden < Error
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::FORBIDDEN,
+                            status: :forbidden,
+                            title: 'Complete replacement forbidden',
+                            detail: 'Complete replacement forbidden for this association')]
+      end
+    end
+
     class FilterNotAllowed < Error
       attr_accessor :filter
       def initialize(filter)

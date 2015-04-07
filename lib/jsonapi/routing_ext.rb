@@ -130,7 +130,7 @@ module ActionDispatch
                   action: 'create_association', association: link_type.to_s, via: [:post]
           end
 
-          if methods.include?(:update) && res._association(link_type).acts_as_set
+          if methods.include?(:update)
             match "links/#{formatted_association_name}", controller: res._type.to_s,
                   action: 'update_association', association: link_type.to_s, via: [:put, :patch]
           end

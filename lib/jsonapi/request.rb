@@ -387,6 +387,10 @@ module JSONAPI
                                                                         association_type,
                                                                         verified_param_set[:has_one].values[0])
       else
+        unless association.acts_as_set
+          raise JSONAPI::Exceptions::HasManySetReplacementForbidden.new
+        end
+
         object_params = {links: {association.name => {linkage: data}}}
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
