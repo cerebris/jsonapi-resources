@@ -709,12 +709,11 @@ JR has a couple of helper methods available to assist you with setting up routes
 
 ##### `jsonapi_resources`
 
-Like `resources` in `ActionDispatch`, `jsonapi_resources` provides resourceful routes mapping between HTTP verbs and URLs and controller actions. This will also setup mappings for relationship URLs for a resource's associations. For example:
+Like `resources` in `ActionDispatch`, `jsonapi_resources` provides resourceful routes mapping between HTTP verbs and URLs
+and controller actions. This will also setup mappings for relationship URLs for a resource's associations. For example:
 
 ```ruby
-require 'jsonapi/routing_ext'
-
-Peeps::Application.routes.draw do
+Rails.application.routes.draw do
   jsonapi_resources :contacts
   jsonapi_resources :phone_numbers
 end
@@ -723,10 +722,85 @@ end
 gives the following routes
 
 ```
-                     Prefix Verb   URI Pattern                                               Controller#Action
-contact_links_phone_numbers GET    /contacts/:contact_id/links/phone_numbers(.:format)       contacts#show_association {:association=>"phone_numbers"}
-                            POST   /contacts/:contact_id/links/phone_numbers(.:format)       contacts#create_association {:association=>"phone_numbers"}
-                            DELETE /contacts/:contact_id/links/phone_numbers/:keys(.:format) contacts#destroy_association {:association=>"phone_numbers"}
+                     Prefix Verb      URI Pattern                                               Controller#Action
+contact_links_phone_numbers GET       /contacts/:contact_id/links/phone-numbers(.:format)       contacts#show_association {:association=>"phone_numbers"}
+                            POST      /contacts/:contact_id/links/phone-numbers(.:format)       contacts#create_association {:association=>"phone_numbers"}
+                            DELETE    /contacts/:contact_id/links/phone-numbers/:keys(.:format) contacts#destroy_association {:association=>"phone_numbers"}
+      contact_phone_numbers GET       /contacts/:contact_id/phone-numbers(.:format)             phone_numbers#get_related_resources {:association=>"phone_numbers", :source=>"contacts"}
+                   contacts GET       /contacts(.:format)                                       contacts#index
+                            POST      /contacts(.:format)                                       contacts#create
+                new_contact GET       /contacts/new(.:format)                                   contacts#new
+               edit_contact GET       /contacts/:id/edit(.:format)                              contacts#edit
+                    contact GET       /contacts/:id(.:format)                                   contacts#show
+                            PATCH     /contacts/:id(.:format)                                   contacts#update
+                            PUT       /contacts/:id(.:format)                                   contacts#update
+                            DELETE    /contacts/:id(.:format)                                   contacts#destroy
+ phone_number_links_contact GET       /phone-numbers/:phone_number_id/links/contact(.:format)   phone_numbers#show_association {:association=>"contact"}
+                            PUT|PATCH /phone-numbers/:phone_number_id/links/contact(.:format)   phone_numbers#update_association {:association=>"contact"}
+                            DELETE    /phone-numbers/:phone_number_id/links/contact(.:format)   phone_numbers#destroy_association {:association=>"contact"}
+       phone_number_contact GET       /phone-numbers/:phone_number_id/contact(.:format)         contacts#get_related_resource {:association=>"contact", :source=>"phone_numbers"}
+              phone_numbers GET       /phone-numbers(.:format)                                  phone_numbers#index
+                            POST      /phone-numbers(.:format)                                  phone_numbers#create
+           new_phone_number GET       /phone-numbers/new(.:format)                              phone_numbers#new
+          edit_phone_number GET       /phone-numbers/:id/edit(.:format)                         phone_numbers#edit
+               phone_number GET       /phone-numbers/:id(.:format)                              phone_numbers#show
+                            PATCH     /phone-numbers/:id(.:format)                              phone_numbers#update
+                            PUT       /phone-numbers/:id(.:format)                              phone_numbers#update
+                            DELETE    /phone-numbers/:id(.:format)                              phone_numbers#destroy
+```
+
+##### `jsonapi_resource`
+
+Like `jsonapi_resources`, but for resources you lookup without an id.
+
+#### Nested Routes
+
+By default nested routes are created for getting related resources and manipulating relationships. You can control the
+nested routes by passing a block into `jsonapi_resources` or `jsonapi_resource`. An empty block will not create
+any nested routes. For example:
+
+```ruby
+Rails.application.routes.draw do
+  jsonapi_resources :contacts do
+  end
+end
+```
+
+gives routes that are only related to the primary resource, and none for its relationships:
+
+```
+      Prefix Verb   URI Pattern                  Controller#Action
+    contacts GET    /contacts(.:format)          contacts#index
+             POST   /contacts(.:format)          contacts#create
+ new_contact GET    /contacts/new(.:format)      contacts#new
+edit_contact GET    /contacts/:id/edit(.:format) contacts#edit
+     contact GET    /contacts/:id(.:format)      contacts#show
+             PATCH  /contacts/:id(.:format)      contacts#update
+             PUT    /contacts/:id(.:format)      contacts#update
+             DELETE /contacts/:id(.:format)      contacts#destroy
+```
+
+To manually add in the nested routes you can use the `jsonapi_links`, `jsonapi_related_resources` and
+`jsonapi_related_resource` inside the block.
+
+###### `jsonapi_links`
+
+You can add relationship routes in with `jsonapi_links`, for example:
+
+```ruby
+Rails.application.routes.draw do
+  jsonapi_resources :contacts do
+    jsonapi_links :phone_numbers
+  end
+end
+```
+
+Gives the following routes:
+
+```
+contact_links_phone_numbers GET    /contacts/:contact_id/links/phone-numbers(.:format)       contacts#show_association {:association=>"phone_numbers"}
+                            POST   /contacts/:contact_id/links/phone-numbers(.:format)       contacts#create_association {:association=>"phone_numbers"}
+                            DELETE /contacts/:contact_id/links/phone-numbers/:keys(.:format) contacts#destroy_association {:association=>"phone_numbers"}
                    contacts GET    /contacts(.:format)                                       contacts#index
                             POST   /contacts(.:format)                                       contacts#create
                 new_contact GET    /contacts/new(.:format)                                   contacts#new
@@ -735,40 +809,69 @@ contact_links_phone_numbers GET    /contacts/:contact_id/links/phone_numbers(.:f
                             PATCH  /contacts/:id(.:format)                                   contacts#update
                             PUT    /contacts/:id(.:format)                                   contacts#update
                             DELETE /contacts/:id(.:format)                                   contacts#destroy
- phone_number_links_contact GET    /phone_numbers/:phone_number_id/links/contact(.:format)   phone_numbers#show_association {:association=>"contact"}
-                            POST   /phone_numbers/:phone_number_id/links/contact(.:format)   phone_numbers#create_association {:association=>"contact"}
-                            DELETE /phone_numbers/:phone_number_id/links/contact(.:format)   phone_numbers#destroy_association {:association=>"contact"}
-              phone_numbers GET    /phone_numbers(.:format)                                  phone_numbers#index
-                            POST   /phone_numbers(.:format)                                  phone_numbers#create
-           new_phone_number GET    /phone_numbers/new(.:format)                              phone_numbers#new
-          edit_phone_number GET    /phone_numbers/:id/edit(.:format)                         phone_numbers#edit
-               phone_number GET    /phone_numbers/:id(.:format)                              phone_numbers#show
-                            PATCH  /phone_numbers/:id(.:format)                              phone_numbers#update
-                            PUT    /phone_numbers/:id(.:format)                              phone_numbers#update
-                            DELETE /phone_numbers/:id(.:format)                              phone_numbers#destroy
+
 ```
 
-##### `jsonapi_resource`
+The new routes allow you to show, create and destroy the associations between resources.
 
-Like `jsonapi_resources`, but for resources you lookup without an id.
+###### `jsonapi_related_resources`
 
-##### `jsonapi_links`
-
-You can control the relationship routes by passing a block into `jsonapi_resources` or `jsonapi_resource`. An empty block
-will not create any relationship routes.
-
-You can add relationship routes in with `jsonapi_links`, for example:
+Creates a nested route to GET the related has_many resources. For example:
 
 ```ruby
 Rails.application.routes.draw do
-  jsonapi_resources :posts, except: [:destroy] do
-    jsonapi_link :author, except: [:destroy]
-    jsonapi_links :tags, only: [:show, :create]
+  jsonapi_resources :contacts do
+    jsonapi_related_resources :phone_numbers
+  end
+end
+
+```
+
+gives the following routes:
+
+```
+               Prefix Verb   URI Pattern                                   Controller#Action
+contact_phone_numbers GET    /contacts/:contact_id/phone-numbers(.:format) phone_numbers#get_related_resources {:association=>"phone_numbers", :source=>"contacts"}
+             contacts GET    /contacts(.:format)                           contacts#index
+                      POST   /contacts(.:format)                           contacts#create
+          new_contact GET    /contacts/new(.:format)                       contacts#new
+         edit_contact GET    /contacts/:id/edit(.:format)                  contacts#edit
+              contact GET    /contacts/:id(.:format)                       contacts#show
+                      PATCH  /contacts/:id(.:format)                       contacts#update
+                      PUT    /contacts/:id(.:format)                       contacts#update
+                      DELETE /contacts/:id(.:format)                       contacts#destroy
+
+```
+
+A single additional route was created to allow you GET the phone numbers through the contact.
+
+###### `jsonapi_related_resource`
+
+Like `jsonapi_related_resources`, but for has_one related resources.
+
+```ruby
+Rails.application.routes.draw do
+  jsonapi_resources :phone_numbers do
+    jsonapi_related_resource :contact
   end
 end
 ```
 
-This will create relationship routes for author (show and create, but not destroy) and for tags (again show and create, but not destroy).
+gives the following routes:
+
+```
+              Prefix Verb   URI Pattern                                       Controller#Action
+phone_number_contact GET    /phone-numbers/:phone_number_id/contact(.:format) contacts#get_related_resource {:association=>"contact", :source=>"phone_numbers"}
+       phone_numbers GET    /phone-numbers(.:format)                          phone_numbers#index
+                     POST   /phone-numbers(.:format)                          phone_numbers#create
+    new_phone_number GET    /phone-numbers/new(.:format)                      phone_numbers#new
+   edit_phone_number GET    /phone-numbers/:id/edit(.:format)                 phone_numbers#edit
+        phone_number GET    /phone-numbers/:id(.:format)                      phone_numbers#show
+                     PATCH  /phone-numbers/:id(.:format)                      phone_numbers#update
+                     PUT    /phone-numbers/:id(.:format)                      phone_numbers#update
+                     DELETE /phone-numbers/:id(.:format)                      phone_numbers#destroy
+
+```
 
 #### Formatting
 
