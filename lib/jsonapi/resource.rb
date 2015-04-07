@@ -127,7 +127,7 @@ module JSONAPI
       association = self.class._associations[association_type]
 
       association_key_values.each do |association_key_value|
-        related_resource = Resource.resource_for(association.type).find_by_key(association_key_value, context: @context)
+        related_resource = Resource.resource_for(self.class.module_path + association.type.to_s).find_by_key(association_key_value, context: @context)
 
         # ToDo: Add option to skip relations that already exist instead of returning an error?
         relation = @model.send(association.type).where(association.primary_key => association_key_value).first
@@ -203,11 +203,6 @@ module JSONAPI
         base.attribute :id, format: :id
 
         check_reserved_resource_name(base._type, base.name)
-
-        # If eager loading is on this is how all the resource types are setup
-        # If eager loading is off some resource types will be initialized in
-        # _resource_name_from_type
-        @@resource_types[base._type] ||= base.name.demodulize
       end
 
       def resource_for(type)
@@ -518,6 +513,7 @@ module JSONAPI
 
       def _associate(klass, *attrs)
         options = attrs.extract_options!
+        options[:module_path] = module_path
 
         attrs.each do |attr|
           check_reserved_association_name(attr)
