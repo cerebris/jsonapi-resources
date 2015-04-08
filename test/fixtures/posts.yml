@@ -94,3 +94,9 @@ post_16:
   title: SDFGH
   body: Not First!!!!
   author_id: 3
+
+post_17:
+  id: 17
+  title: No Author!!!!!!
+  body: This post has no Author
+  author_id:
