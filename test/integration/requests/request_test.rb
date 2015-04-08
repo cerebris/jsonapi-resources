@@ -156,6 +156,30 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 201, status
   end
 
+  def test_post_single_missing_data_contents
+    post '/posts',
+         {
+           'data' => {
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 400, status
+  end
+
+  def test_post_single_minimal_valid
+    post '/comments',
+         {
+           'data' => {
+             'type' => 'comments'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 201, status
+    assert_nil json_response['data']['body']
+    assert_nil json_response['data']['links']['post']['linkage']
+    assert_nil json_response['data']['links']['author']['linkage']
+  end
+
   def test_post_single_minimal_invalid
     post '/posts',
       {
