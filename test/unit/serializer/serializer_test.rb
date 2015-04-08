@@ -57,6 +57,15 @@ class SerializerTest < ActionDispatch::IntegrationTest
     )
   end
 
+  def test_serializer_nil_handling
+    assert_hash_equals(
+      {
+        data: nil
+      },
+      JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(nil)
+    )
+  end
+
   def test_serializer_namespaced_resource
     assert_hash_equals(
       {

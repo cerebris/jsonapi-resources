@@ -1335,6 +1335,19 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :bad_request
     assert_match /2,1 is not a valid value for id/, response.body
   end
+
+  def test_show_has_one_relationship_nil
+    get :show_association, {post_id: '17', association: 'author'}
+    assert_response :success
+    assert_hash_equals json_response,
+                       {
+                         data: nil,
+                         links: {
+                           self: 'http://test.host/posts/17/links/author',
+                           related: 'http://test.host/posts/17/author'
+                         }
+                       }
+  end
 end
 
 class TagsControllerTest < ActionController::TestCase
@@ -1677,6 +1690,50 @@ class PeopleControllerTest < ActionController::TestCase
     assert_equal json_response['data'].size, 1
     assert_equal json_response['data'][0]['id'], '1'
     assert_equal json_response['data'][0]['name'], 'Joe Author'
+  end
+
+  def test_get_related_resource
+    get :get_related_resource, {post_id: '2', association: 'author', :source=>'posts'}
+    assert_response :success
+    assert_hash_equals json_response,
+                       {
+                         data: {
+                           id: '1',
+                           type: 'people',
+                           name: 'Joe Author',
+                           email: 'joe@xyz.fake',
+                           dateJoined: '2013-08-07 16:25:00 -0400',
+                           links: {
+                             self: 'http://test.host/people/1',
+                             comments: {
+                               self: 'http://test.host/people/1/links/comments',
+                               related: 'http://test.host/people/1/comments'
+                             },
+                             posts: {
+                               self: 'http://test.host/people/1/links/posts',
+                               related: 'http://test.host/people/1/posts'
+                             },
+                             preferences: {
+                               self: 'http://test.host/people/1/links/preferences',
+                               related: 'http://test.host/people/1/preferences',
+                               linkage: {
+                                 type: 'preferences',
+                                 id: '1'
+                               }
+                             }
+                           }
+                         }
+                       }
+  end
+
+  def test_get_related_resource_nil
+    get :get_related_resource, {post_id: '17', association: 'author', :source=>'posts'}
+    assert_response :success
+    assert_hash_equals json_response,
+                       {
+                         data: nil
+                       }
+
   end
 end
 

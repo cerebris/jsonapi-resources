@@ -110,6 +110,8 @@ module JSONAPI
           add_included_object(@primary_class_name, id, object_hash(resource,  requested_associations), true)
         end
       else
+        return {} if source.nil?
+
         resource = source
         id = resource.id
         # ToDo: See if this is actually needed
