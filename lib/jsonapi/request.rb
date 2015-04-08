@@ -198,16 +198,9 @@ module JSONAPI
     end
 
     def parse_add_operation(data)
-      if data.is_a?(Array)
-        data.each do |p|
-          @operations.push JSONAPI::CreateResourceOperation.new(@resource_klass,
-                                                                parse_params(verify_and_remove_type(p),
-                                                                             @resource_klass.createable_fields(@context)))
-        end
-      else
-        @operations.push JSONAPI::CreateResourceOperation.new(@resource_klass,
-                                                              parse_params(verify_and_remove_type(data),
-                                                                           @resource_klass.createable_fields(@context)))
+      Array.wrap(data).each do |p|
+        values = parse_params(verify_and_remove_type(p), @resource_klass.createable_fields(@context))
+        @operations.push JSONAPI::CreateResourceOperation.new(@resource_klass, values)
       end
     rescue JSONAPI::Exceptions::Error => e
       @errors.concat(e.errors)

@@ -156,6 +156,41 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 201, status
   end
 
+  def test_post_single_missing_data_contents
+    post '/posts',
+         {
+           'data' => {
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 400, status
+  end
+
+  def test_post_single_minimal_valid
+    post '/comments',
+         {
+           'data' => {
+             'type' => 'comments'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 201, status
+    assert_nil json_response['data']['body']
+    assert_nil json_response['data']['links']['post']['linkage']
+    assert_nil json_response['data']['links']['author']['linkage']
+  end
+
+  def test_post_single_minimal_invalid
+    post '/posts',
+      {
+        'data' => {
+          'type' => 'posts'
+        }
+      }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 422, status
+  end
+
   def test_update_association_without_content_type
     ruby = Section.find_by(name: 'ruby')
     patch '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json
@@ -189,7 +224,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_post_update_association_has_many
     rogue = Comment.find_by(body: 'Rogue Comment Here')
     post '/posts/5/links/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
-    
+
     assert_equal 204, status
   end
 
