@@ -199,8 +199,8 @@ module JSONAPI
 
     def parse_add_operation(data)
       Array.wrap(data).each do |p|
-          values = parse_params(verify_and_remove_type(p), @resource_klass.createable_fields(@context))
-          @operations.push JSONAPI::CreateResourceOperation.new(@resource_klass, values)
+        values = parse_params(verify_and_remove_type(p), @resource_klass.createable_fields(@context))
+        @operations.push JSONAPI::CreateResourceOperation.new(@resource_klass, values)
       end
     rescue JSONAPI::Exceptions::Error => e
       @errors.concat(e.errors)
