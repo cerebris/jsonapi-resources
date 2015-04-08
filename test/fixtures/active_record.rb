@@ -1,8 +1,14 @@
 require 'active_record'
 require 'jsonapi-resources'
 
-ActiveSupport::Inflector.inflections(:en) do |inflect|
-  inflect.uncountable 'preferences'
+if Rails::VERSION::MAJOR >= 4
+  ActiveSupport::Inflector.inflections(:en) do |inflect|
+    inflect.uncountable 'preferences'
+  end
+else
+  ActiveSupport::Inflector.inflections do |inflect|
+    inflect.uncountable 'preferences'
+  end
 end
 
 ### DATABASE
@@ -119,7 +125,7 @@ end
 class Person < ActiveRecord::Base
   has_many :posts, foreign_key: 'author_id'
   has_many :comments, foreign_key: 'author_id'
-  has_many :expense_entries, foreign_key: 'employee_id', dependent: :restrict_with_exception
+  has_many :expense_entries, foreign_key: 'employee_id', dependent: (Rails::VERSION::MAJOR < 4 ? :restrict : :restrict_with_exception)
   belongs_to :preferences
 
   ### Validations

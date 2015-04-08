@@ -192,21 +192,21 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_update_association_without_content_type
-    ruby = Section.find_by(name: 'ruby')
+    ruby = Section.find_by_name('ruby')
     patch '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json
 
     assert_equal 415, status
   end
 
   def test_patch_update_association_has_one
-    ruby = Section.find_by(name: 'ruby')
+    ruby = Section.find_by_name('ruby')
     patch '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
   end
 
   def test_put_update_association_has_one
-    ruby = Section.find_by(name: 'ruby')
+    ruby = Section.find_by_name('ruby')
     put '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
@@ -215,14 +215,14 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_patch_update_association_has_many_acts_as_set
     # Comments are acts_as_set=false so PUT/PATCH should respond with 403
 
-    rogue = Comment.find_by(body: 'Rogue Comment Here')
+    rogue = Comment.find_by_body('Rogue Comment Here')
     patch '/posts/5/links/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 403, status
   end
 
   def test_post_update_association_has_many
-    rogue = Comment.find_by(body: 'Rogue Comment Here')
+    rogue = Comment.find_by_body('Rogue Comment Here')
     post '/posts/5/links/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
@@ -231,7 +231,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_put_update_association_has_many_acts_as_set
     # Comments are acts_as_set=false so PUT/PATCH should respond with 403. Note: JR currently treats PUT and PATCH as equivalent
 
-    rogue = Comment.find_by(body: 'Rogue Comment Here')
+    rogue = Comment.find_by_body('Rogue Comment Here')
     put '/posts/5/links/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 403, status
@@ -450,5 +450,28 @@ class RequestTest < ActionDispatch::IntegrationTest
                          ]
                        })
   end
+
+  # def rails_3_hash
+  #   {}
+  # end
+
+  if Rails::VERSION::MAJOR < 4
+    # def rails_3_hash
+    #   { "param" => :id }
+    # end
+
+    def patch(url, args={})
+      post url, args.merge({method: :patch})
+    end
+
+    def delete(url, args={})
+      post url, args.merge({method: :delete})
+    end
+
+    def put(url, args={})
+      post url, args.merge({method: :put})
+    end
+  end
+
 
 end

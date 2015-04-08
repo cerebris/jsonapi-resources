@@ -20,3 +20,8 @@ rails = case version
           "~> #{version}"
         end
 gem 'rails', rails
+if version.start_with?("3.2")
+  gem 'test-unit'
+  gem 'minitest'
+end
+
