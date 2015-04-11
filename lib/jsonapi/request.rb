@@ -347,7 +347,7 @@ module JSONAPI
             params_not_allowed.push(links_key) unless formatted_allowed_fields.include?(links_key.to_sym)
           end
         else
-          params_not_allowed.push(key) unless formatted_allowed_fields.include?(key.to_sym)
+          params_not_allowed.push(key) unless formatted_allowed_fields.include?(format_key(key).to_sym)
         end
       end
       raise JSONAPI::Exceptions::ParametersNotAllowed.new(params_not_allowed) if params_not_allowed.length > 0
