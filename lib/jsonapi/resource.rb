@@ -545,9 +545,26 @@ module JSONAPI
         end
       end
 
-      # override to allow for key processing and checking
-      def verify_key(key, _context = nil)
-        key && Integer(key)
+      def key_type(key_type)
+        @_resource_key_type = key_type.to_sym
+      end
+
+      def verify_key(key, context = nil)
+        key_type = @_resource_key_type || JSONAPI.configuration.resource_key_type
+        verification_proc = case key_type
+
+        when :integer
+          -> (key, context) { key && Integer(key) }
+        when :string
+          -> (key, context) { key && String(key) }
+        when :uuid
+          -> (key, context) { key.match(
+            /[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}/) }
+        else
+          key_type
+        end
+
+        verification_proc.call(key, context)
       rescue
         raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
       end
