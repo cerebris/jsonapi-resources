@@ -234,15 +234,31 @@ By default only integer values are allowed for primary key. To change this behav
 `verify_key` class method:
 
 ```ruby
-class CurrencyResource < JSONAPI::Resource
-  primary_key :code
-  attributes :code, :name
+JSONAPI.configure do |config|
+  # Allowed values are :integer(default), :uuid, :string, or a proc
+  config.resource_key_type = :uuid
+end
+```
 
-  has_many :expense_entries
+##### Override key type on a resource
 
-  def self.verify_key(key, context = nil)
-    key && String(key)
-  end
+You can override the default resource key type on a per-resource basis by calling `key_type` in the resource class.
+
+```ruby
+class ContactResource < JSONAPI::Resource
+  attribute :id
+  attributes :name_first, :name_last, :email, :twitter
+  key_type :uuid
+end
+```
+
+##### Custom resource key validators
+
+If you need more control over the key, you can override the #verify_key method on your resource, or set a lambda that accepts key and context arguments in `config/initializers/jsonapi_resources.rb`:
+
+```ruby
+JSONAPI.configure do |config|
+  config.resource_key_type = -> (key, context) { key && String(key) }
 end
 ```
 
