@@ -3,6 +3,7 @@ require 'jsonapi/formatter'
 module JSONAPI
   class Configuration
     attr_reader :json_key_format,
+                :resource_key_type,
                 :key_formatter,
                 :route_format,
                 :route_formatter,
@@ -14,6 +15,9 @@ module JSONAPI
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
       self.json_key_format = :dasherized_key
+
+      #:integer, :uuid, :string, or custom
+      self.resource_key_type = :integer
 
       #:underscored_route, :camelized_route, :dasherized_route, or custom
       self.route_format = :dasherized_route
@@ -30,6 +34,10 @@ module JSONAPI
     def json_key_format=(format)
       @json_key_format = format
       @key_formatter = JSONAPI::Formatter.formatter_for(format)
+    end
+
+    def resource_key_type=(key_type)
+      @resource_key_type = key_type
     end
 
     def route_format=(format)
