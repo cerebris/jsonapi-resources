@@ -170,18 +170,34 @@ The system will lookup a value formatter named `DateWithTimezoneValueFormatter` 
 #### Primary Key
 
 Resources are always represented using a key of `id`. If the underlying model does not use `id` as the primary key you can use the `primary_key` method to tell the resource which field on the model to use as the primary key. Note: this doesn't have to be the actual primary key of the model. For example you may wish to use integers internally and a different scheme publicly.
-By default only integer values are allowed for primary key. To change this behavior you can override `verify_key` class method:
+By default only integer values are allowed for primary key. To change this behavior you can set the `resource_key_type` in your initializer. For example, in your `config/initializers/jsonapi_resources.rb`:
 
 ```ruby
-class CurrencyResource < JSONAPI::Resource
-  primary_key :code
-  attributes :code, :name
+JSONAPI.configure do |config|
+  # Allowed values are :integer(default), :uuid, :string, or a proc
+  config.resource_key_type = :uuid
+end
+```
 
-  has_many :expense_entries
+##### Override key type on a resource
 
-  def self.verify_key(key, context = nil)
-    key && String(key)
-  end
+You can override the default resource key type on a per-resource basis by calling `key_type` in the resource class.
+
+```ruby
+class ContactResource < JSONAPI::Resource
+  attribute :id
+  attributes :name_first, :name_last, :email, :twitter
+  key_type :uuid
+end
+```
+
+##### Custom resource key validators
+
+If you need more control over the key, you can override the #verify_key method on your resource, or set a lambda that accepts key and context arguments in `config/initializers/jsonapi_resources.rb`:
+
+```ruby
+JSONAPI.configure do |config|
+  config.resource_key_type = -> (key, context) { key && String(key) }
 end
 ```
 
