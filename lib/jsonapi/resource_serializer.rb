@@ -21,6 +21,7 @@ module JSONAPI
       @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
       @route_formatter = options.fetch(:route_formatter, JSONAPI.configuration.route_formatter)
       @base_url = options.fetch(:base_url, '')
+      Rails.logger.debug @base_url
     end
 
     # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
