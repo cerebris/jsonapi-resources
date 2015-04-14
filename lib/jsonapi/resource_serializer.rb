@@ -20,8 +20,8 @@ module JSONAPI
       @include = options.fetch(:include, [])
       @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
       @route_formatter = options.fetch(:route_formatter, JSONAPI.configuration.route_formatter)
+      @scope_id = options.fetch(:scope_id)
       @base_url = options.fetch(:base_url, '')
-      Rails.logger.debug @base_url
     end
 
     # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
@@ -221,7 +221,12 @@ module JSONAPI
     end
 
     def formatted_module_path(source)
-      source.class.name =~ /::[^:]+\Z/ ? (@route_formatter.format($`).freeze.gsub('::', '/') + '/').downcase : ''
+      if source.class.name =~ /::[^:]+\Z/
+        path = (@route_formatter.format($`).freeze.gsub('::', '/') + '/').downcase
+        @scope_id ? "#{path}#{@scope_id}/" : path
+      else
+        ''
+      end
     end
 
     def self_href(source)

@@ -219,7 +219,9 @@ module JSONAPI
                                       fields: @request.fields,
                                       base_url: base_url,
                                       key_formatter: key_formatter,
-                                      route_formatter: route_formatter)
+                                      route_formatter: route_formatter,
+                                      scope_id: params[:brewery_id]
+      )
     end
 
     # override this to process other exceptions
