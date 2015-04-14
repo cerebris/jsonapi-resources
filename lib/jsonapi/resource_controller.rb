@@ -14,13 +14,19 @@ module JSONAPI
     before_filter :setup_request
     after_filter :setup_response
 
+    def scope_id
+      nil
+    end
+
     def index
       serializer = JSONAPI::ResourceSerializer.new(resource_klass,
                                                    include: @request.include,
                                                    fields: @request.fields,
                                                    base_url: base_url,
                                                    key_formatter: key_formatter,
-                                                   route_formatter: route_formatter)
+                                                   route_formatter: route_formatter,
+                                                   scope_id: scope_id
+      )
 
       resource_records = resource_klass.find(resource_klass.verify_filters(@request.filters, context),
                                              context: context,
@@ -38,7 +44,9 @@ module JSONAPI
                                                    fields: @request.fields,
                                                    base_url: base_url,
                                                    key_formatter: key_formatter,
-                                                   route_formatter: route_formatter)
+                                                   route_formatter: route_formatter,
+                                                   scope_id: scope_id
+      )
 
       key = resource_klass.verify_key(params[resource_klass._primary_key], context)
 
@@ -62,7 +70,9 @@ module JSONAPI
                                                    fields: @request.fields,
                                                    base_url: base_url,
                                                    key_formatter: key_formatter,
-                                                   route_formatter: route_formatter)
+                                                   route_formatter: route_formatter,
+                                                   scope_id: scope_id
+      )
 
       render json: serializer.serialize_to_links_hash(parent_resource, association)
     rescue => e
@@ -102,7 +112,9 @@ module JSONAPI
                                                    fields: @request.fields,
                                                    base_url: base_url,
                                                    key_formatter: key_formatter,
-                                                   route_formatter: route_formatter)
+                                                   route_formatter: route_formatter,
+                                                   scope_id: scope_id
+      )
 
       render json: serializer.serialize_to_hash(source_resource.send(association_type))
     end
@@ -123,7 +135,9 @@ module JSONAPI
                                                    fields: @request.fields,
                                                    base_url: base_url,
                                                    key_formatter: key_formatter,
-                                                   route_formatter: route_formatter)
+                                                   route_formatter: route_formatter,
+                                                   scope_id: scope_id
+      )
 
       render json: serializer.serialize_to_hash(related_resources)
     end
@@ -220,7 +234,7 @@ module JSONAPI
                                       base_url: base_url,
                                       key_formatter: key_formatter,
                                       route_formatter: route_formatter,
-                                      scope_id: params[:brewery_id]
+                                      scope_id: scope_id
       )
     end
 
