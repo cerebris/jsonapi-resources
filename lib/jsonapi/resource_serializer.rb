@@ -20,7 +20,7 @@ module JSONAPI
       @include = options.fetch(:include, [])
       @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
       @route_formatter = options.fetch(:route_formatter, JSONAPI.configuration.route_formatter)
-      @scope_id = options.fetch(:scope_id)
+      @scope_id = options.fetch(:scope_id, nil)
       @base_url = options.fetch(:base_url, '')
     end
 

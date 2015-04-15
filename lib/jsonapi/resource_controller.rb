@@ -14,10 +14,6 @@ module JSONAPI
     before_filter :setup_request
     after_filter :setup_response
 
-    def scope_id
-      nil
-    end
-
     def index
       serializer = JSONAPI::ResourceSerializer.new(resource_klass,
                                                    include: @request.include,
@@ -187,6 +183,11 @@ module JSONAPI
     # override to set context
     def context
       {}
+    end
+
+    # override to set scope_id
+    def scope_id
+      nil
     end
 
     # Control by setting in an initializer:

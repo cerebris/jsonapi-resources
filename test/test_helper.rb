@@ -1,4 +1,5 @@
 require 'simplecov'
+require 'minitest/mock'
 
 # To run tests with coverage:
 # COVERAGE=true rake test
