@@ -42,7 +42,7 @@ module JSONAPI
 
   class ValueFormatter < Formatter
     class << self
-      def format(raw_value, context)
+      def format(raw_value, source)
         super(raw_value)
       end
 
@@ -87,7 +87,7 @@ end
 
 class DefaultValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value, context)
+    def format(raw_value, source)
       raw_value
     end
   end
@@ -95,7 +95,7 @@ end
 
 class IdValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value, context)
+    def format(raw_value, source)
       return if raw_value.nil?
       raw_value.to_s
     end

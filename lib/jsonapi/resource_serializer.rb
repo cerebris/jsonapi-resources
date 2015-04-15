@@ -291,9 +291,9 @@ module JSONAPI
       value = source.send(foreign_key)
 
       if association.is_a?(JSONAPI::Association::HasMany)
-        value.map { |value| IdValueFormatter.format(value, {}) }
+        value.map { |value| IdValueFormatter.format(value, source) }
       elsif association.is_a?(JSONAPI::Association::HasOne)
-        IdValueFormatter.format(value, {})
+        IdValueFormatter.format(value, source)
       end
     end
 
