@@ -191,7 +191,7 @@ end
 
 class DateValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value, context)
+    def format(raw_value, source)
       raw_value.strftime('%m/%d/%Y')
     end
   end

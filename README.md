@@ -909,7 +909,7 @@ A Value formatter has a `format` and an `unformat` method. Here's the base Value
 module JSONAPI
   class ValueFormatter < Formatter
     class << self
-      def format(raw_value, context)
+      def format(raw_value, source)
         super(raw_value)
       end
 
@@ -923,7 +923,7 @@ end
 
 class DefaultValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value, context)
+    def format(raw_value, source)
       case raw_value
         when String, Integer
           return raw_value
@@ -937,7 +937,7 @@ end
 
 You can also create your own Value Formatter. Value Formatters must be named with the `format` name followed by `ValueFormatter`, i.e. `DateWithTimezoneValueFormatter` and derive from `JSONAPI::ValueFormatter`. It is recommended that you create a directory for your formatters, called `formatters`.
 
-The `format` method is called by the `ResourceSerializer` as is serializing a resource. The format method takes the `raw_value`, and `context` parameters. `raw_value` is the value as read from the model, and `context` is the context of the current user/request. From this you can base the formatted version of the attribute current context.
+The `format` method is called by the `ResourceSerializer` as is serializing a resource. The format method takes the `raw_value`, and `source` parameters. `raw_value` is the value as read from the model, and `source` is the full `resource` instance. From the `source` you have access to the `context` of the current user/request. From this you can base the formatted version of the attribute on the `context` and the other values in the resource.
 
 The `unformat` method is called when processing the request. Each incoming attribute (except `links`) are run through the `unformat` method. The `unformat` method takes the `value`, and `context` parameters. `value` is the value as it comes in on the request, and `context` is the context of the current user/request. This allows you process the incoming value to alter its state before it is stored in the model. By default no processing is applied.
 
@@ -956,12 +956,12 @@ and
 ```ruby
 class MyDefaultValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value, context)
+    def format(raw_value, source)
       case raw_value
         when String, Integer
           return raw_value
         when DateTime
-          return raw_value.in_time_zone(context[:current_user].time_zone).to_s
+          return raw_value.in_time_zone(source.context[:current_user].time_zone).to_s
         else
           return raw_value.to_s
       end
