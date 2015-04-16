@@ -4,6 +4,10 @@ def set_content_type_header!
   @request.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
 end
 
+class ConfigControllerTest < ActionController::TestCase
+
+end
+
 class PostsControllerTest < ActionController::TestCase
   def test_index
     get :index
@@ -1386,6 +1390,14 @@ end
 class ExpenseEntriesControllerTest < ActionController::TestCase
   def setup
     JSONAPI.configuration.json_key_format = :camelized_key
+  end
+
+  def test_text_error
+    JSONAPI.configuration.use_text_errors = true
+    get :index, {sort: 'not_in_record'}
+    assert_response 400
+    assert_equal 'INVALID_SORT_FORMAT', json_response['errors'][0]['code']
+    JSONAPI.configuration.use_text_errors = false
   end
 
   def test_expense_entries_index
