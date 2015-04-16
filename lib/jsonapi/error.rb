@@ -8,7 +8,11 @@ module JSONAPI
       @detail         = options[:detail]
       @id             = options[:id]
       @href           = options[:href]
-      @code           = options[:code]
+      @code           = if JSONAPI.configuration.use_text_errors
+                          TEXT_ERRORS[options[:code]]
+                        else
+                          options[:code]
+                        end
       @path           = options[:path]
       @links          = options[:links]
       @status         = options[:status]
