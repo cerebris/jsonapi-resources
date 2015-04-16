@@ -9,7 +9,8 @@ module JSONAPI
                 :allowed_request_params,
                 :default_paginator,
                 :default_page_size,
-                :maximum_page_size
+                :maximum_page_size,
+                :use_text_errors
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -25,6 +26,7 @@ module JSONAPI
 
       self.default_page_size = 10
       self.maximum_page_size = 20
+      self.use_text_errors = false
     end
 
     def json_key_format=(format)
@@ -51,6 +53,10 @@ module JSONAPI
 
     def maximum_page_size=(maximum_page_size)
       @maximum_page_size = maximum_page_size
+    end
+
+    def use_text_errors=(use_text_errors)
+      @use_text_errors = use_text_errors
     end
   end
 
