@@ -400,7 +400,7 @@ module JSONAPI
       end
 
       type = data[:type]
-      if type.nil? || type != format_key(@resource_klass._type).to_s
+      if type.nil? || type != @resource_klass._type.to_s
         raise JSONAPI::Exceptions::ParameterMissing.new(:type)
       end
 
