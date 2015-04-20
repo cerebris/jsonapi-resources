@@ -451,4 +451,42 @@ class RequestTest < ActionDispatch::IntegrationTest
                        })
   end
 
+  def test_flow_self_formatted_route
+    JSONAPI.configuration.route_format = :dasherized_route
+    get '/api/v6/purchase-orders'
+    assert_equal 200, status
+    po_1 = json_response['data'][0]
+
+    get po_1['links']['self']
+    assert_equal 200, status
+    assert_hash_equals po_1, json_response['data']
+  end
+
+  def test_post_formatted_keys
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    post '/api/v6/purchase-orders',
+         {
+           'data' => {
+             'delivery-name' => 'ASDFG Corp',
+             'type' => 'purchase-orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 201, status
+  end
+
+  def test_post_formatted_keys_wrong_format
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    post '/api/v6/purchase-orders',
+         {
+           'data' => {
+             'delivery_name' => 'ASDFG Corp',
+             'type' => 'purchase-orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 400, status
+  end
 end
