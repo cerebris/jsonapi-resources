@@ -408,6 +408,20 @@ module Api
   end
 
   module V6
+    class CustomersController < JSONAPI::ResourceController
+    end
+
+    class PurchaseOrdersController < JSONAPI::ResourceController
+    end
+
+    class LineItemsController < JSONAPI::ResourceController
+    end
+  end
+
+  module V7
+    class CustomersController < JSONAPI::ResourceController
+    end
+
     class PurchaseOrdersController < JSONAPI::ResourceController
     end
 
@@ -799,6 +813,12 @@ module Api
 
       has_one :purchase_order
     end
+  end
+
+  module V7
+    CustomerResource = V6::CustomerResource.dup
+    PurchaseOrderResource = V6::PurchaseOrderResource.dup
+    LineItemResource = V6::LineItemResource.dup
   end
 end
 
