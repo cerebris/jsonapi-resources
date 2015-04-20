@@ -781,7 +781,15 @@ edit_contact GET    /contacts/:id/edit(.:format) contacts#edit
 ```
 
 To manually add in the nested routes you can use the `jsonapi_links`, `jsonapi_related_resources` and
-`jsonapi_related_resource` inside the block.
+`jsonapi_related_resource` inside the block. Or, you can add the default set of nested routes using the `jsonapi_relationships` method. For example:
+
+```ruby
+Rails.application.routes.draw do
+  json_resources :contacts do
+    jsonapi_relationships
+  end
+end
+```
 
 ###### `jsonapi_links`
 
