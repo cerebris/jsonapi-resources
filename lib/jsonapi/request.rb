@@ -281,7 +281,7 @@ module JSONAPI
               # Since we do not yet support polymorphic associations we will raise an error if the type does not match the
               # association's type.
               # ToDo: Support Polymorphic associations
-              if links_object[:type] && (links_object[:type] != format_key(association.type).to_s)
+              if links_object[:type] && (links_object[:type] != association.type.to_s)
                 raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
               end
 
