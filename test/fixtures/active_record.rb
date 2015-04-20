@@ -113,6 +113,35 @@ ActiveRecord::Schema.define do
     t.integer    :author_id
     t.timestamps null: false
   end
+
+  create_table :customers, force: true do |t|
+    t.string   :name
+  end
+
+  create_table :purchase_orders, force: true do |t|
+    t.date     :order_date
+    t.date     :requested_delivery_date
+    t.date     :delivery_date
+    t.integer  :customer_id
+    t.string   :delivery_name
+    t.string   :delivery_address_1
+    t.string   :delivery_address_2
+    t.string   :delivery_city
+    t.string   :delivery_state
+    t.string   :delivery_postal_code
+    t.float    :delivery_fee
+    t.float    :tax
+    t.float    :total
+    t.timestamps null: false
+  end
+
+  create_table :line_items, force: true do |t|
+    t.integer  :purchase_order_id
+    t.string   :part_number
+    t.string   :quantity
+    t.float    :item_cost
+    t.timestamps null: false
+  end
 end
 
 ### MODELS
@@ -239,7 +268,15 @@ class BreedData
   def remove(id)
     @breeds.delete(id)
   end
+end
 
+class CustomerOrder < ActiveRecord::Base
+end
+
+class PurchaseOrder < ActiveRecord::Base
+end
+
+class LineItem < ActiveRecord::Base
 end
 
 ### PORO Data - don't do this in a production app
@@ -367,6 +404,14 @@ module Api
     end
 
     class IsoCurrenciesController < JSONAPI::ResourceController
+    end
+  end
+
+  module V6
+    class PurchaseOrdersController < JSONAPI::ResourceController
+    end
+
+    class LineItemsController < JSONAPI::ResourceController
     end
   end
 end
@@ -718,6 +763,42 @@ module Api
     ExpenseEntryResource = ExpenseEntryResource.dup
     IsoCurrencyResource = IsoCurrencyResource.dup
     EmployeeResource = EmployeeResource.dup
+  end
+end
+
+module Api
+  module V6
+    class CustomerResource < JSONAPI::Resource
+      attribute :name
+
+      has_many :purchase_orders
+    end
+
+    class PurchaseOrderResource < JSONAPI::Resource
+      attribute :order_date
+      attribute :requested_delivery_date
+      attribute :delivery_date
+      attribute :delivery_name
+      attribute :delivery_address_1
+      attribute :delivery_address_2
+      attribute :delivery_city
+      attribute :delivery_state
+      attribute :delivery_postal_code
+      attribute :delivery_fee
+      attribute :tax
+      attribute :total
+
+      has_one :customer
+      has_many :line_items
+    end
+
+    class LineItemResource < JSONAPI::Resource
+      attribute :part_number
+      attribute :quantity
+      attribute :item_cost
+
+      has_one :purchase_order
+    end
   end
 end
 

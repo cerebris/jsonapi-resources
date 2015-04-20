@@ -1,0 +1,11 @@
+po_1_li_1:
+  purchase_order_id: 1
+  part_number: 556324
+  quantity: 1
+  item_cost: 45.67
+
+po_1_li_2:
+  purchase_order_id: 1
+  part_number: 79324231A
+  quantity: 3
+  item_cost: 19.99

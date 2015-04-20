@@ -146,6 +146,15 @@ TestApp.routes.draw do
 
     end
     JSONAPI.configuration.route_format = :underscored_route
+
+    JSONAPI.configuration.route_format = :dasherized_route
+    namespace :v6 do
+      jsonapi_resources :customers
+      jsonapi_resources :purchase_orders
+      jsonapi_resources :line_items
+    end
+    JSONAPI.configuration.route_format = :underscored_route
+
   end
 end
 
