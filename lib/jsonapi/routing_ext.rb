@@ -18,59 +18,58 @@ module ActionDispatch
         end
 
         def jsonapi_resource(*resources, &block)
-          resource_type = resources.first
-          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(resources.first))
+          @resource_type = resources.first
+          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
 
           options = resources.extract_options!.dup
-          options[:controller] ||= resource_type
+          options[:controller] ||= @resource_type
           options.merge!(res.routing_resource_options)
-          options[:path] = format_route(resource_type)
+          options[:path] = format_route(@resource_type)
 
-          resource resource_type, options do
-            @scope[:jsonapi_resource] = resource_type
+          resource @resource_type, options do
+            @scope[:jsonapi_resource] = @resource_type
 
             if block_given?
               yield
             else
-              res._associations.each do |association_name, association|
-                if association.is_a?(JSONAPI::Association::HasMany)
-                  jsonapi_links(association_name)
-                else
-                  jsonapi_link(association_name)
-                end
-              end
+              jsonapi_relationships
+            end
+          end
+        end
+
+        def jsonapi_relationships
+          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
+          res._associations.each do |association_name, association|
+            if association.is_a?(JSONAPI::Association::HasMany)
+              jsonapi_links(association_name)
+              jsonapi_related_resources(association_name)
+            else
+              jsonapi_link(association_name)
+              jsonapi_related_resource(association_name)
             end
           end
         end
 
         def jsonapi_resources(*resources, &block)
-          resource_type = resources.first
-          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(resources.first))
+          @resource_type = resources.first
+          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
 
           options = resources.extract_options!.dup
-          options[:controller] ||= resource_type
+          options[:controller] ||= @resource_type
           options.merge!(res.routing_resource_options)
 
           # Route using the primary_key. Can be overridden using routing_resource_options
           options[:param] ||= res._primary_key
 
-          options[:path] = format_route(resource_type)
+          options[:path] = format_route(@resource_type)
 
-          resources resource_type, options do
-            @scope[:jsonapi_resource] = resource_type
+          resources @resource_type, options do
+            @scope[:jsonapi_resource] = @resource_type
 
             if block_given?
               yield
             else
-              res._associations.each do |association_name, association|
-                if association.is_a?(JSONAPI::Association::HasMany)
-                  jsonapi_links(association_name)
-                  jsonapi_related_resources(association_name)
-                else
-                  jsonapi_link(association_name)
-                  jsonapi_related_resource(association_name)
-                end
-              end
+              jsonapi_relationships
             end
           end
         end

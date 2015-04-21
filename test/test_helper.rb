@@ -66,7 +66,9 @@ TestApp.routes.draw do
   jsonapi_resources :people
   jsonapi_resources :comments
   jsonapi_resources :tags
-  jsonapi_resources :posts
+  jsonapi_resources :posts do
+    jsonapi_relationships
+  end
   jsonapi_resources :sections
   jsonapi_resources :iso_currencies
   jsonapi_resources :expense_entries
