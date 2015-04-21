@@ -543,7 +543,7 @@ class RequestTest < ActionDispatch::IntegrationTest
            }
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
-    assert_equal 201, status
+    assert_equal 200, status
   end
 
 end
