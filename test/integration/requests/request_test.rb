@@ -530,4 +530,20 @@ class RequestTest < ActionDispatch::IntegrationTest
 
     assert_equal 400, status
   end
+
+  def test_patch_formatted_dasherized
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/purchase-orders/1',
+         {
+           'data' => {
+             'id' => '1',
+             'delivery-name' => 'ASDFG Corp',
+             'type' => 'purchase-orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 201, status
+  end
+
 end
