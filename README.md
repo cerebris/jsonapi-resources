@@ -785,7 +785,7 @@ To manually add in the nested routes you can use the `jsonapi_links`, `jsonapi_r
 
 ```ruby
 Rails.application.routes.draw do
-  json_resources :contacts do
+  jsonapi_resources :contacts do
     jsonapi_relationships
   end
 end
