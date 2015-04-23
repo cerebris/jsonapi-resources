@@ -5,6 +5,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def setup
     JSONAPI.configuration.json_key_format = :underscored_key
+    JSONAPI.configuration.route_format = :underscored_route
   end
 
   def after_teardown
