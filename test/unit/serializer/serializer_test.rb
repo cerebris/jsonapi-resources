@@ -10,6 +10,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
     @expense_entry = ExpenseEntry.find(1)
 
     JSONAPI.configuration.json_key_format = :camelized_key
+    JSONAPI.configuration.route_format = :camelized_route
   end
 
   def after_teardown
@@ -1057,26 +1058,29 @@ class SerializerTest < ActionDispatch::IntegrationTest
   end
 
   def test_serializer_camelized_with_value_formatters
+    # JSONAPI.configuration.json_key_format = :camelized_key
+    # JSONAPI.configuration.route_format = :camelized_route
+
     assert_hash_equals(
       {
         data: {
-          type: 'expense_entries',
+          type: 'expenseEntries',
           id: '1',
           transactionDate: '04/15/2014',
           cost: 12.05,
           links: {
-            self: '/expense_entries/1',
+            self: '/expenseEntries/1',
             isoCurrency: {
-              self: '/expense_entries/1/links/iso_currency',
-              related: '/expense_entries/1/iso_currency',
+              self: '/expenseEntries/1/links/isoCurrency',
+              related: '/expenseEntries/1/isoCurrency',
               linkage: {
-                type: 'iso_currencies',
+                type: 'isoCurrencies',
                 id: 'USD'
               }
             },
             employee: {
-              self: '/expense_entries/1/links/employee',
-              related: '/expense_entries/1/employee',
+              self: '/expenseEntries/1/links/employee',
+              related: '/expenseEntries/1/employee',
               linkage: {
                 type: 'people',
                 id: '3'
@@ -1086,13 +1090,13 @@ class SerializerTest < ActionDispatch::IntegrationTest
         },
         included: [
           {
-            type: 'iso_currencies',
+            type: 'isoCurrencies',
             id: 'USD',
             countryName: 'United States',
             name: 'United States Dollar',
             minorUnit: 'cent',
             links: {
-              self: '/iso_currencies/USD'
+              self: '/isoCurrencies/USD'
             }
           },
           {
@@ -1108,7 +1112,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
         ]
       },
       JSONAPI::ResourceSerializer.new(ExpenseEntryResource,
-                                      include: ['iso_currency', 'employee'],
+                                      include: ['isoCurrency', 'employee'],
                                       fields: {people: [:id, :name, :email, :date_joined]}).serialize_to_hash(
         ExpenseEntryResource.new(@expense_entry))
     )
@@ -1128,8 +1132,8 @@ class SerializerTest < ActionDispatch::IntegrationTest
           links: {
             self: '/planets/8',
             planetType: {
-              self: '/planets/8/links/planet_type',
-              related: '/planets/8/planet_type',
+              self: '/planets/8/links/planetType',
+              related: '/planets/8/planetType',
               linkage: nil
             },
             tags: {
@@ -1165,10 +1169,10 @@ class SerializerTest < ActionDispatch::IntegrationTest
           links: {
             self: '/planets/7',
             planetType: {
-              self: '/planets/7/links/planet_type',
-              related: '/planets/7/planet_type',
+              self: '/planets/7/links/planetType',
+              related: '/planets/7/planetType',
               linkage: {
-                type: 'planet_types',
+                type: 'planetTypes',
                 id: '5'
               }
             },
@@ -1190,8 +1194,8 @@ class SerializerTest < ActionDispatch::IntegrationTest
           links: {
             self: '/planets/8',
             planetType: {
-              self: '/planets/8/links/planet_type',
-              related: '/planets/8/planet_type',
+              self: '/planets/8/links/planetType',
+              related: '/planets/8/planetType',
               linkage: nil
             },
             tags: {
@@ -1207,11 +1211,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
       ],
       included: [
         {
-          type: 'planet_types',
+          type: 'planetTypes',
           id: '5',
           name: 'unknown',
           links: {
-            self: '/planet_types/5'
+            self: '/planetTypes/5'
           }
         }
       ]

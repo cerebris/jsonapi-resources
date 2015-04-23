@@ -457,6 +457,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v6/purchase-orders'
     assert_equal 200, status
     po_1 = json_response['data'][0]
+    assert_equal 'purchase-orders', json_response['data'][0]['type']
 
     get po_1['links']['self']
     assert_equal 200, status
@@ -468,6 +469,22 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.json_key_format = :dasherized_key
     get '/api/v7/purchase_orders'
     assert_equal 200, status
+    assert_equal 'purchase-orders', json_response['data'][0]['type']
+
+    po_1 = json_response['data'][0]
+
+    get po_1['links']['self']
+    assert_equal 200, status
+    assert_hash_equals po_1, json_response['data']
+  end
+
+  def test_flow_self_formatted_route_3
+    JSONAPI.configuration.route_format = :underscored_route
+    JSONAPI.configuration.json_key_format = :underscored_key
+    get '/api/v7/purchase_orders'
+    assert_equal 200, status
+    assert_equal 'purchase_orders', json_response['data'][0]['type']
+
     po_1 = json_response['data'][0]
 
     get po_1['links']['self']
