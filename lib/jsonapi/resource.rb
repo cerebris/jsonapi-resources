@@ -1,5 +1,3 @@
-require 'jsonapi/configuration'
-require 'jsonapi/association'
 require 'jsonapi/callbacks'
 
 module JSONAPI

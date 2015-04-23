@@ -1,5 +1,3 @@
-require 'jsonapi/operations_processor'
-
 module JSONAPI
   class ActiveRecordOperationsProcessor < OperationsProcessor
 
