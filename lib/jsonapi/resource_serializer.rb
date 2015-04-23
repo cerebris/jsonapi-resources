@@ -114,21 +114,15 @@ module JSONAPI
 
         resource = source
         id = resource.id
-        # ToDo: See if this is actually needed
-        # if already_serialized?(@primary_class_name, id)
-        #   set_primary(@primary_class_name, id)
-        # end
-
         add_included_object(@primary_class_name, id, object_hash(source,  requested_associations), true)
       end
     end
 
-    # Returns a serialized hash for the source model, with
+    # Returns a serialized hash for the source model
     def object_hash(source, requested_associations)
       obj_hash = attribute_hash(source)
       links = links_hash(source, requested_associations)
 
-      # ToDo: Do we format these required keys
       obj_hash[format_key('type')] = format_value(source.class._type.to_s, :default, source)
       obj_hash[format_key('id')] ||= format_value(source.id, :id, source)
       obj_hash.merge!({links: links}) unless links.empty?
