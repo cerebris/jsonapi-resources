@@ -206,7 +206,8 @@ class Breed
     $breed_data.remove(@id)
   end
 
-  def save!
+  def save
+    true
   end
 end
 
@@ -240,6 +241,9 @@ class BreedData
     @breeds.delete(id)
   end
 
+  def _save_exception
+    JSONAPI::Exceptions::SaveError.new
+  end
 end
 
 ### PORO Data - don't do this in a production app

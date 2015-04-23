@@ -280,6 +280,15 @@ module JSONAPI
       end
     end
 
+    class SaveError < Error
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::KEY_ORDER_MISMATCH,
+                            status: :bad_request,
+                            title: 'A key is required',
+                            detail: 'The resource object does not contain a key.')]
+      end
+    end
+
     class ValidationErrors < Error
       attr_accessor :messages
       def initialize(messages)
