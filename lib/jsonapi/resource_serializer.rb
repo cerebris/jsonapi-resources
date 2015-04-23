@@ -123,8 +123,8 @@ module JSONAPI
       obj_hash = attribute_hash(source)
       links = links_hash(source, requested_associations)
 
-      obj_hash[format_key('type')] = format_value(source.class._type.to_s, :default, source)
-      obj_hash[format_key('id')] ||= format_value(source.id, :id, source)
+      obj_hash['type'] = format_key(source.class._type.to_s)
+      obj_hash['id'] ||= format_value(source.id, :id, source)
       obj_hash.merge!({links: links}) unless links.empty?
       return obj_hash
     end
@@ -244,7 +244,7 @@ module JSONAPI
       linkage = {}
       linkage_id = foreign_key_value(source, association)
       if linkage_id
-        linkage[:type] = format_route(association.type)
+        linkage[:type] = format_key(association.type)
         linkage[:id] = linkage_id
       else
         linkage = nil
@@ -256,7 +256,7 @@ module JSONAPI
       linkage = []
       linkage_ids = foreign_key_value(source, association)
       linkage_ids.each do |linkage_id|
-        linkage.append({type: format_route(association.type), id: linkage_id})
+        linkage.append({type: format_key(association.type), id: linkage_id})
       end
       linkage
     end
