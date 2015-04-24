@@ -1658,7 +1658,7 @@ class PeopleControllerTest < ActionController::TestCase
             id: '3',
             type: 'people',
             links: {
-              'hair-cut': {
+              'hair-cut' => {
                 linkage: {
                   type: 'hair-cuts',
                   id: '1'
