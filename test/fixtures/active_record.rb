@@ -12,6 +12,7 @@ ActiveRecord::Schema.define do
     t.string     :email
     t.datetime   :date_joined
     t.belongs_to :preferences
+    t.integer :hair_cut_id, index: true
     t.timestamps null: false
   end
 
@@ -142,6 +143,10 @@ ActiveRecord::Schema.define do
     t.float    :item_cost
     t.timestamps null: false
   end
+
+  create_table :hair_cuts, force: true do |t|
+    t.string :style
+  end
 end
 
 ### MODELS
@@ -150,6 +155,7 @@ class Person < ActiveRecord::Base
   has_many :comments, foreign_key: 'author_id'
   has_many :expense_entries, foreign_key: 'employee_id', dependent: :restrict_with_exception
   belongs_to :preferences
+  belongs_to :hair_cut
 
   ### Validations
   validates :name, presence: true
@@ -439,6 +445,7 @@ class PersonResource < JSONAPI::Resource
   has_many :posts
 
   has_one :preferences
+  has_one :hair_cut
 
   filter :name
 
@@ -559,6 +566,11 @@ class PostResource < JSONAPI::Resource
     raise JSONAPI::Exceptions::RecordNotFound.new(key) unless find_by_key(key, context: context)
     return key
   end
+end
+
+class HairCutResource < JSONAPI::Resource
+  attribute :style
+  has_many :people
 end
 
 class IsoCurrencyResource < JSONAPI::Resource
@@ -703,6 +715,7 @@ module Api
     PreferencesResource = PreferencesResource.dup
     EmployeeResource = EmployeeResource.dup
     FriendResource = FriendResource.dup
+    HairCutResource = HairCutResource.dup
   end
 end
 

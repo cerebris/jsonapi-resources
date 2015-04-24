@@ -131,6 +131,10 @@ class SerializerTest < ActionDispatch::IntegrationTest
   end
 
   def test_serializer_include
+    serialized = JSONAPI::ResourceSerializer.new(
+      PostResource,
+      include: [:author]
+    ).serialize_to_hash(PostResource.new(@post))
 
     assert_hash_equals(
       {
@@ -189,16 +193,26 @@ class SerializerTest < ActionDispatch::IntegrationTest
                  type: 'preferences',
                  id: '1'
                }
+             },
+             hairCut: {
+               self: "/people/1/links/hairCut",
+               related: "/people/1/hairCut",
+               linkage: nil
              }
             }
           }
         ]
       },
-      JSONAPI::ResourceSerializer.new(PostResource, include: [:author]).serialize_to_hash(
-        PostResource.new(@post)))
+      serialized
+    )
   end
 
   def test_serializer_key_format
+    serialized = JSONAPI::ResourceSerializer.new(
+      PostResource,
+      include: [:author],
+      key_formatter: UnderscoredKeyFormatter
+    ).serialize_to_hash(PostResource.new(@post))
 
     assert_hash_equals(
       {
@@ -257,14 +271,17 @@ class SerializerTest < ActionDispatch::IntegrationTest
                   type: 'preferences',
                   id: '1'
                 }
+              },
+              hair_cut: {
+                self: '/people/1/links/hairCut',
+                related: '/people/1/hairCut',
+                linkage: nil
               }
             }
           }
         ]
       },
-      JSONAPI::ResourceSerializer.new(PostResource,
-                                      include: [:author],
-                                      key_formatter: UnderscoredKeyFormatter).serialize_to_hash(PostResource.new(@post))
+      serialized
     )
   end
 
@@ -565,6 +582,10 @@ class SerializerTest < ActionDispatch::IntegrationTest
   end
 
   def test_serializer_different_foreign_key
+    serialized = JSONAPI::ResourceSerializer.new(
+      PersonResource,
+      include: ['comments']
+    ).serialize_to_hash(PersonResource.new(@fred))
 
     assert_hash_equals(
       {
@@ -591,6 +612,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
             preferences: {
               self: "/people/2/links/preferences",
               related: "/people/2/preferences",
+              linkage: nil
+            },
+            hairCut: {
+              self: "/people/2/links/hairCut",
+              related: "/people/2/hairCut",
               linkage: nil
             }
           }
@@ -654,7 +680,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
           }
         ]
       },
-      JSONAPI::ResourceSerializer.new(PersonResource, include: ['comments']).serialize_to_hash(PersonResource.new(@fred))
+      serialized
     )
   end
 
