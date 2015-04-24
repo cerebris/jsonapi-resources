@@ -335,7 +335,7 @@ module JSONAPI
 
     def unformat_value(attribute, value)
       value_formatter = JSONAPI::ValueFormatter.value_formatter_for(@resource_klass._attribute_options(attribute)[:format])
-      value_formatter.unformat(value, @context)
+      value_formatter.unformat(value)
     end
 
     def verify_permitted_params(params, allowed_fields)

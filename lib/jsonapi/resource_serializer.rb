@@ -124,7 +124,7 @@ module JSONAPI
       links = links_hash(source, requested_associations)
 
       obj_hash['type'] = format_key(source.class._type.to_s)
-      obj_hash['id'] ||= format_value(source.id, :id, source)
+      obj_hash['id'] ||= format_value(source.id, :id)
       obj_hash.merge!({links: links}) unless links.empty?
       return obj_hash
     end
@@ -145,11 +145,7 @@ module JSONAPI
         if format == :default && name == :id
           format = 'id'
         end
-        hash[format_key(name)] = format_value(
-          source.send(name),
-          format,
-          source
-        )
+        hash[format_key(name)] = format_value(source.send(name), format)
       end
     end
 
@@ -291,9 +287,9 @@ module JSONAPI
       value = source.send(foreign_key)
 
       if association.is_a?(JSONAPI::Association::HasMany)
-        value.map { |value| IdValueFormatter.format(value, source) }
+        value.map { |value| IdValueFormatter.format(value) }
       elsif association.is_a?(JSONAPI::Association::HasOne)
-        IdValueFormatter.format(value, source)
+        IdValueFormatter.format(value)
       end
     end
 
@@ -324,9 +320,9 @@ module JSONAPI
       @key_formatter.format(key)
     end
 
-    def format_value(value, format, source)
+    def format_value(value, format)
       value_formatter = JSONAPI::ValueFormatter.value_formatter_for(format)
-      value_formatter.format(value, source)
+      value_formatter.format(value)
     end
   end
 end
