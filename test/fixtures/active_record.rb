@@ -198,6 +198,7 @@ class Breed
       @id = id
     end
     @name = name
+    @errors = ActiveModel::Errors.new(self)
   end
 
   attr_accessor :id, :name
@@ -208,6 +209,20 @@ class Breed
 
   def save
     true
+  end
+
+  def valid?
+    @errors.clear
+    if name.is_a?(String) && name.length > 0
+      return true
+    else
+      @errors.set(:name, ["can't be blank"])
+      return false
+    end
+  end
+
+  def errors
+    @errors
   end
 end
 
@@ -239,10 +254,6 @@ class BreedData
 
   def remove(id)
     @breeds.delete(id)
-  end
-
-  def _save_exception
-    JSONAPI::Exceptions::SaveError.new
   end
 end
 
