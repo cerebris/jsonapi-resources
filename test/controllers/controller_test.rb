@@ -1662,7 +1662,7 @@ class PeopleControllerTest < ActionController::TestCase
     assert_equal 2, json_response['errors'].size
     assert_equal JSONAPI::VALIDATION_ERROR, json_response['errors'][0]['code']
     assert_equal JSONAPI::VALIDATION_ERROR, json_response['errors'][1]['code']
-    assert_match /date_joined - can't be blank/, response.body
+    assert_match /dateJoined - can't be blank/, response.body
     assert_match /name - can't be blank/, response.body
   end
 
