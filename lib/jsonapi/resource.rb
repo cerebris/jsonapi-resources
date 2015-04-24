@@ -111,15 +111,13 @@ module JSONAPI
     end
 
     def _save
-      if @model.save
-        @save_needed = false
-      else
-        raise _save_exception
+      unless @model.valid?
+        raise JSONAPI::Exceptions::ValidationErrors.new(@model.errors.messages)
       end
-    end
 
-    def _save_exception
-      raise JSONAPI::Exceptions::ValidationErrors.new(@model.errors.messages)
+      saved = @model.save
+      @save_needed = !saved
+      saved
     end
 
     def _remove
