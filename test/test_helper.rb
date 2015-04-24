@@ -203,7 +203,7 @@ end
 
 class DateWithTimezoneValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value, context)
+    def format(raw_value)
       raw_value.in_time_zone('Eastern Time (US & Canada)').to_s
     end
   end
@@ -211,7 +211,7 @@ end
 
 class DateValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value, source)
+    def format(raw_value)
       raw_value.strftime('%m/%d/%Y')
     end
   end
@@ -219,11 +219,11 @@ end
 
 class TitleValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value, source)
-      super(raw_value, source).titlecase
+    def format(raw_value)
+      super(raw_value).titlecase
     end
 
-    def unformat(value, context)
+    def unformat(value)
       value.to_s.downcase
     end
   end
