@@ -1738,7 +1738,7 @@ class PeopleControllerTest < ActionController::TestCase
          type: 'people',
          name: 'Joe Author',
          email: 'joe@xyz.fake',
-         "date-joined": '2013-08-07 16:25:00 -0400',
+         "date-joined" => '2013-08-07 16:25:00 -0400',
          links: {
            self: 'http://test.host/people/1',
            comments: {
