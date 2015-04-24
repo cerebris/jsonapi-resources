@@ -18,7 +18,7 @@ module JSONAPI
             @operation = operation
             @result = nil
             run_callbacks :operation do
-              @result = @operation.apply(@context)
+              @result = process_operation(@operation)
               @results.push(@result)
               if @result.has_errors?
                 rollback
@@ -40,6 +40,10 @@ module JSONAPI
     end
 
     def rollback
+    end
+
+    def process_operation(operation)
+      operation.apply(@context)
     end
   end
 end
