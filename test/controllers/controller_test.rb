@@ -1648,6 +1648,28 @@ class PeopleControllerTest < ActionController::TestCase
     assert_response :success
   end
 
+  def test_update_link_with_dasherized_type
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    set_content_type_header!
+    put :update,
+        {
+          id: 3,
+          data: {
+            id: '3',
+            type: 'people',
+            links: {
+              'hair-cut': {
+                linkage: {
+                  type: 'hair-cuts',
+                  id: '1'
+                }
+              }
+            }
+          }
+        }
+    assert_response :success
+  end
+
   def test_create_validations_missing_attribute
     set_content_type_header!
     post :create,
@@ -1705,37 +1727,46 @@ class PeopleControllerTest < ActionController::TestCase
   end
 
   def test_get_related_resource
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    JSONAPI.configuration.route_format = :underscored_key
     get :get_related_resource, {post_id: '2', association: 'author', :source=>'posts'}
     assert_response :success
-    assert_hash_equals json_response,
-                       {
-                         data: {
-                           id: '1',
-                           type: 'people',
-                           name: 'Joe Author',
-                           email: 'joe@xyz.fake',
-                           dateJoined: '2013-08-07 16:25:00 -0400',
-                           links: {
-                             self: 'http://test.host/people/1',
-                             comments: {
-                               self: 'http://test.host/people/1/links/comments',
-                               related: 'http://test.host/people/1/comments'
-                             },
-                             posts: {
-                               self: 'http://test.host/people/1/links/posts',
-                               related: 'http://test.host/people/1/posts'
-                             },
-                             preferences: {
-                               self: 'http://test.host/people/1/links/preferences',
-                               related: 'http://test.host/people/1/preferences',
-                               linkage: {
-                                 type: 'preferences',
-                                 id: '1'
-                               }
-                             }
-                           }
-                         }
-                       }
+    assert_hash_equals(
+      {
+        data: {
+         id: '1',
+         type: 'people',
+         name: 'Joe Author',
+         email: 'joe@xyz.fake',
+         "date-joined": '2013-08-07 16:25:00 -0400',
+         links: {
+           self: 'http://test.host/people/1',
+           comments: {
+             self: 'http://test.host/people/1/links/comments',
+             related: 'http://test.host/people/1/comments'
+           },
+           posts: {
+             self: 'http://test.host/people/1/links/posts',
+             related: 'http://test.host/people/1/posts'
+           },
+           preferences: {
+             self: 'http://test.host/people/1/links/preferences',
+             related: 'http://test.host/people/1/preferences',
+             linkage: {
+               type: 'preferences',
+               id: '1'
+             }
+           },
+           "hair-cut" => {
+             "self" => "http://test.host/people/1/links/hair_cut",
+             "related" => "http://test.host/people/1/hair_cut",
+             "linkage" => nil
+            }
+         }
+        }
+      },
+      json_response
+    )
   end
 
   def test_get_related_resource_nil
