@@ -5,6 +5,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def setup
     JSONAPI.configuration.json_key_format = :underscored_key
+    JSONAPI.configuration.route_format = :underscored_route
   end
 
   def after_teardown
@@ -449,6 +450,118 @@ class RequestTest < ActionDispatch::IntegrationTest
                            {type: 'tags', id: '10'}
                          ]
                        })
+  end
+
+  def test_flow_self_formatted_route_1
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    get '/api/v6/purchase-orders'
+    assert_equal 200, status
+    po_1 = json_response['data'][0]
+    assert_equal 'purchase-orders', json_response['data'][0]['type']
+
+    get po_1['links']['self']
+    assert_equal 200, status
+    assert_hash_equals po_1, json_response['data']
+  end
+
+  def test_flow_self_formatted_route_2
+    JSONAPI.configuration.route_format = :underscored_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    get '/api/v7/purchase_orders'
+    assert_equal 200, status
+    assert_equal 'purchase-orders', json_response['data'][0]['type']
+
+    po_1 = json_response['data'][0]
+
+    get po_1['links']['self']
+    assert_equal 200, status
+    assert_hash_equals po_1, json_response['data']
+  end
+
+  def test_flow_self_formatted_route_3
+    JSONAPI.configuration.route_format = :underscored_route
+    JSONAPI.configuration.json_key_format = :underscored_key
+    get '/api/v7/purchase_orders'
+    assert_equal 200, status
+    assert_equal 'purchase_orders', json_response['data'][0]['type']
+
+    po_1 = json_response['data'][0]
+
+    get po_1['links']['self']
+    assert_equal 200, status
+    assert_hash_equals po_1, json_response['data']
+  end
+
+  def test_post_formatted_keys
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    post '/api/v6/purchase-orders',
+         {
+           'data' => {
+             'delivery-name' => 'ASDFG Corp',
+             'type' => 'purchase-orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 201, status
+  end
+
+  def test_post_formatted_keys_different_route_key_1
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :underscored_key
+    post '/api/v6/purchase-orders',
+         {
+           'data' => {
+             'delivery_name' => 'ASDFG Corp',
+             'type' => 'purchase_orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 201, status
+  end
+
+  def test_post_formatted_keys_different_route_key_2
+    JSONAPI.configuration.route_format = :underscored_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    post '/api/v7/purchase_orders',
+         {
+           'data' => {
+             'delivery-name' => 'ASDFG Corp',
+             'type' => 'purchase-orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 201, status
+  end
+
+  def test_post_formatted_keys_wrong_format
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    post '/api/v6/purchase-orders',
+         {
+           'data' => {
+             'delivery_name' => 'ASDFG Corp',
+             'type' => 'purchase-orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 400, status
+  end
+
+  def test_patch_formatted_dasherized
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/purchase-orders/1',
+         {
+           'data' => {
+             'id' => '1',
+             'delivery-name' => 'ASDFG Corp',
+             'type' => 'purchase-orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 200, status
   end
 
 end

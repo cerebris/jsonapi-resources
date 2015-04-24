@@ -233,7 +233,7 @@ module JSONAPI
       end
 
       {
-        type: raw['type'],
+        type: unformat_key(raw['type']).to_s,
         id: raw['id']
       }
     end
@@ -281,7 +281,7 @@ module JSONAPI
               # Since we do not yet support polymorphic associations we will raise an error if the type does not match the
               # association's type.
               # ToDo: Support Polymorphic associations
-              if links_object[:type] && (links_object[:type] != association.type.to_s)
+              if links_object[:type] && (links_object[:type].to_s != association.type.to_s)
                 raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
               end
 
@@ -400,7 +400,7 @@ module JSONAPI
       end
 
       type = data[:type]
-      if type.nil? || type != @resource_klass._type.to_s
+      if type.nil? || type != format_key(@resource_klass._type).to_s
         raise JSONAPI::Exceptions::ParameterMissing.new(:type)
       end
 
