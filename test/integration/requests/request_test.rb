@@ -564,4 +564,51 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
   end
 
+  def test_patch_formatted_dasherized_links
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/line-items/1',
+          {
+            'data' => {
+              'id' => '1',
+              'type' => 'line-items',
+              'item-cost' => '23.57',
+              'links' => {
+                'purchase-order' => {
+                  'linkage' => {'type' => 'purchase-orders', 'id' => '2'}
+                }
+              }
+            }
+          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 200, status
+  end
+
+  def test_patch_formatted_dasherized_replace_has_many
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/purchase-orders/2?include=line-items,order-flags',
+          {
+            'data' => {
+              'id' => '2',
+              'type' => 'purchase-orders',
+              'links' => {
+                'line-items' => {
+                  'linkage' => [
+                    {'type' => 'line-items', 'id' => '3'},
+                    {'type' => 'line-items', 'id' => '4'}
+                  ]
+                },
+                'order-flags' => {
+                  'linkage' => [
+                    {'type' => 'order-flags', 'id' => '1'},
+                    {'type' => 'order-flags', 'id' => '2'}
+                  ]
+                }
+              }
+            }
+          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 200, status
+  end
 end

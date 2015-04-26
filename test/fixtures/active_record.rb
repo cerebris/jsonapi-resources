@@ -136,6 +136,15 @@ ActiveRecord::Schema.define do
     t.timestamps null: false
   end
 
+  create_table :order_flags, force: true do |t|
+    t.string :name
+  end
+
+  create_table :purchase_orders_order_flags, force: true do |t|
+    t.references :purchase_order, :order_flag, index: true
+  end
+  add_index :purchase_orders_order_flags, [:purchase_order_id, :order_flag_id], unique: true, name: "po_flags_idx"
+
   create_table :line_items, force: true do |t|
     t.integer  :purchase_order_id
     t.string   :part_number
@@ -277,12 +286,22 @@ class BreedData
 end
 
 class CustomerOrder < ActiveRecord::Base
+  has_many :purchase_orders
 end
 
 class PurchaseOrder < ActiveRecord::Base
+  belongs_to :customer
+  has_many :line_items
+
+  has_and_belongs_to_many :order_flags, join_table: :purchase_orders_order_flags
+end
+
+class OrderFlag < ActiveRecord::Base
+  has_and_belongs_to_many :purchase_orders, join_table: :purchase_orders_order_flags
 end
 
 class LineItem < ActiveRecord::Base
+  belongs_to :purchase_order
 end
 
 ### PORO Data - don't do this in a production app
@@ -422,6 +441,9 @@ module Api
 
     class LineItemsController < JSONAPI::ResourceController
     end
+
+    class OrderFlagsController < JSONAPI::ResourceController
+    end
   end
 
   module V7
@@ -432,6 +454,9 @@ module Api
     end
 
     class LineItemsController < JSONAPI::ResourceController
+    end
+
+    class OrderFlagsController < JSONAPI::ResourceController
     end
   end
 end
@@ -817,6 +842,13 @@ module Api
 
       has_one :customer
       has_many :line_items
+      has_many :order_flags, acts_as_set: true
+    end
+
+    class OrderFlagResource < JSONAPI::Resource
+      attributes :name
+
+      has_many :purchase_orders
     end
 
     class LineItemResource < JSONAPI::Resource
@@ -831,6 +863,7 @@ module Api
   module V7
     CustomerResource = V6::CustomerResource.dup
     PurchaseOrderResource = V6::PurchaseOrderResource.dup
+    OrderFlagResource = V6::OrderFlagResource.dup
     LineItemResource = V6::LineItemResource.dup
   end
 end
