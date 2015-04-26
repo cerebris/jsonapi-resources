@@ -309,7 +309,7 @@ module JSONAPI
               if links_object.length == 0
                 checked_has_many_associations[param] = []
               else
-                if links_object.length > 1 || !links_object.has_key?(format_key(association.type))
+                if links_object.length > 1 || !links_object.has_key?(unformat_key(association.type).to_s)
                   raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
                 end
 
