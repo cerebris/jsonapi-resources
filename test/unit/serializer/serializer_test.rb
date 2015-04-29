@@ -133,7 +133,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
   def test_serializer_include
     serialized = JSONAPI::ResourceSerializer.new(
       PostResource,
-      include: [:author]
+      include: ['author']
     ).serialize_to_hash(PostResource.new(@post))
 
     assert_hash_equals(
@@ -210,7 +210,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
   def test_serializer_key_format
     serialized = JSONAPI::ResourceSerializer.new(
       PostResource,
-      include: [:author],
+      include: ['author'],
       key_formatter: UnderscoredKeyFormatter
     ).serialize_to_hash(PostResource.new(@post))
 
@@ -428,7 +428,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
           ]
       },
       JSONAPI::ResourceSerializer.new(PostResource,
-                                      include: [:comments, 'comments.tags']).serialize_to_hash(PostResource.new(@post))
+                                      include: ['comments', 'comments.tags']).serialize_to_hash(PostResource.new(@post))
     )
   end
 
@@ -1138,7 +1138,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
         ]
       },
       JSONAPI::ResourceSerializer.new(ExpenseEntryResource,
-                                      include: ['isoCurrency', 'employee'],
+                                      include: ['iso_currency', 'employee'],
                                       fields: {people: [:id, :name, :email, :date_joined]}).serialize_to_hash(
         ExpenseEntryResource.new(@expense_entry))
     )
