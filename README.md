@@ -64,7 +64,8 @@ class ContactResource < JSONAPI::Resource
 end
 ```
 
-This resource has 5 attributes: `:id`, `:name_first`, `:name_last`, `:email`, `:twitter`. By default these attributes must exist on the model that is handled by the resource.
+This resource has 4 defined attributes: `name_first`, `name_last`, `email`, `twitter`, as well as the automatically 
+defined attributes `id` and `type`. By default these attributes must exist on the model that is handled by the resource.
 
 A resource object wraps a Ruby object, usually an `ActiveModel` record, which is available as the `@model` variable. This allows a resource's methods to access the underlying model.
 
@@ -680,7 +681,7 @@ A hash of resource types and arrays of fields for each resource type.
 
   *Purpose*: determines which fields are serialized for a resource type. This encompasses both attributes and association ids in the links section for a resource. Fields are global for a resource type.
 
-  *Example*: ```fields: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}```
+  *Example*: ```fields: { people: [:email, :comments], posts: [:title, :author], comments: [:body, :post]}```
 
 ```ruby
 post = Post.find(1)
@@ -688,10 +689,10 @@ JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(
   PostResource.new(post),
   include: ['comments','author','comments.tags','author.posts'],
   fields: {
-    people: [:id, :email, :comments],
-    posts: [:id, :title, :author],
+    people: [:email, :comments],
+    posts: [:title, :author],
     tags: [:name],
-    comments: [:id, :body, :post]
+    comments: [:body, :post]
   }
 )
 ```
