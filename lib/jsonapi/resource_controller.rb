@@ -143,7 +143,7 @@ module JSONAPI
     end
 
     def resource_klass_name
-      @resource_klass_name ||= "#{self.class.name.sub(/Controller$/, '').singularize}Resource"
+      @resource_klass_name ||= "#{self.class.name.underscore.sub(/_controller$/, '').singularize}_resource".camelize
     end
 
     def ensure_correct_media_type
