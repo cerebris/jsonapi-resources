@@ -59,7 +59,6 @@ For example:
 require 'jsonapi/resource'
 
 class ContactResource < JSONAPI::Resource
-  attribute :id
   attribute :name_first
   attributes :name_last, :email, :twitter
 end
@@ -75,7 +74,7 @@ For example, a computed attribute for `full_name` could be defined as such:
 require 'jsonapi/resource'
 
 class ContactResource < JSONAPI::Resource
-  attributes :id, :name_first, :name_last, :email, :twitter
+  attributes :name_first, :name_last, :email, :twitter
   attribute :full_name
 
   def full_name
@@ -92,7 +91,7 @@ Here's an example that prevents guest users from seeing the `email` field:
 
 ```ruby
 class AuthorResource < JSONAPI::Resource
-  attributes :id, :name, :email
+  attributes :name, :email
   model_name 'Person'
   has_many :posts
 
@@ -118,7 +117,7 @@ This example prevents `full_name` from being set:
 require 'jsonapi/resource'
 
 class ContactResource < JSONAPI::Resource
-  attributes :id, :name_first, :name_last, :full_name
+  attributes :name_first, :name_last, :full_name
 
   def full_name
     "#{@model.name_first}, #{@model.name_last}"
@@ -146,7 +145,7 @@ Here's an example that prevents sorting by post's `body`:
 
 ```ruby
 class PostResource < JSONAPI::Resource
-  attribute :id, :title, :body
+  attributes :title, :body
 
   def self.sortable_fields(context)
     super(context) - [:body]
@@ -160,7 +159,7 @@ Attributes can have a `Format`. By default all attributes use the default format
 
 ```ruby
 class PersonResource < JSONAPI::Resource
-  attributes :id, :name, :email
+  attributes :name, :email
   attribute :last_login_time, format: :date_with_timezone
 end
 ```
@@ -191,7 +190,7 @@ The name of the underlying model is inferred from the Resource name. It can be o
 
 ```ruby
 class AuthorResource < JSONAPI::Resource
-  attributes :id, :name
+  attribute :name
   model_name 'Person'
   has_many :posts
 end
@@ -205,7 +204,7 @@ Here's a simple example where a post has a single author and an author can have 
 
 ```ruby
 class PostResource < JSONAPI::Resource
-  attribute :id, :title, :body
+  attribute :title, :body
 
   has_one :author
 end
@@ -215,7 +214,7 @@ And the corresponding author:
 
 ```ruby
 class AuthorResource < JSONAPI::Resource
-  attribute :id, :name
+  attribute :name
 
   has_many :posts
 end
@@ -232,7 +231,7 @@ Examples:
 
 ```ruby
  class CommentResource < JSONAPI::Resource
-  attributes :id, :body
+  attributes :body
   has_one :post
   has_one :author, class_name: 'Person'
   has_many :tags, acts_as_set: true
@@ -241,7 +240,7 @@ Examples:
 
 ```ruby
 class ExpenseEntryResource < JSONAPI::Resource
-  attributes :id, :cost, :transaction_date
+  attributes :cost, :transaction_date
 
   has_one :currency, class_name: 'Currency', foreign_key: 'currency_code'
   has_one :employee
@@ -259,7 +258,7 @@ For example:
 require 'jsonapi/resource'
 
 class ContactResource < JSONAPI::Resource
-  attributes :id, :name_first, :name_last, :email, :twitter
+  attributes :name_first, :name_last, :email, :twitter
 
   filter :id
   filters :name_first, :name_last
@@ -278,7 +277,7 @@ For example to allow a user to only retrieve his own posts you can do the follow
 
 ```ruby
 class PostResource < JSONAPI::Resource
-  attribute :id, :title, :body
+  attribute :title, :body
 
   def self.records(options = {})
     context = options[:context]
@@ -356,7 +355,7 @@ Here's an example that defers the `find` operation to a `current_user` set on th
 
 ```ruby
 class AuthorResource < JSONAPI::Resource
-  attributes :id, :name
+  attribute :name
   model_name 'Person'
   has_many :posts
 
@@ -522,7 +521,6 @@ In the following example we have a `resource` that isn't namespaced, and one the
 
 ```ruby
 class PostResource < JSONAPI::Resource
-  attribute :id
   attribute :title
   attribute :body
   attribute :subject
@@ -546,7 +544,6 @@ module Api
     class PostResource < JSONAPI::Resource
       # V1 replaces the non-namespaced resource
       # V1 no longer supports tags and now calls author 'writer'
-      attribute :id
       attribute :title
       attribute :body
       attribute :subject
@@ -563,7 +560,7 @@ module Api
     end
 
     class WriterResource < JSONAPI::Resource
-      attributes :id, :name, :email
+      attributes :name, :email
       model_name 'Person'
       has_many :posts
 
@@ -889,7 +886,7 @@ If you want to change the way an attribute is serialized you have a couple of wa
 
 ```ruby
 class PersonResource < JSONAPI::Resource
-  attributes :id, :name, :email
+  attributes :name, :email
   attribute :last_login_time
 
   def last_login_time
@@ -906,7 +903,7 @@ To overcome the above limitations JR uses Value Formatters. Value Formatters all
 
 ```ruby
 class PersonResource < JSONAPI::Resource
-  attributes :id, :name, :email
+  attributes :name, :email
   attribute :last_login_time, format: :date_with_timezone
 end
 ```
