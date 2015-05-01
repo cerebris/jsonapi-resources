@@ -9,7 +9,7 @@ require 'jsonapi/active_record_operations_processor'
 require 'csv'
 
 module JSONAPI
-  class ResourceController < ActionController::Base
+  class ResourceController < "#{JSONAPI.configuration.base_controller}".constantize
     before_filter :ensure_correct_media_type, only: [:create, :update, :create_association, :update_association]
     before_filter :setup_request
     after_filter :setup_response

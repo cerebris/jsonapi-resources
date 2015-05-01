@@ -10,7 +10,8 @@ module JSONAPI
                 :default_paginator,
                 :default_page_size,
                 :maximum_page_size,
-                :use_text_errors
+                :use_text_errors,
+                :base_controller
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -27,6 +28,8 @@ module JSONAPI
       self.default_page_size = 10
       self.maximum_page_size = 20
       self.use_text_errors = false
+
+      self.base_controller = "ActionController::Base"
     end
 
     def json_key_format=(format)
@@ -57,6 +60,10 @@ module JSONAPI
 
     def use_text_errors=(use_text_errors)
       @use_text_errors = use_text_errors
+    end
+
+    def base_controller=(base_controller)
+      @base_controller = base_controller
     end
   end
 
