@@ -46,8 +46,9 @@ module JSONAPI
           @changing = true
           run_callbacks callback do
             yield
-            save if @save_needed || is_new?
           end
+
+          save if @save_needed || is_new?
         end
       end
     end
