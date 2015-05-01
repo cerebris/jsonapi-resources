@@ -3,6 +3,7 @@ require 'jsonapi-resources'
 
 ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.uncountable 'preferences'
+  inflect.irregular 'numero_telefone', 'numeros_telefone'
 end
 
 ### DATABASE
@@ -156,6 +157,11 @@ ActiveRecord::Schema.define do
   create_table :hair_cuts, force: true do |t|
     t.string :style
   end
+
+  create_table :numeros_telefone, force: true do |t|
+    t.string   :numero_telefone
+    t.timestamps null: false
+  end
 end
 
 ### MODELS
@@ -302,6 +308,9 @@ end
 
 class LineItem < ActiveRecord::Base
   belongs_to :purchase_order
+end
+
+class NumeroTelefone < ActiveRecord::Base
 end
 
 ### PORO Data - don't do this in a production app
@@ -457,6 +466,11 @@ module Api
     end
 
     class OrderFlagsController < JSONAPI::ResourceController
+    end
+  end
+
+  module V8
+    class NumerosTelefoneController < JSONAPI::ResourceController
     end
   end
 end
@@ -865,6 +879,12 @@ module Api
     PurchaseOrderResource = V6::PurchaseOrderResource.dup
     OrderFlagResource = V6::OrderFlagResource.dup
     LineItemResource = V6::LineItemResource.dup
+  end
+
+  module V8
+    class NumeroTelefoneResource < JSONAPI::Resource
+      attribute :numero_telefone
+    end
   end
 end
 

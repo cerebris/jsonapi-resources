@@ -18,6 +18,11 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
   end
 
+  def test_get_inflected_resource
+    get '/api/v8/numeros_telefone'
+    assert_equal 200, status
+  end
+
   def test_get_nested_has_one
     get '/posts/1/author'
     assert_equal 200, status

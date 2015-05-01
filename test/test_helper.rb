@@ -160,6 +160,10 @@ TestApp.routes.draw do
       jsonapi_resources :purchase_orders
       jsonapi_resources :line_items
     end
+
+    namespace :v8 do
+      jsonapi_resources :numeros_telefone
+    end
   end
 end
 
