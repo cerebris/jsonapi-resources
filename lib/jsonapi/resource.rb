@@ -458,7 +458,7 @@ module JSONAPI
       def _resource_name_from_type(type)
         class_name = @@resource_types[type]
         if class_name.nil?
-          class_name = type.to_s.singularize.camelize + 'Resource'
+          class_name = "#{type.to_s.singularize}_resource".camelize
           @@resource_types[type] = class_name
         end
         return class_name
