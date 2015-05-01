@@ -979,7 +979,6 @@ reference:
 module JSONAPI
   class ValueFormatter < Formatter
     class << self
-      def format(raw_value, context)
       def format(raw_value)
         super(raw_value)
       end
@@ -994,7 +993,7 @@ end
 
 class DefaultValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value, source)
+    def format(raw_value)
       case raw_value
         when String, Integer
           return raw_value
@@ -1012,11 +1011,7 @@ recommended that you create a directory for your formatters, called `formatters`
 
 The `format` method is called by the `ResourceSerializer` as is serializing a resource. The format method takes the `raw_value` parameter. `raw_value` is the value as read from the model.
 
-The `unformat` method is called when processing the request. Each incoming attribute (except `links`) are
-run through the `unformat` method. The `unformat` method takes the `value`, and `context` parameters.
-`value` is the value as it comes in on the request, and `context` is the context of the current 
-user/request. This allows you process the incoming value to alter its state before it is stored in the 
-model. By default no processing is applied.
+The `unformat` method is called when processing the request. Each incoming attribute (except `links`) are run through the `unformat` method. The `unformat` method takes a `value` parameter. `value` is the value as it comes in on the request. This allows you process the incoming value to alter its state before it is stored in the model.
 
 ###### Use a Different Default Value Formatter
 
