@@ -34,6 +34,7 @@ class OffsetPaginator < JSONAPI::Paginator
       validparams = params.permit(:offset, :limit)
 
       @offset = validparams[:offset] ? validparams[:offset].to_i : 0
+      @offset = 0 if @offset < 0
       @limit = validparams[:limit] ? validparams[:limit].to_i : JSONAPI.configuration.default_page_size
 
       if @limit < 1
