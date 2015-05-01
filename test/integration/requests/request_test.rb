@@ -5,6 +5,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def setup
     JSONAPI.configuration.json_key_format = :underscored_key
+    JSONAPI.configuration.route_format = :underscored_route
   end
 
   def after_teardown
@@ -14,6 +15,11 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_get
     get '/posts'
+    assert_equal 200, status
+  end
+
+  def test_get_inflected_resource
+    get '/api/v8/numeros_telefone'
     assert_equal 200, status
   end
 
@@ -192,21 +198,21 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_update_association_without_content_type
-    ruby = Section.find_by_name('ruby')
+    ruby = Section.find_by(name: 'ruby')
     patch '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json
 
     assert_equal 415, status
   end
 
   def test_patch_update_association_has_one
-    ruby = Section.find_by_name('ruby')
+    ruby = Section.find_by(name: 'ruby')
     patch '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
   end
 
   def test_put_update_association_has_one
-    ruby = Section.find_by_name('ruby')
+    ruby = Section.find_by(name: 'ruby')
     put '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
@@ -215,14 +221,14 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_patch_update_association_has_many_acts_as_set
     # Comments are acts_as_set=false so PUT/PATCH should respond with 403
 
-    rogue = Comment.find_by_body('Rogue Comment Here')
+    rogue = Comment.find_by(body: 'Rogue Comment Here')
     patch '/posts/5/links/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 403, status
   end
 
   def test_post_update_association_has_many
-    rogue = Comment.find_by_body('Rogue Comment Here')
+    rogue = Comment.find_by(body: 'Rogue Comment Here')
     post '/posts/5/links/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
@@ -231,7 +237,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_put_update_association_has_many_acts_as_set
     # Comments are acts_as_set=false so PUT/PATCH should respond with 403. Note: JR currently treats PUT and PATCH as equivalent
 
-    rogue = Comment.find_by_body('Rogue Comment Here')
+    rogue = Comment.find_by(body: 'Rogue Comment Here')
     put '/posts/5/links/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 403, status
@@ -451,27 +457,203 @@ class RequestTest < ActionDispatch::IntegrationTest
                        })
   end
 
-  # def rails_3_hash
-  #   {}
-  # end
+  def test_flow_self_formatted_route_1
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    get '/api/v6/purchase-orders'
+    assert_equal 200, status
+    po_1 = json_response['data'][0]
+    assert_equal 'purchase-orders', json_response['data'][0]['type']
 
-  if Rails::VERSION::MAJOR < 4
-    # def rails_3_hash
-    #   { "param" => :id }
-    # end
-
-    def patch(url, args={})
-      post url, args.merge({method: :patch})
-    end
-
-    def delete(url, args={})
-      post url, args.merge({method: :delete})
-    end
-
-    def put(url, args={})
-      post url, args.merge({method: :put})
-    end
+    get po_1['links']['self']
+    assert_equal 200, status
+    assert_hash_equals po_1, json_response['data']
   end
 
+  def test_flow_self_formatted_route_2
+    JSONAPI.configuration.route_format = :underscored_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    get '/api/v7/purchase_orders'
+    assert_equal 200, status
+    assert_equal 'purchase-orders', json_response['data'][0]['type']
+
+    po_1 = json_response['data'][0]
+
+    get po_1['links']['self']
+    assert_equal 200, status
+    assert_hash_equals po_1, json_response['data']
+  end
+
+  def test_flow_self_formatted_route_3
+    JSONAPI.configuration.route_format = :underscored_route
+    JSONAPI.configuration.json_key_format = :underscored_key
+    get '/api/v7/purchase_orders'
+    assert_equal 200, status
+    assert_equal 'purchase_orders', json_response['data'][0]['type']
+
+    po_1 = json_response['data'][0]
+
+    get po_1['links']['self']
+    assert_equal 200, status
+    assert_hash_equals po_1, json_response['data']
+  end
+
+  def test_post_formatted_keys
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    post '/api/v6/purchase-orders',
+         {
+           'data' => {
+             'delivery-name' => 'ASDFG Corp',
+             'type' => 'purchase-orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 201, status
+  end
+
+  def test_post_formatted_keys_different_route_key_1
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :underscored_key
+    post '/api/v6/purchase-orders',
+         {
+           'data' => {
+             'delivery_name' => 'ASDFG Corp',
+             'type' => 'purchase_orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 201, status
+  end
+
+  def test_post_formatted_keys_different_route_key_2
+    JSONAPI.configuration.route_format = :underscored_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    post '/api/v7/purchase_orders',
+         {
+           'data' => {
+             'delivery-name' => 'ASDFG Corp',
+             'type' => 'purchase-orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 201, status
+  end
+
+  def test_post_formatted_keys_wrong_format
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    post '/api/v6/purchase-orders',
+         {
+           'data' => {
+             'delivery_name' => 'ASDFG Corp',
+             'type' => 'purchase-orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 400, status
+  end
+
+  def test_patch_formatted_dasherized
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/purchase-orders/1',
+         {
+           'data' => {
+             'id' => '1',
+             'delivery-name' => 'ASDFG Corp',
+             'type' => 'purchase-orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 200, status
+  end
+
+  def test_patch_formatted_dasherized_links
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/line-items/1',
+          {
+            'data' => {
+              'id' => '1',
+              'type' => 'line-items',
+              'item-cost' => '23.57',
+              'links' => {
+                'purchase-order' => {
+                  'linkage' => {'type' => 'purchase-orders', 'id' => '2'}
+                }
+              }
+            }
+          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 200, status
+  end
+
+  def test_patch_formatted_dasherized_replace_has_many
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/purchase-orders/2?include=line-items,order-flags',
+          {
+            'data' => {
+              'id' => '2',
+              'type' => 'purchase-orders',
+              'links' => {
+                'line-items' => {
+                  'linkage' => [
+                    {'type' => 'line-items', 'id' => '3'},
+                    {'type' => 'line-items', 'id' => '4'}
+                  ]
+                },
+                'order-flags' => {
+                  'linkage' => [
+                    {'type' => 'order-flags', 'id' => '1'},
+                    {'type' => 'order-flags', 'id' => '2'}
+                  ]
+                }
+              }
+            }
+          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 200, status
+  end
+
+  def test_post_has_many_link
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    post '/api/v6/purchase-orders/3/links/line-items',
+          {
+            'data' => [
+              {'type' => 'line-items', 'id' => '3'},
+              {'type' => 'line-items', 'id' => '4'}
+            ]
+          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 204, status
+  end
+
+  def test_patch_has_many_link
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/purchase-orders/3/links/order-flags',
+         {
+           'data' => [
+             {'type' => 'order-flags', 'id' => '1'},
+             {'type' => 'order-flags', 'id' => '2'}
+           ]
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 204, status
+  end
+
+  def test_patch_has_one
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/line-items/5/links/purchase-order',
+         {
+           'data' => {'type' => 'purchase-orders', 'id' => '3'}
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 204, status
+  end
 
 end

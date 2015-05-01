@@ -1,14 +1,9 @@
 require 'active_record'
 require 'jsonapi-resources'
 
-if Rails::VERSION::MAJOR >= 4
-  ActiveSupport::Inflector.inflections(:en) do |inflect|
-    inflect.uncountable 'preferences'
-  end
-else
-  ActiveSupport::Inflector.inflections do |inflect|
-    inflect.uncountable 'preferences'
-  end
+ActiveSupport::Inflector.inflections(:en) do |inflect|
+  inflect.uncountable 'preferences'
+  inflect.irregular 'numero_telefone', 'numeros_telefone'
 end
 
 ### DATABASE
@@ -18,6 +13,7 @@ ActiveRecord::Schema.define do
     t.string     :email
     t.datetime   :date_joined
     t.belongs_to :preferences
+    t.integer :hair_cut_id, index: true
     t.timestamps null: false
   end
 
@@ -119,14 +115,62 @@ ActiveRecord::Schema.define do
     t.integer    :author_id
     t.timestamps null: false
   end
+
+  create_table :customers, force: true do |t|
+    t.string   :name
+  end
+
+  create_table :purchase_orders, force: true do |t|
+    t.date     :order_date
+    t.date     :requested_delivery_date
+    t.date     :delivery_date
+    t.integer  :customer_id
+    t.string   :delivery_name
+    t.string   :delivery_address_1
+    t.string   :delivery_address_2
+    t.string   :delivery_city
+    t.string   :delivery_state
+    t.string   :delivery_postal_code
+    t.float    :delivery_fee
+    t.float    :tax
+    t.float    :total
+    t.timestamps null: false
+  end
+
+  create_table :order_flags, force: true do |t|
+    t.string :name
+  end
+
+  create_table :purchase_orders_order_flags, force: true do |t|
+    t.references :purchase_order, :order_flag, index: true
+  end
+  add_index :purchase_orders_order_flags, [:purchase_order_id, :order_flag_id], unique: true, name: "po_flags_idx"
+
+  create_table :line_items, force: true do |t|
+    t.integer  :purchase_order_id
+    t.string   :part_number
+    t.string   :quantity
+    t.float    :item_cost
+    t.timestamps null: false
+  end
+
+  create_table :hair_cuts, force: true do |t|
+    t.string :style
+  end
+
+  create_table :numeros_telefone, force: true do |t|
+    t.string   :numero_telefone
+    t.timestamps null: false
+  end
 end
 
 ### MODELS
 class Person < ActiveRecord::Base
   has_many :posts, foreign_key: 'author_id'
   has_many :comments, foreign_key: 'author_id'
-  has_many :expense_entries, foreign_key: 'employee_id', dependent: (Rails::VERSION::MAJOR < 4 ? :restrict : :restrict_with_exception)
+  has_many :expense_entries, foreign_key: 'employee_id', dependent: :restrict_with_exception
   belongs_to :preferences
+  belongs_to :hair_cut
 
   ### Validations
   validates :name, presence: true
@@ -245,7 +289,28 @@ class BreedData
   def remove(id)
     @breeds.delete(id)
   end
+end
 
+class CustomerOrder < ActiveRecord::Base
+  has_many :purchase_orders
+end
+
+class PurchaseOrder < ActiveRecord::Base
+  belongs_to :customer
+  has_many :line_items
+
+  has_and_belongs_to_many :order_flags, join_table: :purchase_orders_order_flags
+end
+
+class OrderFlag < ActiveRecord::Base
+  has_and_belongs_to_many :purchase_orders, join_table: :purchase_orders_order_flags
+end
+
+class LineItem < ActiveRecord::Base
+  belongs_to :purchase_order
+end
+
+class NumeroTelefone < ActiveRecord::Base
 end
 
 ### PORO Data - don't do this in a production app
@@ -375,6 +440,39 @@ module Api
     class IsoCurrenciesController < JSONAPI::ResourceController
     end
   end
+
+  module V6
+    class CustomersController < JSONAPI::ResourceController
+    end
+
+    class PurchaseOrdersController < JSONAPI::ResourceController
+    end
+
+    class LineItemsController < JSONAPI::ResourceController
+    end
+
+    class OrderFlagsController < JSONAPI::ResourceController
+    end
+  end
+
+  module V7
+    class CustomersController < JSONAPI::ResourceController
+    end
+
+    class PurchaseOrdersController < JSONAPI::ResourceController
+    end
+
+    class LineItemsController < JSONAPI::ResourceController
+    end
+
+    class OrderFlagsController < JSONAPI::ResourceController
+    end
+  end
+
+  module V8
+    class NumerosTelefoneController < JSONAPI::ResourceController
+    end
+  end
 end
 
 ### RESOURCES
@@ -386,6 +484,7 @@ class PersonResource < JSONAPI::Resource
   has_many :posts
 
   has_one :preferences
+  has_one :hair_cut
 
   filter :name
 
@@ -506,6 +605,11 @@ class PostResource < JSONAPI::Resource
     raise JSONAPI::Exceptions::RecordNotFound.new(key) unless find_by_key(key, context: context)
     return key
   end
+end
+
+class HairCutResource < JSONAPI::Resource
+  attribute :style
+  has_many :people
 end
 
 class IsoCurrencyResource < JSONAPI::Resource
@@ -650,6 +754,7 @@ module Api
     PreferencesResource = PreferencesResource.dup
     EmployeeResource = EmployeeResource.dup
     FriendResource = FriendResource.dup
+    HairCutResource = HairCutResource.dup
   end
 end
 
@@ -724,6 +829,62 @@ module Api
     ExpenseEntryResource = ExpenseEntryResource.dup
     IsoCurrencyResource = IsoCurrencyResource.dup
     EmployeeResource = EmployeeResource.dup
+  end
+end
+
+module Api
+  module V6
+    class CustomerResource < JSONAPI::Resource
+      attribute :name
+
+      has_many :purchase_orders
+    end
+
+    class PurchaseOrderResource < JSONAPI::Resource
+      attribute :order_date
+      attribute :requested_delivery_date
+      attribute :delivery_date
+      attribute :delivery_name
+      attribute :delivery_address_1
+      attribute :delivery_address_2
+      attribute :delivery_city
+      attribute :delivery_state
+      attribute :delivery_postal_code
+      attribute :delivery_fee
+      attribute :tax
+      attribute :total
+
+      has_one :customer
+      has_many :line_items
+      has_many :order_flags, acts_as_set: true
+    end
+
+    class OrderFlagResource < JSONAPI::Resource
+      attributes :name
+
+      has_many :purchase_orders
+    end
+
+    class LineItemResource < JSONAPI::Resource
+      attribute :part_number
+      attribute :quantity
+      attribute :item_cost
+
+      has_one :purchase_order
+    end
+  end
+
+  module V7
+    CustomerResource = V6::CustomerResource.dup
+    PurchaseOrderResource = V6::PurchaseOrderResource.dup
+    OrderFlagResource = V6::OrderFlagResource.dup
+    LineItemResource = V6::LineItemResource.dup
+  end
+
+  module V8
+    class NumeroTelefoneResource < JSONAPI::Resource
+      attribute :numero_telefone
+    end
   end
 end
 
