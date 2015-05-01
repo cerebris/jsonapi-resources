@@ -968,7 +968,7 @@ handled for an attribute. The `format` can be set per attribute as it is declare
 ```ruby
 class PersonResource < JSONAPI::Resource
   attributes :name, :email
-  attribute :last_login_time, format: :date_with_timezone
+  attribute :last_login_time, format: :date_with_utc_timezone
 end
 ```
 
@@ -1006,12 +1006,15 @@ end
 ```
 
 You can also create your own Value Formatter. Value Formatters must be named with the `format` name followed by 
-`ValueFormatter`, i.e. `DateWithTimezoneValueFormatter` and derive from `JSONAPI::ValueFormatter`. It is
+`ValueFormatter`, i.e. `DateWithUTCTimezoneValueFormatter` and derive from `JSONAPI::ValueFormatter`. It is
 recommended that you create a directory for your formatters, called `formatters`.
 
-The `format` method is called by the `ResourceSerializer` as is serializing a resource. The format method takes the `raw_value` parameter. `raw_value` is the value as read from the model.
+The `format` method is called by the `ResourceSerializer` as is serializing a resource. The format method takes the 
+`raw_value` parameter. `raw_value` is the value as read from the model.
 
-The `unformat` method is called when processing the request. Each incoming attribute (except `links`) are run through the `unformat` method. The `unformat` method takes a `value` parameter. `value` is the value as it comes in on the request. This allows you process the incoming value to alter its state before it is stored in the model.
+The `unformat` method is called when processing the request. Each incoming attribute (except `links`) are run through 
+the `unformat` method. The `unformat` method takes a `value`, which is the value as it comes in on the 
+request. This allows you process the incoming value to alter its state before it is stored in the model.
 
 ###### Use a Different Default Value Formatter
 
