@@ -309,7 +309,7 @@ module JSONAPI
               if links_object.length == 0
                 checked_has_many_associations[param] = []
               else
-                if links_object.length > 1 || !links_object.has_key?(format_key(association.type))
+                if links_object.length > 1 || !links_object.has_key?(unformat_key(association.type).to_s)
                   raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
                 end
 
@@ -335,7 +335,7 @@ module JSONAPI
 
     def unformat_value(attribute, value)
       value_formatter = JSONAPI::ValueFormatter.value_formatter_for(@resource_klass._attribute_options(attribute)[:format])
-      value_formatter.unformat(value, @context)
+      value_formatter.unformat(value)
     end
 
     def verify_permitted_params(params, allowed_fields)
@@ -357,7 +357,7 @@ module JSONAPI
       association = resource_klass._association(association_type)
 
       if association.is_a?(JSONAPI::Association::HasMany)
-        object_params = {links: {association.name => {linkage: data}}}
+        object_params = {links: {format_key(association.name) => {linkage: data}}}
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
         @operations.push JSONAPI::CreateHasManyAssociationOperation.new(resource_klass,
@@ -371,7 +371,7 @@ module JSONAPI
       association = resource_klass._association(association_type)
 
       if association.is_a?(JSONAPI::Association::HasOne)
-        object_params = {links: {association.name => {linkage: data}}}
+        object_params = {links: {format_key(association.name) => {linkage: data}}}
 
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
@@ -384,7 +384,7 @@ module JSONAPI
           raise JSONAPI::Exceptions::HasManySetReplacementForbidden.new
         end
 
-        object_params = {links: {association.name => {linkage: data}}}
+        object_params = {links: {format_key(association.name) => {linkage: data}}}
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
         @operations.push JSONAPI::ReplaceHasManyAssociationOperation.new(resource_klass,
