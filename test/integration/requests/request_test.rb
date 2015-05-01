@@ -616,4 +616,44 @@ class RequestTest < ActionDispatch::IntegrationTest
 
     assert_equal 200, status
   end
+
+  def test_post_has_many_link
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    post '/api/v6/purchase-orders/3/links/line-items',
+          {
+            'data' => [
+              {'type' => 'line-items', 'id' => '3'},
+              {'type' => 'line-items', 'id' => '4'}
+            ]
+          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 204, status
+  end
+
+  def test_patch_has_many_link
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/purchase-orders/3/links/order-flags',
+         {
+           'data' => [
+             {'type' => 'order-flags', 'id' => '1'},
+             {'type' => 'order-flags', 'id' => '2'}
+           ]
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 204, status
+  end
+
+  def test_patch_has_one
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/line-items/5/links/purchase-order',
+         {
+           'data' => {'type' => 'purchase-orders', 'id' => '3'}
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 204, status
+  end
+
 end
