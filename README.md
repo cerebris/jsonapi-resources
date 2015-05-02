@@ -733,16 +733,16 @@ A hash of resource types and arrays of fields for each resource type.
 
 ```ruby
 post = Post.find(1)
-JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(
-  PostResource.new(post),
-  include: ['comments','author','comments.tags','author.posts'],
+include_resources = ['comments','author','comments.tags','author.posts']
+
+JSONAPI::ResourceSerializer.new(PostResource, include: include_resources,
   fields: {
     people: [:email, :comments],
     posts: [:title, :author],
     tags: [:name],
     comments: [:body, :post]
   }
-)
+).serialize_to_hash(PostResource.new(post))
 ```
 
 ##### `context`
