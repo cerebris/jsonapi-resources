@@ -2006,6 +2006,14 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_match /-1 is not a valid value for limit page parameter./, json_response['errors'][0]['detail']
   end
 
+  def test_books_offset_pagination_bad_param_offset_less_than_zero
+    Api::V2::BookResource.paginator :offset
+
+    get :index, {page: {offset: -1, limit: 20}}
+    assert_response :bad_request
+    assert_match /-1 is not a valid value for offset page parameter./, json_response['errors'][0]['detail']
+  end
+
   def test_books_offset_pagination_invalid_page_format
     Api::V2::BookResource.paginator :offset
 
@@ -2065,13 +2073,12 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_match /-1 is not a valid value for size page parameter./, json_response['errors'][0]['detail']
   end
 
-  def test_books_paged_pagination_invalid_page_format_interpret_int_text
+  def test_books_paged_pagination_invalid_page_format_incorrect
     Api::V2::BookResource.paginator :paged
 
     get :index, {page: 'qwerty'}
-    assert_response :success
-    assert_equal 10, json_response['data'].size
-    assert_equal 'Book 0', json_response['data'][0]['title']
+    assert_response :bad_request
+    assert_match /0 is not a valid value for number page parameter./, json_response['errors'][0]['detail']
   end
 
   def test_books_paged_pagination_invalid_page_format_interpret_int
