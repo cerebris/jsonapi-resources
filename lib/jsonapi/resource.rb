@@ -101,7 +101,7 @@ module JSONAPI
     end
 
     # Override this on a resource to customize how the associated records
-    # are fetched for a model. Particularly helpful for authoriztion.
+    # are fetched for a model. Particularly helpful for authorization.
     def records_for(association_name, options = {})
       model.send association_name
     end
