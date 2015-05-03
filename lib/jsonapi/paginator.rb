@@ -86,7 +86,6 @@ class PagedPaginator < JSONAPI::Paginator
     raise JSONAPI::Exceptions::PageParametersNotAllowed.new(e.params)
   end
 
-
   def verify_pagination_params
     if @size < 1
       raise JSONAPI::Exceptions::InvalidPageValue.new(:size, @size)
