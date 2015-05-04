@@ -421,6 +421,8 @@ module JSONAPI
 
     def parse_replace_operation(data, keys)
       if data.is_a?(Array)
+        keys = parse_key_array(keys).map(&:to_s)
+
         if keys.count != data.count
           raise JSONAPI::Exceptions::CountMismatch
         end
