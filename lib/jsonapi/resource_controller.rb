@@ -1,11 +1,4 @@
-require 'jsonapi/resource_serializer'
 require 'action_controller'
-require 'jsonapi/exceptions'
-require 'jsonapi/error'
-require 'jsonapi/error_codes'
-require 'jsonapi/request'
-require 'jsonapi/operations_processor'
-require 'jsonapi/active_record_operations_processor'
 require 'csv'
 
 module JSONAPI

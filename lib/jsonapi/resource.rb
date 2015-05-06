@@ -1,5 +1,3 @@
-require 'jsonapi/configuration'
-require 'jsonapi/association'
 require 'jsonapi/callbacks'
 
 module JSONAPI
@@ -114,10 +112,13 @@ module JSONAPI
     end
 
     def _save
-      @model.save!
-      @save_needed = false
-    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
-      raise JSONAPI::Exceptions::ValidationErrors.new(e.record.errors.messages)
+      unless @model.valid?
+        raise JSONAPI::Exceptions::ValidationErrors.new(@model.errors.messages)
+      end
+
+      saved = @model.save
+      @save_needed = !saved
+      saved
     end
 
     def _remove

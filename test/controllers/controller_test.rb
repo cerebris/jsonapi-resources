@@ -1840,6 +1840,21 @@ class BreedsControllerTest < ActionController::TestCase
     assert_equal 'Tabby', json_response['data']['name']
   end
 
+  def test_poro_create_validation_error
+    set_content_type_header!
+    post :create,
+         {
+           data: {
+             type: 'breeds',
+             name: ''
+           }
+         }
+
+    assert_equal 1, json_response['errors'].size
+    assert_equal JSONAPI::VALIDATION_ERROR, json_response['errors'][0]['code']
+    assert_match /name - can't be blank/, response.body
+  end
+
   def test_poro_create_update
     set_content_type_header!
     post :create,
