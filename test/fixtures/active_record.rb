@@ -208,6 +208,10 @@ class Breed
 
   def save!
   end
+
+  def self.count
+    $breed_data.breeds.length
+  end
 end
 
 class Book < ActiveRecord::Base
@@ -547,6 +551,7 @@ class BreedResource < JSONAPI::Resource
   def self.find_by_key(id, options = {})
     BreedResource.new($breed_data.breeds[id.to_i], options[:context])
   end
+
 end
 
 class PlanetResource < JSONAPI::Resource
@@ -657,6 +662,8 @@ module Api
     class BookResource < JSONAPI::Resource
       attribute :title
       attribute :isbn
+
+      include_total_count
 
       has_many :book_comments
     end

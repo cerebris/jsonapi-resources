@@ -277,6 +277,14 @@ module JSONAPI
         @_allowed_filters.add(attr.to_sym)
       end
 
+      def include_total_count
+        @_include_total_count = true
+      end
+
+      def include_total_count?
+        !!@_include_total_count
+      end
+
       def primary_key(key)
         @_primary_key = key.to_sym
       end
@@ -329,7 +337,8 @@ module JSONAPI
             records = apply_filter(records, filter, value)
           end
         end
-        records.includes(required_includes)
+        records = records.includes(required_includes) if records.respond_to?(:includes) # Not supported for PORO
+        records
       end
 
       # Override this method if you have more complex requirements than this basic find method provides
@@ -349,6 +358,10 @@ module JSONAPI
         end
 
         return resources
+      end
+
+      def total_count(filters, options = {})
+        apply_filters(records(options), filters).count
       end
 
       def find_by_key(key, options = {})
