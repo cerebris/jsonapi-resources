@@ -294,8 +294,10 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
+             attributes: {
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
              links: {
                author: {linkage: {type: 'people', id: '3'}}
              }
@@ -315,8 +317,10 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
+             attributes: {
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
              links: {
                author: {linkage: {type: 'people', id: '304567'}}
              }
@@ -334,9 +338,11 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             asdfg: 'aaaa',
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
+             attributes: {
+               asdfg: 'aaaa',
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
              links: {
                author: {linkage: {type: 'people', id: '3'}}
              }
@@ -353,8 +359,10 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             title: 'JSONAPIResources is the greatest thing...',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
+             attributes: {
+               title: 'JSONAPIResources is the greatest thing...',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
              links: {
                author: nil
              }
@@ -379,16 +387,20 @@ class PostsControllerTest < ActionController::TestCase
            data: [
              {
                type: 'posts',
-               title: 'JR is Great',
-               body: 'JSONAPIResources is the greatest thing since unsliced bread.',
+               attributes: {
+                 title: 'JR is Great',
+                 body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+               },
                links: {
                  author: {linkage: {type: 'people', id: '3'}}
                }
              },
              {
                type: 'posts',
-               title: 'Ember is Great',
-               body: 'Ember is the greatest thing since unsliced bread.',
+               attributes: {
+                 title: 'Ember is Great',
+                 body: 'Ember is the greatest thing since unsliced bread.'
+               },
                links: {
                  author: {linkage: {type: 'people', id: '3'}}
                }
@@ -411,16 +423,20 @@ class PostsControllerTest < ActionController::TestCase
            data: [
              {
                type: 'posts',
-               Title: 'JR is Great',
-               body: 'JSONAPIResources is the greatest thing since unsliced bread.',
+               attributes: {
+                 Title: 'JR is Great',
+                 body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+               },
                links: {
                  author: {linkage: {type: 'people', id: '3'}}
                }
              },
              {
                type: 'posts',
-               title: 'Ember is Great',
-               BODY: 'Ember is the greatest thing since unsliced bread.',
+               attributes: {
+                 title: 'Ember is Great',
+                 BODY: 'Ember is the greatest thing since unsliced bread.'
+               },
                links: {
                  author: {linkage: {type: 'people', id: '3'}}
                }
@@ -438,8 +454,10 @@ class PostsControllerTest < ActionController::TestCase
          {
            data_spelled_wrong: {
              type: 'posts',
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
+             attributes: {
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
              links: {
                author: {linkage: {type: 'people', id: '3'}}
              }
@@ -456,8 +474,10 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts_spelled_wrong',
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
+             attributes: {
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
              links: {
                author: {linkage: {type: 'people', id: '3'}}
              }
@@ -473,8 +493,10 @@ class PostsControllerTest < ActionController::TestCase
     post :create,
          {
            data: {
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
+             attributes: {
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
              links: {
                author: {linkage: {type: 'people', id: '3'}}
              }
@@ -491,8 +513,10 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             subject: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
+             attributes: {
+               subject: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
              links: {
                author: {linkage: {type: 'people', id: '3'}}
              }
@@ -509,8 +533,10 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
+             attributes: {
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
              links: {
                author: {linkage: {type: 'people', id: '3'}},
                tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
@@ -531,8 +557,10 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
+             attributes: {
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
              links: {
                author: {linkage: {type: 'people', id: '3'}},
                tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
@@ -553,8 +581,10 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             title: 'JR is Great!',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread!',
+             attributes: {
+               title: 'JR is Great!',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread!'
+             },
              links: {
                author: {linkage: {type: 'people', id: '3'}},
                tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
@@ -581,7 +611,9 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             id: '3',
             type: 'posts',
-            title: 'A great new Post',
+            attributes: {
+              title: 'A great new Post'
+            },
             links: {
               section: {linkage: {type: 'sections', id: "#{javascript.id}"}},
               tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
@@ -608,7 +640,9 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             id: '3',
             type: 'posts',
-            title: 'A great new Post',
+            attributes: {
+              title: 'A great new Post'
+            },
             links: {
               section: {linkage: {type: 'sections', id: 1}},
               tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
@@ -625,7 +659,9 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             type: 'posts',
             id: 3,
-            title: 'A great new Post',
+            attributes: {
+              title: 'A great new Post'
+            },
             links: {
               section: nil,
               tags: []
@@ -978,7 +1014,9 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             type: 'posts',
             id: 2,
-            title: 'A great new Post',
+            attributes: {
+              title: 'A great new Post'
+            },
             links: {
               section: {type: 'sections', id: "#{javascript.id}"},
               tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
@@ -1000,8 +1038,10 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             type: 'posts',
             id: '3',
-            asdfg: 'aaaa',
-            title: 'A great new Post',
+            attributes: {
+              asdfg: 'aaaa',
+              title: 'A great new Post'
+            },
             links: {
               section: {type: 'sections', id: "#{javascript.id}"},
               tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
@@ -1023,7 +1063,9 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             type: 'posts',
             id: '3',
-            title: 'A great new Post',
+            attributes: {
+              title: 'A great new Post'
+            },
             links: {
               asdfg: 'aaaa',
               section: {type: 'sections', id: "#{javascript.id}"},
@@ -1045,7 +1087,9 @@ class PostsControllerTest < ActionController::TestCase
           id: 3,
           data_spelled_wrong: {
             type: 'posts',
-            title: 'A great new Post',
+            attributes: {
+              title: 'A great new Post'
+            },
             links: {
               section: {type: 'sections', id: "#{javascript.id}"},
               tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
@@ -1065,7 +1109,9 @@ class PostsControllerTest < ActionController::TestCase
           id: 3,
           data: {
             type: 'posts',
-            title: 'A great new Post'
+            attributes: {
+              title: 'A great new Post'
+            }
           }
         }
 
@@ -1083,7 +1129,9 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             id: '3',
             type_spelled_wrong: 'posts',
-            title: 'A great new Post',
+            attributes: {
+              title: 'A great new Post'
+            },
             links: {
               section: {type: 'sections', id: "#{javascript.id}"},
               tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
@@ -1093,6 +1141,31 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /The required parameter, type, is missing./, response.body
+  end
+
+  def test_update_unknown_key
+    set_content_type_header!
+    javascript = Section.find_by(name: 'javascript')
+
+    put :update,
+        {
+          id: 3,
+          data: {
+            id: '3',
+            type: 'posts',
+            body: 'asdfg',
+            attributes: {
+              title: 'A great new Post'
+            },
+            links: {
+              section: {type: 'sections', id: "#{javascript.id}"},
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
+            }
+          }
+        }
+
+    assert_response :bad_request
+    assert_match /body is not allowed/, response.body
   end
 
   def test_update_multiple
@@ -1106,7 +1179,9 @@ class PostsControllerTest < ActionController::TestCase
             {
               type: 'posts',
               id: 3,
-              title: 'A great new Post QWERTY',
+              attributes: {
+                title: 'A great new Post QWERTY'
+              },
               links: {
                 section: {linkage: {type: 'sections', id: "#{javascript.id}"}},
                 tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
@@ -1115,7 +1190,9 @@ class PostsControllerTest < ActionController::TestCase
             {
               type: 'posts',
               id: 16,
-              title: 'A great new Post ASDFG',
+              attributes: {
+                title: 'A great new Post ASDFG'
+              },
               links: {
                 section: {linkage: {type: 'sections', id: "#{javascript.id}"}},
                 tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
@@ -1152,7 +1229,9 @@ class PostsControllerTest < ActionController::TestCase
           data: [
             {
               type: 'posts',
-              title: 'A great new Post ASDFG',
+              attributes: {
+                title: 'A great new Post ASDFG'
+              },
               links: {
                 section: {type: 'sections', id: "#{javascript.id}"},
                 tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
@@ -1160,7 +1239,9 @@ class PostsControllerTest < ActionController::TestCase
             },
             {
               type: 'posts',
-              title: 'A great new Post QWERTY',
+              attributes: {
+                title: 'A great new Post QWERTY'
+              },
               links: {
                 section: {type: 'sections', id: "#{javascript.id}"},
                 tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
@@ -1183,7 +1264,9 @@ class PostsControllerTest < ActionController::TestCase
             {
               type: 'posts',
               id: 3,
-              title: 'A great new Post ASDFG',
+              attributes: {
+                title: 'A great new Post ASDFG'
+              },
               links: {
                 section: {linkage: {type: 'sections', id: "#{javascript.id}"}},
                 tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
@@ -1192,7 +1275,9 @@ class PostsControllerTest < ActionController::TestCase
             {
               type: 'posts',
               id: 8,
-              title: 'A great new Post QWERTY',
+              attributes: {
+                title: 'A great new Post QWERTY'
+              },
               links: {
                 section: {linkage: {type: 'sections', id: "#{javascript.id}"}},
                 tags: {linkage: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
@@ -1215,7 +1300,9 @@ class PostsControllerTest < ActionController::TestCase
             {
               type: 'posts',
               id: 3,
-              title: 'A great new Post QWERTY',
+              attributes: {
+                title: 'A great new Post QWERTY'
+              },
               links: {
                 section: {type: 'sections', id: "#{javascript.id}"},
                 tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
@@ -1224,7 +1311,9 @@ class PostsControllerTest < ActionController::TestCase
             {
               type: 'posts',
               id: 9,
-              title: 'A great new Post ASDFG',
+              attributes: {
+                title: 'A great new Post ASDFG'
+              },
               links: {
                 section: {type: 'sections', id: "#{javascript.id}"},
                 tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
@@ -1244,7 +1333,9 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             type: 'posts',
             id: '3',
-            subject: 'A great new Post',
+            attributes: {
+              subject: 'A great new Post'
+            },
             links: {
               author: {type: 'people', id: '1'},
               tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
@@ -1264,7 +1355,9 @@ class PostsControllerTest < ActionController::TestCase
           id: 3,
           data: {
             type: 'posts',
-            subject: 'A great new Post',
+            attributes: {
+              subject: 'A great new Post'
+            },
             linked_objects: {
               author: {type: 'people', id: '1'},
               tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
@@ -1457,8 +1550,10 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
          {
            data: {
              type: 'expense_entries',
-             transaction_date: '2014/04/15',
-             cost: 50.58,
+             attributes: {
+               transaction_date: '2014/04/15',
+               cost: 50.58
+             },
              links: {
                employee: {linkage: {type: 'people', id: '3'}},
                iso_currency: {linkage: {type: 'iso_currencies', id: 'USD'}}
@@ -1486,8 +1581,10 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
          {
            data: {
              type: 'expense_entries',
-             transactionDate: '2014/04/15',
-             cost: 50.58,
+             attributes: {
+               transactionDate: '2014/04/15',
+               cost: 50.58
+             },
              links: {
                employee: {linkage: {type: 'people', id: '3'}},
                isoCurrency: {linkage: {type: 'iso_currencies', id: 'USD'}}
@@ -1515,8 +1612,10 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
          {
            data: {
              type: 'expense_entries',
-             'transaction-date' => '2014/04/15',
-             cost: 50.58,
+             attributes: {
+               'transaction-date' => '2014/04/15',
+               cost: 50.58
+             },
              links: {
                employee: {linkage: {type: 'people', id: '3'}},
                'iso-currency' => {linkage: {type: 'iso_currencies', id: 'USD'}}
@@ -1638,9 +1737,11 @@ class PeopleControllerTest < ActionController::TestCase
          {
            data: {
              type: 'people',
-             name: 'Steve Jobs',
-             email: 'sj@email.zzz',
-             dateJoined: DateTime.parse('2014-1-30 4:20:00 UTC +00:00')
+             attributes: {
+               name: 'Steve Jobs',
+               email: 'sj@email.zzz',
+               dateJoined: DateTime.parse('2014-1-30 4:20:00 UTC +00:00')
+             }
            }
          }
 
@@ -1675,7 +1776,9 @@ class PeopleControllerTest < ActionController::TestCase
          {
            data: {
              type: 'people',
-             email: 'sj@email.zzz'
+             attributes: {
+               email: 'sj@email.zzz'
+             }
            }
          }
 
@@ -1695,7 +1798,9 @@ class PeopleControllerTest < ActionController::TestCase
           data: {
             id: '3',
             type: 'people',
-            name: ''
+            attributes: {
+              name: ''
+            }
           }
         }
 
@@ -1832,7 +1937,9 @@ class BreedsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'breeds',
-             name: 'tabby'
+             attributes: {
+               name: 'tabby'
+             }
            }
          }
 
@@ -1847,7 +1954,9 @@ class BreedsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'breeds',
-             name: ''
+             attributes: {
+               name: ''
+             }
            }
          }
 
@@ -1862,7 +1971,9 @@ class BreedsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'breeds',
-             name: 'CALIC'
+             attributes: {
+               name: 'CALIC'
+             }
            }
          }
 
@@ -1876,7 +1987,9 @@ class BreedsControllerTest < ActionController::TestCase
           data: {
             id: json_response['data']['id'],
             type: 'breeds',
-            name: 'calico'
+            attributes: {
+              name: 'calico'
+            }
           }
         }
     assert_response :success
@@ -1936,8 +2049,10 @@ class Api::V1::PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             title: 'JR - now with Namespacing',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread now that it has namespaced resources.',
+             attributes: {
+               title: 'JR - now with Namespacing',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread now that it has namespaced resources.'
+             },
              links: {
                writer: { linkage: {type: 'writers', id: '3'}}
              }

@@ -93,7 +93,9 @@ class RequestTest < ActionDispatch::IntegrationTest
               'type' => 'posts',
               'id' => '3',
             },
-            'title' => 'A great new Post',
+            'attributes' => {
+              'title' => 'A great new Post'
+            },
             'links' => {
               'tags' => [
                 {type: 'tags', id: 3},
@@ -112,7 +114,9 @@ class RequestTest < ActionDispatch::IntegrationTest
           'data' => {
             'type' => 'posts',
             'id' => '3',
-            'title' => 'A great new Post',
+            'attributes' => {
+              'title' => 'A great new Post'
+            },
             'links' => {
               'tags' => {
                 'linkage' => [
@@ -131,7 +135,9 @@ class RequestTest < ActionDispatch::IntegrationTest
     post '/posts',
       {
         'posts' => {
-          'title' => 'A great new Post',
+          'attributes' => {
+            'title' => 'A great new Post'
+          },
           'links' => {
             'tags' => {
               'linkage' => [
@@ -151,8 +157,10 @@ class RequestTest < ActionDispatch::IntegrationTest
       {
         'data' => {
           'type' => 'posts',
-          'title' => 'A great new Post',
-          'body' => 'JSONAPIResources is the greatest thing since unsliced bread.',
+          'attributes' => {
+            'title' => 'A great new Post',
+            'body' => 'JSONAPIResources is the greatest thing since unsliced bread.'
+          },
           'links' => {
             'author' => {'linkage' => {type: 'people', id: '3'}}
           }
@@ -259,7 +267,9 @@ class RequestTest < ActionDispatch::IntegrationTest
           'data' => {
             'type' => 'posts',
             'id' => '3',
-            'title' => 'A great new Post',
+            'attributes' => {
+              'title' => 'A great new Post'
+            },
             'links' => {
               'tags' => {
                 'linkage' => [
@@ -280,7 +290,9 @@ class RequestTest < ActionDispatch::IntegrationTest
           'data' => {
             'type' => 'posts',
             'id' => '3',
-            'title' => 'A great new Post',
+            'attributes' => {
+              'title' => 'A great new Post'
+            },
             'links' => {
               'tags' => {
                 'linkage' => [
@@ -300,7 +312,9 @@ class RequestTest < ActionDispatch::IntegrationTest
       {
        'data' => {
          'type' => 'posts',
-         'title' => 'A great new Post',
+         'attributes' => {
+           'title' => 'A great new Post'
+         },
          'links' => {
            'author' => {'linkage' => {type: 'people', id: '3'}}
          }
@@ -504,7 +518,9 @@ class RequestTest < ActionDispatch::IntegrationTest
     post '/api/v6/purchase-orders',
          {
            'data' => {
-             'delivery-name' => 'ASDFG Corp',
+             'attributes' => {
+               'delivery-name' => 'ASDFG Corp'
+             },
              'type' => 'purchase-orders'
            }
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -518,7 +534,9 @@ class RequestTest < ActionDispatch::IntegrationTest
     post '/api/v6/purchase-orders',
          {
            'data' => {
-             'delivery_name' => 'ASDFG Corp',
+             'attributes' => {
+               'delivery_name' => 'ASDFG Corp'
+             },
              'type' => 'purchase_orders'
            }
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -532,7 +550,9 @@ class RequestTest < ActionDispatch::IntegrationTest
     post '/api/v7/purchase_orders',
          {
            'data' => {
-             'delivery-name' => 'ASDFG Corp',
+             'attributes' => {
+               'delivery-name' => 'ASDFG Corp'
+             },
              'type' => 'purchase-orders'
            }
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -546,7 +566,9 @@ class RequestTest < ActionDispatch::IntegrationTest
     post '/api/v6/purchase-orders',
          {
            'data' => {
-             'delivery_name' => 'ASDFG Corp',
+             'attributes' => {
+               'delivery_name' => 'ASDFG Corp'
+             },
              'type' => 'purchase-orders'
            }
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -561,7 +583,9 @@ class RequestTest < ActionDispatch::IntegrationTest
          {
            'data' => {
              'id' => '1',
-             'delivery-name' => 'ASDFG Corp',
+             'attributes' => {
+               'delivery-name' => 'ASDFG Corp'
+             },
              'type' => 'purchase-orders'
            }
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -577,7 +601,9 @@ class RequestTest < ActionDispatch::IntegrationTest
             'data' => {
               'id' => '1',
               'type' => 'line-items',
-              'item-cost' => '23.57',
+              'attributes' => {
+                'item-cost' => '23.57'
+              },
               'links' => {
                 'purchase-order' => {
                   'linkage' => {'type' => 'purchase-orders', 'id' => '2'}
