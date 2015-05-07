@@ -97,12 +97,21 @@ module JSONAPI
 
     # Returns a serialized hash for the source model
     def object_hash(source, include_directives)
-      obj_hash = attribute_hash(source)
-      links = links_hash(source, include_directives)
+      obj_hash = {}
+
+      id_format = source.class._attribute_options(:id)[:format]
+      #protect against ids that were declared as an attribute, but did not have a format set.
+      id_format = 'id' if id_format == :default
+      obj_hash['id'] = format_value(source.id, id_format)
 
       obj_hash['type'] = format_key(source.class._type.to_s)
-      obj_hash['id'] ||= format_value(source.id, :id)
-      obj_hash.merge!({links: links}) unless links.empty?
+
+      attributes = attribute_hash(source)
+      obj_hash.merge!({'attributes': attributes}) unless attributes.empty?
+
+      links = links_hash(source, include_directives)
+      obj_hash.merge!({'links': links}) unless links.empty?
+
       return obj_hash
     end
 
@@ -119,10 +128,9 @@ module JSONAPI
 
       fields.each_with_object({}) do |name, hash|
         format = source.class._attribute_options(name)[:format]
-        if format == :default && name == :id
-          format = 'id'
+        unless name == :id
+          hash[format_key(name)] = format_value(source.send(name), format)
         end
-        hash[format_key(name)] = format_value(source.send(name), format)
       end
     end
 
