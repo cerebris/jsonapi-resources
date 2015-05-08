@@ -244,6 +244,10 @@ module JSONAPI
       def attribute(attr, options = {})
         check_reserved_attribute_name(attr)
 
+        if (attr.to_sym == :id) && (options[:format].nil?)
+          ActiveSupport::Deprecation.warn('Id without format is no longer supported. Please remove ids from attributes, or specify a format.')
+        end
+
         @_attributes ||= {}
         @_attributes[attr] = options
         define_method attr do

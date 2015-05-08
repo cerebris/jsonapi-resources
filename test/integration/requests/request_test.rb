@@ -50,7 +50,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/iso_currencies?filter[country_name]=Canada'
     assert_equal 200, status
     assert_equal 1, json_response['data'].size
-    assert_equal 'Canada', json_response['data'][0]['country_name']
+    assert_equal 'Canada', json_response['data'][0]['attributes']['country_name']
   end
 
   def test_get_camelized_key_filtered
@@ -58,7 +58,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/iso_currencies?filter[countryName]=Canada'
     assert_equal 200, status
     assert_equal 1, json_response['data'].size
-    assert_equal 'Canada', json_response['data'][0]['countryName']
+    assert_equal 'Canada', json_response['data'][0]['attributes']['countryName']
   end
 
   def test_get_camelized_route_and_key_filtered
@@ -66,7 +66,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v4/isoCurrencies?filter[countryName]=Canada'
     assert_equal 200, status
     assert_equal 1, json_response['data'].size
-    assert_equal 'Canada', json_response['data'][0]['countryName']
+    assert_equal 'Canada', json_response['data'][0]['attributes']['countryName']
   end
 
   def test_get_camelized_route_and_links
@@ -93,7 +93,9 @@ class RequestTest < ActionDispatch::IntegrationTest
               'type' => 'posts',
               'id' => '3',
             },
-            'title' => 'A great new Post',
+            'attributes' => {
+              'title' => 'A great new Post'
+            },
             'links' => {
               'tags' => [
                 {type: 'tags', id: 3},
@@ -112,7 +114,9 @@ class RequestTest < ActionDispatch::IntegrationTest
           'data' => {
             'type' => 'posts',
             'id' => '3',
-            'title' => 'A great new Post',
+            'attributes' => {
+              'title' => 'A great new Post'
+            },
             'links' => {
               'tags' => {
                 'linkage' => [
@@ -131,7 +135,9 @@ class RequestTest < ActionDispatch::IntegrationTest
     post '/posts',
       {
         'posts' => {
-          'title' => 'A great new Post',
+          'attributes' => {
+            'title' => 'A great new Post'
+          },
           'links' => {
             'tags' => {
               'linkage' => [
@@ -151,8 +157,10 @@ class RequestTest < ActionDispatch::IntegrationTest
       {
         'data' => {
           'type' => 'posts',
-          'title' => 'A great new Post',
-          'body' => 'JSONAPIResources is the greatest thing since unsliced bread.',
+          'attributes' => {
+            'title' => 'A great new Post',
+            'body' => 'JSONAPIResources is the greatest thing since unsliced bread.'
+          },
           'links' => {
             'author' => {'linkage' => {type: 'people', id: '3'}}
           }
@@ -181,7 +189,7 @@ class RequestTest < ActionDispatch::IntegrationTest
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 201, status
-    assert_nil json_response['data']['body']
+    assert_nil json_response['data']['attributes']['body']
     assert_nil json_response['data']['links']['post']['linkage']
     assert_nil json_response['data']['links']['author']['linkage']
   end
@@ -259,7 +267,9 @@ class RequestTest < ActionDispatch::IntegrationTest
           'data' => {
             'type' => 'posts',
             'id' => '3',
-            'title' => 'A great new Post',
+            'attributes' => {
+              'title' => 'A great new Post'
+            },
             'links' => {
               'tags' => {
                 'linkage' => [
@@ -280,7 +290,9 @@ class RequestTest < ActionDispatch::IntegrationTest
           'data' => {
             'type' => 'posts',
             'id' => '3',
-            'title' => 'A great new Post',
+            'attributes' => {
+              'title' => 'A great new Post'
+            },
             'links' => {
               'tags' => {
                 'linkage' => [
@@ -300,7 +312,9 @@ class RequestTest < ActionDispatch::IntegrationTest
       {
        'data' => {
          'type' => 'posts',
-         'title' => 'A great new Post',
+         'attributes' => {
+           'title' => 'A great new Post'
+         },
          'links' => {
            'author' => {'linkage' => {type: 'people', id: '3'}}
          }
@@ -333,7 +347,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books'
     assert_equal 200, status
     assert_equal JSONAPI.configuration.default_page_size, json_response['data'].size
-    assert_equal 'Book 0', json_response['data'][0]['title']
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
   end
 
   def test_pagination_offset_style_offset
@@ -341,7 +355,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books?page[offset]=50'
     assert_equal 200, status
     assert_equal JSONAPI.configuration.default_page_size, json_response['data'].size
-    assert_equal 'Book 50', json_response['data'][0]['title']
+    assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
   end
 
   def test_pagination_offset_style_offset_limit
@@ -349,7 +363,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books?page[offset]=50&page[limit]=20'
     assert_equal 200, status
     assert_equal 20, json_response['data'].size
-    assert_equal 'Book 50', json_response['data'][0]['title']
+    assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
   end
 
   def test_pagination_offset_bad_param
@@ -373,7 +387,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books/1/book_comments?page[limit]=10'
     assert_equal 200, status
     assert_equal 10, json_response['data'].size
-    assert_equal 'This is comment 9 on book 1.', json_response['data'][9]['body']
+    assert_equal 'This is comment 9 on book 1.', json_response['data'][9]['attributes']['body']
   end
 
   def test_pagination_related_resources_data_includes
@@ -382,7 +396,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books/1/book_comments?page[limit]=10&include=author,book'
     assert_equal 200, status
     assert_equal 10, json_response['data'].size
-    assert_equal 'This is comment 9 on book 1.', json_response['data'][9]['body']
+    assert_equal 'This is comment 9 on book 1.', json_response['data'][9]['attributes']['body']
   end
 
   def test_flow_self
@@ -504,7 +518,9 @@ class RequestTest < ActionDispatch::IntegrationTest
     post '/api/v6/purchase-orders',
          {
            'data' => {
-             'delivery-name' => 'ASDFG Corp',
+             'attributes' => {
+               'delivery-name' => 'ASDFG Corp'
+             },
              'type' => 'purchase-orders'
            }
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -518,7 +534,9 @@ class RequestTest < ActionDispatch::IntegrationTest
     post '/api/v6/purchase-orders',
          {
            'data' => {
-             'delivery_name' => 'ASDFG Corp',
+             'attributes' => {
+               'delivery_name' => 'ASDFG Corp'
+             },
              'type' => 'purchase_orders'
            }
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -532,7 +550,9 @@ class RequestTest < ActionDispatch::IntegrationTest
     post '/api/v7/purchase_orders',
          {
            'data' => {
-             'delivery-name' => 'ASDFG Corp',
+             'attributes' => {
+               'delivery-name' => 'ASDFG Corp'
+             },
              'type' => 'purchase-orders'
            }
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -546,7 +566,9 @@ class RequestTest < ActionDispatch::IntegrationTest
     post '/api/v6/purchase-orders',
          {
            'data' => {
-             'delivery_name' => 'ASDFG Corp',
+             'attributes' => {
+               'delivery_name' => 'ASDFG Corp'
+             },
              'type' => 'purchase-orders'
            }
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -561,7 +583,9 @@ class RequestTest < ActionDispatch::IntegrationTest
          {
            'data' => {
              'id' => '1',
-             'delivery-name' => 'ASDFG Corp',
+             'attributes' => {
+               'delivery-name' => 'ASDFG Corp'
+             },
              'type' => 'purchase-orders'
            }
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -577,7 +601,9 @@ class RequestTest < ActionDispatch::IntegrationTest
             'data' => {
               'id' => '1',
               'type' => 'line-items',
-              'item-cost' => '23.57',
+              'attributes' => {
+                'item-cost' => '23.57'
+              },
               'links' => {
                 'purchase-order' => {
                   'linkage' => {'type' => 'purchase-orders', 'id' => '2'}
