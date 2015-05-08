@@ -107,10 +107,10 @@ module JSONAPI
       obj_hash['type'] = format_key(source.class._type.to_s)
 
       attributes = attribute_hash(source)
-      obj_hash.merge!({'attributes': attributes}) unless attributes.empty?
+      obj_hash.merge!({'attributes' => attributes}) unless attributes.empty?
 
       links = links_hash(source, include_directives)
-      obj_hash.merge!({'links': links}) unless links.empty?
+      obj_hash.merge!({'links' => links}) unless links.empty?
 
       return obj_hash
     end
