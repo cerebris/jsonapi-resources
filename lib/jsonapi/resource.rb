@@ -282,7 +282,7 @@ module JSONAPI
       end
 
       def include_total_count?
-        !!@_include_total_count
+        @_include_total_count.nil? ? JSONAPI.configuration.default_include_total_count : !!@_include_total_count
       end
 
       def primary_key(key)

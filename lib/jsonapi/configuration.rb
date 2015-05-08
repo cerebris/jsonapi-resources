@@ -10,6 +10,7 @@ module JSONAPI
                 :default_paginator,
                 :default_page_size,
                 :maximum_page_size,
+                :default_include_total_count,
                 :use_text_errors
 
     def initialize
@@ -26,6 +27,7 @@ module JSONAPI
 
       self.default_page_size = 10
       self.maximum_page_size = 20
+      self.default_include_total_count = false
       self.use_text_errors = false
     end
 
@@ -53,6 +55,10 @@ module JSONAPI
 
     def maximum_page_size=(maximum_page_size)
       @maximum_page_size = maximum_page_size
+    end
+
+    def default_include_total_count=(default_include_total_count)
+      @default_include_total_count = default_include_total_count
     end
 
     def use_text_errors=(use_text_errors)
