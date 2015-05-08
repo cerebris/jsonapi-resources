@@ -5,6 +5,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def setup
     JSONAPI.configuration.json_key_format = :underscored_key
+    JSONAPI.configuration.route_format = :underscored_route
   end
 
   def after_teardown
@@ -14,6 +15,11 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_get
     get '/posts'
+    assert_equal 200, status
+  end
+
+  def test_get_inflected_resource
+    get '/api/v8/numeros_telefone'
     assert_equal 200, status
   end
 
@@ -44,7 +50,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/iso_currencies?filter[country_name]=Canada'
     assert_equal 200, status
     assert_equal 1, json_response['data'].size
-    assert_equal 'Canada', json_response['data'][0]['country_name']
+    assert_equal 'Canada', json_response['data'][0]['attributes']['country_name']
   end
 
   def test_get_camelized_key_filtered
@@ -52,7 +58,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/iso_currencies?filter[countryName]=Canada'
     assert_equal 200, status
     assert_equal 1, json_response['data'].size
-    assert_equal 'Canada', json_response['data'][0]['countryName']
+    assert_equal 'Canada', json_response['data'][0]['attributes']['countryName']
   end
 
   def test_get_camelized_route_and_key_filtered
@@ -60,7 +66,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v4/isoCurrencies?filter[countryName]=Canada'
     assert_equal 200, status
     assert_equal 1, json_response['data'].size
-    assert_equal 'Canada', json_response['data'][0]['countryName']
+    assert_equal 'Canada', json_response['data'][0]['attributes']['countryName']
   end
 
   def test_get_camelized_route_and_links
@@ -87,7 +93,9 @@ class RequestTest < ActionDispatch::IntegrationTest
               'type' => 'posts',
               'id' => '3',
             },
-            'title' => 'A great new Post',
+            'attributes' => {
+              'title' => 'A great new Post'
+            },
             'links' => {
               'tags' => [
                 {type: 'tags', id: 3},
@@ -106,7 +114,9 @@ class RequestTest < ActionDispatch::IntegrationTest
           'data' => {
             'type' => 'posts',
             'id' => '3',
-            'title' => 'A great new Post',
+            'attributes' => {
+              'title' => 'A great new Post'
+            },
             'links' => {
               'tags' => {
                 'linkage' => [
@@ -125,7 +135,9 @@ class RequestTest < ActionDispatch::IntegrationTest
     post '/posts',
       {
         'posts' => {
-          'title' => 'A great new Post',
+          'attributes' => {
+            'title' => 'A great new Post'
+          },
           'links' => {
             'tags' => {
               'linkage' => [
@@ -145,8 +157,10 @@ class RequestTest < ActionDispatch::IntegrationTest
       {
         'data' => {
           'type' => 'posts',
-          'title' => 'A great new Post',
-          'body' => 'JSONAPIResources is the greatest thing since unsliced bread.',
+          'attributes' => {
+            'title' => 'A great new Post',
+            'body' => 'JSONAPIResources is the greatest thing since unsliced bread.'
+          },
           'links' => {
             'author' => {'linkage' => {type: 'people', id: '3'}}
           }
@@ -175,7 +189,7 @@ class RequestTest < ActionDispatch::IntegrationTest
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 201, status
-    assert_nil json_response['data']['body']
+    assert_nil json_response['data']['attributes']['body']
     assert_nil json_response['data']['links']['post']['linkage']
     assert_nil json_response['data']['links']['author']['linkage']
   end
@@ -253,7 +267,9 @@ class RequestTest < ActionDispatch::IntegrationTest
           'data' => {
             'type' => 'posts',
             'id' => '3',
-            'title' => 'A great new Post',
+            'attributes' => {
+              'title' => 'A great new Post'
+            },
             'links' => {
               'tags' => {
                 'linkage' => [
@@ -274,7 +290,9 @@ class RequestTest < ActionDispatch::IntegrationTest
           'data' => {
             'type' => 'posts',
             'id' => '3',
-            'title' => 'A great new Post',
+            'attributes' => {
+              'title' => 'A great new Post'
+            },
             'links' => {
               'tags' => {
                 'linkage' => [
@@ -294,7 +312,9 @@ class RequestTest < ActionDispatch::IntegrationTest
       {
        'data' => {
          'type' => 'posts',
-         'title' => 'A great new Post',
+         'attributes' => {
+           'title' => 'A great new Post'
+         },
          'links' => {
            'author' => {'linkage' => {type: 'people', id: '3'}}
          }
@@ -327,7 +347,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books'
     assert_equal 200, status
     assert_equal JSONAPI.configuration.default_page_size, json_response['data'].size
-    assert_equal 'Book 0', json_response['data'][0]['title']
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
   end
 
   def test_pagination_offset_style_offset
@@ -335,7 +355,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books?page[offset]=50'
     assert_equal 200, status
     assert_equal JSONAPI.configuration.default_page_size, json_response['data'].size
-    assert_equal 'Book 50', json_response['data'][0]['title']
+    assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
   end
 
   def test_pagination_offset_style_offset_limit
@@ -343,7 +363,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books?page[offset]=50&page[limit]=20'
     assert_equal 200, status
     assert_equal 20, json_response['data'].size
-    assert_equal 'Book 50', json_response['data'][0]['title']
+    assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
   end
 
   def test_pagination_offset_bad_param
@@ -367,7 +387,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books/1/book_comments?page[limit]=10'
     assert_equal 200, status
     assert_equal 10, json_response['data'].size
-    assert_equal 'This is comment 9 on book 1.', json_response['data'][9]['body']
+    assert_equal 'This is comment 9 on book 1.', json_response['data'][9]['attributes']['body']
   end
 
   def test_pagination_related_resources_data_includes
@@ -376,7 +396,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books/1/book_comments?page[limit]=10&include=author,book'
     assert_equal 200, status
     assert_equal 10, json_response['data'].size
-    assert_equal 'This is comment 9 on book 1.', json_response['data'][9]['body']
+    assert_equal 'This is comment 9 on book 1.', json_response['data'][9]['attributes']['body']
   end
 
   def test_flow_self
@@ -449,6 +469,217 @@ class RequestTest < ActionDispatch::IntegrationTest
                            {type: 'tags', id: '10'}
                          ]
                        })
+  end
+
+  def test_flow_self_formatted_route_1
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    get '/api/v6/purchase-orders'
+    assert_equal 200, status
+    po_1 = json_response['data'][0]
+    assert_equal 'purchase-orders', json_response['data'][0]['type']
+
+    get po_1['links']['self']
+    assert_equal 200, status
+    assert_hash_equals po_1, json_response['data']
+  end
+
+  def test_flow_self_formatted_route_2
+    JSONAPI.configuration.route_format = :underscored_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    get '/api/v7/purchase_orders'
+    assert_equal 200, status
+    assert_equal 'purchase-orders', json_response['data'][0]['type']
+
+    po_1 = json_response['data'][0]
+
+    get po_1['links']['self']
+    assert_equal 200, status
+    assert_hash_equals po_1, json_response['data']
+  end
+
+  def test_flow_self_formatted_route_3
+    JSONAPI.configuration.route_format = :underscored_route
+    JSONAPI.configuration.json_key_format = :underscored_key
+    get '/api/v7/purchase_orders'
+    assert_equal 200, status
+    assert_equal 'purchase_orders', json_response['data'][0]['type']
+
+    po_1 = json_response['data'][0]
+
+    get po_1['links']['self']
+    assert_equal 200, status
+    assert_hash_equals po_1, json_response['data']
+  end
+
+  def test_post_formatted_keys
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    post '/api/v6/purchase-orders',
+         {
+           'data' => {
+             'attributes' => {
+               'delivery-name' => 'ASDFG Corp'
+             },
+             'type' => 'purchase-orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 201, status
+  end
+
+  def test_post_formatted_keys_different_route_key_1
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :underscored_key
+    post '/api/v6/purchase-orders',
+         {
+           'data' => {
+             'attributes' => {
+               'delivery_name' => 'ASDFG Corp'
+             },
+             'type' => 'purchase_orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 201, status
+  end
+
+  def test_post_formatted_keys_different_route_key_2
+    JSONAPI.configuration.route_format = :underscored_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    post '/api/v7/purchase_orders',
+         {
+           'data' => {
+             'attributes' => {
+               'delivery-name' => 'ASDFG Corp'
+             },
+             'type' => 'purchase-orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 201, status
+  end
+
+  def test_post_formatted_keys_wrong_format
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    post '/api/v6/purchase-orders',
+         {
+           'data' => {
+             'attributes' => {
+               'delivery_name' => 'ASDFG Corp'
+             },
+             'type' => 'purchase-orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 400, status
+  end
+
+  def test_patch_formatted_dasherized
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/purchase-orders/1',
+         {
+           'data' => {
+             'id' => '1',
+             'attributes' => {
+               'delivery-name' => 'ASDFG Corp'
+             },
+             'type' => 'purchase-orders'
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 200, status
+  end
+
+  def test_patch_formatted_dasherized_links
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/line-items/1',
+          {
+            'data' => {
+              'id' => '1',
+              'type' => 'line-items',
+              'attributes' => {
+                'item-cost' => '23.57'
+              },
+              'links' => {
+                'purchase-order' => {
+                  'linkage' => {'type' => 'purchase-orders', 'id' => '2'}
+                }
+              }
+            }
+          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 200, status
+  end
+
+  def test_patch_formatted_dasherized_replace_has_many
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/purchase-orders/2?include=line-items,order-flags',
+          {
+            'data' => {
+              'id' => '2',
+              'type' => 'purchase-orders',
+              'links' => {
+                'line-items' => {
+                  'linkage' => [
+                    {'type' => 'line-items', 'id' => '3'},
+                    {'type' => 'line-items', 'id' => '4'}
+                  ]
+                },
+                'order-flags' => {
+                  'linkage' => [
+                    {'type' => 'order-flags', 'id' => '1'},
+                    {'type' => 'order-flags', 'id' => '2'}
+                  ]
+                }
+              }
+            }
+          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 200, status
+  end
+
+  def test_post_has_many_link
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    post '/api/v6/purchase-orders/3/links/line-items',
+          {
+            'data' => [
+              {'type' => 'line-items', 'id' => '3'},
+              {'type' => 'line-items', 'id' => '4'}
+            ]
+          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 204, status
+  end
+
+  def test_patch_has_many_link
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/purchase-orders/3/links/order-flags',
+         {
+           'data' => [
+             {'type' => 'order-flags', 'id' => '1'},
+             {'type' => 'order-flags', 'id' => '2'}
+           ]
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 204, status
+  end
+
+  def test_patch_has_one
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/line-items/5/links/purchase-order',
+         {
+           'data' => {'type' => 'purchase-orders', 'id' => '3'}
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 204, status
   end
 
 end

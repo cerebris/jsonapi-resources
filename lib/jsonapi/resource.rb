@@ -1,5 +1,3 @@
-require 'jsonapi/configuration'
-require 'jsonapi/association'
 require 'jsonapi/callbacks'
 
 module JSONAPI
@@ -46,8 +44,9 @@ module JSONAPI
           @changing = true
           run_callbacks callback do
             yield
-            save if @save_needed || is_new?
           end
+
+          save if @save_needed || is_new?
         end
       end
     end
@@ -100,7 +99,7 @@ module JSONAPI
     end
 
     # Override this on a resource to customize how the associated records
-    # are fetched for a model. Particularly helpful for authoriztion.
+    # are fetched for a model. Particularly helpful for authorization.
     def records_for(association_name, options = {})
       model.send association_name
     end
@@ -113,10 +112,13 @@ module JSONAPI
     end
 
     def _save
-      @model.save!
-      @save_needed = false
-    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
-      raise JSONAPI::Exceptions::ValidationErrors.new(e.record.errors.messages)
+      unless @model.valid?
+        raise JSONAPI::Exceptions::ValidationErrors.new(@model.errors.messages)
+      end
+
+      saved = @model.save
+      @save_needed = !saved
+      saved
     end
 
     def _remove
@@ -241,6 +243,10 @@ module JSONAPI
 
       def attribute(attr, options = {})
         check_reserved_attribute_name(attr)
+
+        if (attr.to_sym == :id) && (options[:format].nil?)
+          ActiveSupport::Deprecation.warn('Id without format is no longer supported. Please remove ids from attributes, or specify a format.')
+        end
 
         @_attributes ||= {}
         @_attributes[attr] = options
@@ -470,7 +476,7 @@ module JSONAPI
       def _resource_name_from_type(type)
         class_name = @@resource_types[type]
         if class_name.nil?
-          class_name = type.to_s.singularize.camelize + 'Resource'
+          class_name = "#{type.to_s.singularize}_resource".camelize
           @@resource_types[type] = class_name
         end
         return class_name

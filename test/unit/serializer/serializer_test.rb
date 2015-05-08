@@ -10,6 +10,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
     @expense_entry = ExpenseEntry.find(1)
 
     JSONAPI.configuration.json_key_format = :camelized_key
+    JSONAPI.configuration.route_format = :camelized_route
   end
 
   def after_teardown
@@ -23,9 +24,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
         data: {
           type: 'posts',
           id: '1',
-          title: 'New post',
-          body: 'A body!!!',
-          subject: 'New post',
+          attributes: {
+            title: 'New post',
+            body: 'A body!!!',
+            subject: 'New post'
+          },
           links: {
             self: 'http://example.com/posts/1',
             section: {
@@ -72,9 +75,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
         data: {
           type: 'posts',
           id: '1',
-          title: 'New post',
-          body: 'A body!!!',
-          subject: 'New post',
+          attributes: {
+            title: 'New post',
+            body: 'A body!!!',
+            subject: 'New post'
+          },
           links: {
             self: 'http://example.com/api/v1/posts/1',
             section: {
@@ -110,7 +115,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
         data: {
           type: 'posts',
           id: '1',
-          title: 'New post',
+          attributes: {
+            title: 'New post'
+          },
           links: {
             self: '/posts/1',
             author: {
@@ -130,15 +137,21 @@ class SerializerTest < ActionDispatch::IntegrationTest
   end
 
   def test_serializer_include
+    serialized = JSONAPI::ResourceSerializer.new(
+      PostResource,
+      include: ['author']
+    ).serialize_to_hash(PostResource.new(@post))
 
     assert_hash_equals(
       {
         data: {
           type: 'posts',
           id: '1',
-          title: 'New post',
-          body: 'A body!!!',
-          subject: 'New post',
+          attributes: {
+            title: 'New post',
+            body: 'A body!!!',
+            subject: 'New post'
+          },
           links: {
             self: '/posts/1',
             section: {
@@ -168,9 +181,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'people',
             id: '1',
-            name: 'Joe Author',
-            email: 'joe@xyz.fake',
-            dateJoined: '2013-08-07 16:25:00 -0400',
+            attributes: {
+              name: 'Joe Author',
+              email: 'joe@xyz.fake',
+              dateJoined: '2013-08-07 16:25:00 -0400'
+            },
             links: {
              self: '/people/1',
              comments: {
@@ -188,25 +203,37 @@ class SerializerTest < ActionDispatch::IntegrationTest
                  type: 'preferences',
                  id: '1'
                }
+             },
+             hairCut: {
+               self: "/people/1/links/hairCut",
+               related: "/people/1/hairCut",
+               linkage: nil
              }
             }
           }
         ]
       },
-      JSONAPI::ResourceSerializer.new(PostResource, include: [:author]).serialize_to_hash(
-        PostResource.new(@post)))
+      serialized
+    )
   end
 
   def test_serializer_key_format
+    serialized = JSONAPI::ResourceSerializer.new(
+      PostResource,
+      include: ['author'],
+      key_formatter: UnderscoredKeyFormatter
+    ).serialize_to_hash(PostResource.new(@post))
 
     assert_hash_equals(
       {
         data: {
           type: 'posts',
           id: '1',
-          title: 'New post',
-          body: 'A body!!!',
-          subject: 'New post',
+          attributes: {
+            title: 'New post',
+            body: 'A body!!!',
+            subject: 'New post'
+          },
           links: {
             self: '/posts/1',
             section: {
@@ -236,9 +263,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'people',
             id: '1',
-            name: 'Joe Author',
-            email: 'joe@xyz.fake',
-            date_joined: '2013-08-07 16:25:00 -0400',
+            attributes: {
+              name: 'Joe Author',
+              email: 'joe@xyz.fake',
+              date_joined: '2013-08-07 16:25:00 -0400'
+            },
             links: {
               self: '/people/1',
               comments: {
@@ -256,14 +285,17 @@ class SerializerTest < ActionDispatch::IntegrationTest
                   type: 'preferences',
                   id: '1'
                 }
+              },
+              hair_cut: {
+                self: '/people/1/links/hairCut',
+                related: '/people/1/hairCut',
+                linkage: nil
               }
             }
           }
         ]
       },
-      JSONAPI::ResourceSerializer.new(PostResource,
-                                      include: [:author],
-                                      key_formatter: UnderscoredKeyFormatter).serialize_to_hash(PostResource.new(@post))
+      serialized
     )
   end
 
@@ -274,9 +306,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
         data: {
           type: 'posts',
           id: '1',
-          title: 'New post',
-          body: 'A body!!!',
-          subject: 'New post',
+          attributes: {
+            title: 'New post',
+            body: 'A body!!!',
+            subject: 'New post'
+          },
           links: {
             self: '/posts/1',
             section: {
@@ -310,7 +344,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
             {
               type: 'tags',
               id: '1',
-              name: 'short',
+              attributes: {
+                name: 'short'
+              },
               links: {
                 self: '/tags/1',
                 posts: {
@@ -322,7 +358,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
             {
               type: 'tags',
               id: '2',
-              name: 'whiny',
+              attributes: {
+                name: 'whiny'
+              },
               links: {
                 self: '/tags/2',
                 posts: {
@@ -334,7 +372,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
             {
               type: 'tags',
               id: '4',
-              name: 'happy',
+              attributes: {
+                name: 'happy'
+              },
               links: {
                 self: '/tags/4',
                 posts: {
@@ -346,7 +386,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
             {
               type: 'comments',
               id: '1',
-              body: 'what a dumb post',
+              attributes: {
+                body: 'what a dumb post'
+              },
               links: {
                 self: '/comments/1',
                 author: {
@@ -378,7 +420,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
             {
               type: 'comments',
               id: '2',
-              body: 'i liked it',
+              attributes: {
+                body: 'i liked it'
+              },
               links: {
                 self: '/comments/2',
                 author: {
@@ -410,7 +454,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
           ]
       },
       JSONAPI::ResourceSerializer.new(PostResource,
-                                      include: [:comments, 'comments.tags']).serialize_to_hash(PostResource.new(@post))
+                                      include: ['comments', 'comments.tags']).serialize_to_hash(PostResource.new(@post))
     )
   end
 
@@ -421,9 +465,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
         data: {
           type: 'posts',
           id: '1',
-          title: 'New post',
-          body: 'A body!!!',
-          subject: 'New post',
+          attributes: {
+            title: 'New post',
+            body: 'A body!!!',
+            subject: 'New post'
+          },
           links: {
             self: '/posts/1',
             section: {
@@ -453,7 +499,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'tags',
             id: '1',
-            name: 'short',
+            attributes: {
+              name: 'short'
+            },
             links: {
               self: '/tags/1',
               posts: {
@@ -465,7 +513,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'tags',
             id: '2',
-            name: 'whiny',
+            attributes: {
+              name: 'whiny'
+            },
             links: {
               self: '/tags/2',
               posts: {
@@ -477,7 +527,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'tags',
             id: '4',
-            name: 'happy',
+            attributes: {
+              name: 'happy'
+            },
             links: {
               self: '/tags/4',
               posts: {
@@ -499,9 +551,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
         data: {
           type: 'posts',
           id: '1',
-          title: 'New post',
-          body: 'A body!!!',
-          subject: 'New post',
+          attributes: {
+            title: 'New post',
+            body: 'A body!!!',
+            subject: 'New post'
+          },
           links: {
             self: '/posts/1',
             section: {
@@ -531,7 +585,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'comments',
             id: '1',
-            body: 'what a dumb post',
+            attributes: {
+              body: 'what a dumb post'
+            },
             links: {
               self: '/comments/1',
               author: {
@@ -564,15 +620,21 @@ class SerializerTest < ActionDispatch::IntegrationTest
   end
 
   def test_serializer_different_foreign_key
+    serialized = JSONAPI::ResourceSerializer.new(
+      PersonResource,
+      include: ['comments']
+    ).serialize_to_hash(PersonResource.new(@fred))
 
     assert_hash_equals(
       {
         data: {
           type: 'people',
           id: '2',
-          name: 'Fred Reader',
-          email: 'fred@xyz.fake',
-          dateJoined: '2013-10-31 16:25:00 -0400',
+          attributes: {
+            name: 'Fred Reader',
+            email: 'fred@xyz.fake',
+            dateJoined: '2013-10-31 16:25:00 -0400'
+          },
           links: {
             self: '/people/2',
             posts: {
@@ -591,6 +653,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
               self: "/people/2/links/preferences",
               related: "/people/2/preferences",
               linkage: nil
+            },
+            hairCut: {
+              self: "/people/2/links/hairCut",
+              related: "/people/2/hairCut",
+              linkage: nil
             }
           }
         },
@@ -598,7 +665,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'comments',
             id: '2',
-            body: 'i liked it',
+            attributes: {
+              body: 'i liked it'
+            },
             links: {
               self: '/comments/2',
               author: {
@@ -626,7 +695,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'comments',
             id: '3',
-            body: 'Thanks man. Great post. But what is JR?',
+            attributes: {
+              body: 'Thanks man. Great post. But what is JR?'
+            },
             links: {
               self: '/comments/3',
               author: {
@@ -653,7 +724,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
           }
         ]
       },
-      JSONAPI::ResourceSerializer.new(PersonResource, include: ['comments']).serialize_to_hash(PersonResource.new(@fred))
+      serialized
     )
   end
 
@@ -670,9 +741,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'posts',
             id: '1',
-            title: 'New post',
-            body: 'A body!!!',
-            subject: 'New post',
+            attributes: {
+              title: 'New post',
+              body: 'A body!!!',
+              subject: 'New post'
+            },
             links: {
               self: '/posts/1',
               section: {
@@ -705,9 +778,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'posts',
             id: '2',
-            title: 'JR Solves your serialization woes!',
-            body: 'Use JR',
-            subject: 'JR Solves your serialization woes!',
+            attributes: {
+              title: 'JR Solves your serialization woes!',
+              body: 'Use JR',
+              subject: 'JR Solves your serialization woes!'
+            },
             links: {
               self: '/posts/2',
               section: {
@@ -744,7 +819,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'tags',
             id: '1',
-            name: 'short',
+            attributes: {
+              name: 'short'
+            },
             links: {
               self: '/tags/1',
               posts: {
@@ -756,7 +833,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'tags',
             id: '2',
-            name: 'whiny',
+            attributes: {
+              name: 'whiny'
+            },
             links: {
               self: '/tags/2',
               posts: {
@@ -768,7 +847,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'tags',
             id: '4',
-            name: 'happy',
+            attributes: {
+              name: 'happy'
+            },
             links: {
               self: '/tags/4',
               posts: {
@@ -780,7 +861,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'tags',
             id: '5',
-            name: 'JR',
+            attributes: {
+              name: 'JR'
+            },
             links: {
               self: '/tags/5',
               posts: {
@@ -792,7 +875,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'comments',
             id: '1',
-            body: 'what a dumb post',
+            attributes: {
+              body: 'what a dumb post'
+            },
             links: {
               self: '/comments/1',
               author: {
@@ -824,7 +909,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'comments',
             id: '2',
-            body: 'i liked it',
+            attributes: {
+              body: 'i liked it'
+            },
             links: {
               self: '/comments/2',
               author: {
@@ -856,7 +943,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'comments',
             id: '3',
-            body: 'Thanks man. Great post. But what is JR?',
+            attributes: {
+              body: 'Thanks man. Great post. But what is JR?'
+            },
             links: {
               self: '/comments/3',
               author: {
@@ -904,7 +993,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'posts',
             id: '1',
-            title: 'New post',
+            attributes: {
+              title: 'New post'
+            },
             links: {
               self: '/posts/1',
               author: {
@@ -920,7 +1011,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'posts',
             id: '2',
-            title: 'JR Solves your serialization woes!',
+            attributes: {
+              title: 'JR Solves your serialization woes!'
+            },
             links: {
               self: '/posts/2',
               author: {
@@ -938,7 +1031,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'posts',
             id: '11',
-            title: 'JR How To',
+            attributes: {
+              title: 'JR How To'
+            },
             links: {
               self: '/posts/11',
               author: {
@@ -954,7 +1049,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'people',
             id: '1',
-            email: 'joe@xyz.fake',
+            attributes: {
+              email: 'joe@xyz.fake'
+            },
             links: {
               self: '/people/1',
               comments: {
@@ -966,7 +1063,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             id: '1',
             type: 'tags',
-            name: 'short',
+            attributes: {
+              name: 'short'
+            },
             links: {
               self: '/tags/1'
             }
@@ -974,7 +1073,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             id: '2',
             type: 'tags',
-            name: 'whiny',
+            attributes: {
+              name: 'whiny'
+            },
             links: {
               self: '/tags/2'
             }
@@ -982,7 +1083,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             id: '4',
             type: 'tags',
-            name: 'happy',
+            attributes: {
+              name: 'happy'
+            },
             links: {
               self: '/tags/4'
             }
@@ -990,7 +1093,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             id: '5',
             type: 'tags',
-            name: 'JR',
+            attributes: {
+              name: 'JR'
+            },
             links: {
               self: '/tags/5'
             }
@@ -998,7 +1103,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'comments',
             id: '1',
-            body: 'what a dumb post',
+            attributes: {
+              body: 'what a dumb post'
+            },
             links: {
               self: '/comments/1',
               post: {
@@ -1014,7 +1121,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'comments',
             id: '2',
-            body: 'i liked it',
+            attributes: {
+              body: 'i liked it'
+            },
             links: {
               self: '/comments/2',
               post: {
@@ -1030,7 +1139,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           {
             type: 'comments',
             id: '3',
-            body: 'Thanks man. Great post. But what is JR?',
+            attributes: {
+              body: 'Thanks man. Great post. But what is JR?'
+            },
             links: {
               self: '/comments/3',
               post: {
@@ -1057,26 +1168,31 @@ class SerializerTest < ActionDispatch::IntegrationTest
   end
 
   def test_serializer_camelized_with_value_formatters
+    # JSONAPI.configuration.json_key_format = :camelized_key
+    # JSONAPI.configuration.route_format = :camelized_route
+
     assert_hash_equals(
       {
         data: {
-          type: 'expense_entries',
+          type: 'expenseEntries',
           id: '1',
-          transactionDate: '04/15/2014',
-          cost: 12.05,
+          attributes: {
+            transactionDate: '04/15/2014',
+            cost: 12.05
+          },
           links: {
-            self: '/expense_entries/1',
+            self: '/expenseEntries/1',
             isoCurrency: {
-              self: '/expense_entries/1/links/iso_currency',
-              related: '/expense_entries/1/iso_currency',
+              self: '/expenseEntries/1/links/isoCurrency',
+              related: '/expenseEntries/1/isoCurrency',
               linkage: {
-                type: 'iso_currencies',
+                type: 'isoCurrencies',
                 id: 'USD'
               }
             },
             employee: {
-              self: '/expense_entries/1/links/employee',
-              related: '/expense_entries/1/employee',
+              self: '/expenseEntries/1/links/employee',
+              related: '/expenseEntries/1/employee',
               linkage: {
                 type: 'people',
                 id: '3'
@@ -1086,21 +1202,25 @@ class SerializerTest < ActionDispatch::IntegrationTest
         },
         included: [
           {
-            type: 'iso_currencies',
+            type: 'isoCurrencies',
             id: 'USD',
-            countryName: 'United States',
-            name: 'United States Dollar',
-            minorUnit: 'cent',
+            attributes: {
+              countryName: 'United States',
+              name: 'United States Dollar',
+              minorUnit: 'cent'
+            },
             links: {
-              self: '/iso_currencies/USD'
+              self: '/isoCurrencies/USD'
             }
           },
           {
             type: 'people',
             id: '3',
-            email: 'lazy@xyz.fake',
-            name: 'Lazy Author',
-            dateJoined: '2013-10-31 17:25:00 -0400',
+            attributes: {
+              email: 'lazy@xyz.fake',
+              name: 'Lazy Author',
+              dateJoined: '2013-10-31 17:25:00 -0400'
+            },
             links: {
               self: '/people/3',
             }
@@ -1123,13 +1243,15 @@ class SerializerTest < ActionDispatch::IntegrationTest
         data: {
           type: 'planets',
           id: '8',
-          name: 'Beta W',
-          description: 'Newly discovered Planet W',
+          attributes: {
+            name: 'Beta W',
+            description: 'Newly discovered Planet W'
+          },
           links: {
             self: '/planets/8',
             planetType: {
-              self: '/planets/8/links/planet_type',
-              related: '/planets/8/planet_type',
+              self: '/planets/8/links/planetType',
+              related: '/planets/8/planetType',
               linkage: nil
             },
             tags: {
@@ -1160,15 +1282,17 @@ class SerializerTest < ActionDispatch::IntegrationTest
         data: [{
           type: 'planets',
           id: '7',
-          name: 'Beta X',
-          description: 'Newly discovered Planet Z',
+          attributes: {
+            name: 'Beta X',
+            description: 'Newly discovered Planet Z'
+          },
           links: {
             self: '/planets/7',
             planetType: {
-              self: '/planets/7/links/planet_type',
-              related: '/planets/7/planet_type',
+              self: '/planets/7/links/planetType',
+              related: '/planets/7/planetType',
               linkage: {
-                type: 'planet_types',
+                type: 'planetTypes',
                 id: '5'
               }
             },
@@ -1185,13 +1309,15 @@ class SerializerTest < ActionDispatch::IntegrationTest
         {
           type: 'planets',
           id: '8',
-          name: 'Beta W',
-          description: 'Newly discovered Planet W',
+          attributes: {
+            name: 'Beta W',
+            description: 'Newly discovered Planet W'
+          },
           links: {
             self: '/planets/8',
             planetType: {
-              self: '/planets/8/links/planet_type',
-              related: '/planets/8/planet_type',
+              self: '/planets/8/links/planetType',
+              related: '/planets/8/planetType',
               linkage: nil
             },
             tags: {
@@ -1207,11 +1333,13 @@ class SerializerTest < ActionDispatch::IntegrationTest
       ],
       included: [
         {
-          type: 'planet_types',
+          type: 'planetTypes',
           id: '5',
-          name: 'unknown',
+          attributes: {
+            name: 'unknown'
+          },
           links: {
-            self: '/planet_types/5'
+            self: '/planetTypes/5'
           }
         }
       ]
@@ -1228,7 +1356,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
         data: {
           type: 'preferences',
           id: '1',
-          advanced_mode: false,
+          attributes: {
+            advanced_mode: false
+          },
           links: {
             self: '/preferences/1',
             author: {
@@ -1257,15 +1387,17 @@ class SerializerTest < ActionDispatch::IntegrationTest
         data: {
           type: 'facts',
           id: '1',
-          spouse_name: 'Jane Author',
-          bio: 'First man to run across Antartica.',
-          quality_rating: 23.89/45.6,
-          salary: BigDecimal('47000.56', 30),
-          date_time_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00'),
-          birthday: Date.parse('1965-06-30'),
-          bedtime: Time.parse('2000-01-01 20:00:00 UTC +00:00'), #DB seems to set the date to 2001-01-01 for time types
-          photo: "abc",
-          cool: false,
+          attributes: {
+            spouse_name: 'Jane Author',
+            bio: 'First man to run across Antartica.',
+            quality_rating: 23.89/45.6,
+            salary: BigDecimal('47000.56', 30),
+            date_time_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00'),
+            birthday: Date.parse('1965-06-30'),
+            bedtime: Time.parse('2000-01-01 20:00:00 UTC +00:00'), #DB seems to set the date to 2001-01-01 for time types
+            photo: "abc",
+            cool: false
+          },
           links: {
             self: '/facts/1'
           }

@@ -1,11 +1,4 @@
-require 'jsonapi/resource_serializer'
 require 'action_controller'
-require 'jsonapi/exceptions'
-require 'jsonapi/error'
-require 'jsonapi/error_codes'
-require 'jsonapi/request'
-require 'jsonapi/operations_processor'
-require 'jsonapi/active_record_operations_processor'
 require 'csv'
 
 module JSONAPI
@@ -145,7 +138,7 @@ module JSONAPI
     end
 
     def resource_klass_name
-      @resource_klass_name ||= "#{self.class.name.sub(/Controller$/, '').singularize}Resource"
+      @resource_klass_name ||= "#{self.class.name.underscore.sub(/_controller$/, '').singularize}_resource".camelize
     end
 
     def ensure_correct_media_type

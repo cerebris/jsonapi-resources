@@ -284,6 +284,11 @@ module JSONAPI
       attr_accessor :messages
       def initialize(messages)
         @messages = messages
+        @key_formatter = JSONAPI.configuration.key_formatter
+      end
+
+      def format_key(key)
+        @key_formatter.format(key)
       end
 
       def errors
@@ -292,7 +297,7 @@ module JSONAPI
             element[1].map do |message|
               JSONAPI::Error.new(code: JSONAPI::VALIDATION_ERROR,
                                  status: :unprocessable_entity,
-                                 title: "#{element[0]} - #{message}",
+                                 title: "#{format_key(element[0])} - #{message}",
                                  detail: message,
                                  path: "/#{element[0]}")
             end

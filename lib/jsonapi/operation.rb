@@ -42,10 +42,6 @@ module JSONAPI
       resource.remove
 
       return JSONAPI::OperationResult.new(:no_content)
-
-    rescue ActiveRecord::DeleteRestrictionError => e
-      record_locked_error = JSONAPI::Exceptions::RecordLocked.new(e.message)
-      return JSONAPI::OperationResult.new(record_locked_error.errors[0].code, nil, record_locked_error.errors)
     rescue JSONAPI::Exceptions::Error => e
       return JSONAPI::OperationResult.new(e.errors[0].code, nil, e.errors)
     end
@@ -137,9 +133,6 @@ module JSONAPI
       resource.remove_has_many_link(@association_type, @associated_key)
 
       return JSONAPI::OperationResult.new(:no_content)
-
-    rescue ActiveRecord::RecordNotFound => e
-      raise JSONAPI::Exceptions::RecordNotFound.new(@associated_key)
     end
   end
 
