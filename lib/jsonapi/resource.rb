@@ -277,8 +277,8 @@ module JSONAPI
         @_allowed_filters.add(attr.to_sym)
       end
 
-      def include_total_count
-        @_include_total_count = true
+      def include_total_count(value = true)
+        @_include_total_count = value
       end
 
       def include_total_count?

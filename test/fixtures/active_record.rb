@@ -663,7 +663,7 @@ module Api
       attribute :title
       attribute :isbn
 
-      include_total_count
+      include_total_count true
 
       has_many :book_comments
     end
