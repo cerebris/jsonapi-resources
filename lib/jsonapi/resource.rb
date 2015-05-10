@@ -195,6 +195,7 @@ module JSONAPI
 
     class << self
       def inherited(base)
+        base._meta = (_meta || {}).dup
         base._attributes = (_attributes || {}).dup
         base._associations = (_associations || {}).dup
         base._allowed_filters = (_allowed_filters || Set.new).dup
@@ -216,7 +217,7 @@ module JSONAPI
         resource
       end
 
-      attr_accessor :_attributes, :_associations, :_allowed_filters , :_type, :_paginator
+      attr_accessor :_attributes, :_associations, :_allowed_filters, :_type, :_paginator, :_meta
 
       def create(context)
         self.new(self.create_model, context)
@@ -285,6 +286,10 @@ module JSONAPI
 
       def primary_key(key)
         @_primary_key = key.to_sym
+      end
+
+      def meta(name, options = {})
+        @_meta[name] = options
       end
 
       # Override in your resource to filter the updateable keys

@@ -164,6 +164,26 @@ ActiveRecord::Schema.define do
   end
 end
 
+### META
+module JSONAPI
+  module Meta
+    module TotalCount
+      def total_count(records, options = {})
+        if records.respond_to?(:limit)
+          records.limit(nil).count
+        elsif records.respond_to?(:count)
+          records.count
+        elsif records.respond_to?(:size)
+          records.size
+        else
+          records.present? ? 1 : 0
+        end
+      end
+    end
+  end
+end
+
+
 ### MODELS
 class Person < ActiveRecord::Base
   has_many :posts, foreign_key: 'author_id'
@@ -715,6 +735,10 @@ class PreferencesResource < JSONAPI::Resource
 end
 
 class FactResource < JSONAPI::Resource
+  extend JSONAPI::Meta::TotalCount
+
+  meta :total_count
+
   attribute :spouse_name
   attribute :bio
   attribute :quality_rating
@@ -724,6 +748,7 @@ class FactResource < JSONAPI::Resource
   attribute :bedtime
   attribute :photo
   attribute :cool
+
 end
 
 module Api
@@ -782,6 +807,10 @@ module Api
     PostResource = PostResource.dup
 
     class BookResource < JSONAPI::Resource
+      extend JSONAPI::Meta::TotalCount
+
+      meta :total_count
+
       attribute :title
       attribute :isbn
 
@@ -857,6 +886,10 @@ module Api
     end
 
     class PurchaseOrderResource < JSONAPI::Resource
+      extend JSONAPI::Meta::TotalCount
+
+      meta :total_count
+
       attribute :order_date
       attribute :requested_delivery_date
       attribute :delivery_date

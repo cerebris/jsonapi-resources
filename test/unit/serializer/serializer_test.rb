@@ -1384,6 +1384,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     assert_hash_equals(
       {
+        meta: {
+          total_count: 1
+        },
         data: {
           type: 'facts',
           id: '1',
@@ -1406,4 +1409,5 @@ class SerializerTest < ActionDispatch::IntegrationTest
       JSONAPI::ResourceSerializer.new(FactResource).serialize_to_hash(facts)
     )
   end
+
 end
