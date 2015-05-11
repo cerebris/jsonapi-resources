@@ -29,7 +29,7 @@ module JSONAPI
       is_resource_collection = source.respond_to?(:to_ary)
 
       @included_objects = {}
-      @include_directives ||= JSONAPI::SerializerIncludeDirectives.new(@include)
+      @include_directives ||= JSONAPI::IncludeDirectives.new(@include)
 
       process_primary(source, @include_directives.include_directives)
 

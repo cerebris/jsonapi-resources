@@ -1,5 +1,5 @@
 module JSONAPI
-  class SerializerIncludeDirectives
+  class IncludeDirectives
 
     # Construct an IncludeDirectives Hash from an array of dot separated include strings.
     # For example [:posts, 'posts.comments', 'posts.comments.tags']
