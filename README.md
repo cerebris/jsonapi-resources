@@ -194,9 +194,6 @@ different scheme publicly.
 By default only integer values are allowed for primary key. To change this behavior you can override 
 `verify_key` class method:
 
-By default only integer values are allowed for primary key. To change this behavior you can override 
-`verify_key` class method:
-
 ```ruby
 class CurrencyResource < JSONAPI::Resource
   primary_key :code
