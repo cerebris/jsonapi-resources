@@ -30,7 +30,7 @@ module JSONAPI
         case params[:action]
           when 'index'
             parse_fields(params[:fields])
-            parse_include(params[:include])
+            parse_include_directives(params[:include])
             parse_filters(params[:filter])
             parse_sort_criteria(params[:sort])
             parse_pagination(params[:page])
@@ -38,16 +38,16 @@ module JSONAPI
             @source_klass = Resource.resource_for(params.require(:source))
             @source_id = @source_klass.verify_key(params.require(@source_klass._as_parent_key), @context)
             parse_fields(params[:fields])
-            parse_include(params[:include])
+            parse_include_directives(params[:include])
             parse_filters(params[:filter])
             parse_sort_criteria(params[:sort])
             parse_pagination(params[:page])
           when 'show'
             parse_fields(params[:fields])
-            parse_include(params[:include])
+            parse_include_directives(params[:include])
           when 'create'
             parse_fields(params[:fields])
-            parse_include(params[:include])
+            parse_include_directives(params[:include])
             parse_add_operation(params.require(:data))
           when 'create_association'
             parse_add_association_operation(params.require(:data),
@@ -59,7 +59,7 @@ module JSONAPI
                                                params.require(@resource_klass._as_parent_key))
           when 'update'
             parse_fields(params[:fields])
-            parse_include(params[:include])
+            parse_include_directives(params[:include])
             parse_replace_operation(params.require(:data), params.require(@resource_klass._primary_key))
           when 'destroy'
             parse_remove_operation(params)
@@ -144,7 +144,7 @@ module JSONAPI
       end
     end
 
-    def parse_include(include)
+    def parse_include_directives(include)
       return if include.nil?
 
       included_resources = CSV.parse_line(include)
