@@ -314,7 +314,11 @@ module JSONAPI
       end
 
       def apply_sort(records, order_options)
-        records.order(order_options)
+        if order_options.any?
+          records.order(order_options)
+        else
+          records
+        end
       end
 
       def apply_filter(records, filter, value)
@@ -335,7 +339,11 @@ module JSONAPI
             records = apply_filter(records, filter, value)
           end
         end
-        records.includes(required_includes)
+        if required_includes.any?
+          records.includes(required_includes)
+        else
+          records.all
+        end
       end
 
       # Override this method if you have more complex requirements than this basic find method provides
