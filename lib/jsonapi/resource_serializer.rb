@@ -18,6 +18,7 @@ module JSONAPI
 
       @fields =  options.fetch(:fields, {})
       @include = options.fetch(:include, [])
+      @include_directives = options.fetch(:include_directives, nil)
       @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
       @route_formatter = options.fetch(:route_formatter, JSONAPI.configuration.route_formatter)
       @base_url = options.fetch(:base_url, '')
@@ -28,10 +29,9 @@ module JSONAPI
       is_resource_collection = source.respond_to?(:to_ary)
 
       @included_objects = {}
+      @include_directives ||= JSONAPI::SerializerIncludeDirectives.new(@include)
 
-      include_directives = JSONAPI::SerializerIncludeDirectives.new(@include).include_directives
-
-      process_primary(source, include_directives)
+      process_primary(source, @include_directives.include_directives)
 
       included_objects = []
       primary_objects = []

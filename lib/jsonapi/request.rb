@@ -4,7 +4,8 @@ require 'jsonapi/paginator'
 module JSONAPI
   class Request
     attr_accessor :fields, :include, :filters, :sort_criteria, :errors, :operations,
-                  :resource_klass, :context, :paginator, :source_klass, :source_id
+                  :resource_klass, :context, :paginator, :source_klass, :source_id,
+                  :include_directives
 
     def initialize(params = nil, options = {})
       @context = options.fetch(:context, nil)
@@ -17,6 +18,7 @@ module JSONAPI
       @sort_criteria = []
       @source_klass = nil
       @source_id = nil
+      @include_directives = nil
 
       setup(params) if params
     end
@@ -153,6 +155,8 @@ module JSONAPI
         check_include(@resource_klass, included_resource.partition('.'))
         @include.push(unformat_key(included_resource).to_s)
       end
+
+      @include_directives = JSONAPI::SerializerIncludeDirectives.new(@include)
     end
 
     def parse_filters(filters)

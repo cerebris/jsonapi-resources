@@ -10,6 +10,7 @@ module JSONAPI
     def index
       serializer = JSONAPI::ResourceSerializer.new(resource_klass,
                                                    include: @request.include,
+                                                   include_directives: @request.include_directives,
                                                    fields: @request.fields,
                                                    base_url: base_url,
                                                    key_formatter: key_formatter,
@@ -17,6 +18,7 @@ module JSONAPI
 
       resource_records = resource_klass.find(resource_klass.verify_filters(@request.filters, context),
                                              context: context,
+                                             include_directives: @request.include_directives,
                                              sort_criteria: @request.sort_criteria,
                                              paginator: @request.paginator)
 
@@ -28,6 +30,7 @@ module JSONAPI
     def show
       serializer = JSONAPI::ResourceSerializer.new(resource_klass,
                                                    include: @request.include,
+                                                   include_directives: @request.include_directives,
                                                    fields: @request.fields,
                                                    base_url: base_url,
                                                    key_formatter: key_formatter,
@@ -35,7 +38,9 @@ module JSONAPI
 
       key = resource_klass.verify_key(params[resource_klass._primary_key], context)
 
-      resource_record = resource_klass.find_by_key(key, context: context)
+      resource_record = resource_klass.find_by_key(key,
+                                                   context: context,
+                                                   include_directives: @request.include_directives)
 
       render json: serializer.serialize_to_hash(resource_record)
     rescue => e
@@ -53,6 +58,7 @@ module JSONAPI
 
       serializer = JSONAPI::ResourceSerializer.new(resource_klass,
                                                    fields: @request.fields,
+                                                   include_directives: @request.include_directives,
                                                    base_url: base_url,
                                                    key_formatter: key_formatter,
                                                    route_formatter: route_formatter)

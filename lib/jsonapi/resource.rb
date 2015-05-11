@@ -306,6 +306,11 @@ module JSONAPI
         _associations.keys | _attributes.keys
       end
 
+      def apply_includes(records, directives)
+        records = records.includes(*directives.model_includes) if directives
+        records
+      end
+
       def apply_pagination(records, paginator)
         if paginator
           records = paginator.apply(records)
@@ -350,10 +355,12 @@ module JSONAPI
       def find(filters, options = {})
         context = options[:context]
         sort_criteria = options.fetch(:sort_criteria) { [] }
+        include_directives = options.fetch(:include_directives, nil)
 
         resources = []
 
         records = records(options)
+        records = apply_includes(records, include_directives)
         records = apply_filters(records, filters)
         records = apply_sort(records, construct_order_options(sort_criteria))
         records = apply_pagination(records, options[:paginator])
@@ -367,7 +374,10 @@ module JSONAPI
 
       def find_by_key(key, options = {})
         context = options[:context]
-        model = records(options).where({_primary_key => key}).first
+        include_directives = options.fetch(:include_directives, nil)
+        records = records(options)
+        records = apply_includes(records, include_directives)
+        model = records.where({_primary_key => key}).first
         if model.nil?
           raise JSONAPI::Exceptions::RecordNotFound.new(key)
         end
