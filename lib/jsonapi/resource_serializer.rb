@@ -23,8 +23,17 @@ module JSONAPI
       @base_url = options.fetch(:base_url, '')
     end
 
+    def create_meta_hash(source, options)
+      {}.tap do |h|
+        h[:total_count] = options[:total_count] if options[:total_count]
+      end
+    end
+
     # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
-    def serialize_to_hash(source)
+    def serialize_to_hash(source, options = {})
+      primary_hash = {}
+      primary_hash[:meta] = create_meta_hash(source, options)
+
       is_resource_collection = source.respond_to?(:to_ary)
 
       @included_objects = {}
@@ -45,7 +54,9 @@ module JSONAPI
         end
       end
 
-      primary_hash = {data: is_resource_collection ? primary_objects : primary_objects[0]}
+      primary_hash.reject! { |k,v| v.blank? } # Reject empty keys
+
+      primary_hash[:data] = is_resource_collection ? primary_objects : primary_objects[0]
 
       if included_objects.size > 0
         primary_hash[:included] = included_objects

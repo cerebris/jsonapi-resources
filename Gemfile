@@ -20,3 +20,7 @@ rails = case version
           "~> #{version}"
         end
 gem 'rails', rails
+
+group :development do
+  gem 'byebug'
+end

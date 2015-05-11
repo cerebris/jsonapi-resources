@@ -1444,6 +1444,13 @@ class PostsControllerTest < ActionController::TestCase
                          }
                        }
   end
+
+  def test_index_no_total_count
+    get :index
+    assert_response :success
+    refute json_response.fetch('meta', {}).has_key?('total_count')
+  end
+
 end
 
 class TagsControllerTest < ActionController::TestCase
@@ -2220,4 +2227,11 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_equal 10, json_response['data'].size
     assert_equal 'Book 20', json_response['data'][0]['attributes']['title']
   end
+
+  def test_books_meta_total_count
+    get :index
+    assert_response :success
+    assert_equal 1000, json_response['meta']['total_count']
+  end
+
 end

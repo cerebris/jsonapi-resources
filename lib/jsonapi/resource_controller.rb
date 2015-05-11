@@ -14,13 +14,15 @@ module JSONAPI
                                                    base_url: base_url,
                                                    key_formatter: key_formatter,
                                                    route_formatter: route_formatter)
-
-      resource_records = resource_klass.find(resource_klass.verify_filters(@request.filters, context),
+      filters = resource_klass.verify_filters(@request.filters, context)
+      resource_records = resource_klass.find(filters,
                                              context: context,
                                              sort_criteria: @request.sort_criteria,
                                              paginator: @request.paginator)
 
-      render json: serializer.serialize_to_hash(resource_records)
+      total_count = resource_klass.total_count(filters) if resource_klass.include_total_count?
+
+      render json: serializer.serialize_to_hash(resource_records, total_count: total_count)
     rescue => e
       handle_exceptions(e)
     end
