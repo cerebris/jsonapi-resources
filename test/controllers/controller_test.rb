@@ -2107,6 +2107,10 @@ class FactsControllerTest < ActionController::TestCase
 end
 
 class Api::V2::BooksControllerTest < ActionController::TestCase
+  def setup
+    JSONAPI.configuration.json_key_format = :dasherized_key
+  end
+
   def after_teardown
     Api::V2::BookResource.paginator :offset
   end
@@ -2118,6 +2122,30 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_response :success
     assert_equal 10, json_response['data'].size
     assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+  end
+
+  def test_books_offset_pagination_no_params_includes_query_count_one_level
+    Api::V2::BookResource.paginator :offset
+
+    query_count = count_queries do
+      get :index, {include: 'book-comments'}
+    end
+    assert_response :success
+    assert_equal 10, json_response['data'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+    assert_equal 2, query_count
+  end
+
+  def test_books_offset_pagination_no_params_includes_query_count_two_levels
+    Api::V2::BookResource.paginator :offset
+
+    query_count = count_queries do
+      get :index, {include: 'book-comments,book-comments.author'}
+    end
+    assert_response :success
+    assert_equal 10, json_response['data'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+    assert_equal 3, query_count
   end
 
   def test_books_offset_pagination
