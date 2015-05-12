@@ -4,7 +4,8 @@ require 'jsonapi/paginator'
 module JSONAPI
   class Request
     attr_accessor :fields, :include, :filters, :sort_criteria, :errors, :operations,
-                  :resource_klass, :context, :paginator, :source_klass, :source_id
+                  :resource_klass, :context, :paginator, :source_klass, :source_id,
+                  :include_directives
 
     def initialize(params = nil, options = {})
       @context = options.fetch(:context, nil)
@@ -17,6 +18,7 @@ module JSONAPI
       @sort_criteria = []
       @source_klass = nil
       @source_id = nil
+      @include_directives = nil
 
       setup(params) if params
     end
@@ -28,7 +30,7 @@ module JSONAPI
         case params[:action]
           when 'index'
             parse_fields(params[:fields])
-            parse_include(params[:include])
+            parse_include_directives(params[:include])
             parse_filters(params[:filter])
             parse_sort_criteria(params[:sort])
             parse_pagination(params[:page])
@@ -36,16 +38,16 @@ module JSONAPI
             @source_klass = Resource.resource_for(params.require(:source))
             @source_id = @source_klass.verify_key(params.require(@source_klass._as_parent_key), @context)
             parse_fields(params[:fields])
-            parse_include(params[:include])
+            parse_include_directives(params[:include])
             parse_filters(params[:filter])
             parse_sort_criteria(params[:sort])
             parse_pagination(params[:page])
           when 'show'
             parse_fields(params[:fields])
-            parse_include(params[:include])
+            parse_include_directives(params[:include])
           when 'create'
             parse_fields(params[:fields])
-            parse_include(params[:include])
+            parse_include_directives(params[:include])
             parse_add_operation(params.require(:data))
           when 'create_association'
             parse_add_association_operation(params.require(:data),
@@ -57,7 +59,7 @@ module JSONAPI
                                                params.require(@resource_klass._as_parent_key))
           when 'update'
             parse_fields(params[:fields])
-            parse_include(params[:include])
+            parse_include_directives(params[:include])
             parse_replace_operation(params.require(:data), params.require(@resource_klass._primary_key))
           when 'destroy'
             parse_remove_operation(params)
@@ -142,7 +144,7 @@ module JSONAPI
       end
     end
 
-    def parse_include(include)
+    def parse_include_directives(include)
       return if include.nil?
 
       included_resources = CSV.parse_line(include)
@@ -153,6 +155,8 @@ module JSONAPI
         check_include(@resource_klass, included_resource.partition('.'))
         @include.push(unformat_key(included_resource).to_s)
       end
+
+      @include_directives = JSONAPI::IncludeDirectives.new(@include)
     end
 
     def parse_filters(filters)

@@ -1,5 +1,5 @@
 module JSONAPI
-  class SerializerIncludeDirectives
+  class IncludeDirectives
 
     # Construct an IncludeDirectives Hash from an array of dot separated include strings.
     # For example [:posts, 'posts.comments', 'posts.comments.tags']
@@ -31,6 +31,10 @@ module JSONAPI
       @include_directives_hash
     end
 
+    def model_includes
+      get_includes(@include_directives_hash)
+    end
+
     private
     def get_related(current_path)
       current = @include_directives_hash
@@ -40,6 +44,13 @@ module JSONAPI
         current = current[:include_related][fragment]
       end
       current
+    end
+
+    def get_includes(directive)
+      directive[:include_related].map do |name, directive|
+        sub = get_includes(directive)
+        sub.any? ? { name => sub } : name
+      end
     end
 
     def parse_include(include)

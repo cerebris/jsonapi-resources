@@ -306,6 +306,11 @@ module JSONAPI
         _associations.keys | _attributes.keys
       end
 
+      def apply_includes(records, directives)
+        records = records.includes(*directives.model_includes) if directives
+        records
+      end
+
       def apply_pagination(records, paginator)
         if paginator
           records = paginator.apply(records)
@@ -314,7 +319,11 @@ module JSONAPI
       end
 
       def apply_sort(records, order_options)
-        records.order(order_options)
+        if order_options.any?
+          records.order(order_options)
+        else
+          records
+        end
       end
 
       def apply_filter(records, filter, value)
@@ -335,17 +344,25 @@ module JSONAPI
             records = apply_filter(records, filter, value)
           end
         end
-        records.includes(required_includes)
+        if required_includes.any?
+          records.includes(required_includes)
+        elsif records.respond_to? :to_ary
+          records
+        else
+          records.all
+        end
       end
 
       # Override this method if you have more complex requirements than this basic find method provides
       def find(filters, options = {})
         context = options[:context]
         sort_criteria = options.fetch(:sort_criteria) { [] }
+        include_directives = options.fetch(:include_directives, nil)
 
         resources = []
 
         records = records(options)
+        records = apply_includes(records, include_directives)
         records = apply_filters(records, filters)
         records = apply_sort(records, construct_order_options(sort_criteria))
         records = apply_pagination(records, options[:paginator])
@@ -359,7 +376,10 @@ module JSONAPI
 
       def find_by_key(key, options = {})
         context = options[:context]
-        model = records(options).where({_primary_key => key}).first
+        include_directives = options.fetch(:include_directives, nil)
+        records = records(options)
+        records = apply_includes(records, include_directives)
+        model = records.where({_primary_key => key}).first
         if model.nil?
           raise JSONAPI::Exceptions::RecordNotFound.new(key)
         end
