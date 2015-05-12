@@ -57,6 +57,22 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 1, json_response['included'].size
   end
 
+  def test_index_include_one_level_query_count
+    query_count = count_queries do
+      get :index, {include: 'author'}
+    end
+    assert_response :success
+    assert_equal 2, query_count
+  end
+
+  def test_index_include_two_levels_query_count
+    query_count = count_queries do
+      get :index, {include: 'author,author.comments'}
+    end
+    assert_response :success
+    assert_equal 3, query_count
+  end
+
   def test_index_filter_by_ids_and_fields
     get :index, {filter: {id: '1,2'}, fields: {posts: 'id,title,author'}}
     assert_response :success
