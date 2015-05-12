@@ -346,6 +346,8 @@ module JSONAPI
         end
         if required_includes.any?
           records.includes(required_includes)
+        elsif records.respond_to? :to_ary
+          records
         else
           records.all
         end
