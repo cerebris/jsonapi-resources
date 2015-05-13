@@ -523,6 +523,11 @@ Callbacks can also be defined for `JSONAPI::OperationsProcessor` events:
 
 ### Controllers
 
+There are two ways to implement a controller for your resources. Either derive from `ResourceController` or import
+the `ActsAsResourceController` module.
+
+##### ResourceController
+
 `JSONAPI::Resources` provides a class, `ResourceController`, that can be used as the base class for your controllers. 
 `ResourceController` supports `index`, `show`, `create`, `update`, and `destroy` methods. Just deriving your controller 
 from `ResourceController` will give you a fully functional controller.
@@ -552,6 +557,19 @@ end
 # and share its context
 class PeopleController < ApplicationController
 
+end
+```
+
+##### ActsAsResourceController
+
+`JSONAPI::Resources` also provides a module, `JSONAPI::ActsAsResourceController`. You can include this module to
+bring in all the features of `ResourceController` into your existing controller class.
+
+For example:
+
+```ruby
+class PostsController < ActionController::Base
+  include JSONAPI::ActsAsResourceController
 end
 ```
 

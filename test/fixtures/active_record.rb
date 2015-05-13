@@ -343,7 +343,8 @@ end
 class PeopleController < JSONAPI::ResourceController
 end
 
-class PostsController < JSONAPI::ResourceController
+class PostsController < ActionController::Base
+  include JSONAPI::ActsAsResourceController
 end
 
 class CommentsController < JSONAPI::ResourceController
@@ -376,7 +377,8 @@ module Api
     class PeopleController < JSONAPI::ResourceController
     end
 
-    class PostsController < JSONAPI::ResourceController
+    class PostsController < ActionController::Base
+      include JSONAPI::ActsAsResourceController
     end
 
     class TagsController < JSONAPI::ResourceController
