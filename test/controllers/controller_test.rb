@@ -1663,6 +1663,33 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
     assert json_response['data'].is_a?(Hash)
   end
 
+  def test_create_currencies_client_generated_id
+    set_content_type_header!
+    JSONAPI.configuration.json_key_format = :underscored_route
+
+    post :create,
+         {
+           data: {
+             type: 'iso_currencies',
+             id: 'BTC',
+             attributes: {
+               name: 'Bit Coin',
+               'country_name' => 'global',
+               'minor_unit' => 'satoshi'
+             }
+           }
+         }
+
+    assert_response :created
+    assert_equal 'BTC', json_response['data']['id']
+    assert_equal 'Bit Coin', json_response['data']['attributes']['name']
+    assert_equal 'global', json_response['data']['attributes']['country_name']
+    assert_equal 'satoshi', json_response['data']['attributes']['minor_unit']
+
+    delete :destroy, {id: json_response['data']['id']}
+    assert_response :no_content
+  end
+
   def test_currencies_json_key_underscored_sort
     JSONAPI.configuration.json_key_format = :underscored_key
     get :index, {sort: '+country_name'}

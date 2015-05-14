@@ -321,6 +321,8 @@ module JSONAPI
                 end
               end
             end
+          when 'id'
+            checked_attributes['id'] = unformat_value(:id, value)
           when 'attributes'
             value.each do |key, value|
               param = unformat_key(key)
