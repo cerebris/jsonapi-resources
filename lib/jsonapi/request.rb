@@ -60,7 +60,7 @@ module JSONAPI
           when 'update'
             parse_fields(params[:fields])
             parse_include_directives(params[:include])
-            parse_replace_operation(params.require(:data), params.require(@resource_klass._primary_key))
+            parse_replace_operation(params.require(:data), params.require(:id))
           when 'destroy'
             parse_remove_operation(params)
           when 'destroy_association'
@@ -321,6 +321,8 @@ module JSONAPI
                 end
               end
             end
+          when 'id'
+            checked_attributes['id'] = unformat_value(:id, value)
           when 'attributes'
             value.each do |key, value|
               param = unformat_key(key)
@@ -406,7 +408,7 @@ module JSONAPI
     end
 
     def parse_single_replace_operation(data, keys)
-      if data[@resource_klass._primary_key].nil?
+      if data[:id].nil?
         raise JSONAPI::Exceptions::MissingKey.new
       end
 
@@ -415,12 +417,12 @@ module JSONAPI
         raise JSONAPI::Exceptions::ParameterMissing.new(:type)
       end
 
-      key = data[@resource_klass._primary_key]
+      key = data[:id]
       if !keys.include?(key)
         raise JSONAPI::Exceptions::KeyNotIncludedInURL.new(key)
       end
 
-      if !keys.include?(@resource_klass._primary_key)
+      if !keys.include?(:id)
         data.delete(:id)
       end
 
@@ -450,7 +452,7 @@ module JSONAPI
     end
 
     def parse_remove_operation(params)
-      keys = parse_key_array(params.permit(@resource_klass._primary_key)[@resource_klass._primary_key])
+      keys = parse_key_array(params.permit(:id)[:id])
 
       keys.each do |key|
         @operations.push JSONAPI::RemoveResourceOperation.new(@resource_klass, key)

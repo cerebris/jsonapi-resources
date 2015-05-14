@@ -39,7 +39,7 @@ module JSONAPI
                                                    key_formatter: key_formatter,
                                                    route_formatter: route_formatter)
 
-      key = resource_klass.verify_key(params[resource_klass._primary_key], context)
+      key = resource_klass.verify_key(params[:id], context)
 
       resource_record = resource_klass.find_by_key(key,
                                                    context: context,

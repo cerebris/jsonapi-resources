@@ -93,7 +93,7 @@ class RoutesTest < ActionDispatch::IntegrationTest
 
   def test_routing_v4_isoCurrencies_resources
     assert_routing({path: '/api/v4/isoCurrencies/USD', method: :get},
-                   {action: 'show', controller: 'api/v4/iso_currencies', code: 'USD'})
+                   {action: 'show', controller: 'api/v4/iso_currencies', id: 'USD'})
   end
 
   def test_routing_v4_expenseEntries_resources
@@ -112,7 +112,7 @@ class RoutesTest < ActionDispatch::IntegrationTest
 
   def test_routing_v5_isoCurrencies_resources
     assert_routing({path: '/api/v5/iso-currencies/USD', method: :get},
-                   {action: 'show', controller: 'api/v5/iso_currencies', code: 'USD'})
+                   {action: 'show', controller: 'api/v5/iso_currencies', id: 'USD'})
   end
 
   def test_routing_v5_expenseEntries_resources
@@ -136,7 +136,7 @@ class RoutesTest < ActionDispatch::IntegrationTest
   #primary_key
   def test_routing_primary_key_jsonapi_resources
     assert_routing({path: '/iso_currencies/USD', method: :get},
-                   {action: 'show', controller: 'iso_currencies', code: 'USD'})
+                   {action: 'show', controller: 'iso_currencies', id: 'USD'})
   end
 
   # ToDo: Refute routing

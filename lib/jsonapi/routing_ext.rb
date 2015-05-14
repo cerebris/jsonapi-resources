@@ -58,8 +58,7 @@ module ActionDispatch
           options[:controller] ||= @resource_type
           options.merge!(res.routing_resource_options)
 
-          # Route using the primary_key. Can be overridden using routing_resource_options
-          options[:param] ||= res._primary_key
+          options[:param] = :id
 
           options[:path] = format_route(@resource_type)
 
