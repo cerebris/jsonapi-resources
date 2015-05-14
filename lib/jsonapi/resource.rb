@@ -289,7 +289,7 @@ module JSONAPI
 
       # Override in your resource to filter the updateable keys
       def updateable_fields(context = nil)
-        _updateable_associations | _attributes.keys - [_primary_key]
+        _updateable_associations | _attributes.keys - [:id]
       end
 
       # Override in your resource to filter the createable keys
@@ -420,7 +420,7 @@ module JSONAPI
       def verify_key(key, context = nil)
         key && Integer(key)
       rescue
-        raise JSONAPI::Exceptions::InvalidFieldValue.new(_primary_key, key)
+        raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
       end
 
       # override to allow for key processing and checking
@@ -477,7 +477,7 @@ module JSONAPI
       end
 
       def _allowed_filters
-        !@_allowed_filters.nil? ? @_allowed_filters : Set.new([_primary_key])
+        !@_allowed_filters.nil? ? @_allowed_filters : Set.new([:id])
       end
 
       def _resource_name_from_type(type)
