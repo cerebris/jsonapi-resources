@@ -7,11 +7,12 @@ module JSONAPI
     included do
       before_filter :ensure_correct_media_type, only: [:create, :update, :create_association, :update_association]
       before_filter :setup_request
+      before_filter :setup_resource_serializer_klass
       after_filter :setup_response
     end
 
     def index
-      serializer = JSONAPI::ResourceSerializer.new(resource_klass,
+      serializer = @resource_serializer_klass.new(resource_klass,
                                                    include: @request.include,
                                                    include_directives: @request.include_directives,
                                                    fields: @request.fields,
@@ -31,7 +32,7 @@ module JSONAPI
     end
 
     def show
-      serializer = JSONAPI::ResourceSerializer.new(resource_klass,
+      serializer = @resource_serializer_klass.new(resource_klass,
                                                    include: @request.include,
                                                    include_directives: @request.include_directives,
                                                    fields: @request.fields,
@@ -59,7 +60,7 @@ module JSONAPI
 
       association = resource_klass._association(association_type)
 
-      serializer = JSONAPI::ResourceSerializer.new(resource_klass,
+      serializer = @resource_serializer_klass.new(resource_klass,
                                                    fields: @request.fields,
                                                    include_directives: @request.include_directives,
                                                    base_url: base_url,
@@ -99,7 +100,7 @@ module JSONAPI
       association_type = params[:association]
       source_resource = @request.source_klass.find_by_key(@request.source_id, context: context)
 
-      serializer = JSONAPI::ResourceSerializer.new(@request.source_klass,
+      serializer = @resource_serializer_klass.new(@request.source_klass,
                                                    include: @request.include,
                                                    fields: @request.fields,
                                                    base_url: base_url,
@@ -120,7 +121,7 @@ module JSONAPI
                                                  paginator: @request.paginator
                                                })
 
-      serializer = JSONAPI::ResourceSerializer.new(@request.source_klass,
+      serializer = @resource_serializer_klass.new(@request.source_klass,
                                                    include: @request.include,
                                                    fields: @request.fields,
                                                    base_url: base_url,
@@ -164,6 +165,10 @@ module JSONAPI
       render_errors(@request.errors) unless @request.errors.empty?
     rescue => e
       handle_exceptions(e)
+    end
+
+    def setup_resource_serializer_klass
+      @resource_serializer_klass ||= JSONAPI::ResourceSerializer
     end
 
     def setup_response
@@ -216,7 +221,7 @@ module JSONAPI
     end
 
     def processing_serializer
-      JSONAPI::ResourceSerializer.new(resource_klass,
+      @resource_serializer_klass.new(resource_klass,
                                       include: @request.include,
                                       fields: @request.fields,
                                       base_url: base_url,
