@@ -1690,6 +1690,20 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
     assert_response :no_content
   end
 
+  def test_currencies_primary_key_sort
+    get :index, {sort: '+id'}
+    assert_response :success
+    assert_equal 3, json_response['data'].size
+    assert_equal 'CAD', json_response['data'][0]['id']
+    assert_equal 'EUR', json_response['data'][1]['id']
+    assert_equal 'USD', json_response['data'][2]['id']
+  end
+
+  def test_currencies_code_sort
+    get :index, {sort: '+code'}
+    assert_response :bad_request
+  end
+
   def test_currencies_json_key_underscored_sort
     JSONAPI.configuration.json_key_format = :underscored_key
     get :index, {sort: '+country_name'}
