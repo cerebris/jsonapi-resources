@@ -276,11 +276,11 @@ module JSONAPI
       end
 
       def filters(*attrs)
-        @_allowed_filters.merge(attrs)
+        @_allowed_filters.merge!(attrs.inject( Hash.new ) { |h, attr| h[attr] = {}; h })
       end
 
-      def filter(attr)
-        @_allowed_filters.add(attr.to_sym)
+      def filter(attr, opts={})
+        @_allowed_filters[attr.to_sym] = opts
       end
 
       def primary_key(key)
@@ -480,7 +480,7 @@ module JSONAPI
       end
 
       def _allowed_filters
-        !@_allowed_filters.nil? ? @_allowed_filters : Set.new([:id])
+        !@_allowed_filters.nil? ? @_allowed_filters : { :id => {} }
       end
 
       def _resource_name_from_type(type)
@@ -505,7 +505,7 @@ module JSONAPI
       end
 
       def _allowed_filter?(filter)
-        _allowed_filters.include?(filter)
+        !_allowed_filters[filter].nil?
       end
 
       def module_path

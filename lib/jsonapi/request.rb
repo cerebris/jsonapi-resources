@@ -43,6 +43,7 @@ module JSONAPI
     def setup_index_action(params)
       parse_fields(params[:fields])
       parse_include_directives(params[:include])
+      set_default_filters
       parse_filters(params[:filter])
       parse_sort_criteria(params[:sort])
       parse_pagination(params[:page])
@@ -53,6 +54,7 @@ module JSONAPI
       initialize_source(params)
       parse_fields(params[:fields])
       parse_include_directives(params[:include])
+      set_default_filters
       parse_filters(params[:filter])
       parse_sort_criteria(params[:sort])
       parse_pagination(params[:page])
@@ -63,6 +65,7 @@ module JSONAPI
       initialize_source(params)
       parse_fields(params[:fields])
       parse_include_directives(params[:include])
+      set_default_filters
       parse_filters(params[:filter])
       parse_sort_criteria(params[:sort])
       parse_pagination(params[:page])
@@ -207,7 +210,7 @@ module JSONAPI
 
     def parse_filters(filters)
       return unless filters
-      @filters = {}
+
       filters.each do |key, value|
         filter = unformat_key(key)
         if @resource_klass._allowed_filter?(filter)
@@ -215,6 +218,13 @@ module JSONAPI
         else
           @errors.concat(JSONAPI::Exceptions::FilterNotAllowed.new(filter).errors)
         end
+      end
+    end
+
+    def set_default_filters
+      @resource_klass._allowed_filters.each do |filter, opts|
+        next if opts[:default].nil? || !@filters[filter].nil?
+        @filters[filter] = opts[:default]
       end
     end
 

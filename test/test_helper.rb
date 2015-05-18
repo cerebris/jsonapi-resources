@@ -88,6 +88,7 @@ TestApp.routes.draw do
   jsonapi_resources :moons
   jsonapi_resources :preferences
   jsonapi_resources :facts
+  jsonapi_resources :categories
 
   namespace :api do
     namespace :v1 do

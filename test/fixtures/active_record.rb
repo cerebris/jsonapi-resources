@@ -162,6 +162,11 @@ ActiveRecord::Schema.define do
     t.string   :numero_telefone
     t.timestamps null: false
   end
+
+  create_table :categories, force: true do |t|
+    t.string :name
+    t.string :status, limit: 10
+  end
 end
 
 ### MODELS
@@ -329,6 +334,9 @@ end
 class NumeroTelefone < ActiveRecord::Base
 end
 
+class Category < ActiveRecord::Base
+end
+
 ### PORO Data - don't do this in a production app
 $breed_data = BreedData.new
 $breed_data.add(Breed.new(0, 'persian'))
@@ -379,6 +387,9 @@ class BreedsController < JSONAPI::ResourceController
 end
 
 class FactsController < JSONAPI::ResourceController
+end
+
+class CategoriesController < JSONAPI::ResourceController
 end
 
 ### CONTROLLERS
@@ -741,6 +752,10 @@ class FactResource < JSONAPI::Resource
   attribute :cool
 end
 
+class CategoryResource < JSONAPI::Resource
+  filter :status, default: 'active'
+end
+
 module Api
   module V1
     class WriterResource < JSONAPI::Resource
@@ -958,3 +973,10 @@ betax = Planet.create(name: 'Beta X', description: 'Newly discovered Planet X', 
 betay = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Y', planet_type_id: unknown.id)
 betaz = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Z', planet_type_id: unknown.id)
 betaw = Planet.create(name: 'Beta W', description: 'Newly discovered Planet W')
+Category.create(name: 'Category A', status: 'active')
+Category.create(name: 'Category B', status: 'active')
+Category.create(name: 'Category C', status: 'active')
+Category.create(name: 'Category D', status: 'inactive')
+Category.create(name: 'Category E', status: 'inactive')
+Category.create(name: 'Category F', status: 'inactive')
+Category.create(name: 'Category G', status: 'inactive')
