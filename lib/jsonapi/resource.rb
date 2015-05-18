@@ -311,9 +311,9 @@ module JSONAPI
         records
       end
 
-      def apply_pagination(records, paginator)
+      def apply_pagination(records, paginator, order_options)
         if paginator
-          records = paginator.apply(records)
+          records = paginator.apply(records, order_options)
         end
         records
       end
@@ -364,8 +364,9 @@ module JSONAPI
         records = records(options)
         records = apply_includes(records, include_directives)
         records = apply_filters(records, filters)
-        records = apply_sort(records, construct_order_options(sort_criteria))
-        records = apply_pagination(records, options[:paginator])
+        order_options = construct_order_options(sort_criteria)
+        records = apply_sort(records, order_options)
+        records = apply_pagination(records, options[:paginator], order_options)
 
         records.each do |model|
           resources.push self.new(model, context)
@@ -587,8 +588,9 @@ module JSONAPI
               if resource_class
                 records = public_send(associated_records_method_name)
                 records = self.class.apply_filters(records, filters)
-                records = self.class.apply_sort(records, self.class.construct_order_options(sort_criteria))
-                records = self.class.apply_pagination(records, paginator)
+                order_options = self.class.construct_order_options(sort_criteria)
+                records = self.class.apply_sort(records, order_options)
+                records = self.class.apply_pagination(records, paginator, order_options)
                 records.each do |record|
                   resources.push resource_class.new(record, @context)
                 end

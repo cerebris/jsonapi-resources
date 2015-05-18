@@ -427,9 +427,9 @@ from the configuration settings is used.
 
 ###### Custom Paginators
 
-Custom `paginators` can be used. These should derive from `Paginator`. The `apply` method takes a `relation` and is 
-expected to return a `relation`. The `initialize` method receives the parameters from the `page` request parameters. It 
-is up to the paginator author to parse and validate these parameters.
+Custom `paginators` can be used. These should derive from `Paginator`. The `apply` method takes a `relation` and
+`order_options` and is expected to return a `relation`. The `initialize` method receives the parameters from the `page`
+request parameters. It is up to the paginator author to parse and validate these parameters.
 
 For example, here is a very simple single record at a time paginator:
 
@@ -440,7 +440,7 @@ class SingleRecordPaginator < JSONAPI::Paginator
     @page = params.to_i
   end
 
-  def apply(relation)
+  def apply(relation, order_options)
     relation.offset(@page).limit(1)
   end
 end
