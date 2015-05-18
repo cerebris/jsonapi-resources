@@ -311,9 +311,9 @@ module JSONAPI
         records
       end
 
-      def apply_pagination(records, paginator)
+      def apply_pagination(records, paginator, order_options)
         if paginator
-          records = paginator.apply(records)
+          records = paginator.apply(records, order_options)
         end
         records
       end
@@ -354,13 +354,15 @@ module JSONAPI
       end
 
       def filter_records(filters, options)
-        sort_criteria = options.fetch(:sort_criteria) { [] }
         include_directives = options[:include_directives]
 
         records = records(options)
         records = apply_includes(records, include_directives)
-        records = apply_filters(records, filters)
-        apply_sort(records, construct_order_options(sort_criteria))
+        apply_filters(records, filters)
+      end
+
+      def sort_records(records, order_options)
+        apply_sort(records, order_options)
       end
 
       def find_count(filters, options = {})
@@ -372,7 +374,12 @@ module JSONAPI
         context = options[:context]
 
         records = filter_records(filters, options)
-        records = apply_pagination(records, options[:paginator])
+
+        sort_criteria = options.fetch(:sort_criteria) { [] }
+        order_options = construct_order_options(sort_criteria)
+        records = sort_records(records, order_options)
+
+        records = apply_pagination(records, options[:paginator], order_options)
 
         resources = []
         records.each do |model|
@@ -587,11 +594,13 @@ module JSONAPI
               paginator = options[:paginator]
 
               resources = []
+
               if resource_class
                 records = public_send(associated_records_method_name)
                 records = resource_class.apply_filters(records, filters)
-                records = resource_class.apply_sort(records, self.class.construct_order_options(sort_criteria))
-                records = resource_class.apply_pagination(records, paginator)
+                order_options = self.class.construct_order_options(sort_criteria)
+                records = resource_class.apply_sort(records, order_options)
+                records = resource_class.apply_pagination(records, paginator, order_options)
                 records.each do |record|
                   resources.push resource_class.new(record, @context)
                 end

@@ -3,7 +3,7 @@ module JSONAPI
     def initialize(params)
     end
 
-    def apply(relation)
+    def apply(relation, order_options)
       # relation
     end
 
@@ -22,7 +22,7 @@ class OffsetPaginator < JSONAPI::Paginator
     verify_pagination_params
   end
 
-  def apply(relation)
+  def apply(relation, order_options)
     relation.offset(@offset).limit(@limit)
   end
 
@@ -63,7 +63,7 @@ class PagedPaginator < JSONAPI::Paginator
     verify_pagination_params
   end
 
-  def apply(relation)
+  def apply(relation, order_options)
     offset = (@number - 1) * @size
     relation.offset(offset).limit(@size)
   end

@@ -189,7 +189,7 @@ class ResourceTest < ActiveSupport::TestCase
 
     # define apply_filters method on post resource to not respect filters
     PostResource.instance_eval do
-      def apply_pagination(records, criteria)
+      def apply_pagination(records, criteria, order_options)
         records
       end
     end
@@ -200,7 +200,7 @@ class ResourceTest < ActiveSupport::TestCase
         @page = params.to_i
       end
 
-      def apply(relation)
+      def apply(relation, order_options)
         relation.offset(@page).limit(1)
       end
     end
@@ -210,7 +210,7 @@ class ResourceTest < ActiveSupport::TestCase
 
     # reset method to original implementation
     PostResource.instance_eval do
-      def apply_pagination(records, criteria)
+      def apply_pagination(records, criteria, order_options)
         super
       end
     end
