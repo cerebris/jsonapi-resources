@@ -279,8 +279,8 @@ module JSONAPI
         @_allowed_filters.merge!(attrs.inject( Hash.new ) { |h, attr| h[attr] = {}; h })
       end
 
-      def filter(attr, opts={})
-        @_allowed_filters[attr.to_sym] = opts
+      def filter(attr, *args)
+        @_allowed_filters[attr.to_sym] = args.extract_options!
       end
 
       def primary_key(key)
