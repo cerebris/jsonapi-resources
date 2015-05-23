@@ -3,13 +3,17 @@ module JSONAPI
 
     private
     def transaction
-      ActiveRecord::Base.transaction do
+      if @transactional
+        ActiveRecord::Base.transaction do
+          yield
+        end
+      else
         yield
       end
     end
 
     def rollback
-      raise ActiveRecord::Rollback
+      raise ActiveRecord::Rollback if @transactional
     end
 
     def process_operation(operation)

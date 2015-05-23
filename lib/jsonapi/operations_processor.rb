@@ -9,6 +9,13 @@ module JSONAPI
       @context = request.context
       @operations = request.operations
 
+      # Use transactions if more than one operation and if one of the operations can be transactional
+      # Even if transactional transactions won't be used unless the derived OperationsProcessor supports them.
+      @transactional = false
+      @operations.each do |operation|
+        @transactional = @transactional | operation.transactional
+      end if @operations.length > 1
+
       run_callbacks :operations do
         transaction do
           @operations.each do |operation|

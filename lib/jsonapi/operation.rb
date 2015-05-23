@@ -1,10 +1,11 @@
 module JSONAPI
   class Operation
 
-    attr_reader :resource_klass
+    attr_reader :resource_klass, :transactional
 
-    def initialize(resource_klass)
+    def initialize(resource_klass, transactional = true)
       @resource_klass = resource_klass
+      @transactional = transactional
     end
 
     def apply(context)
