@@ -47,11 +47,7 @@ module JSONAPI
 
       primary_hash = {data: is_resource_collection ? primary_objects : primary_objects[0]}
 
-      if included_objects.size > 0
-        primary_hash[:included] = included_objects
-      else
-        primary_hash
-      end
+      primary_hash[:included] = included_objects if included_objects.size > 0
       primary_hash
     end
 

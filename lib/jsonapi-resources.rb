@@ -16,3 +16,7 @@ require 'jsonapi/operations_processor'
 require 'jsonapi/active_record_operations_processor'
 require 'jsonapi/association'
 require 'jsonapi/include_directives'
+require 'jsonapi/operation_result'
+require 'jsonapi/operation_results'
+require 'jsonapi/callbacks'
+

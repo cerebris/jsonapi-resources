@@ -19,56 +19,99 @@ module JSONAPI
       @source_klass = nil
       @source_id = nil
       @include_directives = nil
+      @paginator = nil
+      @id = nil
 
-      setup(params) if params
+      setup_action(params)
     end
 
-    def setup(params)
+    def setup_action(params)
+      return if params.nil?
+
       @resource_klass ||= Resource.resource_for(params[:controller]) if params[:controller]
 
       unless params.nil?
-        case params[:action]
-          when 'index'
-            parse_fields(params[:fields])
-            parse_include_directives(params[:include])
-            parse_filters(params[:filter])
-            parse_sort_criteria(params[:sort])
-            parse_pagination(params[:page])
-          when 'get_related_resource', 'get_related_resources'
-            @source_klass = Resource.resource_for(params.require(:source))
-            @source_id = @source_klass.verify_key(params.require(@source_klass._as_parent_key), @context)
-            parse_fields(params[:fields])
-            parse_include_directives(params[:include])
-            parse_filters(params[:filter])
-            parse_sort_criteria(params[:sort])
-            parse_pagination(params[:page])
-          when 'show'
-            parse_fields(params[:fields])
-            parse_include_directives(params[:include])
-          when 'create'
-            parse_fields(params[:fields])
-            parse_include_directives(params[:include])
-            parse_add_operation(params.require(:data))
-          when 'create_association'
-            parse_add_association_operation(params.require(:data),
-                                            params.require(:association),
-                                            params.require(@resource_klass._as_parent_key))
-          when 'update_association'
-            parse_update_association_operation(params.fetch(:data),
-                                               params.require(:association),
-                                               params.require(@resource_klass._as_parent_key))
-          when 'update'
-            parse_fields(params[:fields])
-            parse_include_directives(params[:include])
-            parse_replace_operation(params.require(:data), params.require(:id))
-          when 'destroy'
-            parse_remove_operation(params)
-          when 'destroy_association'
-            parse_remove_association_operation(params)
-        end
+        send("setup_#{params[:action]}_action", params)
       end
     rescue ActionController::ParameterMissing => e
       @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)
+    end
+
+    def setup_index_action(params)
+      parse_fields(params[:fields])
+      parse_include_directives(params[:include])
+      parse_filters(params[:filter])
+      parse_sort_criteria(params[:sort])
+      parse_pagination(params[:page])
+      add_find_operation
+    end
+
+    def setup_get_related_resource_action(params)
+      initialize_source(params)
+      parse_fields(params[:fields])
+      parse_include_directives(params[:include])
+      parse_filters(params[:filter])
+      parse_sort_criteria(params[:sort])
+      parse_pagination(params[:page])
+      add_show_related_resource_operation(params[:association])
+    end
+
+    def setup_get_related_resources_action(params)
+      initialize_source(params)
+      parse_fields(params[:fields])
+      parse_include_directives(params[:include])
+      parse_filters(params[:filter])
+      parse_sort_criteria(params[:sort])
+      parse_pagination(params[:page])
+      add_show_related_resources_operation(params[:association])
+    end
+
+    def setup_show_action(params)
+      parse_fields(params[:fields])
+      parse_include_directives(params[:include])
+      @id = params[:id]
+      add_show_operation
+    end
+
+    def setup_show_association_action(params)
+      add_show_association_operation(params[:association], params.require(@resource_klass._as_parent_key))
+    end
+
+    def setup_create_action(params)
+      parse_fields(params[:fields])
+      parse_include_directives(params[:include])
+      parse_add_operation(params.require(:data))
+    end
+
+    def setup_create_association_action(params)
+      parse_add_association_operation(params.require(:data),
+                                      params.require(:association),
+                                      params.require(@resource_klass._as_parent_key))
+    end
+
+    def setup_update_association_action(params)
+      parse_update_association_operation(params.fetch(:data),
+                                         params.require(:association),
+                                         params.require(@resource_klass._as_parent_key))
+    end
+
+    def setup_update_action(params)
+      parse_fields(params[:fields])
+      parse_include_directives(params[:include])
+      parse_replace_operation(params.require(:data), params.require(:id))
+    end
+
+    def setup_destroy_action(params)
+      parse_remove_operation(params)
+    end
+
+    def setup_destroy_association_action  (params)
+      parse_remove_association_operation(params)
+    end
+
+    def initialize_source(params)
+      @source_klass = Resource.resource_for(params.require(:source))
+      @source_id = @source_klass.verify_key(params.require(@source_klass._as_parent_key), @context)
     end
 
     def parse_pagination(page)
@@ -199,6 +242,43 @@ module JSONAPI
         @errors.concat(JSONAPI::Exceptions::InvalidSortCriteria
                          .new(format_key(resource_klass._type), sort_field).errors)
       end
+    end
+
+    def add_find_operation
+      @operations.push JSONAPI::FindOperation.new(@resource_klass,
+                                                  @filters,
+                                                  @include_directives,
+                                                  @sort_criteria,
+                                                  @paginator)
+    end
+
+    def add_show_operation
+      @operations.push JSONAPI::ShowOperation.new(@resource_klass,
+                                                  @id,
+                                                  @include_directives)
+    end
+
+    def add_show_association_operation(association_type, parent_key)
+      @operations.push JSONAPI::ShowAssociationOperation.new(@resource_klass,
+                                                             association_type,
+                                                             @resource_klass.verify_key(parent_key))
+    end
+
+    def add_show_related_resource_operation(association_type)
+      @operations.push JSONAPI::ShowRelatedResourceOperation.new(@resource_klass,
+                                                                 association_type,
+                                                                 @source_klass,
+                                                                 @source_id)
+    end
+
+    def add_show_related_resources_operation(association_type)
+      @operations.push JSONAPI::ShowRelatedResourcesOperation.new(@resource_klass,
+                                                                 association_type,
+                                                                 @source_klass,
+                                                                 @source_id,
+                                                                 @source_klass.verify_filters(@filters, @context),
+                                                                 @sort_criteria,
+                                                                 @paginator)
     end
 
     def parse_add_operation(data)
