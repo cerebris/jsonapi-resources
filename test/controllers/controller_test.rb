@@ -4,10 +4,6 @@ def set_content_type_header!
   @request.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
 end
 
-class ConfigControllerTest < ActionController::TestCase
-
-end
-
 class PostsControllerTest < ActionController::TestCase
   def test_index
     get :index
