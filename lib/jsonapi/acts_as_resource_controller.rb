@@ -116,58 +116,38 @@ module JSONAPI
     end
 
     def render_errors(errors)
-      render(json: {errors: errors}, status: errors[0].status)
+      operation_results = JSONAPI::OperationResults.new()
+      result = JSONAPI::ErrorsOperationResult.new(errors[0].status, errors)
+      operation_results.add_result(result)
+
+      render_response(operation_results)
+    end
+
+    def create_response_document(operation_results)
+      JSONAPI::ResponseDocument.new(
+        operation_results,
+        {
+          primary_resource_klass: resource_klass,
+          include: @request ? @request.include : nil,
+          include_directives: @request ? @request.include_directives : nil,
+          fields: @request ? @request.fields : nil,
+          base_url: base_url,
+          key_formatter: key_formatter,
+          route_formatter: route_formatter
+        }
+      )
     end
 
     def process_request_operations
-      operation_results   = create_operations_processor.process(@request)
-
-      status, json = if operation_results.has_errors?
-                       [operation_results.all_errors[0].status, {errors: operation_results.all_errors}]
-                     else
-                       if operation_results.results.length == 1
-                         result = operation_results.results[0]
-                         serialized_result = case result
-                                               when JSONAPI::ResourceOperationResult
-                                                 processing_serializer.serialize_to_hash(result.resource)
-                                               when JSONAPI::ResourcesOperationResult
-                                                 processing_serializer.serialize_to_hash(result.resources)
-                                               when JSONAPI::LinksObjectOperationResult
-                                                 processing_serializer.serialize_to_links_hash(result.parent_resource,
-                                                                                               result.association)
-                                               when JSONAPI::OperationResult
-                                                 {}
-                                             end
-
-                         [result.code, serialized_result]
-                       elsif operation_results.results.length > 1
-                         resources = []
-                         operation_results.results.each do |result|
-                           case result
-                             when JSONAPI::ResourceOperationResult
-                               resources.push(result.resource)
-                             when JSONAPI::ResourcesOperationResult
-                               resources.concat(result.resources)
-                           end
-
-                         end
-                         [operation_results.results[0].code, processing_serializer.serialize_to_hash(resources)]
-                       end
-                     end
-
-      render status: status, json: json
+      operation_results = create_operations_processor.process(@request)
+      render_response(operation_results)
     rescue => e
       handle_exceptions(e)
     end
 
-    def processing_serializer
-      JSONAPI::ResourceSerializer.new(resource_klass,
-                                      include: @request.include,
-                                      include_directives: @request.include_directives,
-                                      fields: @request.fields,
-                                      base_url: base_url,
-                                      key_formatter: key_formatter,
-                                      route_formatter: route_formatter)
+    def render_response(operation_results)
+      response_doc = create_response_document(operation_results)
+      render status: response_doc.status, json: response_doc.contents
     end
 
     # override this to process other exceptions

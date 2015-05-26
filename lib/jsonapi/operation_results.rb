@@ -18,11 +18,13 @@ module JSONAPI
 
     def all_errors
       errors = []
-      @results.each do |result|
-        if result.is_a?(JSONAPI::ErrorsOperationResult)
-          errors.concat(result.errors)
+      if @has_errors
+        @results.each do |result|
+          if result.is_a?(JSONAPI::ErrorsOperationResult)
+            errors.concat(result.errors)
+          end
         end
-      end if @has_errors
+      end
       errors
     end
   end
