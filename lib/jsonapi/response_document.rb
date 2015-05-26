@@ -6,7 +6,12 @@ module JSONAPI
     end
 
     def contents
-      results_to_hash
+      hash = results_to_hash
+
+      meta = top_level_meta
+      hash.merge!(meta: meta) unless meta.empty?
+
+      hash
     end
 
     def status
@@ -29,6 +34,18 @@ module JSONAPI
         key_formatter: @options.fetch(:key_formatter),
         route_formatter: @options.fetch(:route_formatter)
       )
+    end
+
+    def top_level_meta
+      meta = @options.fetch(:base_meta, {})
+
+      meta.merge!(@operation_results.meta)
+
+      @operation_results.results.each do |result|
+        meta.merge!(result.meta)
+      end
+
+      meta
     end
 
     def results_to_hash

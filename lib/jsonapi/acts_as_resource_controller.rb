@@ -115,12 +115,21 @@ module JSONAPI
       JSONAPI.configuration.route_formatter
     end
 
+    def base_response_meta
+      {}
+    end
+
     def render_errors(errors)
       operation_results = JSONAPI::OperationResults.new()
       result = JSONAPI::ErrorsOperationResult.new(errors[0].status, errors)
       operation_results.add_result(result)
 
-      render_response(operation_results)
+      render_results(operation_results)
+    end
+
+    def render_results(operation_results)
+      response_doc = create_response_document(operation_results)
+      render status: response_doc.status, json: response_doc.contents
     end
 
     def create_response_document(operation_results)
@@ -133,21 +142,17 @@ module JSONAPI
           fields: @request ? @request.fields : nil,
           base_url: base_url,
           key_formatter: key_formatter,
-          route_formatter: route_formatter
+          route_formatter: route_formatter,
+          base_meta: base_response_meta
         }
       )
     end
 
     def process_request_operations
       operation_results = create_operations_processor.process(@request)
-      render_response(operation_results)
+      render_results(operation_results)
     rescue => e
       handle_exceptions(e)
-    end
-
-    def render_response(operation_results)
-      response_doc = create_response_document(operation_results)
-      render status: response_doc.status, json: response_doc.contents
     end
 
     # override this to process other exceptions

@@ -12,21 +12,28 @@ module JSONAPI
       # Use transactions if more than one operation and if one of the operations can be transactional
       # Even if transactional transactions won't be used unless the derived OperationsProcessor supports them.
       @transactional = false
-      @operations.each do |operation|
-        @transactional = @transactional | operation.transactional
-      end if @operations.length > 1
+      if @operations.length > 1
+        @operations.each do |operation|
+          @transactional = @transactional | operation.transactional
+        end
+      end
 
       run_callbacks :operations do
         transaction do
+          @operations_meta = {}
           @operations.each do |operation|
             @operation = operation
+            @operation_meta = {}
             run_callbacks :operation do
-              @results.add_result(process_operation(@operation))
+              result = process_operation(@operation)
+              result.meta = @operation_meta
+              @results.add_result(result)
               if @results.has_errors?
                 rollback
               end
             end
           end
+          @results.meta = @operations_meta
         end
       end
       @results

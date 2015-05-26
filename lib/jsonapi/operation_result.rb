@@ -1,9 +1,11 @@
 module JSONAPI
   class OperationResult
     attr_accessor :code
+    attr_accessor :meta
 
     def initialize(code)
       @code = code
+      @meta = {}
     end
   end
 

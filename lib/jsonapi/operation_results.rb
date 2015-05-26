@@ -1,10 +1,12 @@
 module JSONAPI
   class OperationResults
     attr_accessor :results
+    attr_accessor :meta
 
     def initialize
       @results = []
       @has_errors = false
+      @meta = {}
     end
 
     def add_result(result)
