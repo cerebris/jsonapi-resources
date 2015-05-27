@@ -336,6 +336,19 @@ $breed_data.add(Breed.new(1, 'siamese'))
 $breed_data.add(Breed.new(2, 'sphinx'))
 $breed_data.add(Breed.new(3, 'to_delete'))
 
+### OperationsProcessor
+class CountingActiveRecordOperationsProcessor < ActiveRecordOperationsProcessor
+  after_find_operation do
+
+    count = @operation.resource_klass.find_count(@operation.resource_klass.verify_filters(@operation.filters, @context),
+                                 context: @context,
+                                 include_directives: @operation.include_directives,
+                                 sort_criteria: @operation.sort_criteria)
+
+    @operation_meta[:total_records] = count
+  end
+end
+
 ### CONTROLLERS
 class AuthorsController < JSONAPI::ResourceController
 end
@@ -812,6 +825,10 @@ module Api
     IsoCurrencyResource = IsoCurrencyResource.dup
 
     class BookResource < Api::V2::BookResource
+      paginator :paged
+    end
+
+    class BookCommentResource < Api::V2::BookCommentResource
       paginator :paged
     end
   end
