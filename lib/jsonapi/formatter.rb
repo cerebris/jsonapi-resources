@@ -11,7 +11,7 @@ module JSONAPI
 
       def formatter_for(format)
         formatter_class_name = "#{format.to_s.camelize}Formatter"
-        formatter_class_name.safe_constantize if formatter_class_name
+        formatter_class_name.safe_constantize
       end
     end
   end
