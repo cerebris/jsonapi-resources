@@ -1,7 +1,28 @@
 module JSONAPI
   class OperationsProcessor
     include Callbacks
-    define_jsonapi_resources_callbacks :operation, :operations
+    define_jsonapi_resources_callbacks :operation,
+                                       :operations,
+                                       :find_operation,
+                                       :show_operation,
+                                       :show_association_operation,
+                                       :show_related_resource_operation,
+                                       :show_related_resources_operation,
+                                       :create_resource_operation,
+                                       :remove_resource_operation,
+                                       :replace_fields_operation,
+                                       :replace_has_one_association_operation,
+                                       :create_has_many_association_operation,
+                                       :replace_has_many_association_operation,
+                                       :remove_has_many_association_operation,
+                                       :remove_has_one_association_operation
+
+    class << self
+      def operations_processor_for(operations_processor)
+        operations_processor_class_name = "#{operations_processor.to_s.camelize}OperationsProcessor"
+        operations_processor_class_name.safe_constantize
+      end
+    end
 
     def process(request)
       @results = JSONAPI::OperationResults.new
@@ -25,9 +46,12 @@ module JSONAPI
             @operation = operation
             @operation_meta = {}
             run_callbacks :operation do
-              result = process_operation(@operation)
-              result.meta = @operation_meta
-              @results.add_result(result)
+              @result = nil
+              run_callbacks @operation.class.name.demodulize.underscore.to_sym do
+                @result = process_operation(@operation)
+              end
+              @result.meta.merge!(@operation_meta)
+              @results.add_result(@result)
               if @results.has_errors?
                 rollback
               end
