@@ -245,40 +245,60 @@ module JSONAPI
     end
 
     def add_find_operation
-      @operations.push JSONAPI::FindOperation.new(@resource_klass,
-                                                  @filters,
-                                                  @include_directives,
-                                                  @sort_criteria,
-                                                  @paginator)
+      @operations.push JSONAPI::FindOperation.new(
+                         @resource_klass,
+                         {
+                           filters: @filters,
+                           include_directives: @include_directives,
+                           sort_criteria: @sort_criteria,
+                           paginator: @paginator
+                         }
+                       )
     end
 
     def add_show_operation
-      @operations.push JSONAPI::ShowOperation.new(@resource_klass,
-                                                  @id,
-                                                  @include_directives)
+      @operations.push JSONAPI::ShowOperation.new(
+                         @resource_klass,
+                         {
+                           id: @id,
+                           include_directives: @include_directives
+                         }
+                       )
     end
 
     def add_show_association_operation(association_type, parent_key)
-      @operations.push JSONAPI::ShowAssociationOperation.new(@resource_klass,
-                                                             association_type,
-                                                             @resource_klass.verify_key(parent_key))
+      @operations.push JSONAPI::ShowAssociationOperation.new(
+                         @resource_klass,
+                         {
+                           association_type: association_type,
+                           parent_key: @resource_klass.verify_key(parent_key)
+                         }
+                       )
     end
 
     def add_show_related_resource_operation(association_type)
-      @operations.push JSONAPI::ShowRelatedResourceOperation.new(@resource_klass,
-                                                                 association_type,
-                                                                 @source_klass,
-                                                                 @source_id)
+      @operations.push JSONAPI::ShowRelatedResourceOperation.new(
+                         @resource_klass,
+                         {
+                           association_type: association_type,
+                           source_klass: @source_klass,
+                           source_id: @source_id
+                         }
+                       )
     end
 
     def add_show_related_resources_operation(association_type)
-      @operations.push JSONAPI::ShowRelatedResourcesOperation.new(@resource_klass,
-                                                                 association_type,
-                                                                 @source_klass,
-                                                                 @source_id,
-                                                                 @source_klass.verify_filters(@filters, @context),
-                                                                 @sort_criteria,
-                                                                 @paginator)
+      @operations.push JSONAPI::ShowRelatedResourcesOperation.new(
+                         @resource_klass,
+                         {
+                           association_type: association_type,
+                           source_klass: @source_klass,
+                           source_id: @source_id,
+                           filters: @source_klass.verify_filters(@filters, @context),
+                           sort_criteria: @sort_criteria,
+                           paginator: @paginator
+                         }
+                       )
     end
 
     def parse_add_operation(data)
@@ -286,7 +306,12 @@ module JSONAPI
         verify_type(params[:type])
 
         values = parse_params(params, @resource_klass.createable_fields(@context))
-        @operations.push JSONAPI::CreateResourceOperation.new(@resource_klass, values)
+        @operations.push JSONAPI::CreateResourceOperation.new(
+                           @resource_klass,
+                           {
+                             values: values
+                           }
+                         )
       end
     rescue JSONAPI::Exceptions::Error => e
       @errors.concat(e.errors)
@@ -453,10 +478,14 @@ module JSONAPI
         object_params = {links: {format_key(association.name) => {linkage: data}}}
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
-        @operations.push JSONAPI::CreateHasManyAssociationOperation.new(resource_klass,
-                                                                        parent_key,
-                                                                        association_type,
-                                                                        verified_param_set[:has_many].values[0])
+        @operations.push JSONAPI::CreateHasManyAssociationOperation.new(
+                           resource_klass,
+                           {
+                             resource_id: parent_key,
+                             association_type: association_type,
+                             key_values: verified_param_set[:has_many].values[0]
+                           }
+                         )
       end
     end
 
@@ -468,10 +497,14 @@ module JSONAPI
 
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
-        @operations.push JSONAPI::ReplaceHasOneAssociationOperation.new(resource_klass,
-                                                                        parent_key,
-                                                                        association_type,
-                                                                        verified_param_set[:has_one].values[0])
+        @operations.push JSONAPI::ReplaceHasOneAssociationOperation.new(
+                           resource_klass,
+                           {
+                             resource_id: parent_key,
+                             association_type: association_type,
+                             key_value: verified_param_set[:has_one].values[0]
+                           }
+                         )
       else
         unless association.acts_as_set
           raise JSONAPI::Exceptions::HasManySetReplacementForbidden.new
@@ -480,10 +513,14 @@ module JSONAPI
         object_params = {links: {format_key(association.name) => {linkage: data}}}
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
-        @operations.push JSONAPI::ReplaceHasManyAssociationOperation.new(resource_klass,
-                                                                         parent_key,
-                                                                         association_type,
-                                                                         verified_param_set[:has_many].values[0])
+        @operations.push JSONAPI::ReplaceHasManyAssociationOperation.new(
+                           resource_klass,
+                           {
+                             resource_id: parent_key,
+                             association_type: association_type,
+                             key_values: verified_param_set[:has_many].values[0]
+                           }
+                         )
       end
     end
 
@@ -508,10 +545,13 @@ module JSONAPI
 
       verify_type(data[:type])
 
-      @operations.push(JSONAPI::ReplaceFieldsOperation.new(@resource_klass,
-                                                           key,
-                                                           parse_params(data,
-                                                                        @resource_klass.updateable_fields(@context))))
+      @operations.push JSONAPI::ReplaceFieldsOperation.new(
+                         @resource_klass,
+                         {
+                           resource_id: key,
+                           values: parse_params(data,@resource_klass.updateable_fields(@context))
+                         }
+                       )
     end
 
     def parse_replace_operation(data, keys)
@@ -535,7 +575,12 @@ module JSONAPI
       keys = parse_key_array(params.permit(:id)[:id])
 
       keys.each do |key|
-        @operations.push JSONAPI::RemoveResourceOperation.new(@resource_klass, key)
+        @operations.push JSONAPI::RemoveResourceOperation.new(
+                           @resource_klass,
+                           {
+                             resource_id: key
+                           }
+                         )
       end
     rescue ActionController::UnpermittedParameters => e
       @errors.concat(JSONAPI::Exceptions::ParametersNotAllowed.new(e.params).errors)
@@ -552,15 +597,23 @@ module JSONAPI
       if association.is_a?(JSONAPI::Association::HasMany)
         keys = parse_key_array(params[:keys])
         keys.each do |key|
-          @operations.push JSONAPI::RemoveHasManyAssociationOperation.new(resource_klass,
-                                                                          parent_key,
-                                                                          association_type,
-                                                                          key)
+          @operations.push JSONAPI::RemoveHasManyAssociationOperation.new(
+                             resource_klass,
+                             {
+                               resource_id: parent_key,
+                               association_type: association_type,
+                               associated_key: key
+                             }
+                           )
         end
       else
-        @operations.push JSONAPI::RemoveHasOneAssociationOperation.new(resource_klass,
-                                                                       parent_key,
-                                                                       association_type)
+        @operations.push JSONAPI::RemoveHasOneAssociationOperation.new(
+                           resource_klass,
+                           {
+                             resource_id: parent_key,
+                             association_type: association_type
+                           }
+                         )
       end
     end
 

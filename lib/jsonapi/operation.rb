@@ -1,11 +1,11 @@
 module JSONAPI
   class Operation
+    attr_reader :resource_klass, :options, :transactional
 
-    attr_reader :resource_klass, :transactional
-
-    def initialize(resource_klass, transactional = true)
+    def initialize(resource_klass, options = {})
       @resource_klass = resource_klass
-      @transactional = transactional
+      @options = options
+      @transactional = true
     end
 
     def apply(context)
@@ -13,11 +13,13 @@ module JSONAPI
   end
 
   class FindOperation < Operation
-    def initialize(resource_klass, filters, include_directives, sort_criteria, paginator)
-      @filters = filters
-      @include_directives = include_directives
-      @sort_criteria = sort_criteria
-      @paginator = paginator
+    attr_reader :filters, :include_directives, :sort_criteria, :paginator
+
+    def initialize(resource_klass, options = {})
+      @filters = options.fetch(:filters, nil)
+      @include_directives = options.fetch(:include_directives, nil)
+      @sort_criteria = options.fetch(:sort_criteria, nil)
+      @paginator = options.fetch(:paginator, nil)
       super(resource_klass, false)
     end
 
@@ -36,10 +38,13 @@ module JSONAPI
   end
 
   class ShowOperation < Operation
-    def initialize(resource_klass, id, include_directives)
-      @id = id
-      @include_directives = include_directives
-      super(resource_klass, false)
+    attr_reader :id, :include_directives
+
+    def initialize(resource_klass, options = {})
+      @id = options.fetch(:id)
+      @include_directives = options.fetch(:include_directives)
+      @transactional = false
+      super(resource_klass, options)
     end
 
     def apply(context)
@@ -57,10 +62,13 @@ module JSONAPI
   end
 
   class ShowAssociationOperation < Operation
-    def initialize(resource_klass, association_type, parent_key)
-      @parent_key = parent_key
-      @association_type = association_type
-      super(resource_klass, false)
+    attr_reader :parent_key, :association_type
+
+    def initialize(resource_klass, options = {})
+      @parent_key = options.fetch(:parent_key)
+      @association_type = options.fetch(:association_type)
+      @transactional = false
+      super(resource_klass, options)
     end
 
     def apply(context)
@@ -76,11 +84,14 @@ module JSONAPI
   end
 
   class ShowRelatedResourceOperation < Operation
-    def initialize(resource_klass, association_type, source_klass, source_id)
-      @source_klass = source_klass
-      @source_id = source_id
-      @association_type = association_type
-      super(resource_klass, false)
+    attr_reader :source_klass, :source_id, :association_type
+
+    def initialize(resource_klass, options = {})
+      @source_klass = options.fetch(:source_klass)
+      @source_id = options.fetch(:source_id)
+      @association_type = options.fetch(:association_type)
+      @transactional = false
+      super(resource_klass, options)
     end
 
     def apply(context)
@@ -96,14 +107,17 @@ module JSONAPI
   end
 
   class ShowRelatedResourcesOperation < Operation
-    def initialize(resource_klass, association_type, source_klass, source_id, filters, sort_criteria, paginator)
-      @source_klass = source_klass
-      @source_id = source_id
-      @association_type = association_type
-      @filters = filters
-      @sort_criteria = sort_criteria
-      @paginator = paginator
-      super(resource_klass, false)
+    attr_reader :source_klass, :source_id, :association_type, :filters, :sort_criteria, :paginator
+
+    def initialize(resource_klass, options = {})
+      @source_klass = options.fetch(:source_klass)
+      @source_id = options.fetch(:source_id)
+      @association_type = options.fetch(:association_type)
+      @filters = options.fetch(:filters)
+      @sort_criteria = options.fetch(:sort_criteria)
+      @paginator = options.fetch(:paginator)
+      @transactional = false
+      super(resource_klass, options)
     end
 
     def apply(context)
@@ -126,9 +140,9 @@ module JSONAPI
   class CreateResourceOperation < Operation
     attr_reader :values
 
-    def initialize(resource_klass, values = {})
-      @values = values
-      super(resource_klass)
+    def initialize(resource_klass, options = {})
+      @values = options.fetch(:values)
+      super(resource_klass, options)
     end
 
     def apply(context)
@@ -144,9 +158,9 @@ module JSONAPI
 
   class RemoveResourceOperation < Operation
     attr_reader :resource_id
-    def initialize(resource_klass, resource_id)
-      @resource_id = resource_id
-      super(resource_klass)
+    def initialize(resource_klass, options = {})
+      @resource_id = options.fetch(:resource_id)
+      super(resource_klass, options)
     end
 
     def apply(context)
@@ -163,10 +177,10 @@ module JSONAPI
   class ReplaceFieldsOperation < Operation
     attr_reader :values, :resource_id
 
-    def initialize(resource_klass, resource_id, values)
-      @resource_id = resource_id
-      @values = values
-      super(resource_klass)
+    def initialize(resource_klass, options = {})
+      @resource_id = options.fetch(:resource_id)
+      @values = options.fetch(:values)
+      super(resource_klass, options)
     end
 
     def apply(context)
@@ -180,11 +194,11 @@ module JSONAPI
   class ReplaceHasOneAssociationOperation < Operation
     attr_reader :resource_id, :association_type, :key_value
 
-    def initialize(resource_klass, resource_id, association_type, key_value)
-      @resource_id = resource_id
-      @key_value = key_value
-      @association_type = association_type.to_sym
-      super(resource_klass)
+    def initialize(resource_klass, options = {})
+      @resource_id = options.fetch(:resource_id)
+      @key_value = options.fetch(:key_value)
+      @association_type = options.fetch(:association_type).to_sym
+      super(resource_klass, options)
     end
 
     def apply(context)
@@ -198,11 +212,11 @@ module JSONAPI
   class CreateHasManyAssociationOperation < Operation
     attr_reader :resource_id, :association_type, :key_values
 
-    def initialize(resource_klass, resource_id, association_type, key_values)
-      @resource_id = resource_id
-      @key_values = key_values
-      @association_type = association_type.to_sym
-      super(resource_klass)
+    def initialize(resource_klass, options)
+      @resource_id = options.fetch(:resource_id)
+      @key_values = options.fetch(:key_values)
+      @association_type = options.fetch(:association_type).to_sym
+      super(resource_klass, options)
     end
 
     def apply(context)
@@ -216,11 +230,11 @@ module JSONAPI
   class ReplaceHasManyAssociationOperation < Operation
     attr_reader :resource_id, :association_type, :key_values
 
-    def initialize(resource_klass, resource_id, association_type, key_values)
-      @resource_id = resource_id
-      @key_values = key_values
-      @association_type = association_type.to_sym
-      super(resource_klass)
+    def initialize(resource_klass, options)
+      @resource_id = options.fetch(:resource_id)
+      @key_values = options.fetch(:key_values)
+      @association_type = options.fetch(:association_type).to_sym
+      super(resource_klass, options)
     end
 
     def apply(context)
@@ -234,11 +248,11 @@ module JSONAPI
   class RemoveHasManyAssociationOperation < Operation
     attr_reader :resource_id, :association_type, :associated_key
 
-    def initialize(resource_klass, resource_id, association_type, associated_key)
-      @resource_id = resource_id
-      @associated_key = associated_key
-      @association_type = association_type.to_sym
-      super(resource_klass)
+    def initialize(resource_klass, options)
+      @resource_id = options.fetch(:resource_id)
+      @associated_key = options.fetch(:associated_key)
+      @association_type = options.fetch(:association_type).to_sym
+      super(resource_klass, options)
     end
 
     def apply(context)
@@ -252,10 +266,10 @@ module JSONAPI
   class RemoveHasOneAssociationOperation < Operation
     attr_reader :resource_id, :association_type
 
-    def initialize(resource_klass, resource_id, association_type)
-      @resource_id = resource_id
-      @association_type = association_type.to_sym
-      super(resource_klass)
+    def initialize(resource_klass, options)
+      @resource_id = options.fetch(:resource_id)
+      @association_type = options.fetch(:association_type).to_sym
+      super(resource_klass, options)
     end
 
     def apply(context)
