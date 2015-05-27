@@ -54,9 +54,9 @@ module JSONAPI
       process_request_operations
     end
 
-    # Override this to use another operations processor
+    # set the operations processor in the configuration or override this to use another operations processor
     def create_operations_processor
-      JSONAPI::ActiveRecordOperationsProcessor.new
+      JSONAPI.configuration.operations_processor.new
     end
 
     private
