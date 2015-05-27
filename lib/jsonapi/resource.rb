@@ -363,7 +363,7 @@ module JSONAPI
         apply_sort(records, construct_order_options(sort_criteria))
       end
 
-      def find_count(filters, options)
+      def find_count(filters, options = {})
         filter_records(filters, options).count
       end
 
