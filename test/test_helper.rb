@@ -141,6 +141,8 @@ TestApp.routes.draw do
 
       jsonapi_resources :iso_currencies do
       end
+
+      jsonapi_resources :books
     end
 
     JSONAPI.configuration.route_format = :dasherized_route
