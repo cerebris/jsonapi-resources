@@ -31,7 +31,10 @@ module JSONAPI
       @resource_klass ||= Resource.resource_for(params[:controller]) if params[:controller]
 
       unless params.nil?
-        send("setup_#{params[:action]}_action", params)
+        setup_action_method_name = "setup_#{params[:action]}_action"
+        if respond_to?(setup_action_method_name)
+          send(setup_action_method_name, params)
+        end
       end
     rescue ActionController::ParameterMissing => e
       @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)
