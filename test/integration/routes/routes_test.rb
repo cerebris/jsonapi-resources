@@ -52,6 +52,53 @@ class RoutesTest < ActionDispatch::IntegrationTest
                    {controller: 'posts', action: 'update_association', post_id: '1', association: 'tags'})
   end
 
+  # Polymorphic
+  def test_routing_polymorphic_get_related_resource
+    assert_routing(
+      {
+        path: '/pictures/1/imageable',
+        method: :get
+      },
+      {
+        association: 'imageable',
+        source: 'pictures',
+        controller: 'imageables',
+        action: 'get_related_resource',
+        picture_id: '1'
+      }
+    )
+  end
+
+  def test_routing_polymorphic_patch_related_resource
+    assert_routing(
+      {
+        path: '/pictures/1/relationships/imageable',
+        method: :patch
+      },
+      {
+        association: 'imageable',
+        controller: 'pictures',
+        action: 'update_association',
+        picture_id: '1'
+      }
+    )
+  end
+
+  def test_routing_polymorphic_delete_related_resource
+    assert_routing(
+      {
+        path: '/pictures/1/relationships/imageable',
+        method: :delete
+      },
+      {
+        association: 'imageable',
+        controller: 'pictures',
+        action: 'destroy_association',
+        picture_id: '1'
+      }
+    )
+  end
+
   # V1
   def test_routing_v1_posts_show
     assert_routing({path: '/api/v1/posts/1', method: :get},

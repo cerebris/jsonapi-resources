@@ -238,6 +238,25 @@ module JSONAPI
     end
   end
 
+  class ReplacePolymorphicHasOneAssociationOperation < Operation
+    attr_reader :resource_id, :association_type, :key_value, :key_type
+
+    def initialize(resource_klass, options = {})
+      @resource_id = options.fetch(:resource_id)
+      @key_value = options.fetch(:key_value)
+      @key_type = options.fetch(:key_type)
+      @association_type = options.fetch(:association_type).to_sym
+      super(resource_klass, options)
+    end
+
+    def apply
+      resource = @resource_klass.find_by_key(@resource_id, context: @context)
+      result = resource.replace_polymorphic_has_one_link(@association_type, @key_value, @key_type)
+
+      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+    end
+  end
+
   class CreateHasManyAssociationOperation < Operation
     attr_reader :resource_id, :association_type, :data
 
