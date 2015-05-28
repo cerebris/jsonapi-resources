@@ -188,8 +188,8 @@ class RequestTest < ActionDispatch::IntegrationTest
 
     assert_equal 201, status
     assert_nil json_response['data']['attributes']['body']
-    assert_nil json_response['data']['links']['post']['linkage']
-    assert_nil json_response['data']['links']['author']['linkage']
+    assert_nil json_response['data']['relationships']['post']['linkage']
+    assert_nil json_response['data']['relationships']['author']['linkage']
   end
 
   def test_post_single_minimal_invalid
@@ -376,7 +376,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
     assert_equal 2, json_response['data'].size
     assert_equal 'http://www.example.com/api/v2/books/1/book_comments',
-                 json_response['data'][1]['links']['book_comments']['related']
+                 json_response['data'][1]['relationships']['book_comments']['links']['related']
   end
 
   def test_pagination_related_resources_data
@@ -412,7 +412,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
     post_1 = json_response['data'][0]
 
-    get post_1['links']['author']['self']
+    get post_1['relationships']['author']['links']['self']
     assert_equal 200, status
     assert_hash_equals(json_response, {
                                       'links' => {
@@ -428,7 +428,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
     post_1 = json_response['data'][0]
 
-    get post_1['links']['tags']['self']
+    get post_1['relationships']['tags']['links']['self']
     assert_equal 200, status
     assert_hash_equals(json_response,
                        {
@@ -449,13 +449,13 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
     post_1 = json_response['data'][4]
 
-    post post_1['links']['tags']['self'],
+    post post_1['relationships']['tags']['links']['self'],
          {'data' => [{'type' => 'tags', 'id' => '10'}]}.to_json,
          "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
 
-    get post_1['links']['tags']['self']
+    get post_1['relationships']['tags']['links']['self']
     assert_equal 200, status
     assert_hash_equals(json_response,
                        {

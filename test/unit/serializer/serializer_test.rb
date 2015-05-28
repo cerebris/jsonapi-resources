@@ -19,44 +19,58 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
   def test_serializer
 
+    serialized = JSONAPI::ResourceSerializer.new(
+      PostResource,
+      base_url: 'http://example.com').serialize_to_hash(PostResource.new(@post)
+    )
+
     assert_hash_equals(
       {
         data: {
           type: 'posts',
           id: '1',
+          links: {
+            self: 'http://example.com/posts/1',
+          },
           attributes: {
             title: 'New post',
             body: 'A body!!!',
             subject: 'New post'
           },
-          links: {
-            self: 'http://example.com/posts/1',
+          relationships: {
             section: {
-              self: 'http://example.com/posts/1/links/section',
-              related: 'http://example.com/posts/1/section',
-              linkage: nil
+              links: {
+                self: 'http://example.com/posts/1/links/section',
+                related: 'http://example.com/posts/1/section'
+              },
+              data: nil
             },
             author: {
-              self: 'http://example.com/posts/1/links/author',
-              related: 'http://example.com/posts/1/author',
-              linkage: {
+              links: {
+                self: 'http://example.com/posts/1/links/author',
+                related: 'http://example.com/posts/1/author'
+              },
+              data: {
                 type: 'people',
                 id: '1'
               }
             },
             tags: {
-              self: 'http://example.com/posts/1/links/tags',
-              related: 'http://example.com/posts/1/tags'
+              links: {
+                self: 'http://example.com/posts/1/links/tags',
+                related: 'http://example.com/posts/1/tags'
+              }
             },
             comments: {
-              self: 'http://example.com/posts/1/links/comments',
-              related: 'http://example.com/posts/1/comments'
+              links: {
+                self: 'http://example.com/posts/1/links/comments',
+                related: 'http://example.com/posts/1/comments'
+              }
             }
           }
         }
       },
-      JSONAPI::ResourceSerializer.new(PostResource,
-                                      base_url: 'http://example.com').serialize_to_hash(PostResource.new(@post))
+      serialized
     )
   end
 
@@ -75,29 +89,37 @@ class SerializerTest < ActionDispatch::IntegrationTest
         data: {
           type: 'posts',
           id: '1',
+          links: {
+            self: 'http://example.com/api/v1/posts/1'
+          },
           attributes: {
             title: 'New post',
             body: 'A body!!!',
             subject: 'New post'
           },
-          links: {
-            self: 'http://example.com/api/v1/posts/1',
+          relationships: {
             section: {
-              self: 'http://example.com/api/v1/posts/1/links/section',
-              related: 'http://example.com/api/v1/posts/1/section',
-              linkage: nil
+              links:{
+                self: 'http://example.com/api/v1/posts/1/links/section',
+                related: 'http://example.com/api/v1/posts/1/section'
+              },
+              data: nil
             },
             writer: {
-              self: 'http://example.com/api/v1/posts/1/links/writer',
-              related: 'http://example.com/api/v1/posts/1/writer',
-              linkage: {
+              links:{
+                self: 'http://example.com/api/v1/posts/1/links/writer',
+                related: 'http://example.com/api/v1/posts/1/writer'
+              },
+              data: {
                 type: 'writers',
                 id: '1'
               }
             },
             comments: {
-              self: 'http://example.com/api/v1/posts/1/links/comments',
-              related: 'http://example.com/api/v1/posts/1/comments'
+              links:{
+                self: 'http://example.com/api/v1/posts/1/links/comments',
+                related: 'http://example.com/api/v1/posts/1/comments'
+              }
             }
           }
         }
@@ -115,15 +137,19 @@ class SerializerTest < ActionDispatch::IntegrationTest
         data: {
           type: 'posts',
           id: '1',
+          links: {
+            self: '/posts/1'
+          },
           attributes: {
             title: 'New post'
           },
-          links: {
-            self: '/posts/1',
+          relationships: {
             author: {
-              self: '/posts/1/links/author',
-              related: '/posts/1/author',
-              linkage: {
+              links: {
+                self: '/posts/1/links/author',
+                related: '/posts/1/author'
+              },
+              data: {
                 type: 'people',
                 id: '1'
               }
@@ -147,33 +173,43 @@ class SerializerTest < ActionDispatch::IntegrationTest
         data: {
           type: 'posts',
           id: '1',
+          links: {
+            self: '/posts/1'
+          },
           attributes: {
             title: 'New post',
             body: 'A body!!!',
             subject: 'New post'
           },
-          links: {
-            self: '/posts/1',
+          relationships: {
             section: {
-              self: '/posts/1/links/section',
-              related: '/posts/1/section',
-              linkage: nil
+              links: {
+                self: '/posts/1/links/section',
+                related: '/posts/1/section'
+              },
+              data: nil
             },
             author: {
-              self: '/posts/1/links/author',
-              related: '/posts/1/author',
-              linkage: {
+              links: {
+                self: '/posts/1/links/author',
+                related: '/posts/1/author'
+              },
+              data: {
                 type: 'people',
                 id: '1'
               }
             },
             tags: {
-              self: '/posts/1/links/tags',
-              related: '/posts/1/tags'
+              links: {
+                self: '/posts/1/links/tags',
+                related: '/posts/1/tags'
+              }
             },
             comments: {
-              self: '/posts/1/links/comments',
-              related: '/posts/1/comments'
+              links: {
+                self: '/posts/1/links/comments',
+                related: '/posts/1/comments'
+              }
             }
           }
         },
@@ -187,27 +223,37 @@ class SerializerTest < ActionDispatch::IntegrationTest
               dateJoined: '2013-08-07 16:25:00 -0400'
             },
             links: {
-             self: '/people/1',
+              self: '/people/1'
+            },
+            relationships: {
              comments: {
-               self: '/people/1/links/comments',
-               related: '/people/1/comments'
+               links: {
+                 self: '/people/1/links/comments',
+                 related: '/people/1/comments'
+               }
              },
              posts: {
-               self: '/people/1/links/posts',
-               related: '/people/1/posts'
+               links: {
+                 self: '/people/1/links/posts',
+                 related: '/people/1/posts'
+               }
              },
              preferences: {
-               self: '/people/1/links/preferences',
-               related: '/people/1/preferences',
-               linkage: {
+               links: {
+                 self: '/people/1/links/preferences',
+                 related: '/people/1/preferences'
+               },
+               data: {
                  type: 'preferences',
                  id: '1'
                }
              },
              hairCut: {
-               self: "/people/1/links/hairCut",
-               related: "/people/1/hairCut",
-               linkage: nil
+               links: {
+                 self: "/people/1/links/hairCut",
+                 related: "/people/1/hairCut"
+               },
+               data: nil
              }
             }
           }
@@ -235,27 +281,37 @@ class SerializerTest < ActionDispatch::IntegrationTest
             subject: 'New post'
           },
           links: {
-            self: '/posts/1',
+            self: '/posts/1'
+          },
+          relationships: {
             section: {
-              self: '/posts/1/links/section',
-              related: '/posts/1/section',
-              linkage: nil
+              links: {
+                self: '/posts/1/links/section',
+                related: '/posts/1/section'
+              },
+              data: nil
             },
             author: {
-              self: '/posts/1/links/author',
-              related: '/posts/1/author',
-              linkage: {
+              links: {
+                self: '/posts/1/links/author',
+                related: '/posts/1/author'
+              },
+              data: {
                 type: 'people',
                 id: '1'
               }
             },
             tags: {
-              self: '/posts/1/links/tags',
-              related: '/posts/1/tags'
+              links: {
+                self: '/posts/1/links/tags',
+                related: '/posts/1/tags'
+              }
             },
             comments: {
-              self: '/posts/1/links/comments',
-              related: '/posts/1/comments'
+              links: {
+                self: '/posts/1/links/comments',
+                related: '/posts/1/comments'
+              }
             }
           }
         },
@@ -269,27 +325,37 @@ class SerializerTest < ActionDispatch::IntegrationTest
               date_joined: '2013-08-07 16:25:00 -0400'
             },
             links: {
-              self: '/people/1',
+              self: '/people/1'
+            },
+            relationships: {
               comments: {
-                self: '/people/1/links/comments',
-                related: '/people/1/comments'
+                links: {
+                  self: '/people/1/links/comments',
+                  related: '/people/1/comments'
+                }
               },
               posts: {
-                self: '/people/1/links/posts',
-                related: '/people/1/posts'
+                links: {
+                  self: '/people/1/links/posts',
+                  related: '/people/1/posts'
+                }
               },
               preferences: {
-                self: '/people/1/links/preferences',
-                related: '/people/1/preferences',
-                linkage: {
+                links: {
+                  self: '/people/1/links/preferences',
+                  related: '/people/1/preferences'
+                },
+                data: {
                   type: 'preferences',
                   id: '1'
                 }
               },
               hair_cut: {
-                self: '/people/1/links/hairCut',
-                related: '/people/1/hairCut',
-                linkage: nil
+                links: {
+                  self: '/people/1/links/hairCut',
+                  related: '/people/1/hairCut'
+                },
+                data: nil
               }
             }
           }
@@ -312,28 +378,38 @@ class SerializerTest < ActionDispatch::IntegrationTest
             subject: 'New post'
           },
           links: {
-            self: '/posts/1',
+            self: '/posts/1'
+          },
+          relationships: {
             section: {
-              self: '/posts/1/links/section',
-              related: '/posts/1/section',
-              linkage: nil
+              links: {
+                self: '/posts/1/links/section',
+                related: '/posts/1/section'
+              },
+              data: nil
             },
             author: {
-              self: '/posts/1/links/author',
-              related: '/posts/1/author',
-              linkage: {
+              links: {
+                self: '/posts/1/links/author',
+              related: '/posts/1/author'
+              },
+              data: {
                 type: 'people',
                 id: '1'
               }
             },
             tags: {
-              self: '/posts/1/links/tags',
-              related: '/posts/1/tags'
+              links: {
+                self: '/posts/1/links/tags',
+                related: '/posts/1/tags'
+              }
             },
             comments: {
-              self: '/posts/1/links/comments',
-              related: '/posts/1/comments',
-              linkage: [
+              links: {
+                self: '/posts/1/links/comments',
+                related: '/posts/1/comments'
+              },
+              data: [
                 {type: 'comments', id: '1'},
                 {type: 'comments', id: '2'}
               ]
@@ -348,10 +424,14 @@ class SerializerTest < ActionDispatch::IntegrationTest
                 name: 'short'
               },
               links: {
-                self: '/tags/1',
+                self: '/tags/1'
+              },
+              relationships: {
                 posts: {
-                  self: '/tags/1/links/posts',
-                  related: '/tags/1/posts'
+                  links: {
+                    self: '/tags/1/links/posts',
+                    related: '/tags/1/posts'
+                  }
                 }
               }
             },
@@ -362,10 +442,14 @@ class SerializerTest < ActionDispatch::IntegrationTest
                 name: 'whiny'
               },
               links: {
-                self: '/tags/2',
+                self: '/tags/2'
+              },
+              relationships: {
                 posts: {
-                  self: '/tags/2/links/posts',
-                  related: '/tags/2/posts'
+                  links: {
+                    self: '/tags/2/links/posts',
+                    related: '/tags/2/posts'
+                  }
                 }
               }
             },
@@ -376,10 +460,14 @@ class SerializerTest < ActionDispatch::IntegrationTest
                 name: 'happy'
               },
               links: {
-                self: '/tags/4',
+                self: '/tags/4'
+              },
+              relationships: {
                 posts: {
-                  self: '/tags/4/links/posts',
-                  related: '/tags/4/posts',
+                  links: {
+                    self: '/tags/4/links/posts',
+                    related: '/tags/4/posts'
+                  },
                 }
               }
             },
@@ -390,27 +478,35 @@ class SerializerTest < ActionDispatch::IntegrationTest
                 body: 'what a dumb post'
               },
               links: {
-                self: '/comments/1',
+                self: '/comments/1'
+              },
+              relationships: {
                 author: {
-                  self: '/comments/1/links/author',
-                  related: '/comments/1/author',
-                  linkage: {
+                  links: {
+                    self: '/comments/1/links/author',
+                    related: '/comments/1/author'
+                  },
+                  data: {
                     type: 'people',
                     id: '1'
                   }
                 },
                 post: {
-                  self: '/comments/1/links/post',
-                  related: '/comments/1/post',
-                  linkage: {
+                  links: {
+                    self: '/comments/1/links/post',
+                    related: '/comments/1/post'
+                  },
+                  data: {
                     type: 'posts',
                     id: '1'
                   }
                 },
                 tags: {
-                  self: '/comments/1/links/tags',
-                  related: '/comments/1/tags',
-                  linkage: [
+                  links: {
+                    self: '/comments/1/links/tags',
+                    related: '/comments/1/tags'
+                  },
+                  data: [
                     {type: 'tags', id: '1'},
                     {type: 'tags', id: '2'}
                   ]
@@ -424,27 +520,35 @@ class SerializerTest < ActionDispatch::IntegrationTest
                 body: 'i liked it'
               },
               links: {
-                self: '/comments/2',
+                self: '/comments/2'
+              },
+              relationships: {
                 author: {
-                  self: '/comments/2/links/author',
-                  related: '/comments/2/author',
-                  linkage: {
+                  links: {
+                    self: '/comments/2/links/author',
+                    related: '/comments/2/author'
+                  },
+                  data: {
                     type: 'people',
                     id: '2'
                   }
                 },
                 post: {
-                  self: '/comments/2/links/post',
-                  related: '/comments/2/post',
-                  linkage: {
+                  links: {
+                    self: '/comments/2/links/post',
+                    related: '/comments/2/post'
+                  },
+                  data: {
                     type: 'posts',
                     id: '1'
                   }
                 },
                 tags: {
-                  self: '/comments/2/links/tags',
-                  related: '/comments/2/tags',
-                  linkage: [
+                  links: {
+                    self: '/comments/2/links/tags',
+                    related: '/comments/2/tags'
+                  },
+                  data: [
                     {type: 'tags', id: '1'},
                     {type: 'tags', id: '4'}
                   ]
@@ -471,27 +575,37 @@ class SerializerTest < ActionDispatch::IntegrationTest
             subject: 'New post'
           },
           links: {
-            self: '/posts/1',
+            self: '/posts/1'
+          },
+          relationships: {
             section: {
-              self: '/posts/1/links/section',
-              related: '/posts/1/section',
-              linkage: nil
+              links: {
+                self: '/posts/1/links/section',
+                related: '/posts/1/section'
+              },
+              data: nil
             },
             author: {
-              self: '/posts/1/links/author',
-              related: '/posts/1/author',
-              linkage: {
+              links: {
+                self: '/posts/1/links/author',
+                related: '/posts/1/author'
+              },
+              data: {
                 type: 'people',
                 id: '1'
               }
             },
             tags: {
-              self: '/posts/1/links/tags',
-              related: '/posts/1/tags'
+              links: {
+                self: '/posts/1/links/tags',
+                related: '/posts/1/tags'
+              }
             },
             comments: {
-              self: '/posts/1/links/comments',
-              related: '/posts/1/comments'
+              links: {
+                self: '/posts/1/links/comments',
+                related: '/posts/1/comments'
+              }
             }
           }
         },
@@ -503,10 +617,14 @@ class SerializerTest < ActionDispatch::IntegrationTest
               name: 'short'
             },
             links: {
-              self: '/tags/1',
+              self: '/tags/1'
+            },
+            relationships: {
               posts: {
-                self: '/tags/1/links/posts',
-                related: '/tags/1/posts'
+                links: {
+                  self: '/tags/1/links/posts',
+                  related: '/tags/1/posts'
+                }
               }
             }
           },
@@ -517,10 +635,14 @@ class SerializerTest < ActionDispatch::IntegrationTest
               name: 'whiny'
             },
             links: {
-              self: '/tags/2',
+              self: '/tags/2'
+            },
+            relationships: {
               posts: {
-                self: '/tags/2/links/posts',
-                related: '/tags/2/posts'
+                links: {
+                  self: '/tags/2/links/posts',
+                  related: '/tags/2/posts'
+                }
               }
             }
           },
@@ -531,10 +653,14 @@ class SerializerTest < ActionDispatch::IntegrationTest
               name: 'happy'
             },
             links: {
-              self: '/tags/4',
+              self: '/tags/4'
+            },
+            relationships: {
               posts: {
-                self: '/tags/4/links/posts',
-                related: '/tags/4/posts',
+                links: {
+                  self: '/tags/4/links/posts',
+                  related: '/tags/4/posts'
+                }
               }
             }
           }
@@ -557,27 +683,37 @@ class SerializerTest < ActionDispatch::IntegrationTest
             subject: 'New post'
           },
           links: {
-            self: '/posts/1',
+            self: '/posts/1'
+          },
+          relationships: {
             section: {
-              self: '/posts/1/links/section',
-              related: '/posts/1/section',
-              linkage: nil
+              links: {
+                self: '/posts/1/links/section',
+                related: '/posts/1/section'
+              },
+              data: nil
             },
             author: {
-              self: '/posts/1/links/author',
-              related: '/posts/1/author',
-              linkage: {
+              links: {
+                self: '/posts/1/links/author',
+                related: '/posts/1/author'
+              },
+              data: {
                 type: 'people',
                 id: '1'
               }
             },
             tags: {
-              self: '/posts/1/links/tags',
-              related: '/posts/1/tags'
+              links: {
+                self: '/posts/1/links/tags',
+                related: '/posts/1/tags'
+              }
             },
             comments: {
-              self: '/posts/1/links/comments',
-              related: '/posts/1/comments'
+              links: {
+                self: '/posts/1/links/comments',
+                related: '/posts/1/comments'
+              }
             }
           }
         },
@@ -589,26 +725,34 @@ class SerializerTest < ActionDispatch::IntegrationTest
               body: 'what a dumb post'
             },
             links: {
-              self: '/comments/1',
+              self: '/comments/1'
+            },
+            relationships: {
               author: {
-                self: '/comments/1/links/author',
-                related: '/comments/1/author',
-                linkage: {
+                links: {
+                  self: '/comments/1/links/author',
+                  related: '/comments/1/author'
+                },
+                data: {
                   type: 'people',
                   id: '1'
                 }
               },
               post: {
-                self: '/comments/1/links/post',
-                related: '/comments/1/post',
-                linkage: {
+                links: {
+                  self: '/comments/1/links/post',
+                  related: '/comments/1/post'
+                },
+                data: {
                   type: 'posts',
                   id: '1'
                 }
               },
               tags: {
-                self: '/comments/1/links/tags',
-                related: '/comments/1/tags'
+                links: {
+                  self: '/comments/1/links/tags',
+                  related: '/comments/1/tags'
+                }
               }
             }
           }
@@ -636,28 +780,38 @@ class SerializerTest < ActionDispatch::IntegrationTest
             dateJoined: '2013-10-31 16:25:00 -0400'
           },
           links: {
-            self: '/people/2',
+            self: '/people/2'
+          },
+          relationships: {
             posts: {
-              self: '/people/2/links/posts',
-              related: '/people/2/posts'
+              links: {
+                self: '/people/2/links/posts',
+                related: '/people/2/posts'
+              }
             },
             comments: {
-              self: '/people/2/links/comments',
-              related: '/people/2/comments',
-              linkage: [
+              links: {
+                self: '/people/2/links/comments',
+                related: '/people/2/comments'
+              },
+              data: [
                 {type: 'comments', id: '2'},
                 {type: 'comments', id: '3'}
               ]
             },
             preferences: {
-              self: "/people/2/links/preferences",
-              related: "/people/2/preferences",
-              linkage: nil
+              links: {
+                self: "/people/2/links/preferences",
+                related: "/people/2/preferences"
+              },
+              data: nil
             },
             hairCut: {
-              self: "/people/2/links/hairCut",
-              related: "/people/2/hairCut",
-              linkage: nil
+              links: {
+                self: "/people/2/links/hairCut",
+                related: "/people/2/hairCut"
+              },
+              data: nil
             }
           }
         },
@@ -669,26 +823,34 @@ class SerializerTest < ActionDispatch::IntegrationTest
               body: 'i liked it'
             },
             links: {
-              self: '/comments/2',
+              self: '/comments/2'
+            },
+            relationships: {
               author: {
-                self: '/comments/2/links/author',
-                related: '/comments/2/author',
-                linkage: {
+                links: {
+                  self: '/comments/2/links/author',
+                  related: '/comments/2/author'
+                },
+                data: {
                   type: 'people',
                   id: '2'
                 }
               },
               post: {
-                self: '/comments/2/links/post',
-                related: '/comments/2/post',
-                linkage: {
+                links: {
+                  self: '/comments/2/links/post',
+                  related: '/comments/2/post'
+                },
+                data: {
                   type: 'posts',
                   id: '1'
                 }
               },
               tags: {
-                self: '/comments/2/links/tags',
-                related: '/comments/2/tags'
+                links: {
+                  self: '/comments/2/links/tags',
+                  related: '/comments/2/tags'
+                }
               }
             }
           },
@@ -699,26 +861,34 @@ class SerializerTest < ActionDispatch::IntegrationTest
               body: 'Thanks man. Great post. But what is JR?'
             },
             links: {
-              self: '/comments/3',
+              self: '/comments/3'
+            },
+            relationships: {
               author: {
-                self: '/comments/3/links/author',
-                related: '/comments/3/author',
-                linkage: {
+                links: {
+                  self: '/comments/3/links/author',
+                  related: '/comments/3/author'
+                },
+                data: {
                   type: 'people',
                   id: '2'
                 }
               },
               post: {
-                self: '/comments/3/links/post',
-                related: '/comments/3/post',
-                linkage: {
+                links: {
+                  self: '/comments/3/links/post',
+                  related: '/comments/3/post'
+                },
+                data: {
                   type: 'posts',
                   id: '2'
                 }
               },
               tags: {
-                self: '/comments/3/links/tags',
-                related: '/comments/3/tags'
+                links: {
+                  self: '/comments/3/links/tags',
+                  related: '/comments/3/tags'
+                }
               }
             }
           }
@@ -747,28 +917,38 @@ class SerializerTest < ActionDispatch::IntegrationTest
               subject: 'New post'
             },
             links: {
-              self: '/posts/1',
+              self: '/posts/1'
+            },
+            relationships: {
               section: {
-                self: '/posts/1/links/section',
-                related: '/posts/1/section',
-                linkage: nil
+                links: {
+                  self: '/posts/1/links/section',
+                  related: '/posts/1/section'
+                },
+                data: nil
               },
               author: {
-                self: '/posts/1/links/author',
-                related: '/posts/1/author',
-                linkage: {
+                links: {
+                  self: '/posts/1/links/author',
+                  related: '/posts/1/author'
+                },
+                data: {
                   type: 'people',
                   id: '1'
                 }
               },
               tags: {
-                self: '/posts/1/links/tags',
-                related: '/posts/1/tags'
+                links: {
+                  self: '/posts/1/links/tags',
+                  related: '/posts/1/tags'
+                }
               },
               comments: {
-                self: '/posts/1/links/comments',
-                related: '/posts/1/comments',
-                linkage: [
+                links: {
+                  self: '/posts/1/links/comments',
+                  related: '/posts/1/comments'
+                },
+                data: [
                   {type: 'comments', id: '1'},
                   {type: 'comments', id: '2'}
                 ]
@@ -784,31 +964,41 @@ class SerializerTest < ActionDispatch::IntegrationTest
               subject: 'JR Solves your serialization woes!'
             },
             links: {
-              self: '/posts/2',
+              self: '/posts/2'
+            },
+            relationships: {
               section: {
-                self: '/posts/2/links/section',
-                related: '/posts/2/section',
-                linkage: {
+                links: {
+                  self: '/posts/2/links/section',
+                  related: '/posts/2/section'
+                },
+                data: {
                   type: 'sections',
                   id: '2'
                 }
               },
               author: {
-                self: '/posts/2/links/author',
-                related: '/posts/2/author',
-                linkage: {
+                links: {
+                  self: '/posts/2/links/author',
+                  related: '/posts/2/author'
+                },
+                data: {
                   type: 'people',
                   id: '1'
                 }
               },
               tags: {
-                self: '/posts/2/links/tags',
-                related: '/posts/2/tags'
+                links: {
+                  self: '/posts/2/links/tags',
+                  related: '/posts/2/tags'
+                }
               },
               comments: {
-                self: '/posts/2/links/comments',
-                related: '/posts/2/comments',
-                linkage: [
+                links: {
+                  self: '/posts/2/links/comments',
+                  related: '/posts/2/comments'
+                },
+                data: [
                   {type: 'comments', id: '3'}
                 ]
               }
@@ -823,10 +1013,14 @@ class SerializerTest < ActionDispatch::IntegrationTest
               name: 'short'
             },
             links: {
-              self: '/tags/1',
+              self: '/tags/1'
+            },
+            relationships: {
               posts: {
-                self: '/tags/1/links/posts',
-                related: '/tags/1/posts'
+                links: {
+                  self: '/tags/1/links/posts',
+                  related: '/tags/1/posts'
+                }
               }
             }
           },
@@ -837,10 +1031,14 @@ class SerializerTest < ActionDispatch::IntegrationTest
               name: 'whiny'
             },
             links: {
-              self: '/tags/2',
+              self: '/tags/2'
+            },
+            relationships: {
               posts: {
-                self: '/tags/2/links/posts',
-                related: '/tags/2/posts'
+                links: {
+                  self: '/tags/2/links/posts',
+                  related: '/tags/2/posts'
+                }
               }
             }
           },
@@ -851,10 +1049,14 @@ class SerializerTest < ActionDispatch::IntegrationTest
               name: 'happy'
             },
             links: {
-              self: '/tags/4',
+              self: '/tags/4'
+            },
+            relationships: {
               posts: {
-                self: '/tags/4/links/posts',
-                related: '/tags/4/posts',
+                links: {
+                  self: '/tags/4/links/posts',
+                  related: '/tags/4/posts'
+                }
               }
             }
           },
@@ -865,10 +1067,14 @@ class SerializerTest < ActionDispatch::IntegrationTest
               name: 'JR'
             },
             links: {
-              self: '/tags/5',
+              self: '/tags/5'
+            },
+            relationships: {
               posts: {
-                self: '/tags/5/links/posts',
-                related: '/tags/5/posts',
+                links: {
+                  self: '/tags/5/links/posts',
+                  related: '/tags/5/posts'
+                }
               }
             }
           },
@@ -879,27 +1085,35 @@ class SerializerTest < ActionDispatch::IntegrationTest
               body: 'what a dumb post'
             },
             links: {
-              self: '/comments/1',
+              self: '/comments/1'
+            },
+            relationships: {
               author: {
-                self: '/comments/1/links/author',
-                related: '/comments/1/author',
-                linkage: {
+                links: {
+                  self: '/comments/1/links/author',
+                  related: '/comments/1/author'
+                },
+                data: {
                   type: 'people',
                   id: '1'
                 }
               },
               post: {
-                self: '/comments/1/links/post',
-                related: '/comments/1/post',
-                linkage: {
+                links: {
+                  self: '/comments/1/links/post',
+                  related: '/comments/1/post'
+                },
+                data: {
                   type: 'posts',
                   id: '1'
                 }
               },
               tags: {
-                self: '/comments/1/links/tags',
-                related: '/comments/1/tags',
-                linkage: [
+                links: {
+                  self: '/comments/1/links/tags',
+                  related: '/comments/1/tags'
+                },
+                data: [
                   {type: 'tags', id: '1'},
                   {type: 'tags', id: '2'}
                 ]
@@ -913,27 +1127,35 @@ class SerializerTest < ActionDispatch::IntegrationTest
               body: 'i liked it'
             },
             links: {
-              self: '/comments/2',
+              self: '/comments/2'
+            },
+            relationships: {
               author: {
-                self: '/comments/2/links/author',
-                related: '/comments/2/author',
-                linkage: {
+                links: {
+                  self: '/comments/2/links/author',
+                  related: '/comments/2/author'
+                },
+                data: {
                   type: 'people',
                   id: '2'
                 }
               },
               post: {
-                self: '/comments/2/links/post',
-                related: '/comments/2/post',
-                linkage: {
+                links: {
+                  self: '/comments/2/links/post',
+                  related: '/comments/2/post'
+                },
+                data: {
                   type: 'posts',
                   id: '1'
                 }
               },
               tags: {
-                self: '/comments/2/links/tags',
-                related: '/comments/2/tags',
-                linkage: [
+                links: {
+                  self: '/comments/2/links/tags',
+                  related: '/comments/2/tags'
+                },
+                data: [
                   {type: 'tags', id: '4'},
                   {type: 'tags', id: '1'}
                 ]
@@ -947,27 +1169,35 @@ class SerializerTest < ActionDispatch::IntegrationTest
               body: 'Thanks man. Great post. But what is JR?'
             },
             links: {
-              self: '/comments/3',
+              self: '/comments/3'
+            },
+            relationships: {
               author: {
-                self: '/comments/3/links/author',
-                related: '/comments/3/author',
-                linkage: {
+                links: {
+                  self: '/comments/3/links/author',
+                  related: '/comments/3/author'
+                },
+                data: {
                   type: 'people',
                   id: '2'
                 }
               },
               post: {
-                self: '/comments/3/links/post',
-                related: '/comments/3/post',
-                linkage: {
+                links: {
+                  self: '/comments/3/links/post',
+                  related: '/comments/3/post'
+                },
+                data: {
                   type: 'posts',
                   id: '2'
                 }
               },
               tags: {
-                self: '/comments/3/links/tags',
-                related: '/comments/3/tags',
-                linkage: [
+                links: {
+                  self: '/comments/3/links/tags',
+                  related: '/comments/3/tags'
+                },
+                data: [
                   {type: 'tags', id: '5'}
                 ]
               }
@@ -997,11 +1227,15 @@ class SerializerTest < ActionDispatch::IntegrationTest
               title: 'New post'
             },
             links: {
-              self: '/posts/1',
+              self: '/posts/1'
+            },
+            relationships: {
               author: {
-                self: '/posts/1/links/author',
-                related: '/posts/1/author',
-                linkage: {
+                links: {
+                  self: '/posts/1/links/author',
+                  related: '/posts/1/author'
+                },
+                data: {
                   type: 'people',
                   id: '1'
                 }
@@ -1015,11 +1249,15 @@ class SerializerTest < ActionDispatch::IntegrationTest
               title: 'JR Solves your serialization woes!'
             },
             links: {
-              self: '/posts/2',
+              self: '/posts/2'
+            },
+            relationships: {
               author: {
-                self: '/posts/2/links/author',
-                related: '/posts/2/author',
-                linkage: {
+                links: {
+                  self: '/posts/2/links/author',
+                  related: '/posts/2/author'
+                },
+                data: {
                   type: 'people',
                   id: '1'
                 }
@@ -1035,11 +1273,15 @@ class SerializerTest < ActionDispatch::IntegrationTest
               title: 'JR How To'
             },
             links: {
-              self: '/posts/11',
+              self: '/posts/11'
+            },
+            relationships: {
               author: {
-                self: '/posts/11/links/author',
-                related: '/posts/11/author',
-                linkage: {
+                links: {
+                  self: '/posts/11/links/author',
+                  related: '/posts/11/author'
+                },
+                data: {
                   type: 'people',
                   id: '1'
                 }
@@ -1053,10 +1295,14 @@ class SerializerTest < ActionDispatch::IntegrationTest
               email: 'joe@xyz.fake'
             },
             links: {
-              self: '/people/1',
+              self: '/people/1'
+            },
+            relationships: {
               comments: {
-                self: '/people/1/links/comments',
-                related: '/people/1/comments'
+                links: {
+                  self: '/people/1/links/comments',
+                  related: '/people/1/comments'
+                }
               }
             }
           },
@@ -1107,11 +1353,15 @@ class SerializerTest < ActionDispatch::IntegrationTest
               body: 'what a dumb post'
             },
             links: {
-              self: '/comments/1',
+              self: '/comments/1'
+            },
+            relationships: {
               post: {
-                self: '/comments/1/links/post',
-                related: '/comments/1/post',
-                linkage: {
+                links: {
+                  self: '/comments/1/links/post',
+                  related: '/comments/1/post'
+                },
+                data: {
                   type: 'posts',
                   id: '1'
                 }
@@ -1125,11 +1375,15 @@ class SerializerTest < ActionDispatch::IntegrationTest
               body: 'i liked it'
             },
             links: {
-              self: '/comments/2',
+              self: '/comments/2'
+            },
+            relationships: {
               post: {
-                self: '/comments/2/links/post',
-                related: '/comments/2/post',
-                linkage: {
+                links: {
+                  self: '/comments/2/links/post',
+                  related: '/comments/2/post'
+                },
+                data: {
                   type: 'posts',
                   id: '1'
                 }
@@ -1143,11 +1397,15 @@ class SerializerTest < ActionDispatch::IntegrationTest
               body: 'Thanks man. Great post. But what is JR?'
             },
             links: {
-              self: '/comments/3',
+              self: '/comments/3'
+            },
+            relationships: {
               post: {
-                self: '/comments/3/links/post',
-                related: '/comments/3/post',
-                linkage: {
+                links: {
+                  self: '/comments/3/links/post',
+                  related: '/comments/3/post'
+                },
+                data: {
                   type: 'posts',
                   id: '2'
                 }
@@ -1181,19 +1439,25 @@ class SerializerTest < ActionDispatch::IntegrationTest
             cost: 12.05
           },
           links: {
-            self: '/expenseEntries/1',
+            self: '/expenseEntries/1'
+          },
+          relationships: {
             isoCurrency: {
-              self: '/expenseEntries/1/links/isoCurrency',
-              related: '/expenseEntries/1/isoCurrency',
-              linkage: {
+              links: {
+                self: '/expenseEntries/1/links/isoCurrency',
+                related: '/expenseEntries/1/isoCurrency'
+              },
+              data: {
                 type: 'isoCurrencies',
                 id: 'USD'
               }
             },
             employee: {
-              self: '/expenseEntries/1/links/employee',
-              related: '/expenseEntries/1/employee',
-              linkage: {
+              links: {
+                self: '/expenseEntries/1/links/employee',
+                related: '/expenseEntries/1/employee'
+              },
+              data: {
                 type: 'people',
                 id: '3'
               }
@@ -1248,19 +1512,27 @@ class SerializerTest < ActionDispatch::IntegrationTest
             description: 'Newly discovered Planet W'
           },
           links: {
-            self: '/planets/8',
+            self: '/planets/8'
+          },
+          relationships: {
             planetType: {
-              self: '/planets/8/links/planetType',
-              related: '/planets/8/planetType',
-              linkage: nil
+              links: {
+                self: '/planets/8/links/planetType',
+                related: '/planets/8/planetType'
+              },
+              data: nil
             },
             tags: {
-              self: '/planets/8/links/tags',
-              related: '/planets/8/tags'
+              links: {
+                self: '/planets/8/links/tags',
+                related: '/planets/8/tags'
+              }
             },
             moons: {
-              self: '/planets/8/links/moons',
-              related: '/planets/8/moons'
+              links: {
+                self: '/planets/8/links/moons',
+                related: '/planets/8/moons'
+              }
             }
           }
         }
@@ -1287,22 +1559,30 @@ class SerializerTest < ActionDispatch::IntegrationTest
             description: 'Newly discovered Planet Z'
           },
           links: {
-            self: '/planets/7',
+            self: '/planets/7'
+          },
+          relationships: {
             planetType: {
-              self: '/planets/7/links/planetType',
-              related: '/planets/7/planetType',
-              linkage: {
+              links: {
+                self: '/planets/7/links/planetType',
+                related: '/planets/7/planetType'
+              },
+              data: {
                 type: 'planetTypes',
                 id: '5'
               }
             },
             tags: {
-              self: '/planets/7/links/tags',
-              related: '/planets/7/tags'
+              links: {
+                self: '/planets/7/links/tags',
+                related: '/planets/7/tags'
+              }
             },
             moons: {
-              self: '/planets/7/links/moons',
-              related: '/planets/7/moons'
+              links: {
+                self: '/planets/7/links/moons',
+                related: '/planets/7/moons'
+              }
             }
           }
         },
@@ -1314,19 +1594,27 @@ class SerializerTest < ActionDispatch::IntegrationTest
             description: 'Newly discovered Planet W'
           },
           links: {
-            self: '/planets/8',
+            self: '/planets/8'
+          },
+          relationships: {
             planetType: {
-              self: '/planets/8/links/planetType',
-              related: '/planets/8/planetType',
-              linkage: nil
+              links: {
+                self: '/planets/8/links/planetType',
+                related: '/planets/8/planetType'
+              },
+              data: nil
             },
             tags: {
-              self: '/planets/8/links/tags',
-              related: '/planets/8/tags'
+              links: {
+                self: '/planets/8/links/tags',
+                related: '/planets/8/tags'
+              }
             },
             moons: {
-              self: '/planets/8/links/moons',
-              related: '/planets/8/moons'
+              links: {
+                self: '/planets/8/links/moons',
+                related: '/planets/8/moons'
+              }
             }
           }
         }
@@ -1360,15 +1648,21 @@ class SerializerTest < ActionDispatch::IntegrationTest
             advanced_mode: false
           },
           links: {
-            self: '/preferences/1',
+            self: '/preferences/1'
+          },
+          relationships: {
             author: {
-              self: '/preferences/1/links/author',
-              related: '/preferences/1/author',
-              linkage: nil
+              links: {
+                self: '/preferences/1/links/author',
+                related: '/preferences/1/author'
+              },
+              data: nil
             },
             friends: {
-              self: '/preferences/1/links/friends',
-              related: '/preferences/1/friends'
+              links: {
+                self: '/preferences/1/links/friends',
+                related: '/preferences/1/friends'
+              }
             }
           }
         }

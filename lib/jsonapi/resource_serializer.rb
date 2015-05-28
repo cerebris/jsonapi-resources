@@ -102,11 +102,14 @@ module JSONAPI
 
       obj_hash['type'] = format_key(source.class._type.to_s)
 
-      attributes = attribute_hash(source)
-      obj_hash.merge!({'attributes' => attributes}) unless attributes.empty?
+      links = relationship_links(source)
+      obj_hash['links'] = links unless links.empty?
 
-      links = links_hash(source, include_directives)
-      obj_hash.merge!({'links' => links}) unless links.empty?
+      attributes = attribute_hash(source)
+      obj_hash['attributes'] = attributes unless attributes.empty?
+
+      relationships = relationships_hash(source, include_directives)
+      obj_hash['relationships'] = relationships unless relationships.nil? || relationships.empty?
 
       return obj_hash
     end
@@ -130,9 +133,19 @@ module JSONAPI
       end
     end
 
-    # Returns a hash of links for the requested associations for a resource, filtered by the resource
-    # class's fetchable method
-    def links_hash(source, include_directives)
+    def relationships_hash(source, include_directives)
+      rel_hash = {}
+
+      links = relationship_links(source)
+      rel_hash['links'] = links unless links.empty?
+
+      data = relationship_data(source, include_directives)
+      rel_hash['data'] = data unless data.empty?
+
+      # links_hash(source, include_directives)
+    end
+
+    def relationship_data(source, include_directives)
       associations = source.class._associations
       requested = requested_fields(source.class._type)
       fields = associations.keys
@@ -144,10 +157,9 @@ module JSONAPI
 
       included_associations = source.fetchable_fields & associations.keys
 
-      links = {}
-      links[:self] = self_href(source)
+      data = {}
 
-      associations.each_with_object(links) do |(name, association), hash|
+      associations.each_with_object(data) do |(name, association), hash|
         if included_associations.include? name
           ia = include_directives[:include_related][name]
 
@@ -172,7 +184,7 @@ module JSONAPI
                 if include_linkage && !associations_only
                   add_included_object(type, id, object_hash(resource, ia))
                 elsif include_linked_children || associations_only
-                  links_hash(resource, ia)
+                  relationship_data(resource, ia)
                 end
               end
             elsif association.is_a?(JSONAPI::Association::HasMany)
@@ -183,13 +195,20 @@ module JSONAPI
                 if include_linkage && !associations_only
                   add_included_object(type, id, object_hash(resource, ia))
                 elsif include_linked_children || associations_only
-                  links_hash(resource, ia)
+                  relationship_data(resource, ia)
                 end
               end
             end
           end
         end
       end
+    end
+
+    def relationship_links(source)
+      links = {}
+      links[:self] = self_href(source)
+
+      links
     end
 
     def formatted_module_path(source)
@@ -240,17 +259,19 @@ module JSONAPI
 
     def link_object_has_one(source, association)
       link_object_hash = {}
-      link_object_hash[:self] = self_link(source, association)
-      link_object_hash[:related] = related_link(source, association)
-      link_object_hash[:linkage] = has_one_linkage(source, association)
+      link_object_hash[:links] = {}
+      link_object_hash[:links][:self] = self_link(source, association)
+      link_object_hash[:links][:related] = related_link(source, association)
+      link_object_hash[:data] = has_one_linkage(source, association)
       link_object_hash
     end
 
     def link_object_has_many(source, association, include_linkage)
       link_object_hash = {}
-      link_object_hash[:self] = self_link(source, association)
-      link_object_hash[:related] = related_link(source, association)
-      link_object_hash[:linkage] = has_many_linkage(source, association) if include_linkage
+      link_object_hash[:links] = {}
+      link_object_hash[:links][:self] = self_link(source, association)
+      link_object_hash[:links][:related] = related_link(source, association)
+      link_object_hash[:data] = has_many_linkage(source, association) if include_linkage
       link_object_hash
     end
 
