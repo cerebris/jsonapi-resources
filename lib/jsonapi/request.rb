@@ -305,11 +305,11 @@ module JSONAPI
       Array.wrap(data).each do |params|
         verify_type(params[:type])
 
-        values = parse_params(params, @resource_klass.createable_fields(@context))
+        data = parse_params(params, @resource_klass.createable_fields(@context))
         @operations.push JSONAPI::CreateResourceOperation.new(
                            @resource_klass,
                            {
-                             data: values
+                             data: data
                            }
                          )
       end
