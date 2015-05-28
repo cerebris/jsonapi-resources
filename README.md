@@ -853,14 +853,6 @@ Rails.application.routes.draw do
 end
 ```
 
-```ruby
-Rails.application.routes.draw do
-  jsonapi_resources :contacts do
-    jsonapi_relationships
-  end
-end
-```
-
 ###### `jsonapi_links`
 
 You can add relationship routes in with `jsonapi_links`, for example:
