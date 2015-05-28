@@ -18,7 +18,7 @@ module JSONAPI
 
       @fields =  options.fetch(:fields, {})
       @include = options.fetch(:include, [])
-      @include_directives = options.fetch(:include_directives, nil)
+      @include_directives = options[:include_directives]
       @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
       @route_formatter = options.fetch(:route_formatter, JSONAPI.configuration.route_formatter)
       @base_url = options.fetch(:base_url, '')

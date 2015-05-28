@@ -8,7 +8,7 @@ module JSONAPI
                   :include_directives
 
     def initialize(params = nil, options = {})
-      @context = options.fetch(:context, nil)
+      @context = options[:context]
       @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
       @errors = []
       @operations = []
