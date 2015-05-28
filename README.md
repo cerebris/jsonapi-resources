@@ -519,7 +519,54 @@ Callbacks can be defined for the following `JSONAPI::Resource` events:
 
 Callbacks can also be defined for `JSONAPI::OperationsProcessor` events:
 - `:operations`: The set of operations.
-- `:operation`: The individual operations.
+- `:operation`: Any individual operation.
+- `:find_operation`: A `find_operation`.
+- `:show_operation`: A `show_operation`.
+- `:show_association_operation`: A `show_association_operation`.
+- `:show_related_resource_operation`: A `show_related_resource_operation`.
+- `:show_related_resources_operation`: A `show_related_resources_operation`.
+- `:create_resource_operation`: A `create_resource_operation`.
+- `:remove_resource_operation`: A `remove_resource_operation`.
+- `:replace_fields_operation`: A `replace_fields_operation`.
+- `:replace_has_one_association_operation`: A `replace_has_one_association_operation`.
+- `:create_has_many_association_operation`: A `create_has_many_association_operation`.
+- `:replace_has_many_association_operation`: A `replace_has_many_association_operation`.
+- `:remove_has_many_association_operation`: A `remove_has_many_association_operation`.
+- `:remove_has_one_association_operation`: A `remove_has_one_association_operation`.
+
+The operation callbacks have access to two meta data hashes, `@operations_meta` and `@operation_meta`, the full list of
+`@operations`, each individual `@operation` and the `@result` variables.
+
+##### Custom `OperationsProcessor` Example to Return total_count in Meta
+
+To return the total record count of a find operation in the meta data of a find operation you can create a custom
+OperationsProcessor. For example:
+
+```ruby
+class CountingActiveRecordOperationsProcessor < ActiveRecordOperationsProcessor
+  after_find_operation do
+    count = @operation.resource_klass.find_count(@operation.resource_klass.verify_filters(@operation.filters, @context),
+                                 context: @context,
+                                 include_directives: @operation.include_directives,
+                                 sort_criteria: @operation.sort_criteria)
+
+    @operation_meta[:total_records] = count
+  end
+end
+```
+
+Set the configuration option `operations_processor` to use the new `CountingActiveRecordOperationsProcessor` by
+specifying the snake cased name of the class (without the `OperationsProcessor`).
+ 
+```ruby
+JSONAPI.configure do |config|
+  config.operations_processor = :counting_active_record
+end
+```
+
+The callback code will be called after each find. It will use the same options as the find operation, without the 
+pagination, to collect the record count. This is stored in the `operation_meta`, which will be returned in the top level
+meta element.
 
 ### Controllers
 
@@ -563,7 +610,7 @@ end
 ##### ActsAsResourceController
 
 `JSONAPI::Resources` also provides a module, `JSONAPI::ActsAsResourceController`. You can include this module to
-bring in all the features of `ResourceController` into your existing controller class.
+mix in all the features of `ResourceController` into your existing controller class.
 
 For example:
 
@@ -688,12 +735,24 @@ module JSONAPI
   TYPE_MISMATCH = 116
   INVALID_PAGE_OBJECT = 117
   INVALID_PAGE_VALUE = 118
+  INVALID_FIELD_FORMAT = 119
+  FORBIDDEN = 403
   RECORD_NOT_FOUND = 404
+  UNSUPPORTED_MEDIA_TYPE = 415
   LOCKED = 423
 end
 ```
 
 These codes can be customized in your app by creating an initializer to override any or all of the codes.
+
+In addition textual error coses can be returned by setting the configuration option `use_text_errors = true`. For
+example:
+
+```ruby
+JSONAPI.configure do |config|
+  config.use_text_errors = :true
+end
+```
 
 ### Serializer
 
@@ -709,17 +768,49 @@ JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(PostResource.new
 
 This returns results like this:
 
-```ruby
+```json
 {
-  posts: {
-    id: 1,
-    title: 'New post',
-    body: 'A body!!!',
+  data: {
+    type: 'posts',
+    id: '1',
     links: {
-      section: nil,
-      author: 1,
-      tags: [1,2,3],
-      comments: [1,2]
+      self: 'http://example.com/posts/1',
+    },
+    attributes: {
+      title: 'New post',
+      body: 'A body!!!',
+      subject: 'New post'
+    },
+    relationships: {
+      section: {
+        links: {
+          self: 'http://example.com/posts/1/links/section',
+          related: 'http://example.com/posts/1/section'
+        },
+        data: nil
+      },
+      author: {
+        links: {
+          self: 'http://example.com/posts/1/links/author',
+          related: 'http://example.com/posts/1/author'
+        },
+        data: {
+          type: 'people',
+          id: '1'
+        }
+      },
+      tags: {
+        links: {
+          self: 'http://example.com/posts/1/links/tags',
+          related: 'http://example.com/posts/1/tags'
+        }
+      },
+      comments: {
+        links: {
+          self: 'http://example.com/posts/1/links/comments',
+          related: 'http://example.com/posts/1/comments'
+        }
+      }
     }
   }
 }
@@ -1073,7 +1164,7 @@ different key formatter.
 For example, to use camel cased keys with an initial lowercase character (JSON's default) create an initializer and add 
 the following:
 
-```
+```ruby
 JSONAPI.configure do |config|
   # built in key format options are :underscored_key, :camelized_key and :dasherized_key
   config.json_key_format = :camelized_key
