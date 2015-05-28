@@ -404,7 +404,7 @@ module JSONAPI
 
               links_object = parse_has_one_links_object(linkage)
               if !association.polymorphic? && links_object[:type] && (links_object[:type].to_s != association.type.to_s)
-                raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
+                fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
               end
 
               unless links_object[:id].nil?
