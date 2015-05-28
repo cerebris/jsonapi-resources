@@ -46,12 +46,9 @@ module JSONAPI
       end
 
       primary_hash = {data: is_resource_collection ? primary_objects : primary_objects[0]}
-
-      if included_objects.size > 0
-        primary_hash[:included] = included_objects
-      else
-        primary_hash
-      end
+      primary_meta = meta_hash(source, true)
+      primary_hash[:meta] = primary_meta unless primary_meta.empty?
+      primary_hash[:included] = included_objects unless included_objects.empty?
       primary_hash
     end
 
@@ -112,6 +109,9 @@ module JSONAPI
       links = links_hash(source, include_directives)
       obj_hash.merge!({'links' => links}) unless links.empty?
 
+      meta = meta_hash(source)
+      obj_hash[:meta] = meta unless meta.empty?
+
       return obj_hash
     end
 
@@ -132,6 +132,27 @@ module JSONAPI
           hash[format_key(name)] = format_value(source.send(name), format)
         end
       end
+    end
+
+    def meta_hash(source, primary = false)
+      meta = @primary_resource_klass._meta
+      hash = {}
+      if primary
+        meta.each do |name, options|
+          if @primary_resource_klass.respond_to?(name)
+            hash[format_key(name)] = @primary_resource_klass.send(name, source, options)
+          end
+        end
+      else
+        Array.wrap(source).each do |resource|
+          meta.each do |name, options|
+            if resource.respond_to?(name)
+              hash[format_key(name)] = resource.send(name, options)
+            end
+          end
+        end
+      end
+      hash
     end
 
     # Returns a hash of links for the requested associations for a resource, filtered by the resource

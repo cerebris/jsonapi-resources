@@ -377,6 +377,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books?page[limit]=2'
     assert_equal 200, status
     assert_equal 2, json_response['data'].size
+    assert_not_equal 2, json_response['meta']['total_size']
     assert_equal 'http://www.example.com/api/v2/books/1/book_comments',
                  json_response['data'][1]['links']['book_comments']['related']
   end
@@ -478,6 +479,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
     po_1 = json_response['data'][0]
     assert_equal 'purchase-orders', json_response['data'][0]['type']
+    assert_equal json_response['data'].size, json_response['meta']['total-count']
 
     get po_1['links']['self']
     assert_equal 200, status
@@ -490,6 +492,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v7/purchase_orders'
     assert_equal 200, status
     assert_equal 'purchase-orders', json_response['data'][0]['type']
+    assert_equal json_response['data'].size, json_response['meta']['total-count']
 
     po_1 = json_response['data'][0]
 
