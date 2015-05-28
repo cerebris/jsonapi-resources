@@ -12,6 +12,7 @@ module JSONAPI
                                        :remove_resource_operation,
                                        :replace_fields_operation,
                                        :replace_has_one_association_operation,
+                                       :replace_polymorphic_has_one_association_operation,
                                        :create_has_many_association_operation,
                                        :replace_has_many_association_operation,
                                        :remove_has_many_association_operation,

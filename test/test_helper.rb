@@ -105,6 +105,9 @@ TestApp.routes.draw do
   jsonapi_resources :preferences
   jsonapi_resources :facts
   jsonapi_resources :categories
+  jsonapi_resources :pictures
+  jsonapi_resources :documents
+  jsonapi_resources :products
 
   namespace :api do
     namespace :v1 do

@@ -185,7 +185,7 @@ module JSONAPI
       association = resource_klass._association(association_name)
       if association && format_key(association_name) == include_parts.first
         unless include_parts.last.empty?
-          check_include(Resource.resource_for(@resource_klass.module_path + association.class_name.to_s), include_parts.last.partition('.'))
+          check_include(Resource.resource_for(@resource_klass.module_path + association.class_name.to_s.underscore), include_parts.last.partition('.'))
         end
       else
         @errors.concat(JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type),
@@ -403,11 +403,8 @@ module JSONAPI
               end
 
               links_object = parse_has_one_links_object(linkage)
-              # Since we do not yet support polymorphic associations we will raise an error if the type does not match the
-              # association's type.
-              # TODO: Support Polymorphic associations
-              if links_object[:type] && (links_object[:type].to_s != association.type.to_s)
-                fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
+              if !association.polymorphic? && links_object[:type] && (links_object[:type].to_s != association.type.to_s)
+                raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
               end
 
               unless links_object[:id].nil?
@@ -520,18 +517,31 @@ module JSONAPI
 
     def parse_update_association_operation(data, association_type, parent_key)
       association = resource_klass._association(association_type)
-
       if association.is_a?(JSONAPI::Association::HasOne)
-        object_params = { relationships: { format_key(association.name) => { data: data } } }
-        verified_param_set = parse_params(object_params, updatable_fields)
+        if association.polymorphic?
+          object_params = {relationships: {format_key(association.name) => {data: data}}}
+          verified_param_set = parse_params(object_params, updatable_fields)
 
-        @operations.push JSONAPI::ReplaceHasOneAssociationOperation.new(
-          resource_klass,
-          context: @context,
-          resource_id: parent_key,
-          association_type: association_type,
-          key_value: verified_param_set[:has_one].values[0]
-        )
+          @operations.push JSONAPI::ReplacePolymorphicHasOneAssociationOperation.new(
+                             resource_klass,
+                             context: @context,
+                             resource_id: parent_key,
+                             association_type: association_type,
+                             key_value: verified_param_set[:has_one].values[0],
+                             key_type: data['type']
+                           )
+        else
+          object_params = {relationships: {format_key(association.name) => {data: data}}}
+          verified_param_set = parse_params(object_params, updatable_fields)
+
+          @operations.push JSONAPI::ReplaceHasOneAssociationOperation.new(
+                             resource_klass,
+                             context: @context,
+                             resource_id: parent_key,
+                             association_type: association_type,
+                             key_value: verified_param_set[:has_one].values[0]
+                           )
+        end
       else
         unless association.acts_as_set
           fail JSONAPI::Exceptions::HasManySetReplacementForbidden.new
@@ -541,12 +551,12 @@ module JSONAPI
         verified_param_set = parse_params(object_params, updatable_fields)
 
         @operations.push JSONAPI::ReplaceHasManyAssociationOperation.new(
-          resource_klass,
-          context: @context,
-          resource_id: parent_key,
-          association_type: association_type,
-          data: verified_param_set[:has_many].values[0]
-        )
+                           resource_klass,
+                           context: @context,
+                           resource_id: parent_key,
+                           association_type: association_type,
+                           data: verified_param_set[:has_many].values[0]
+                         )
       end
     end
 
