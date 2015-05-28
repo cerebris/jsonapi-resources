@@ -770,45 +770,45 @@ This returns results like this:
 
 ```json
 {
-  data: {
-    type: 'posts',
-    id: '1',
-    links: {
-      self: 'http://example.com/posts/1',
+  "data": {
+    "type": "posts",
+    "id": "1",
+    "links": {
+      "self": "http://example.com/posts/1"
     },
-    attributes: {
-      title: 'New post',
-      body: 'A body!!!',
-      subject: 'New post'
+    "attributes": {
+      "title": "New post",
+      "body": "A body!!!",
+      "subject": "New post"
     },
-    relationships: {
-      section: {
-        links: {
-          self: 'http://example.com/posts/1/links/section',
-          related: 'http://example.com/posts/1/section'
+    "relationships": {
+      "section": {
+        "links": {
+          "self": "http://example.com/posts/1/links/section",
+          "related": "http://example.com/posts/1/section"
         },
-        data: nil
+        "data": null
       },
-      author: {
-        links: {
-          self: 'http://example.com/posts/1/links/author',
-          related: 'http://example.com/posts/1/author'
+      "author": {
+        "links": {
+          "self": "http://example.com/posts/1/links/author",
+          "related": "http://example.com/posts/1/author"
         },
-        data: {
-          type: 'people',
-          id: '1'
+        "data": {
+          "type": "people",
+          "id": "1"
         }
       },
-      tags: {
-        links: {
-          self: 'http://example.com/posts/1/links/tags',
-          related: 'http://example.com/posts/1/tags'
+      "tags": {
+        "links": {
+          "self": "http://example.com/posts/1/links/tags",
+          "related": "http://example.com/posts/1/tags"
         }
       },
-      comments: {
-        links: {
-          self: 'http://example.com/posts/1/links/comments',
-          related: 'http://example.com/posts/1/comments'
+      "comments": {
+        "links": {
+          "self": "http://example.com/posts/1/links/comments",
+          "related": "http://example.com/posts/1/comments"
         }
       }
     }
