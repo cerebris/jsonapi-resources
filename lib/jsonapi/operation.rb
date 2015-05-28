@@ -16,10 +16,10 @@ module JSONAPI
     attr_reader :filters, :include_directives, :sort_criteria, :paginator
 
     def initialize(resource_klass, options = {})
-      @filters = options.fetch(:filters, nil)
-      @include_directives = options.fetch(:include_directives, nil)
-      @sort_criteria = options.fetch(:sort_criteria, nil)
-      @paginator = options.fetch(:paginator, nil)
+      @filters = options[:filters]
+      @include_directives = options[:include_directives]
+      @sort_criteria = options[:sort_criteria]
+      @paginator = options[:paginator]
       super(resource_klass, false)
     end
 
