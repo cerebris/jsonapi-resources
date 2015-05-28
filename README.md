@@ -711,15 +711,21 @@ This returns results like this:
 
 ```ruby
 {
-  posts: {
-    id: 1,
-    title: 'New post',
-    body: 'A body!!!',
+  data: {
+    type: 'posts',
+    id: '1',
+    attributes: {
+      title: 'New post',
+      body: 'A body!!!',
+      subject: 'New post'
+    },
     links: {
-      section: nil,
-      author: 1,
-      tags: [1,2,3],
-      comments: [1,2]
+      self: 'http://example.com/posts/1',
+      section: {
+        self: 'http://example.com/posts/1/links/section',
+        related: 'http://example.com/posts/1/section',
+        linkage: nil
+      }
     }
   }
 }
