@@ -373,7 +373,7 @@ module JSONAPI
 
       params.each do |key, value|
         case key.to_s
-          when 'links'
+          when 'relationships'
             value.each do |link_key, link_value|
               param = unformat_key(link_key)
 
@@ -383,7 +383,7 @@ module JSONAPI
                 if link_value.nil?
                   linkage = nil
                 else
-                  linkage = link_value[:linkage]
+                  linkage = link_value[:data]
                 end
 
                 links_object = parse_has_one_links_object(linkage)
@@ -404,7 +404,7 @@ module JSONAPI
                 if link_value.is_a?(Array) && link_value.length == 0
                   linkage = []
                 elsif link_value.is_a?(Hash)
-                  linkage = link_value[:linkage]
+                  linkage = link_value[:data]
                 else
                   raise JSONAPI::Exceptions::InvalidLinksObject.new
                 end
@@ -457,7 +457,7 @@ module JSONAPI
 
       params.each do |key, value|
         case key.to_s
-          when 'links'
+          when 'relationships'
             value.each_key do |links_key|
               params_not_allowed.push(links_key) unless formatted_allowed_fields.include?(links_key.to_sym)
             end
@@ -478,7 +478,7 @@ module JSONAPI
       association = resource_klass._association(association_type)
 
       if association.is_a?(JSONAPI::Association::HasMany)
-        object_params = {links: {format_key(association.name) => {linkage: data}}}
+        object_params = {relationships: {format_key(association.name) => {data: data}}}
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
         @operations.push JSONAPI::CreateHasManyAssociationOperation.new(
@@ -496,7 +496,7 @@ module JSONAPI
       association = resource_klass._association(association_type)
 
       if association.is_a?(JSONAPI::Association::HasOne)
-        object_params = {links: {format_key(association.name) => {linkage: data}}}
+        object_params = {relationships: {format_key(association.name) => {data: data}}}
 
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
@@ -513,7 +513,7 @@ module JSONAPI
           raise JSONAPI::Exceptions::HasManySetReplacementForbidden.new
         end
 
-        object_params = {links: {format_key(association.name) => {linkage: data}}}
+        object_params = {relationships: {format_key(association.name) => {data: data}}}
         verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
 
         @operations.push JSONAPI::ReplaceHasManyAssociationOperation.new(

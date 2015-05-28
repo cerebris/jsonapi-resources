@@ -115,9 +115,9 @@ class RequestTest < ActionDispatch::IntegrationTest
             'attributes' => {
               'title' => 'A great new Post'
             },
-            'links' => {
+            'relationships' => {
               'tags' => {
-                'linkage' => [
+                'data' => [
                   {type: 'tags', id: 3},
                   {type: 'tags', id: 4}
                 ]
@@ -136,9 +136,9 @@ class RequestTest < ActionDispatch::IntegrationTest
           'attributes' => {
             'title' => 'A great new Post'
           },
-          'links' => {
+          'relationships' => {
             'tags' => {
-              'linkage' => [
+              'data' => [
                   {type: 'tags', id: 3},
                   {type: 'tags', id: 4}
                 ]
@@ -159,8 +159,8 @@ class RequestTest < ActionDispatch::IntegrationTest
             'title' => 'A great new Post',
             'body' => 'JSONAPIResources is the greatest thing since unsliced bread.'
           },
-          'links' => {
-            'author' => {'linkage' => {type: 'people', id: '3'}}
+          'relationships' => {
+            'author' => {'data' => {type: 'people', id: '3'}}
           }
         }
       }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -188,8 +188,8 @@ class RequestTest < ActionDispatch::IntegrationTest
 
     assert_equal 201, status
     assert_nil json_response['data']['attributes']['body']
-    assert_nil json_response['data']['relationships']['post']['linkage']
-    assert_nil json_response['data']['relationships']['author']['linkage']
+    assert_nil json_response['data']['relationships']['post']['data']
+    assert_nil json_response['data']['relationships']['author']['data']
   end
 
   def test_post_single_minimal_invalid
@@ -268,9 +268,9 @@ class RequestTest < ActionDispatch::IntegrationTest
             'attributes' => {
               'title' => 'A great new Post'
             },
-            'links' => {
+            'relationships' => {
               'tags' => {
-                'linkage' => [
+                'data' => [
                   {type: 'tags', id: 3},
                   {type: 'tags', id: 4}
                 ]
@@ -291,9 +291,9 @@ class RequestTest < ActionDispatch::IntegrationTest
             'attributes' => {
               'title' => 'A great new Post'
             },
-            'links' => {
+            'relationships' => {
               'tags' => {
-                'linkage' => [
+                'data' => [
                   {type: 'tags', id: 3},
                   {type: 'tags', id: 4}
                 ]
@@ -313,8 +313,8 @@ class RequestTest < ActionDispatch::IntegrationTest
          'attributes' => {
            'title' => 'A great new Post'
          },
-         'links' => {
-           'author' => {'linkage' => {type: 'people', id: '3'}}
+         'relationships' => {
+           'author' => {'data' => {type: 'people', id: '3'}}
          }
        }
      }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
@@ -602,9 +602,9 @@ class RequestTest < ActionDispatch::IntegrationTest
               'attributes' => {
                 'item-cost' => '23.57'
               },
-              'links' => {
+              'relationships' => {
                 'purchase-order' => {
-                  'linkage' => {'type' => 'purchase-orders', 'id' => '2'}
+                  'data' => {'type' => 'purchase-orders', 'id' => '2'}
                 }
               }
             }
@@ -621,15 +621,15 @@ class RequestTest < ActionDispatch::IntegrationTest
             'data' => {
               'id' => '2',
               'type' => 'purchase-orders',
-              'links' => {
+              'relationships' => {
                 'line-items' => {
-                  'linkage' => [
+                  'data' => [
                     {'type' => 'line-items', 'id' => '3'},
                     {'type' => 'line-items', 'id' => '4'}
                   ]
                 },
                 'order-flags' => {
-                  'linkage' => [
+                  'data' => [
                     {'type' => 'order-flags', 'id' => '1'},
                     {'type' => 'order-flags', 'id' => '2'}
                   ]
