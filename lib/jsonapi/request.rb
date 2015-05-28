@@ -309,7 +309,7 @@ module JSONAPI
         @operations.push JSONAPI::CreateResourceOperation.new(
                            @resource_klass,
                            {
-                             values: values
+                             data: values
                            }
                          )
       end
@@ -483,7 +483,7 @@ module JSONAPI
                            {
                              resource_id: parent_key,
                              association_type: association_type,
-                             key_values: verified_param_set[:has_many].values[0]
+                             data: verified_param_set[:has_many].values[0]
                            }
                          )
       end
@@ -518,7 +518,7 @@ module JSONAPI
                            {
                              resource_id: parent_key,
                              association_type: association_type,
-                             key_values: verified_param_set[:has_many].values[0]
+                             data: verified_param_set[:has_many].values[0]
                            }
                          )
       end
@@ -549,7 +549,7 @@ module JSONAPI
                          @resource_klass,
                          {
                            resource_id: key,
-                           values: parse_params(data,@resource_klass.updateable_fields(@context))
+                           data: parse_params(data, @resource_klass.updateable_fields(@context))
                          }
                        )
     end

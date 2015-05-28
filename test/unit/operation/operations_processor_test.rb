@@ -64,7 +64,7 @@ class OperationsProcessorTest < Minitest::Test
     count = Planet.count
 
     operations = [
-      JSONAPI::CreateResourceOperation.new(PlanetResource, values: {attributes: {'name' => 'earth', 'description' => 'The best planet ever.'}})
+      JSONAPI::CreateResourceOperation.new(PlanetResource, data: {attributes: {'name' => 'earth', 'description' => 'The best planet ever.'}})
     ]
 
     request = JSONAPI::Request.new
@@ -84,9 +84,9 @@ class OperationsProcessorTest < Minitest::Test
     count = Planet.count
 
     operations = [
-      JSONAPI::CreateResourceOperation.new(PlanetResource, values: {attributes: {'name' => 'earth', 'description' => 'The best planet for life.'}}),
-      JSONAPI::CreateResourceOperation.new(PlanetResource, values: {attributes: {'name' => 'mars', 'description' => 'The red planet.'}}),
-      JSONAPI::CreateResourceOperation.new(PlanetResource, values: {attributes: {'name' => 'venus', 'description' => 'A very hot planet.'}})
+      JSONAPI::CreateResourceOperation.new(PlanetResource, data: {attributes: {'name' => 'earth', 'description' => 'The best planet for life.'}}),
+      JSONAPI::CreateResourceOperation.new(PlanetResource, data: {attributes: {'name' => 'mars', 'description' => 'The red planet.'}}),
+      JSONAPI::CreateResourceOperation.new(PlanetResource, data: {attributes: {'name' => 'venus', 'description' => 'A very hot planet.'}})
     ]
 
     request = JSONAPI::Request.new
@@ -190,7 +190,7 @@ class OperationsProcessorTest < Minitest::Test
         {
           resource_id: gas_giant.id,
           association_type: :planets,
-          key_values: [betax.id, betay.id, betaz.id]
+          data: [betax.id, betay.id, betaz.id]
         }
       )
     ]
@@ -238,7 +238,7 @@ class OperationsProcessorTest < Minitest::Test
         {
           resource_id: gas_giant.id,
           association_type: :planets,
-          key_values: [betax.id, betay.id, betaz.id]
+          data: [betax.id, betay.id, betaz.id]
         }
       )
     ]
@@ -277,7 +277,7 @@ class OperationsProcessorTest < Minitest::Test
         PlanetResource,
         {
           resource_id: 1,
-          values: {attributes: {'name' => 'saturn'}}
+          data: {attributes: {'name' => 'saturn'}}
         }
       )
     ]

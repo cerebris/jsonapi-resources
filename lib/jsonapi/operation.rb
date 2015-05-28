@@ -138,16 +138,16 @@ module JSONAPI
   end
 
   class CreateResourceOperation < Operation
-    attr_reader :values
+    attr_reader :data
 
     def initialize(resource_klass, options = {})
-      @values = options.fetch(:values)
+      @data = options.fetch(:data)
       super(resource_klass, options)
     end
 
     def apply(context)
       resource = @resource_klass.create(context)
-      resource.replace_fields(@values)
+      resource.replace_fields(@data)
 
       return JSONAPI::ResourceOperationResult.new(:created, resource)
 
@@ -175,17 +175,17 @@ module JSONAPI
   end
 
   class ReplaceFieldsOperation < Operation
-    attr_reader :values, :resource_id
+    attr_reader :data, :resource_id
 
     def initialize(resource_klass, options = {})
       @resource_id = options.fetch(:resource_id)
-      @values = options.fetch(:values)
+      @data = options.fetch(:data)
       super(resource_klass, options)
     end
 
     def apply(context)
       resource = @resource_klass.find_by_key(@resource_id, context: context)
-      resource.replace_fields(values)
+      resource.replace_fields(data)
 
       return JSONAPI::ResourceOperationResult.new(:ok, resource)
     end
@@ -210,36 +210,36 @@ module JSONAPI
   end
 
   class CreateHasManyAssociationOperation < Operation
-    attr_reader :resource_id, :association_type, :key_values
+    attr_reader :resource_id, :association_type, :data
 
     def initialize(resource_klass, options)
       @resource_id = options.fetch(:resource_id)
-      @key_values = options.fetch(:key_values)
+      @data = options.fetch(:data)
       @association_type = options.fetch(:association_type).to_sym
       super(resource_klass, options)
     end
 
     def apply(context)
       resource = @resource_klass.find_by_key(@resource_id, context: context)
-      resource.create_has_many_links(@association_type, @key_values)
+      resource.create_has_many_links(@association_type, @data)
 
       return JSONAPI::OperationResult.new(:no_content)
     end
   end
 
   class ReplaceHasManyAssociationOperation < Operation
-    attr_reader :resource_id, :association_type, :key_values
+    attr_reader :resource_id, :association_type, :data
 
     def initialize(resource_klass, options)
       @resource_id = options.fetch(:resource_id)
-      @key_values = options.fetch(:key_values)
+      @data = options.fetch(:data)
       @association_type = options.fetch(:association_type).to_sym
       super(resource_klass, options)
     end
 
     def apply(context)
       resource = @resource_klass.find_by_key(@resource_id, context: context)
-      resource.replace_has_many_links(@association_type, @key_values)
+      resource.replace_has_many_links(@association_type, @data)
 
       return JSONAPI::OperationResult.new(:no_content)
     end
