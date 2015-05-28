@@ -47,6 +47,10 @@ module JSONAPI
 
       primary_hash = {data: is_resource_collection ? primary_objects : primary_objects[0]}
 
+      primary_hash[:links] = {
+        self: is_resource_collection || primary_objects[0].nil? ? self_href_primary : self_href(source)
+      }
+
       if included_objects.size > 0
         primary_hash[:included] = included_objects
       else
@@ -196,12 +200,16 @@ module JSONAPI
       end
     end
 
-    def formatted_module_path(source)
-      source.class.name =~ /::[^:]+\Z/ ? (@route_formatter.format($`).freeze.gsub('::', '/') + '/').downcase : ''
+    def formatted_module_path(class_name)
+      class_name =~ /::[^:]+\Z/ ? (@route_formatter.format($`).freeze.gsub('::', '/') + '/').downcase : ''
+    end
+
+    def self_href_primary
+      "#{@base_url}/#{formatted_module_path(@primary_resource_klass.to_s)}#{@route_formatter.format(@primary_class_name.to_s)}"
     end
 
     def self_href(source)
-      "#{@base_url}/#{formatted_module_path(source)}#{@route_formatter.format(source.class._type.to_s)}/#{source.id}"
+      "#{@base_url}/#{formatted_module_path(source.class.name)}#{@route_formatter.format(source.class._type.to_s)}/#{source.id}"
     end
 
     def already_serialized?(type, id)

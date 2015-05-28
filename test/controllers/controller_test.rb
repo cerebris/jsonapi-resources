@@ -13,6 +13,7 @@ class PostsControllerTest < ActionController::TestCase
     get :index
     assert_response :success
     assert json_response['data'].is_a?(Array)
+    assert json_response.has_key?('links')
   end
 
   def test_index_filter_with_empty_result
@@ -1926,6 +1927,9 @@ class PeopleControllerTest < ActionController::TestCase
              "linkage" => nil
             }
          }
+        },
+        links: {
+          self: 'http://test.host/people/1'
         }
       },
       json_response
@@ -1937,7 +1941,10 @@ class PeopleControllerTest < ActionController::TestCase
     assert_response :success
     assert_hash_equals json_response,
                        {
-                         data: nil
+                         data: nil,
+                         links: {
+                          self: 'http://test.host/posts'
+                         }
                        }
 
   end

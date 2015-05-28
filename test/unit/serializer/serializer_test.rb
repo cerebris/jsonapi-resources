@@ -53,6 +53,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
               related: 'http://example.com/posts/1/comments'
             }
           }
+        },
+        links: {
+          self: 'http://example.com/posts/1'
         }
       },
       JSONAPI::ResourceSerializer.new(PostResource,
@@ -63,7 +66,10 @@ class SerializerTest < ActionDispatch::IntegrationTest
   def test_serializer_nil_handling
     assert_hash_equals(
       {
-        data: nil
+        data: nil,
+        links: {
+          self: '/posts'
+        }
       },
       JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(nil)
     )
@@ -100,6 +106,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
               related: 'http://example.com/api/v1/posts/1/comments'
             }
           }
+        },
+        links: {
+          self: 'http://example.com/api/v1/posts/1'
         }
       },
       JSONAPI::ResourceSerializer.new(Api::V1::PostResource,
@@ -129,6 +138,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
               }
             }
           }
+        },
+        links: {
+          self: '/posts/1'
         }
       },
       JSONAPI::ResourceSerializer.new(PostResource,
@@ -176,6 +188,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
               related: '/posts/1/comments'
             }
           }
+        },
+        links: {
+          self: '/posts/1'
         },
         included: [
           {
@@ -259,6 +274,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
             }
           }
         },
+        links: {
+          self: '/posts/1'
+        },
         included: [
           {
             type: 'people',
@@ -339,6 +357,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
               ]
             }
           }
+        },
+        links: {
+          self: '/posts/1'
         },
         included: [
             {
@@ -495,6 +516,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
             }
           }
         },
+        links: {
+          self: '/posts/1'
+        },
         included: [
           {
             type: 'tags',
@@ -581,6 +605,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
             }
           }
         },
+        links: {
+          self: '/posts/1'
+        },
         included: [
           {
             type: 'comments',
@@ -660,6 +687,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
               linkage: nil
             }
           }
+        },
+        links: {
+          self: '/people/2'
         },
         included: [
           {
@@ -815,6 +845,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
             }
           }
         ],
+        links: {
+          self: '/posts'
+        },
         included: [
           {
             type: 'tags',
@@ -1027,6 +1060,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
             }
           }
         ],
+        links: {
+          self: '/posts'
+        },
         included: [
           {
             type: 'posts',
@@ -1200,6 +1236,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
             }
           }
         },
+        links: {
+          self: '/expenseEntries/1'
+        },
         included: [
           {
             type: 'isoCurrencies',
@@ -1263,6 +1302,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
               related: '/planets/8/moons'
             }
           }
+        },
+        links: {
+          self: '/planets/8'
         }
       }, planet_hash)
   end
@@ -1331,6 +1373,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           }
         }
       ],
+      links: {
+        self: '/planets'
+      },
       included: [
         {
           type: 'planetTypes',
@@ -1371,6 +1416,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
               related: '/preferences/1/friends'
             }
           }
+        },
+        links: {
+          self: '/preferences/1'
         }
       },
       JSONAPI::ResourceSerializer.new(PreferencesResource).serialize_to_hash(preferences)
@@ -1401,6 +1449,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
           links: {
             self: '/facts/1'
           }
+        },
+        links: {
+          self: '/facts/1'
         }
       },
       JSONAPI::ResourceSerializer.new(FactResource).serialize_to_hash(facts)
