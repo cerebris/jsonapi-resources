@@ -167,6 +167,23 @@ ActiveRecord::Schema.define do
     t.string :name
     t.string :status, limit: 10
   end
+
+  create_table :pictures, force: true do |t|
+    t.string  :name
+    t.integer :imageable_id
+    t.string  :imageable_type
+    t.timestamps null: false
+  end
+
+  create_table :documents, force: true do |t|
+    t.string  :name
+    t.timestamps null: false
+  end
+
+  create_table :products, force: true do |t|
+    t.string  :name
+    t.timestamps null: false
+  end
 end
 
 ### MODELS
@@ -343,6 +360,18 @@ end
 class Category < ActiveRecord::Base
 end
 
+class Picture < ActiveRecord::Base
+  belongs_to :imageable, polymorphic: true
+end
+
+class Document < ActiveRecord::Base
+  has_many :pictures, as: :imageable
+end
+
+class Product < ActiveRecord::Base
+  has_one :picture, as: :imageable
+end
+
 ### PORO Data - don't do this in a production app
 $breed_data = BreedData.new
 $breed_data.add(Breed.new(0, 'persian'))
@@ -391,6 +420,18 @@ class FactsController < JSONAPI::ResourceController
 end
 
 class CategoriesController < JSONAPI::ResourceController
+end
+
+class PicturesController < JSONAPI::ResourceController
+end
+
+class DocumentsController < JSONAPI::ResourceController
+end
+
+class ProductsController < JSONAPI::ResourceController
+end
+
+class ImageablesController < JSONAPI::ResourceController
 end
 
 ### CONTROLLERS
@@ -762,6 +803,32 @@ end
 
 class CategoryResource < JSONAPI::Resource
   filter :status, default: 'active'
+end
+
+class PictureResource < JSONAPI::Resource
+  attribute :name
+  has_one :imageable, polymorphic: true
+
+  def imageable_type=(type)
+    model.imageable_type = type
+  end
+end
+
+class DocumentResource < JSONAPI::Resource
+  attribute :name
+  has_many :pictures
+end
+
+class ProductResource < JSONAPI::Resource
+  attribute :name
+  has_one :picture
+
+  def picture_id
+    model.picture.id
+  end
+end
+
+class ImageableResource < JSONAPI::Resource
 end
 
 module Api
