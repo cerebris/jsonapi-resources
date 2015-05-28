@@ -446,12 +446,7 @@ module JSONAPI
       end
 
       def _updateable_associations
-        associations = []
-
-        @_associations.each do |key, association|
-          associations.push(key)
-        end
-        associations
+        @_associations.map { |key, association| key }
       end
 
       def _has_association?(type)
