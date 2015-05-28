@@ -222,14 +222,12 @@ module JSONAPI
       return unless sort_criteria
 
       @sort_criteria = CSV.parse_line(URI.unescape(sort_criteria)).collect do |sort|
-        sort_criteria = {field: unformat_key(sort[1..-1]).to_s}
-        if sort.start_with?('+', ' ')
-          sort_criteria[:direction] = :asc
-        elsif sort.start_with?('-')
+        if sort.start_with?('-')
+          sort_criteria = {field: unformat_key(sort[1..-1]).to_s}
           sort_criteria[:direction] = :desc
         else
-          @errors.concat(JSONAPI::Exceptions::InvalidSortFormat
-                           .new(format_key(resource_klass._type), sort).errors)
+          sort_criteria = {field: unformat_key(sort).to_s}
+          sort_criteria[:direction] = :asc
         end
 
         check_sort_criteria(@resource_klass, sort_criteria)

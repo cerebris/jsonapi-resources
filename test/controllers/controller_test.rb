@@ -184,23 +184,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_sorting_asc
-    get :index, {sort: '+title'}
-
-    assert_response :success
-    assert_equal "A First Post", json_response['data'][0]['attributes']['title']
-  end
-
-  # Plus symbol may be replaced by a space
-  def test_sorting_asc_with_space
-    get :index, {sort: ' title'}
-
-    assert_response :success
-    assert_equal "A First Post", json_response['data'][0]['attributes']['title']
-  end
-
-  # Plus symbol may be sent uriencoded ('%2b')
-  def test_sorting_asc_with_encoded_plus
-    get :index, {sort: '%2btitle'}
+    get :index, {sort: 'title'}
 
     assert_response :success
     assert_equal "A First Post", json_response['data'][0]['attributes']['title']
@@ -214,28 +198,21 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_sorting_by_multiple_fields
-    get :index, {sort: '+title,+body'}
+    get :index, {sort: 'title,body'}
 
     assert_response :success
     assert_equal '14', json_response['data'][0]['id']
   end
 
   def test_invalid_sort_param
-    get :index, {sort: '+asdfg'}
+    get :index, {sort: 'asdfg'}
 
     assert_response :bad_request
     assert_match /asdfg is not a valid sort criteria for post/, response.body
   end
 
-  def test_invalid_sort_param_missing_direction
-    get :index, {sort: 'title'}
-
-    assert_response :bad_request
-    assert_match /title must start with a direction/, response.body
-  end
-
   def test_excluded_sort_param
-    get :index, {sort: '+id'}
+    get :index, {sort: 'id'}
 
     assert_response :bad_request
     assert_match /id is not a valid sort criteria for post/, response.body
@@ -1500,7 +1477,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     JSONAPI.configuration.use_text_errors = true
     get :index, {sort: 'not_in_record'}
     assert_response 400
-    assert_equal 'INVALID_SORT_FORMAT', json_response['errors'][0]['code']
+    assert_equal 'INVALID_SORT_CRITERIA', json_response['errors'][0]['code']
     JSONAPI.configuration.use_text_errors = false
   end
 
@@ -1687,7 +1664,7 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
   end
 
   def test_currencies_primary_key_sort
-    get :index, {sort: '+id'}
+    get :index, {sort: 'id'}
     assert_response :success
     assert_equal 3, json_response['data'].size
     assert_equal 'CAD', json_response['data'][0]['id']
@@ -1696,13 +1673,13 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
   end
 
   def test_currencies_code_sort
-    get :index, {sort: '+code'}
+    get :index, {sort: 'code'}
     assert_response :bad_request
   end
 
   def test_currencies_json_key_underscored_sort
     JSONAPI.configuration.json_key_format = :underscored_key
-    get :index, {sort: '+country_name'}
+    get :index, {sort: 'country_name'}
     assert_response :success
     assert_equal 3, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['attributes']['country_name']
@@ -1720,7 +1697,7 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
 
   def test_currencies_json_key_dasherized_sort
     JSONAPI.configuration.json_key_format = :dasherized_key
-    get :index, {sort: '+country-name'}
+    get :index, {sort: 'country-name'}
     assert_response :success
     assert_equal 3, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['attributes']['country-name']
@@ -1738,7 +1715,7 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
 
   def test_currencies_json_key_custom_json_key_sort
     JSONAPI.configuration.json_key_format = :upper_camelized_key
-    get :index, {sort: '+CountryName'}
+    get :index, {sort: 'CountryName'}
     assert_response :success
     assert_equal 3, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['attributes']['CountryName']
