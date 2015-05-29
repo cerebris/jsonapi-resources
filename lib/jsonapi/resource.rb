@@ -353,20 +353,28 @@ module JSONAPI
         end
       end
 
-      # Override this method if you have more complex requirements than this basic find method provides
-      def find(filters, options = {})
-        context = options[:context]
+      def filter_records(filters, options)
         sort_criteria = options.fetch(:sort_criteria) { [] }
-        include_directives = options.fetch(:include_directives, nil)
-
-        resources = []
+        include_directives = options[:include_directives]
 
         records = records(options)
         records = apply_includes(records, include_directives)
         records = apply_filters(records, filters)
-        records = apply_sort(records, construct_order_options(sort_criteria))
+        apply_sort(records, construct_order_options(sort_criteria))
+      end
+
+      def find_count(filters, options = {})
+        filter_records(filters, options).count
+      end
+
+      # Override this method if you have more complex requirements than this basic find method provides
+      def find(filters, options = {})
+        context = options[:context]
+
+        records = filter_records(filters, options)
         records = apply_pagination(records, options[:paginator])
 
+        resources = []
         records.each do |model|
           resources.push self.new(model, context)
         end
@@ -376,7 +384,7 @@ module JSONAPI
 
       def find_by_key(key, options = {})
         context = options[:context]
-        include_directives = options.fetch(:include_directives, nil)
+        include_directives = options[:include_directives]
         records = records(options)
         records = apply_includes(records, include_directives)
         model = records.where({_primary_key => key}).first
@@ -576,7 +584,7 @@ module JSONAPI
               resource_class = Resource.resource_for(self.class.module_path + type_name)
               filters = options.fetch(:filters, {})
               sort_criteria =  options.fetch(:sort_criteria, {})
-              paginator = options.fetch(:paginator, nil)
+              paginator = options[:paginator]
 
               resources = []
               if resource_class

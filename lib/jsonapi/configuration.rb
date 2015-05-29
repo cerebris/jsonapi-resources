@@ -1,4 +1,6 @@
 require 'jsonapi/formatter'
+require 'jsonapi/operations_processor'
+require 'jsonapi/active_record_operations_processor'
 
 module JSONAPI
   class Configuration
@@ -6,6 +8,7 @@ module JSONAPI
                 :key_formatter,
                 :route_format,
                 :route_formatter,
+                :operations_processor,
                 :allowed_request_params,
                 :default_paginator,
                 :default_page_size,
@@ -18,6 +21,9 @@ module JSONAPI
 
       #:underscored_route, :camelized_route, :dasherized_route, or custom
       self.route_format = :dasherized_route
+
+      #:basic, :active_record, or custom
+      self.operations_processor = :active_record
 
       self.allowed_request_params = [:include, :fields, :format, :controller, :action, :sort, :page]
 
@@ -37,6 +43,11 @@ module JSONAPI
     def route_format=(format)
       @route_format = format
       @route_formatter = JSONAPI::Formatter.formatter_for(format)
+    end
+
+    def operations_processor=(operations_processor)
+      @operations_processor_name = operations_processor
+      @operations_processor = JSONAPI::OperationsProcessor.operations_processor_for(@operations_processor_name)
     end
 
     def allowed_request_params=(allowed_request_params)

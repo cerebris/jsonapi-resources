@@ -1,9 +1,5 @@
 require File.expand_path('../../../test_helper', __FILE__)
 
-require 'jsonapi/operation'
-require 'jsonapi/operation_result'
-require 'jsonapi/operations_processor'
-
 class TestOperationsProcessor < JSONAPI::OperationsProcessor
   before_operation :log_before_operation
 
@@ -68,18 +64,17 @@ class OperationsProcessorTest < Minitest::Test
     count = Planet.count
 
     operations = [
-      JSONAPI::CreateResourceOperation.new(PlanetResource, {attributes: {'name' => 'earth', 'description' => 'The best planet ever.'}})
+      JSONAPI::CreateResourceOperation.new(PlanetResource, data: {attributes: {'name' => 'earth', 'description' => 'The best planet ever.'}})
     ]
 
     request = JSONAPI::Request.new
     request.operations = operations
 
-    results = op.process(request)
+    operation_results = op.process(request)
 
-    assert_kind_of(Array, results)
-    assert_kind_of(JSONAPI::OperationResult, results[0])
-    assert_equal(:created, results[0].code)
-    assert_equal(results.size, 1)
+    assert_kind_of(JSONAPI::OperationResults, operation_results)
+    assert_equal(:created, operation_results.results[0].code)
+    assert_equal(operation_results.results.size, 1)
     assert_equal(Planet.count, count + 1)
   end
 
@@ -89,18 +84,18 @@ class OperationsProcessorTest < Minitest::Test
     count = Planet.count
 
     operations = [
-      JSONAPI::CreateResourceOperation.new(PlanetResource, {attributes: {'name' => 'earth', 'description' => 'The best planet for life.'}}),
-      JSONAPI::CreateResourceOperation.new(PlanetResource, {attributes: {'name' => 'mars', 'description' => 'The red planet.'}}),
-      JSONAPI::CreateResourceOperation.new(PlanetResource, {attributes: {'name' => 'venus', 'description' => 'A very hot planet.'}})
+      JSONAPI::CreateResourceOperation.new(PlanetResource, data: {attributes: {'name' => 'earth', 'description' => 'The best planet for life.'}}),
+      JSONAPI::CreateResourceOperation.new(PlanetResource, data: {attributes: {'name' => 'mars', 'description' => 'The red planet.'}}),
+      JSONAPI::CreateResourceOperation.new(PlanetResource, data: {attributes: {'name' => 'venus', 'description' => 'A very hot planet.'}})
     ]
 
     request = JSONAPI::Request.new
     request.operations = operations
 
-    results = op.process(request)
+    operation_results = op.process(request)
 
-    assert_kind_of(Array, results)
-    assert_equal(results.size, 3)
+    assert_kind_of(JSONAPI::OperationResults, operation_results)
+    assert_equal(operation_results.results.size, 3)
     assert_equal(Planet.count, count + 3)
   end
 
@@ -113,42 +108,63 @@ class OperationsProcessorTest < Minitest::Test
     assert_equal(saturn.planet_type_id, planetoid.id)
 
     operations = [
-      JSONAPI::ReplaceHasOneAssociationOperation.new(PlanetResource, saturn.id, :planet_type, gas_giant.id)
+      JSONAPI::ReplaceHasOneAssociationOperation.new(
+        PlanetResource,
+        {
+          resource_id: saturn.id,
+          association_type: :planet_type,
+          key_value: gas_giant.id
+        }
+      )
     ]
 
     request = JSONAPI::Request.new
     request.operations = operations
 
-    results = op.process(request)
+    operation_results = op.process(request)
 
-    assert_kind_of(Array, results)
-    assert_kind_of(JSONAPI::OperationResult, results[0])
-    assert_equal(:no_content, results[0].code)
+    assert_kind_of(JSONAPI::OperationResults, operation_results)
+    assert_kind_of(JSONAPI::OperationResult, operation_results.results[0])
+    assert_equal(:no_content, operation_results.results[0].code)
 
     saturn.reload
     assert_equal(saturn.planet_type_id, gas_giant.id)
 
     # Remove link
     operations = [
-      JSONAPI::ReplaceHasOneAssociationOperation.new(PlanetResource, saturn.id, :planet_type, nil)
+      JSONAPI::ReplaceHasOneAssociationOperation.new(
+        PlanetResource,
+        {
+          resource_id: saturn.id,
+          association_type: :planet_type,
+          key_value: nil
+        }
+      )
     ]
 
     request = JSONAPI::Request.new
     request.operations = operations
 
-    results = op.process(request)
+    op.process(request)
     saturn.reload
     assert_equal(saturn.planet_type_id, nil)
 
     # Reset
     operations = [
-      JSONAPI::ReplaceHasOneAssociationOperation.new(PlanetResource, saturn.id, :planet_type, 5)
+      JSONAPI::ReplaceHasOneAssociationOperation.new(
+        PlanetResource,
+        {
+          resource_id: saturn.id,
+          association_type: :planet_type,
+          key_value: 5
+        }
+      )
     ]
 
     request = JSONAPI::Request.new
     request.operations = operations
 
-    results = op.process(request)
+    op.process(request)
     saturn.reload
     assert_equal(saturn.planet_type_id, 5)
   end
@@ -169,13 +185,20 @@ class OperationsProcessorTest < Minitest::Test
     betaz.save!
 
     operations = [
-      JSONAPI::CreateHasManyAssociationOperation.new(PlanetTypeResource, gas_giant.id, :planets, [betax.id, betay.id, betaz.id])
+      JSONAPI::CreateHasManyAssociationOperation.new(
+        PlanetTypeResource,
+        {
+          resource_id: gas_giant.id,
+          association_type: :planets,
+          data: [betax.id, betay.id, betaz.id]
+        }
+      )
     ]
 
     request = JSONAPI::Request.new
     request.operations = operations
 
-    results = op.process(request)
+    op.process(request)
 
     betax.reload
     betay.reload
@@ -210,13 +233,20 @@ class OperationsProcessorTest < Minitest::Test
     betaz.save!
 
     operations = [
-      JSONAPI::ReplaceHasManyAssociationOperation.new(PlanetTypeResource, gas_giant.id, :planets, [betax.id, betay.id, betaz.id])
+      JSONAPI::ReplaceHasManyAssociationOperation.new(
+        PlanetTypeResource,
+        {
+          resource_id: gas_giant.id,
+          association_type: :planets,
+          data: [betax.id, betay.id, betaz.id]
+        }
+      )
     ]
 
     request = JSONAPI::Request.new
     request.operations = operations
 
-    results = op.process(request)
+    op.process(request)
 
     betax.reload
     betay.reload
@@ -243,19 +273,25 @@ class OperationsProcessorTest < Minitest::Test
     assert_equal(saturn.name, 'Satern')
 
     operations = [
-      JSONAPI::ReplaceFieldsOperation.new(PlanetResource, 1, {attributes: {'name' => 'saturn'}}),
+      JSONAPI::ReplaceFieldsOperation.new(
+        PlanetResource,
+        {
+          resource_id: 1,
+          data: {attributes: {'name' => 'saturn'}}
+        }
+      )
     ]
 
     request = JSONAPI::Request.new
     request.operations = operations
 
-    results = op.process(request)
+    operation_results = op.process(request)
 
-    assert_kind_of(Array, results)
-    assert_equal(results.size, 1)
+    assert_kind_of(JSONAPI::OperationResults, operation_results)
+    assert_equal(operation_results.results.size, 1)
 
-    assert_kind_of(JSONAPI::OperationResult, results[0])
-    assert_equal(:ok, results[0].code)
+    assert_kind_of(JSONAPI::ResourceOperationResult, operation_results.results[0])
+    assert_equal(:ok, operation_results.results[0].code)
 
     saturn = Planet.find(1)
 
@@ -272,47 +308,47 @@ class OperationsProcessorTest < Minitest::Test
     assert_equal(pluto.name, 'Pluto')
 
     operations = [
-      JSONAPI::RemoveResourceOperation.new(PlanetResource, 2),
+      JSONAPI::RemoveResourceOperation.new(PlanetResource, resource_id: 2),
     ]
 
     request = JSONAPI::Request.new
     request.operations = operations
 
-    results = op.process(request)
+    operation_results = op.process(request)
 
-    assert_kind_of(Array, results)
-    assert_equal(results.size, 1)
+    assert_kind_of(JSONAPI::OperationResults, operation_results)
+    assert_equal(operation_results.results.size, 1)
 
-    assert_kind_of(JSONAPI::OperationResult, results[0])
-    assert_equal(:no_content, results[0].code)
+    assert_kind_of(JSONAPI::OperationResult, operation_results.results[0])
+    assert_equal(:no_content, operation_results.results[0].code)
     assert_equal(Planet.count, count - 1)
   end
 
   def test_rollback_from_error
-    op = JSONAPI::ActiveRecordOperationsProcessor.new
+    op = ActiveRecordOperationsProcessor.new
 
     count = Planet.count
 
     operations = [
-      JSONAPI::RemoveResourceOperation.new(PlanetResource, 3),
-      JSONAPI::RemoveResourceOperation.new(PlanetResource, 4),
-      JSONAPI::RemoveResourceOperation.new(PlanetResource, 4)
+      JSONAPI::RemoveResourceOperation.new(PlanetResource, resource_id: 3),
+      JSONAPI::RemoveResourceOperation.new(PlanetResource, resource_id: 4),
+      JSONAPI::RemoveResourceOperation.new(PlanetResource, resource_id: 4)
     ]
 
     request = JSONAPI::Request.new
     request.operations = operations
 
-    results = op.process(request)
+    operation_results = op.process(request)
+
+    assert_kind_of(JSONAPI::OperationResults, operation_results)
 
     assert_equal(Planet.count, count)
 
-    assert_kind_of(Array, results)
-    assert_equal(results.size, 3)
+    assert_equal(operation_results.results.size, 3)
 
-    assert_kind_of(JSONAPI::OperationResult, results[0])
-    assert_equal(:no_content, results[0].code)
-    assert_equal(:no_content, results[1].code)
-    assert_equal(404, results[2].code)
+    assert_kind_of(JSONAPI::OperationResult, operation_results.results[0])
+    assert_equal(:no_content, operation_results.results[0].code)
+    assert_equal(:no_content, operation_results.results[1].code)
+    assert_equal(404, operation_results.results[2].code)
   end
-
 end

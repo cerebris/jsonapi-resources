@@ -1,4 +1,5 @@
 require 'jsonapi/resource'
+require 'jsonapi/response_document'
 require 'jsonapi/acts_as_resource_controller'
 require 'jsonapi/resource_controller'
 require 'jsonapi/resources/version'
@@ -16,3 +17,7 @@ require 'jsonapi/operations_processor'
 require 'jsonapi/active_record_operations_processor'
 require 'jsonapi/association'
 require 'jsonapi/include_directives'
+require 'jsonapi/operation_result'
+require 'jsonapi/operation_results'
+require 'jsonapi/callbacks'
+
