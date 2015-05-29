@@ -2291,6 +2291,10 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 end
 
 class Api::V4::BooksControllerTest < ActionController::TestCase
+  def setup
+    JSONAPI.configuration.json_key_format = :camelized_key
+  end
+
   def test_books_offset_pagination_meta
     JSONAPI.configuration.operations_processor = :counting_active_record
     Api::V4::BookResource.paginator :offset
