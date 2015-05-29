@@ -2306,3 +2306,19 @@ class Api::V4::BooksControllerTest < ActionController::TestCase
     JSONAPI.configuration.operations_processor = :active_record
   end
 end
+
+class CategoriesControllerTest < ActionController::TestCase
+  def test_index_default_filter
+    get :index
+    assert_response :success
+    assert json_response['data'].is_a?(Array)
+    assert_equal 3, json_response['data'].size
+  end
+
+  def test_index_default_filter_override
+    get :index, { filter: { status: 'inactive' } }
+    assert_response :success
+    assert json_response['data'].is_a?(Array)
+    assert_equal 4, json_response['data'].size
+  end
+end
