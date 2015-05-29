@@ -135,4 +135,84 @@ class ResourceTest < ActiveSupport::TestCase
   def test_updateable_fields_does_not_include_id
     assert(!CatResource.updateable_fields.include?(:id))
   end
+
+  def test_has_many_association_filters
+    post_resource = PostResource.new(Post.find(1))
+    comments = post_resource.comments
+    assert_equal(2, comments.size)
+
+    # define apply_filters method on post resource to not respect filters
+    PostResource.instance_eval do
+      def apply_filters(records, filters)
+        records
+      end
+    end
+
+    filtered_comments = post_resource.comments({ filters: { body: 'i liked it' } })
+    assert_equal(1, filtered_comments.size)
+
+    # reset method to original implementation
+    PostResource.instance_eval do
+      def apply_filters(records, filters)
+        super
+      end
+    end
+  end
+
+  def test_has_many_association_sorts
+    post_resource = PostResource.new(Post.find(1))
+    comment_ids = post_resource.comments.map{|c| c.model.id }
+    assert_equal [1,2], comment_ids
+
+    # define apply_filters method on post resource to not respect filters
+    PostResource.instance_eval do
+      def apply_sort(records, criteria)
+        records
+      end
+    end
+
+    sorted_comment_ids = post_resource.comments(sort_criteria: [{ field: 'id', direction: 'desc'}]).map{|c| c.model.id }
+    assert_equal [2,1], sorted_comment_ids
+
+    # reset method to original implementation
+    PostResource.instance_eval do
+      def apply_sort(records, criteria)
+        super
+      end
+    end
+  end
+
+  def test_has_many_association_pagination
+    post_resource = PostResource.new(Post.find(1))
+    comments = post_resource.comments
+    assert_equal 2, comments.size
+
+    # define apply_filters method on post resource to not respect filters
+    PostResource.instance_eval do
+      def apply_pagination(records, criteria)
+        records
+      end
+    end
+
+    paginator_class = Class.new(JSONAPI::Paginator) do
+      def initialize(params)
+        # param parsing and validation here
+        @page = params.to_i
+      end
+
+      def apply(relation)
+        relation.offset(@page).limit(1)
+      end
+    end
+
+    paged_comments = post_resource.comments(paginator: paginator_class.new(1))
+    assert_equal 1, paged_comments.size
+
+    # reset method to original implementation
+    PostResource.instance_eval do
+      def apply_pagination(records, criteria)
+        super
+      end
+    end
+  end
 end
