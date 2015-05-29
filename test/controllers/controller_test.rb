@@ -2298,7 +2298,7 @@ class Api::V4::BooksControllerTest < ActionController::TestCase
     assert_response :success
     assert_equal 12, json_response['data'].size
     assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
-    assert_equal 1000, json_response['meta']['total_records']
+    assert_equal 1000, json_response['meta']['totalRecords']
     JSONAPI.configuration.operations_processor = :active_record
   end
 end

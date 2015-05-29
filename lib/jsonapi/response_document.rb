@@ -3,6 +3,8 @@ module JSONAPI
     def initialize(operation_results, options = {})
       @operation_results = operation_results
       @options = options
+
+      @key_formatter = @options.fetch(:key_formatter)
     end
 
     def contents
@@ -31,7 +33,7 @@ module JSONAPI
         include_directives: @options.fetch(:include_directives),
         fields: @options.fetch(:fields),
         base_url: @options.fetch(:base_url),
-        key_formatter: @options.fetch(:key_formatter),
+        key_formatter: @key_formatter,
         route_formatter: @options.fetch(:route_formatter)
       )
     end
@@ -45,7 +47,7 @@ module JSONAPI
         meta.merge!(result.meta)
       end
 
-      meta
+      meta.deep_transform_keys { |key| @key_formatter.format(key) }
     end
 
     def results_to_hash
@@ -62,7 +64,7 @@ module JSONAPI
             serializer.serialize_to_hash(result.resources)
           when JSONAPI::LinksObjectOperationResult
             serializer.serialize_to_links_hash(result.parent_resource,
-                                                result.association)
+                                               result.association)
           when JSONAPI::OperationResult
             {}
           end
