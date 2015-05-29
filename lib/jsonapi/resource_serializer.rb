@@ -108,7 +108,7 @@ module JSONAPI
       attributes = attribute_hash(source)
       obj_hash['attributes'] = attributes unless attributes.empty?
 
-      relationships = relationships_hash(source, include_directives)
+      relationships = relationship_data(source, include_directives)
       obj_hash['relationships'] = relationships unless relationships.nil? || relationships.empty?
 
       return obj_hash
@@ -131,18 +131,6 @@ module JSONAPI
           hash[format_key(name)] = format_value(source.send(name), format)
         end
       end
-    end
-
-    def relationships_hash(source, include_directives)
-      rel_hash = {}
-
-      links = relationship_links(source)
-      rel_hash['links'] = links unless links.empty?
-
-      data = relationship_data(source, include_directives)
-      rel_hash['data'] = data unless data.empty?
-
-      # links_hash(source, include_directives)
     end
 
     def relationship_data(source, include_directives)
