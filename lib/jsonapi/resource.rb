@@ -589,9 +589,9 @@ module JSONAPI
               resources = []
               if resource_class
                 records = public_send(associated_records_method_name)
-                records = self.class.apply_filters(records, filters)
-                records = self.class.apply_sort(records, self.class.construct_order_options(sort_criteria))
-                records = self.class.apply_pagination(records, paginator)
+                records = resource_class.apply_filters(records, filters)
+                records = resource_class.apply_sort(records, self.class.construct_order_options(sort_criteria))
+                records = resource_class.apply_pagination(records, paginator)
                 records.each do |record|
                   resources.push resource_class.new(record, @context)
                 end

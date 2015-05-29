@@ -537,6 +537,8 @@ class CommentResource < JSONAPI::Resource
   has_one :post
   has_one :author, class_name: 'Person'
   has_many :tags
+
+  filters :body
 end
 
 class TagResource < JSONAPI::Resource
