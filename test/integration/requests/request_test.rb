@@ -70,10 +70,10 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_get_camelized_route_and_links
     JSONAPI.configuration.json_key_format = :camelized_key
     JSONAPI.configuration.route_format = :camelized_route
-    get '/api/v4/expenseEntries/1/links/isoCurrency'
+    get '/api/v4/expenseEntries/1/relationships/isoCurrency'
     assert_equal 200, status
     assert_hash_equals({'links' => {
-                         'self' => 'http://www.example.com/api/v4/expenseEntries/1/links/isoCurrency',
+                         'self' => 'http://www.example.com/api/v4/expenseEntries/1/relationships/isoCurrency',
                          'related' => 'http://www.example.com/api/v4/expenseEntries/1/isoCurrency'
                        },
                        'data' => {
@@ -205,21 +205,21 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_update_association_without_content_type
     ruby = Section.find_by(name: 'ruby')
-    patch '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json
+    patch '/posts/3/relationships/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json
 
     assert_equal 415, status
   end
 
   def test_patch_update_association_has_one
     ruby = Section.find_by(name: 'ruby')
-    patch '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    patch '/posts/3/relationships/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
   end
 
   def test_put_update_association_has_one
     ruby = Section.find_by(name: 'ruby')
-    put '/posts/3/links/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    put '/posts/3/relationships/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
   end
@@ -228,14 +228,14 @@ class RequestTest < ActionDispatch::IntegrationTest
     # Comments are acts_as_set=false so PUT/PATCH should respond with 403
 
     rogue = Comment.find_by(body: 'Rogue Comment Here')
-    patch '/posts/5/links/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    patch '/posts/5/relationships/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 403, status
   end
 
   def test_post_update_association_has_many
     rogue = Comment.find_by(body: 'Rogue Comment Here')
-    post '/posts/5/links/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    post '/posts/5/relationships/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
   end
@@ -244,7 +244,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     # Comments are acts_as_set=false so PUT/PATCH should respond with 403. Note: JR currently treats PUT and PATCH as equivalent
 
     rogue = Comment.find_by(body: 'Rogue Comment Here')
-    put '/posts/5/links/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    put '/posts/5/relationships/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 403, status
   end
@@ -416,7 +416,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
     assert_hash_equals(json_response, {
                                       'links' => {
-                                        'self' => 'http://www.example.com/posts/1/links/author',
+                                        'self' => 'http://www.example.com/posts/1/relationships/author',
                                         'related' => 'http://www.example.com/posts/1/author'
                                       },
                                       'data' => {type: 'people', id: '1'}
@@ -433,7 +433,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_hash_equals(json_response,
                        {
                          'links' => {
-                           'self' => 'http://www.example.com/posts/1/links/tags',
+                           'self' => 'http://www.example.com/posts/1/relationships/tags',
                            'related' => 'http://www.example.com/posts/1/tags'
                           },
                           'data' => [
@@ -460,7 +460,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_hash_equals(json_response,
                        {
                          'links' => {
-                           'self' => 'http://www.example.com/posts/5/links/tags',
+                           'self' => 'http://www.example.com/posts/5/relationships/tags',
                            'related' => 'http://www.example.com/posts/5/tags'
                          },
                          'data' => [
@@ -644,7 +644,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_post_has_many_link
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
-    post '/api/v6/purchase-orders/3/links/line-items',
+    post '/api/v6/purchase-orders/3/relationships/line-items',
           {
             'data' => [
               {'type' => 'line-items', 'id' => '3'},
@@ -658,7 +658,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_patch_has_many_link
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
-    patch '/api/v6/purchase-orders/3/links/order-flags',
+    patch '/api/v6/purchase-orders/3/relationships/order-flags',
          {
            'data' => [
              {'type' => 'order-flags', 'id' => '1'},
@@ -672,7 +672,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_patch_has_one
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
-    patch '/api/v6/line-items/5/links/purchase-order',
+    patch '/api/v6/line-items/5/relationships/purchase-order',
          {
            'data' => {'type' => 'purchase-orders', 'id' => '3'}
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE

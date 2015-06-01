@@ -217,7 +217,7 @@ module JSONAPI
     end
 
     def self_link(source, association)
-      "#{self_href(source)}/links/#{format_route(association.name)}"
+      "#{self_href(source)}/relationships/#{format_route(association.name)}"
     end
 
     def related_link(source, association)

@@ -95,17 +95,17 @@ module ActionDispatch
           methods = links_methods(options)
 
           if methods.include?(:show)
-            match "links/#{formatted_association_name}", controller: options[:controller],
+            match "relationships/#{formatted_association_name}", controller: options[:controller],
                   action: 'show_association', association: link_type.to_s, via: [:get]
           end
 
           if methods.include?(:update)
-            match "links/#{formatted_association_name}", controller: options[:controller],
+            match "relationships/#{formatted_association_name}", controller: options[:controller],
                   action: 'update_association', association: link_type.to_s, via: [:put, :patch]
           end
 
           if methods.include?(:destroy)
-            match "links/#{formatted_association_name}", controller: options[:controller],
+            match "relationships/#{formatted_association_name}", controller: options[:controller],
                   action: 'destroy_association', association: link_type.to_s, via: [:delete]
           end
         end
@@ -121,22 +121,22 @@ module ActionDispatch
           methods = links_methods(options)
 
           if methods.include?(:show)
-            match "links/#{formatted_association_name}", controller: options[:controller],
+            match "relationships/#{formatted_association_name}", controller: options[:controller],
                    action: 'show_association', association: link_type.to_s, via: [:get]
           end
 
           if methods.include?(:create)
-            match "links/#{formatted_association_name}", controller: options[:controller],
+            match "relationships/#{formatted_association_name}", controller: options[:controller],
                   action: 'create_association', association: link_type.to_s, via: [:post]
           end
 
           if methods.include?(:update)
-            match "links/#{formatted_association_name}", controller: options[:controller],
+            match "relationships/#{formatted_association_name}", controller: options[:controller],
                   action: 'update_association', association: link_type.to_s, via: [:put, :patch]
           end
 
           if methods.include?(:destroy)
-            match "links/#{formatted_association_name}/:keys", controller: options[:controller],
+            match "relationships/#{formatted_association_name}/:keys", controller: options[:controller],
                   action: 'destroy_association', association: link_type.to_s, via: [:delete]
           end
         end

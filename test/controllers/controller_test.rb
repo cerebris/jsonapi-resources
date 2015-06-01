@@ -1394,7 +1394,7 @@ class PostsControllerTest < ActionController::TestCase
                           id: '1'
                         },
                         links: {
-                          self: 'http://test.host/posts/1/links/author',
+                          self: 'http://test.host/posts/1/relationships/author',
                           related: 'http://test.host/posts/1/author'
                         }
                        }
@@ -1409,7 +1409,7 @@ class PostsControllerTest < ActionController::TestCase
                            {type: 'tags', id: '5'}
                          ],
                          links: {
-                           self: 'http://test.host/posts/2/links/tags',
+                           self: 'http://test.host/posts/2/relationships/tags',
                            related: 'http://test.host/posts/2/tags'
                          }
                        }
@@ -1428,7 +1428,7 @@ class PostsControllerTest < ActionController::TestCase
                        {
                          data: nil,
                          links: {
-                           self: 'http://test.host/posts/17/links/author',
+                           self: 'http://test.host/posts/17/relationships/author',
                            related: 'http://test.host/posts/17/author'
                          }
                        }
@@ -1881,19 +1881,19 @@ class PeopleControllerTest < ActionController::TestCase
          relationships: {
            comments: {
              links: {
-               self: 'http://test.host/people/1/links/comments',
+               self: 'http://test.host/people/1/relationships/comments',
                related: 'http://test.host/people/1/comments'
              }
            },
            posts: {
              links: {
-               self: 'http://test.host/people/1/links/posts',
+               self: 'http://test.host/people/1/relationships/posts',
                related: 'http://test.host/people/1/posts'
              }
            },
            preferences: {
              links: {
-               self: 'http://test.host/people/1/links/preferences',
+               self: 'http://test.host/people/1/relationships/preferences',
                related: 'http://test.host/people/1/preferences'
              },
              data: {
@@ -1903,7 +1903,7 @@ class PeopleControllerTest < ActionController::TestCase
            },
            "hair-cut" => {
              "links" => {
-               "self" => "http://test.host/people/1/links/hair_cut",
+               "self" => "http://test.host/people/1/relationships/hair_cut",
                "related" => "http://test.host/people/1/hair_cut"
              },
              "data" => nil
@@ -2057,7 +2057,7 @@ class Api::V1::PostsControllerTest < ActionController::TestCase
   def test_show_post_namespaced
     get :show, {id: '1'}
     assert_response :success
-    assert_equal 'http://test.host/api/v1/posts/1/links/writer', json_response['data']['relationships']['writer']['links']['self']
+    assert_equal 'http://test.host/api/v1/posts/1/relationships/writer', json_response['data']['relationships']['writer']['links']['self']
   end
 
   def test_show_post_namespaced_include
