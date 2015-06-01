@@ -18,7 +18,7 @@ module JSONAPI
     def initialize(resource_klass, options = {})
       @filters = options[:filters]
       @include_directives = options[:include_directives]
-      @sort_criteria = options[:sort_criteria]
+      @sort_criteria = options.fetch(:sort_criteria, [])
       @paginator = options[:paginator]
       super(resource_klass, false)
     end
@@ -42,7 +42,7 @@ module JSONAPI
 
     def initialize(resource_klass, options = {})
       @id = options.fetch(:id)
-      @include_directives = options.fetch(:include_directives)
+      @include_directives = options[:include_directives]
       @transactional = false
       super(resource_klass, options)
     end
@@ -113,9 +113,9 @@ module JSONAPI
       @source_klass = options.fetch(:source_klass)
       @source_id = options.fetch(:source_id)
       @association_type = options.fetch(:association_type)
-      @filters = options.fetch(:filters)
-      @sort_criteria = options.fetch(:sort_criteria)
-      @paginator = options.fetch(:paginator)
+      @filters = options[:filters]
+      @sort_criteria = options[:sort_criteria]
+      @paginator = options[:paginator]
       @transactional = false
       super(resource_klass, options)
     end

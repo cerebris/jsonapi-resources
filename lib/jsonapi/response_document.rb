@@ -4,7 +4,7 @@ module JSONAPI
       @operation_results = operation_results
       @options = options
 
-      @key_formatter = @options.fetch(:key_formatter)
+      @key_formatter = @options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
     end
 
     def contents
@@ -29,12 +29,12 @@ module JSONAPI
     def serializer
       @serializer ||= JSONAPI::ResourceSerializer.new(
         @options.fetch(:primary_resource_klass),
-        include: @options.fetch(:include),
-        include_directives: @options.fetch(:include_directives),
-        fields: @options.fetch(:fields),
-        base_url: @options.fetch(:base_url),
+        include: @options.fetch(:include, []),
+        include_directives: @options[:include_directives],
+        fields: @options[:fields],
+        base_url: @options.fetch(:base_url, ''),
         key_formatter: @key_formatter,
-        route_formatter: @options.fetch(:route_formatter)
+        route_formatter: @options.fetch(:route_formatter, JSONAPI.configuration.route_formatter)
       )
     end
 
