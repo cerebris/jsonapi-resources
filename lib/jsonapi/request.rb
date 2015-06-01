@@ -211,6 +211,11 @@ module JSONAPI
     def parse_filters(filters)
       return unless filters
 
+      unless filters.class.method_defined?(:each)
+        @errors.concat(JSONAPI::Exceptions::InvalidFiltersSyntax.new(filters).errors)
+        return
+      end
+
       filters.each do |key, value|
         filter = unformat_key(key)
         if @resource_klass._allowed_filter?(filter)

@@ -1,5 +1,16 @@
 require File.expand_path('../../../test_helper', __FILE__)
 
+class CatResource < JSONAPI::Resource
+  attribute :id
+  attribute :name
+  attribute :breed
+
+  has_one :mother, class_name: 'Cat'
+  has_one :father, class_name: 'Cat'
+
+  filters :name
+end
+
 class JSONAPIRequestTest < ActiveSupport::TestCase
   def test_parse_includes_underscored
     params = ActionController::Parameters.new(
@@ -148,5 +159,42 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
 
     refute request.errors.empty?
     assert_equal 'expense_entries is not a valid resource.', request.errors[0].detail
+  end
+
+  def test_parse_filters_with_valid_filters
+    setup_request
+    @request.parse_filters({name: 'Whiskers'})
+    assert_equal(@request.filters[:name], 'Whiskers')
+    assert_equal(@request.errors, [])
+  end
+
+  def test_parse_filters_with_non_valid_filter
+    setup_request
+    @request.parse_filters({breed: 'Whiskers'}) # breed is not a set filter
+    assert_equal(@request.filters, {})
+    assert_equal(@request.errors.count, 1)
+    assert_equal(@request.errors.first.title, "Filter not allowed")
+  end
+
+  def test_parse_filters_with_no_filters
+    setup_request
+    @request.parse_filters(nil)
+    assert_equal(@request.filters, {})
+    assert_equal(@request.errors, [])
+  end
+
+  def test_parse_filters_with_invalid_filters_param
+    setup_request
+    @request.parse_filters('noeach') # String does not implement #each
+    assert_equal(@request.filters, {})
+    assert_equal(@request.errors.count, 1)
+    assert_equal(@request.errors.first.title, "Invalid filters syntax")
+  end
+
+  private
+
+  def setup_request
+    @request = JSONAPI::Request.new
+    @request.resource_klass = CatResource
   end
 end
