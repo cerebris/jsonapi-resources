@@ -67,6 +67,20 @@ module JSONAPI
       end
     end
 
+    class InvalidFiltersSyntax < Error
+      attr_accessor :filters
+      def initialize(filters)
+        @filters = filters
+      end
+
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::INVALID_FILTERS_SYNTAX,
+                             status: :bad_request,
+                             title: 'Invalid filters syntax',
+                             detail: "#{filters} is not a valid syntax for filtering.")]
+      end
+    end
+
     class FilterNotAllowed < Error
       attr_accessor :filter
       def initialize(filter)
