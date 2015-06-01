@@ -520,6 +520,8 @@ module JSONAPI
       end
 
       def construct_order_options(sort_params)
+        return {} unless sort_params
+
         sort_params.each_with_object({}) { |sort, order_hash|
           field = sort[:field] == 'id' ? _primary_key : sort[:field]
           order_hash[field] = sort[:direction]
