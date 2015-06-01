@@ -18,37 +18,37 @@ class RoutesTest < ActionDispatch::IntegrationTest
   end
 
   def test_routing_posts_links_author_show
-    assert_routing({path: '/posts/1/links/author', method: :get},
+    assert_routing({path: '/posts/1/relationships/author', method: :get},
                    {controller: 'posts', action: 'show_association', post_id: '1', association: 'author'})
   end
 
   def test_routing_posts_links_author_destroy
-    assert_routing({path: '/posts/1/links/author', method: :delete},
+    assert_routing({path: '/posts/1/relationships/author', method: :delete},
                    {controller: 'posts', action: 'destroy_association', post_id: '1', association: 'author'})
   end
 
   def test_routing_posts_links_author_update
-    assert_routing({path: '/posts/1/links/author', method: :patch},
+    assert_routing({path: '/posts/1/relationships/author', method: :patch},
                    {controller: 'posts', action: 'update_association', post_id: '1', association: 'author'})
   end
 
   def test_routing_posts_links_tags_show
-    assert_routing({path: '/posts/1/links/tags', method: :get},
+    assert_routing({path: '/posts/1/relationships/tags', method: :get},
                    {controller: 'posts', action: 'show_association', post_id: '1', association: 'tags'})
   end
 
   def test_routing_posts_links_tags_destroy
-    assert_routing({path: '/posts/1/links/tags/1,2', method: :delete},
+    assert_routing({path: '/posts/1/relationships/tags/1,2', method: :delete},
                    {controller: 'posts', action: 'destroy_association', post_id: '1', keys: '1,2', association: 'tags'})
   end
 
   def test_routing_posts_links_tags_create
-    assert_routing({path: '/posts/1/links/tags', method: :post},
+    assert_routing({path: '/posts/1/relationships/tags', method: :post},
                    {controller: 'posts', action: 'create_association', post_id: '1', association: 'tags'})
   end
 
   def test_routing_posts_links_tags_update_acts_as_set
-    assert_routing({path: '/posts/1/links/tags', method: :patch},
+    assert_routing({path: '/posts/1/relationships/tags', method: :patch},
                    {controller: 'posts', action: 'update_association', post_id: '1', association: 'tags'})
   end
 
@@ -64,13 +64,13 @@ class RoutesTest < ActionDispatch::IntegrationTest
   end
 
   def test_routing_v1_posts_links_writer_show
-    assert_routing({path: '/api/v1/posts/1/links/writer', method: :get},
+    assert_routing({path: '/api/v1/posts/1/relationships/writer', method: :get},
                    {controller: 'api/v1/posts', action: 'show_association', post_id: '1', association: 'writer'})
   end
 
   # V2
   def test_routing_v2_posts_links_author_show
-    assert_routing({path: '/api/v2/posts/1/links/author', method: :get},
+    assert_routing({path: '/api/v2/posts/1/relationships/author', method: :get},
                    {controller: 'api/v2/posts', action: 'show_association', post_id: '1', association: 'author'})
   end
 
@@ -100,7 +100,7 @@ class RoutesTest < ActionDispatch::IntegrationTest
     assert_routing({path: '/api/v4/expenseEntries/1', method: :get},
                    {action: 'show', controller: 'api/v4/expense_entries', id: '1'})
 
-    assert_routing({path: '/api/v4/expenseEntries/1/links/isoCurrency', method: :get},
+    assert_routing({path: '/api/v4/expenseEntries/1/relationships/isoCurrency', method: :get},
                    {controller: 'api/v4/expense_entries', action: 'show_association', expense_entry_id: '1', association: 'iso_currency'})
   end
 
@@ -119,7 +119,7 @@ class RoutesTest < ActionDispatch::IntegrationTest
     assert_routing({path: '/api/v5/expense-entries/1', method: :get},
                    {action: 'show', controller: 'api/v5/expense_entries', id: '1'})
 
-    assert_routing({path: '/api/v5/expense-entries/1/links/iso-currency', method: :get},
+    assert_routing({path: '/api/v5/expense-entries/1/relationships/iso-currency', method: :get},
                    {controller: 'api/v5/expense_entries', action: 'show_association', expense_entry_id: '1', association: 'iso_currency'})
   end
 
@@ -129,7 +129,7 @@ class RoutesTest < ActionDispatch::IntegrationTest
   end
 
   def test_routing_author_links_posts_create_not_acts_as_set
-    assert_routing({path: '/api/v5/authors/1/links/posts', method: :post},
+    assert_routing({path: '/api/v5/authors/1/relationships/posts', method: :post},
                    {controller: 'api/v5/authors', action: 'create_association', author_id: '1', association: 'posts'})
   end
 
@@ -146,12 +146,12 @@ class RoutesTest < ActionDispatch::IntegrationTest
   # end
 
   # def test_routing_posts_links_author_except_destroy
-  #   assert_routing({ path: '/api/v3/posts/1/links/author', method: :delete },
+  #   assert_routing({ path: '/api/v3/posts/1/relationships/author', method: :delete },
   #                  { controller: 'api/v3/posts', action: 'destroy_association', post_id: '1', association: 'author' })
   # end
   #
   # def test_routing_posts_links_tags_only_create_show
-  #   assert_routing({ path: '/api/v3/posts/1/links/tags/1,2', method: :delete },
+  #   assert_routing({ path: '/api/v3/posts/1/relationships/tags/1,2', method: :delete },
   #                  { controller: 'api/v3/posts', action: 'destroy_association', post_id: '1', keys: '1,2', association: 'tags' })
   # end
 
