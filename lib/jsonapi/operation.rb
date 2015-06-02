@@ -149,7 +149,7 @@ module JSONAPI
       resource = @resource_klass.create(context)
       result = resource.replace_fields(@data)
 
-      return JSONAPI::ResourceOperationResult.new(result == :default ? :created : :result, resource)
+      return JSONAPI::ResourceOperationResult.new(result == :default ? :created : result, resource)
 
     rescue JSONAPI::Exceptions::Error => e
       return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
@@ -187,7 +187,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: context)
       result = resource.replace_fields(data)
 
-      return JSONAPI::ResourceOperationResult.new(result == :default ? :ok : :result, resource)
+      return JSONAPI::ResourceOperationResult.new(result == :default ? :ok : result, resource)
     end
   end
 
