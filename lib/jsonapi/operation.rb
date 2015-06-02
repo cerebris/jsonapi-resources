@@ -147,9 +147,9 @@ module JSONAPI
 
     def apply(context)
       resource = @resource_klass.create(context)
-      resource.replace_fields(@data)
+      result = resource.replace_fields(@data)
 
-      return JSONAPI::ResourceOperationResult.new(:created, resource)
+      return JSONAPI::ResourceOperationResult.new(result == :default ? :created : :result, resource)
 
     rescue JSONAPI::Exceptions::Error => e
       return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
@@ -185,9 +185,9 @@ module JSONAPI
 
     def apply(context)
       resource = @resource_klass.find_by_key(@resource_id, context: context)
-      resource.replace_fields(data)
+      result = resource.replace_fields(data)
 
-      return JSONAPI::ResourceOperationResult.new(:ok, resource)
+      return JSONAPI::ResourceOperationResult.new(result == :default ? :ok : :result, resource)
     end
   end
 
@@ -203,9 +203,9 @@ module JSONAPI
 
     def apply(context)
       resource = @resource_klass.find_by_key(@resource_id, context: context)
-      resource.replace_has_one_link(@association_type, @key_value)
+      result = resource.replace_has_one_link(@association_type, @key_value)
 
-      return JSONAPI::OperationResult.new(:no_content)
+      return JSONAPI::OperationResult.new(result == :default ? :no_content : result)
     end
   end
 
@@ -221,9 +221,9 @@ module JSONAPI
 
     def apply(context)
       resource = @resource_klass.find_by_key(@resource_id, context: context)
-      resource.create_has_many_links(@association_type, @data)
+      result = resource.create_has_many_links(@association_type, @data)
 
-      return JSONAPI::OperationResult.new(:no_content)
+      return JSONAPI::OperationResult.new(result == :default ? :no_content : result)
     end
   end
 
@@ -239,9 +239,9 @@ module JSONAPI
 
     def apply(context)
       resource = @resource_klass.find_by_key(@resource_id, context: context)
-      resource.replace_has_many_links(@association_type, @data)
+      result = resource.replace_has_many_links(@association_type, @data)
 
-      return JSONAPI::OperationResult.new(:no_content)
+      return JSONAPI::OperationResult.new(result == :default ? :no_content : result)
     end
   end
 
@@ -257,9 +257,9 @@ module JSONAPI
 
     def apply(context)
       resource = @resource_klass.find_by_key(@resource_id, context: context)
-      resource.remove_has_many_link(@association_type, @associated_key)
+      result = resource.remove_has_many_link(@association_type, @associated_key)
 
-      return JSONAPI::OperationResult.new(:no_content)
+      return JSONAPI::OperationResult.new(result == :default ? :no_content : result)
     end
   end
 
@@ -274,9 +274,9 @@ module JSONAPI
 
     def apply(context)
       resource = @resource_klass.find_by_key(@resource_id, context: context)
-      resource.remove_has_one_link(@association_type)
+      result = resource.remove_has_one_link(@association_type)
 
-      return JSONAPI::OperationResult.new(:no_content)
+      return JSONAPI::OperationResult.new(result == :default ? :no_content : result)
     end
   end
 end
