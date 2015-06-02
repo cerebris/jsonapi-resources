@@ -1983,7 +1983,7 @@ class BreedsControllerTest < ActionController::TestCase
            }
          }
 
-    assert_response :created
+    assert_response :accepted
     assert json_response['data'].is_a?(Hash)
     assert_equal 'Tabby', json_response['data']['attributes']['name']
   end
@@ -2017,7 +2017,7 @@ class BreedsControllerTest < ActionController::TestCase
            }
          }
 
-    assert_response :created
+    assert_response :accepted
     assert json_response['data'].is_a?(Hash)
     assert_equal 'Calic', json_response['data']['attributes']['name']
 

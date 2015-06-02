@@ -701,6 +701,11 @@ class BreedResource < JSONAPI::Resource
   def self.find_by_key(id, options = {})
     BreedResource.new($breed_data.breeds[id.to_i], options[:context])
   end
+
+  def _save
+    super
+    return :accepted
+  end
 end
 
 class PlanetResource < JSONAPI::Resource
