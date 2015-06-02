@@ -332,18 +332,22 @@ module JSONAPI
 
       def apply_filters(records, filters)
         required_includes = []
-        filters.each do |filter, value|
-          if _associations.include?(filter)
-            if _associations[filter].is_a?(JSONAPI::Association::HasMany)
-              required_includes.push(filter)
-              records = apply_filter(records, "#{filter}.#{_associations[filter].primary_key}", value)
+
+        if filters
+          filters.each do |filter, value|
+            if _associations.include?(filter)
+              if _associations[filter].is_a?(JSONAPI::Association::HasMany)
+                required_includes.push(filter)
+                records = apply_filter(records, "#{filter}.#{_associations[filter].primary_key}", value)
+              else
+                records = apply_filter(records, "#{_associations[filter].foreign_key}", value)
+              end
             else
-              records = apply_filter(records, "#{_associations[filter].foreign_key}", value)
+              records = apply_filter(records, filter, value)
             end
-          else
-            records = apply_filter(records, filter, value)
           end
         end
+
         if required_includes.any?
           records.includes(required_includes)
         elsif records.respond_to? :to_ary
@@ -520,6 +524,8 @@ module JSONAPI
       end
 
       def construct_order_options(sort_params)
+        return {} unless sort_params
+
         sort_params.each_with_object({}) { |sort, order_hash|
           field = sort[:field] == 'id' ? _primary_key : sort[:field]
           order_hash[field] = sort[:direction]

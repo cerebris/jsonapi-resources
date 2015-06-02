@@ -144,7 +144,9 @@ class ResourceTest < ActiveSupport::TestCase
     # define apply_filters method on post resource to not respect filters
     PostResource.instance_eval do
       def apply_filters(records, filters)
+        # :nocov:
         records
+        # :nocov:
       end
     end
 
@@ -154,7 +156,9 @@ class ResourceTest < ActiveSupport::TestCase
     # reset method to original implementation
     PostResource.instance_eval do
       def apply_filters(records, filters)
+        # :nocov:
         super
+        # :nocov:
       end
     end
   end
@@ -167,7 +171,9 @@ class ResourceTest < ActiveSupport::TestCase
     # define apply_filters method on post resource to not respect filters
     PostResource.instance_eval do
       def apply_sort(records, criteria)
+        # :nocov:
         records
+        # :nocov:
       end
     end
 
@@ -177,7 +183,9 @@ class ResourceTest < ActiveSupport::TestCase
     # reset method to original implementation
     PostResource.instance_eval do
       def apply_sort(records, criteria)
+        # :nocov:
         super
+        # :nocov:
       end
     end
   end
@@ -190,7 +198,9 @@ class ResourceTest < ActiveSupport::TestCase
     # define apply_filters method on post resource to not respect filters
     PostResource.instance_eval do
       def apply_pagination(records, criteria, order_options)
+        # :nocov:
         records
+        # :nocov:
       end
     end
 
@@ -211,7 +221,9 @@ class ResourceTest < ActiveSupport::TestCase
     # reset method to original implementation
     PostResource.instance_eval do
       def apply_pagination(records, criteria, order_options)
+        # :nocov:
         super
+        # :nocov:
       end
     end
   end
