@@ -42,11 +42,16 @@ module JSONAPI
       else
         run_callbacks is_new? ? :create : :update do
           @changing = true
+          result = nil
           run_callbacks callback do
-            yield
+            result = yield
           end
 
-          save if @save_needed || is_new?
+          if @save_needed || is_new?
+            save
+          else
+            return result
+          end
         end
       end
     end
@@ -118,7 +123,8 @@ module JSONAPI
 
       saved = @model.save
       @save_needed = !saved
-      saved
+
+      return :default
     end
 
     def _remove
@@ -139,6 +145,8 @@ module JSONAPI
           raise JSONAPI::Exceptions::HasManyRelationExists.new(association_key_value)
         end
       end
+
+      return :default
     end
 
     def _replace_has_many_links(association_type, association_key_values)
@@ -146,6 +154,8 @@ module JSONAPI
 
       send("#{association.foreign_key}=", association_key_values)
       @save_needed = true
+
+      return :default
     end
 
     def _replace_has_one_link(association_type, association_key_value)
@@ -159,6 +169,8 @@ module JSONAPI
       association = self.class._associations[association_type]
 
       @model.send(association.type).delete(key)
+
+      return :default
     end
 
     def _remove_has_one_link(association_type)
