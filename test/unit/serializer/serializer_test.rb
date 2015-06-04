@@ -1027,18 +1027,6 @@ class SerializerTest < ActionDispatch::IntegrationTest
             },
             links: {
               self: '/posts/1'
-            },
-            relationships: {
-              author: {
-                links: {
-                  self: '/posts/1/relationships/author',
-                  related: '/posts/1/author'
-                },
-                data: {
-                  type: 'people',
-                  id: '1'
-                }
-              }
             }
           },
           {
@@ -1049,18 +1037,6 @@ class SerializerTest < ActionDispatch::IntegrationTest
             },
             links: {
               self: '/posts/2'
-            },
-            relationships: {
-              author: {
-                links: {
-                  self: '/posts/2/relationships/author',
-                  related: '/posts/2/author'
-                },
-                data: {
-                  type: 'people',
-                  id: '1'
-                }
-              }
             }
           }
         ],
@@ -1073,18 +1049,6 @@ class SerializerTest < ActionDispatch::IntegrationTest
             },
             links: {
               self: '/posts/11'
-            },
-            relationships: {
-              author: {
-                links: {
-                  self: '/posts/11/relationships/author',
-                  related: '/posts/11/author'
-                },
-                data: {
-                  type: 'people',
-                  id: '1'
-                }
-              }
             }
           },
           {
@@ -1217,7 +1181,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
                                       include: ['comments', 'author', 'comments.tags', 'author.posts'],
                                       fields: {
                                         people: [:id, :email, :comments],
-                                        posts: [:id, :title, :author],
+                                        posts: [:id, :title],
                                         tags: [:name],
                                         comments: [:id, :body, :post]
                                       }).serialize_to_hash(posts)
