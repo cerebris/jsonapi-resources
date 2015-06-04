@@ -137,7 +137,6 @@ module JSONAPI
         operation_results,
         {
           primary_resource_klass: resource_klass,
-          include: @request ? @request.include : nil,
           include_directives: @request ? @request.include_directives : nil,
           fields: @request ? @request.fields : nil,
           base_url: base_url,
