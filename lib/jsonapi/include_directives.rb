@@ -2,7 +2,7 @@ module JSONAPI
   class IncludeDirectives
 
     # Construct an IncludeDirectives Hash from an array of dot separated include strings.
-    # For example [:posts, 'posts.comments', 'posts.comments.tags']
+    # For example ['posts.comments.tags']
     # will transform into =>
     # {
     #   :posts=>{
@@ -55,13 +55,12 @@ module JSONAPI
 
     def parse_include(include)
       parts = include.split('.')
-        local_path = ''
-      parts.each_with_index do |part, index|
-        local_path += local_path.length > 0 ? ".#{part}" : part
+      local_path = ''
+
+      parts.each do |name|
+        local_path += local_path.length > 0 ? ".#{name}" : name
         related = get_related(local_path)
-        if index == parts.length - 1
-          related[:include] = true
-        end
+        related[:include] = true
       end
     end
   end

@@ -1437,10 +1437,10 @@ end
 
 class TagsControllerTest < ActionController::TestCase
   def test_tags_index
-    get :index, {filter: {id: '6,7,8,9'}, include: 'posts,posts.tags,posts.author.posts'}
+    get :index, {filter: {id: '6,7,8,9'}, include: 'posts.tags,posts.author.posts'}
     assert_response :success
     assert_equal 4, json_response['data'].size
-    assert_equal 2, json_response['included'].size
+    assert_equal 3, json_response['included'].size
   end
 
   def test_tags_show_multiple
@@ -1450,7 +1450,7 @@ class TagsControllerTest < ActionController::TestCase
   end
 
   def test_tags_show_multiple_with_include
-    get :show, {id: '6,7,8,9', include: 'posts,posts.tags,posts.author.posts'}
+    get :show, {id: '6,7,8,9', include: 'posts.tags,posts.author.posts'}
     assert_response :bad_request
     assert_match /6,7,8,9 is not a valid value for id/, response.body
   end
