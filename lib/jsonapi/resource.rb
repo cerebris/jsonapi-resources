@@ -360,7 +360,7 @@ module JSONAPI
       def filter_records(filters, options)
         include_directives = options[:include_directives]
 
-        records = records(options)
+        records = records(options, filters)
         records = apply_includes(records, include_directives)
         apply_filters(records, filters)
       end
@@ -407,7 +407,7 @@ module JSONAPI
 
       # Override this method if you want to customize the relation for
       # finder methods (find, find_by_key)
-      def records(options = {})
+      def records(options = {}, filters = {})
         _model_class
       end
 
