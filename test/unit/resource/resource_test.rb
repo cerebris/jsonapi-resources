@@ -143,7 +143,7 @@ class ResourceTest < ActiveSupport::TestCase
 
     # define apply_filters method on post resource to not respect filters
     PostResource.instance_eval do
-      def apply_filters(records, filters)
+      def apply_filters(records, filters, options)
         # :nocov:
         records
         # :nocov:
@@ -155,7 +155,7 @@ class ResourceTest < ActiveSupport::TestCase
 
     # reset method to original implementation
     PostResource.instance_eval do
-      def apply_filters(records, filters)
+      def apply_filters(records, filters, options)
         # :nocov:
         super
         # :nocov:

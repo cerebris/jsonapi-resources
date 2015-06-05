@@ -326,11 +326,11 @@ module JSONAPI
         end
       end
 
-      def apply_filter(records, filter, value)
+      def apply_filter(records, filter, value, options = {})
         records.where(filter => value)
       end
 
-      def apply_filters(records, filters)
+      def apply_filters(records, filters, options = {})
         required_includes = []
 
         if filters
@@ -338,12 +338,12 @@ module JSONAPI
             if _associations.include?(filter)
               if _associations[filter].is_a?(JSONAPI::Association::HasMany)
                 required_includes.push(filter)
-                records = apply_filter(records, "#{filter}.#{_associations[filter].primary_key}", value)
+                records = apply_filter(records, "#{filter}.#{_associations[filter].primary_key}", value, options)
               else
-                records = apply_filter(records, "#{_associations[filter].foreign_key}", value)
+                records = apply_filter(records, "#{_associations[filter].foreign_key}", value, options)
               end
             else
-              records = apply_filter(records, filter, value)
+              records = apply_filter(records, filter, value, options)
             end
           end
         end
@@ -362,7 +362,7 @@ module JSONAPI
 
         records = records(options)
         records = apply_includes(records, include_directives)
-        apply_filters(records, filters)
+        apply_filters(records, filters, options)
       end
 
       def sort_records(records, order_options)
@@ -603,7 +603,7 @@ module JSONAPI
 
               if resource_class
                 records = public_send(associated_records_method_name)
-                records = resource_class.apply_filters(records, filters)
+                records = resource_class.apply_filters(records, filters, options)
                 order_options = self.class.construct_order_options(sort_criteria)
                 records = resource_class.apply_sort(records, order_options)
                 records = resource_class.apply_pagination(records, paginator, order_options)

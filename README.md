@@ -358,7 +358,7 @@ control over how the filters are applied to the `Arel` relation.
 This example shows how you can implement different approaches for different filters.
 
 ```ruby
-def self.apply_filter(records, filter, value)
+def self.apply_filter(records, filter, value, options)
   case filter
     when :visibility
       records.where('users.publicly_visible = ?', value == :public)
