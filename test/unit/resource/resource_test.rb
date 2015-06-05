@@ -3,7 +3,7 @@ require File.expand_path('../../../test_helper', __FILE__)
 class ArticleResource < JSONAPI::Resource
   model_name 'Post'
 
-  def self.records(options)
+  def self.records(options, filters = {})
     options[:context].posts
   end
 end

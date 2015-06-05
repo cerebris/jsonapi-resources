@@ -307,7 +307,7 @@ For example to allow a user to only retrieve his own posts you can do the follow
 class PostResource < JSONAPI::Resource
   attribute :title, :body
 
-  def self.records(options = {})
+  def self.records(options = {}, filters = {})
     context = options[:context]
     context.current_user.posts
   end
