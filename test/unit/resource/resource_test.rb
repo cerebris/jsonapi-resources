@@ -39,6 +39,14 @@ class PersonWithCustomRecordsForErrorResource < PersonResource
   end
 end
 
+class PostWithKeyAttribute < JSONAPI::Resource
+  attribute :name, key: :title
+end
+
+class PostWithReadonlyAttribute < JSONAPI::Resource
+  attribute :title, readonly: true
+end
+
 class ResourceTest < ActiveSupport::TestCase
   def setup
     @post = Post.first
@@ -225,6 +233,28 @@ class ResourceTest < ActiveSupport::TestCase
         super
         # :nocov:
       end
+    end
+  end
+
+  def test_key_attribute
+    post = Post.find(1)
+    post.update!(title: 'default title')
+    post_resource = PostWithKeyAttribute.new(post)
+    assert_equal(post_resource.name, post.title)
+
+    post_resource.name = 'some title'
+    assert_equal(post_resource.name, post.title)
+  end
+
+  def test_readonly_attribute
+    post = Post.find(1)
+    post.update!(title: 'default title')
+    post_resource = PostWithReadonlyAttribute.new(post)
+
+    assert_equal(post_resource.title, post.title)
+
+    assert_raises NoMethodError do
+      post_resource.title = 'some title'
     end
   end
 end
