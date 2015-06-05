@@ -248,15 +248,16 @@ module JSONAPI
           ActiveSupport::Deprecation.warn('Id without format is no longer supported. Please remove ids from attributes, or specify a format.')
         end
 
+        model_attr = options.fetch(:key, attr)
         @_attributes ||= {}
         @_attributes[attr] = options
         define_method attr do
-          @model.send(attr)
+          @model.send(model_attr)
         end unless method_defined?(attr)
 
         define_method "#{attr}=" do |value|
-          @model.send "#{attr}=", value
-        end unless method_defined?("#{attr}=")
+          @model.send "#{model_attr}=", value
+        end unless method_defined?("#{attr}=") || options[:readonly]
       end
 
       def default_attribute_options
