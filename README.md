@@ -119,9 +119,9 @@ end
 Context flows through from the controller and can be used to control the attributes based on the current user (or other
 value).
 
-##### Creatable and Updateable Attributes
+##### Createable and Updateable Attributes
 
-By default all attributes are assumed to be updateable and creatable. To prevent some attributes from being accepted by 
+By default all attributes are assumed to be updateable and createable. To prevent some attributes from being accepted by 
 the `update` or `create` methods, override the `self.updateable_fields` and `self.createable_fields` methods on a resource.
 
 This example prevents `full_name` from being set:
