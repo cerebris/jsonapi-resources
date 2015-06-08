@@ -124,7 +124,7 @@ module JSONAPI
       saved = @model.save
       @save_needed = !saved
 
-      return :default
+      return
     end
 
     def _remove
@@ -146,7 +146,7 @@ module JSONAPI
         end
       end
 
-      return :default
+      return
     end
 
     def _replace_has_many_links(association_type, association_key_values)
@@ -155,7 +155,7 @@ module JSONAPI
       send("#{association.foreign_key}=", association_key_values)
       @save_needed = true
 
-      return :default
+      return
     end
 
     def _replace_has_one_link(association_type, association_key_value)
@@ -170,7 +170,7 @@ module JSONAPI
 
       @model.send(association.type).delete(key)
 
-      return :default
+      return
     end
 
     def _remove_has_one_link(association_type)
