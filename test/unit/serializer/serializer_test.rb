@@ -562,207 +562,6 @@ class SerializerTest < ActionDispatch::IntegrationTest
     )
   end
 
-  def test_serializer_include_has_many_sub_objects_only
-
-    assert_hash_equals(
-      {
-        data: {
-          type: 'posts',
-          id: '1',
-          attributes: {
-            title: 'New post',
-            body: 'A body!!!',
-            subject: 'New post'
-          },
-          links: {
-            self: '/posts/1'
-          },
-          relationships: {
-            section: {
-              links: {
-                self: '/posts/1/relationships/section',
-                related: '/posts/1/section'
-              },
-              data: nil
-            },
-            author: {
-              links: {
-                self: '/posts/1/relationships/author',
-                related: '/posts/1/author'
-              },
-              data: {
-                type: 'people',
-                id: '1'
-              }
-            },
-            tags: {
-              links: {
-                self: '/posts/1/relationships/tags',
-                related: '/posts/1/tags'
-              }
-            },
-            comments: {
-              links: {
-                self: '/posts/1/relationships/comments',
-                related: '/posts/1/comments'
-              }
-            }
-          }
-        },
-        included: [
-          {
-            type: 'tags',
-            id: '1',
-            attributes: {
-              name: 'short'
-            },
-            links: {
-              self: '/tags/1'
-            },
-            relationships: {
-              posts: {
-                links: {
-                  self: '/tags/1/relationships/posts',
-                  related: '/tags/1/posts'
-                }
-              }
-            }
-          },
-          {
-            type: 'tags',
-            id: '2',
-            attributes: {
-              name: 'whiny'
-            },
-            links: {
-              self: '/tags/2'
-            },
-            relationships: {
-              posts: {
-                links: {
-                  self: '/tags/2/relationships/posts',
-                  related: '/tags/2/posts'
-                }
-              }
-            }
-          },
-          {
-            type: 'tags',
-            id: '4',
-            attributes: {
-              name: 'happy'
-            },
-            links: {
-              self: '/tags/4'
-            },
-            relationships: {
-              posts: {
-                links: {
-                  self: '/tags/4/relationships/posts',
-                  related: '/tags/4/posts'
-                }
-              }
-            }
-          }
-        ]
-      },
-      JSONAPI::ResourceSerializer.new(PostResource, include: ['comments.tags']).serialize_to_hash(PostResource.new(@post))
-    )
-  end
-
-  def test_serializer_include_has_one_sub_objects_only
-
-    assert_hash_equals(
-      {
-        data: {
-          type: 'posts',
-          id: '1',
-          attributes: {
-            title: 'New post',
-            body: 'A body!!!',
-            subject: 'New post'
-          },
-          links: {
-            self: '/posts/1'
-          },
-          relationships: {
-            section: {
-              links: {
-                self: '/posts/1/relationships/section',
-                related: '/posts/1/section'
-              },
-              data: nil
-            },
-            author: {
-              links: {
-                self: '/posts/1/relationships/author',
-                related: '/posts/1/author'
-              },
-              data: {
-                type: 'people',
-                id: '1'
-              }
-            },
-            tags: {
-              links: {
-                self: '/posts/1/relationships/tags',
-                related: '/posts/1/tags'
-              }
-            },
-            comments: {
-              links: {
-                self: '/posts/1/relationships/comments',
-                related: '/posts/1/comments'
-              }
-            }
-          }
-        },
-        included: [
-          {
-            type: 'comments',
-            id: '1',
-            attributes: {
-              body: 'what a dumb post'
-            },
-            links: {
-              self: '/comments/1'
-            },
-            relationships: {
-              author: {
-                links: {
-                  self: '/comments/1/relationships/author',
-                  related: '/comments/1/author'
-                },
-                data: {
-                  type: 'people',
-                  id: '1'
-                }
-              },
-              post: {
-                links: {
-                  self: '/comments/1/relationships/post',
-                  related: '/comments/1/post'
-                },
-                data: {
-                  type: 'posts',
-                  id: '1'
-                }
-              },
-              tags: {
-                links: {
-                  self: '/comments/1/relationships/tags',
-                  related: '/comments/1/tags'
-                }
-              }
-            }
-          }
-        ]
-      },
-      JSONAPI::ResourceSerializer.new(PostResource,
-                                      include: ['author.comments']).serialize_to_hash(PostResource.new(@post))
-    )
-  end
-
   def test_serializer_different_foreign_key
     serialized = JSONAPI::ResourceSerializer.new(
       PersonResource,
@@ -1228,18 +1027,6 @@ class SerializerTest < ActionDispatch::IntegrationTest
             },
             links: {
               self: '/posts/1'
-            },
-            relationships: {
-              author: {
-                links: {
-                  self: '/posts/1/relationships/author',
-                  related: '/posts/1/author'
-                },
-                data: {
-                  type: 'people',
-                  id: '1'
-                }
-              }
             }
           },
           {
@@ -1250,18 +1037,6 @@ class SerializerTest < ActionDispatch::IntegrationTest
             },
             links: {
               self: '/posts/2'
-            },
-            relationships: {
-              author: {
-                links: {
-                  self: '/posts/2/relationships/author',
-                  related: '/posts/2/author'
-                },
-                data: {
-                  type: 'people',
-                  id: '1'
-                }
-              }
             }
           }
         ],
@@ -1274,18 +1049,6 @@ class SerializerTest < ActionDispatch::IntegrationTest
             },
             links: {
               self: '/posts/11'
-            },
-            relationships: {
-              author: {
-                links: {
-                  self: '/posts/11/relationships/author',
-                  related: '/posts/11/author'
-                },
-                data: {
-                  type: 'people',
-                  id: '1'
-                }
-              }
             }
           },
           {
@@ -1418,7 +1181,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
                                       include: ['comments', 'author', 'comments.tags', 'author.posts'],
                                       fields: {
                                         people: [:id, :email, :comments],
-                                        posts: [:id, :title, :author],
+                                        posts: [:id, :title],
                                         tags: [:name],
                                         comments: [:id, :body, :post]
                                       }).serialize_to_hash(posts)

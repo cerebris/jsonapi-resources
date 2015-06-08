@@ -13,7 +13,6 @@ module JSONAPI
       @errors = []
       @operations = []
       @fields = {}
-      @include = []
       @filters = {}
       @sort_criteria = [{field: 'id', direction: :asc}]
       @source_klass = nil
@@ -199,13 +198,13 @@ module JSONAPI
       included_resources = CSV.parse_line(include)
       return if included_resources.nil?
 
-      @include = []
+      include = []
       included_resources.each do |included_resource|
         check_include(@resource_klass, included_resource.partition('.'))
-        @include.push(unformat_key(included_resource).to_s)
+        include.push(unformat_key(included_resource).to_s)
       end
 
-      @include_directives = JSONAPI::IncludeDirectives.new(@include)
+      @include_directives = JSONAPI::IncludeDirectives.new(include)
     end
 
     def parse_filters(filters)

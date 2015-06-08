@@ -41,8 +41,8 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
       directives)
   end
 
-  def test_two_levels_include_full
-    directives = JSONAPI::IncludeDirectives.new(['posts', 'posts.comments']).include_directives
+  def test_two_levels_include_full_path
+    directives = JSONAPI::IncludeDirectives.new(['posts.comments']).include_directives
 
     assert_hash_equals(
       {
@@ -61,14 +61,14 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
       directives)
   end
 
-  def test_two_levels_include_lowest_only
-    directives = JSONAPI::IncludeDirectives.new(['posts.comments']).include_directives
+  def test_two_levels_include_full_path_redundant
+    directives = JSONAPI::IncludeDirectives.new(['posts','posts.comments']).include_directives
 
     assert_hash_equals(
       {
         include_related: {
           posts: {
-            include: false,
+            include: true,
             include_related:{
               comments: {
                 include: true,
@@ -82,7 +82,7 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
   end
 
   def test_three_levels_include_full
-    directives = JSONAPI::IncludeDirectives.new(['posts', 'posts.comments', 'posts.comments.tags']).include_directives
+    directives = JSONAPI::IncludeDirectives.new(['posts.comments.tags']).include_directives
 
     assert_hash_equals(
       {
@@ -92,35 +92,6 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
             include_related:{
               comments: {
                 include: true,
-                include_related:{
-                  tags: {
-                    include: true,
-                    include_related:{}
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      directives)
-  end
-
-  def test_three_levels_skip_middle
-    directives = JSONAPI::IncludeDirectives.new(['posts', 'tags', 'posts.comments.tags']).include_directives
-
-    assert_hash_equals(
-      {
-        include_related: {
-          tags: {
-            include: true,
-            include_related:{}
-          },
-          posts: {
-            include: true,
-            include_related:{
-              comments: {
-                include: false,
                 include_related:{
                   tags: {
                     include: true,
