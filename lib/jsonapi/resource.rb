@@ -51,7 +51,6 @@ module JSONAPI
           if @save_needed || is_new?
             deferred = true if save == :deferred
           end
-
         end
       end
 
@@ -123,7 +122,12 @@ module JSONAPI
         raise JSONAPI::Exceptions::ValidationErrors.new(@model.errors.messages)
       end
 
-      saved = @model.save
+      if defined? @model.save
+        saved = @model.save
+      else
+        saved = true
+      end
+
       @save_needed = !saved
 
       return :completed
