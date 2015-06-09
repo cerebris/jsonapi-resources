@@ -136,6 +136,20 @@ class ResourceTest < ActiveSupport::TestCase
     assert(!CatResource.updatable_fields.include?(:id))
   end
 
+  # TODO: Please remove this test after the updateable_fields method is removed
+  def test_updateable_fields_delegates_to_updatable_fields_with_deprecation
+    ActiveSupport::Deprecation.silence do
+      assert_empty(CatResource.updateable_fields(nil) - [:mother, :father, :name, :breed])
+    end
+  end
+
+  # TODO: Please remove this test after the createable_fields method is removed
+  def test_createable_fields_delegates_to_creatable_fields_with_deprecation
+    ActiveSupport::Deprecation.silence do
+      assert_empty(CatResource.createable_fields(nil) - [:mother, :father, :name, :breed, :id])
+    end
+  end
+
   def test_has_many_association_filters
     post_resource = PostResource.new(Post.find(1))
     comments = post_resource.comments
