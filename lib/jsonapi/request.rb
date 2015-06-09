@@ -318,7 +318,6 @@ module JSONAPI
 
     def parse_add_operation(data)
       # TODO: Please remove the deprecation warning and clean up the code
-
       if @resource_klass.respond_to?(:createable_fields)
         creatable_fields = @resource_klass.createable_fields(@context)
       else
