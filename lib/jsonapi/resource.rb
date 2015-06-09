@@ -602,7 +602,7 @@ module JSONAPI
               resources = []
 
               if resource_class
-                records = public_send(associated_records_method_name)
+                records = public_send(associated_records_method_name).all
                 records = resource_class.apply_filters(records, filters, options)
                 order_options = self.class.construct_order_options(sort_criteria)
                 records = resource_class.apply_sort(records, order_options)
