@@ -503,10 +503,6 @@ module JSONAPI
       end
     end
 
-    #def verified_param_set(object_params)
-      #parse_params(object_params, updatable_fields)
-    #end
-
     def parse_add_association_operation(data, association_type, parent_key)
       association = resource_klass._association(association_type)
 
