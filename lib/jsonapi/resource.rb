@@ -124,6 +124,9 @@ module JSONAPI
 
       if defined? @model.save
         saved = @model.save
+        unless saved
+          raise JSONAPI::Exceptions::SaveFailed.new
+        end
       else
         saved = true
       end
