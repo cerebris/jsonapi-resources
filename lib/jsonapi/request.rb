@@ -317,10 +317,18 @@ module JSONAPI
     end
 
     def parse_add_operation(data)
+      # TODO: Please remove the deprecation warning and clean up the code
+
+      if @resource_klass.respond_to?(:createable_fields)
+        creatable_fields = @resource_klass.createable_fields(@context)
+      else
+        creatable_fields = @resource_klass.creatable_fields(@context)
+      end
+
       Array.wrap(data).each do |params|
         verify_type(params[:type])
 
-        data = parse_params(params, @resource_klass.createable_fields(@context))
+        data = parse_params(params, creatable_fields)
         @operations.push JSONAPI::CreateResourceOperation.new(
                            @resource_klass,
                            {
