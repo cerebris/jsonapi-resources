@@ -305,6 +305,15 @@ module JSONAPI
       end
     end
 
+    class SaveFailed < Error
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::SAVE_FAILED,
+                            status: :unprocessable_entity,
+                            title: 'Save failed or was cancelled',
+                            detail: 'Save failed or was cancelled')]
+      end
+    end
+
     class InvalidPageObject < Error
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_PAGE_OBJECT,
