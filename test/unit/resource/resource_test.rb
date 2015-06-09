@@ -132,8 +132,8 @@ class ResourceTest < ActiveSupport::TestCase
     end
   end
 
-  def test_updateable_fields_does_not_include_id
-    assert(!CatResource.updateable_fields.include?(:id))
+  def test_updatable_fields_does_not_include_id
+    assert(!CatResource.updatable_fields.include?(:id))
   end
 
   def test_has_many_association_filters
