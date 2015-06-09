@@ -119,10 +119,10 @@ end
 Context flows through from the controller and can be used to control the attributes based on the current user (or other
 value).
 
-##### Creatable and Updateable Attributes
+##### Creatable and Updatable Attributes
 
-By default all attributes are assumed to be updateable and creatable. To prevent some attributes from being accepted by 
-the `update` or `create` methods, override the `self.updateable_fields` and `self.creatable_fields` methods on a resource.
+By default all attributes are assumed to be updatable and creatable. To prevent some attributes from being accepted by 
+the `update` or `create` methods, override the `self.updatable_fields` and `self.creatable_fields` methods on a resource.
 
 This example prevents `full_name` from being set:
 
@@ -136,7 +136,7 @@ class ContactResource < JSONAPI::Resource
     "#{@model.name_first}, #{@model.name_last}"
   end
 
-  def self.updateable_fields(context)
+  def self.updatable_fields(context)
     super - [:full_name]
   end
 
@@ -147,7 +147,7 @@ end
 ```
 
 The `context` is not by default used by the `ResourceController`, but may be used if you override the controller methods.
-By using the context you have the option to determine the creatable and updateable fields based on the user.
+By using the context you have the option to determine the creatable and updatable fields based on the user.
 
 ##### Sortable Attributes
 
