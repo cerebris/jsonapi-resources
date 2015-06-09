@@ -704,7 +704,7 @@ class BreedResource < JSONAPI::Resource
 
   def _save
     super
-    return :accepted
+    return :deferred
   end
 end
 

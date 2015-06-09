@@ -35,28 +35,27 @@ module JSONAPI
     end
 
     def change(callback)
-      result = nil
+      deferred = false
 
       if @changing
         run_callbacks callback do
-          yield
+          deferred = true if yield == :deferred
         end
       else
         run_callbacks is_new? ? :create : :update do
           @changing = true
           run_callbacks callback do
-            result = yield
+            deferred = true if yield == :deferred
           end
 
           if @save_needed || is_new?
-            save_result = save
-            result = save_result if save_result
+            deferred = true if save == :deferred
           end
 
         end
       end
 
-      return result
+      return deferred ? :deferred : :completed
     end
 
     def remove
@@ -127,13 +126,13 @@ module JSONAPI
       saved = @model.save
       @save_needed = !saved
 
-      return
+      return :completed
     end
 
     def _remove
       @model.destroy
 
-      return
+      return :completed
     end
 
     def _create_has_many_links(association_type, association_key_values)
@@ -151,7 +150,7 @@ module JSONAPI
         end
       end
 
-      return
+      return :completed
     end
 
     def _replace_has_many_links(association_type, association_key_values)
@@ -160,7 +159,7 @@ module JSONAPI
       send("#{association.foreign_key}=", association_key_values)
       @save_needed = true
 
-      return
+      return :completed
     end
 
     def _replace_has_one_link(association_type, association_key_value)
@@ -169,7 +168,7 @@ module JSONAPI
       send("#{association.foreign_key}=", association_key_value)
       @save_needed = true
 
-      return
+      return :completed
     end
 
     def _remove_has_many_link(association_type, key)
@@ -177,7 +176,7 @@ module JSONAPI
 
       @model.send(association.type).delete(key)
 
-      return
+      return :completed
     end
 
     def _remove_has_one_link(association_type)
@@ -186,7 +185,7 @@ module JSONAPI
       send("#{association.foreign_key}=", nil)
       @save_needed = true
 
-      return
+      return :completed
     end
 
     def _replace_fields(field_data)
@@ -213,7 +212,7 @@ module JSONAPI
         replace_has_many_links(association_type, values)
       end if field_data[:has_many]
 
-      return
+      return :completed
     end
 
     class << self
