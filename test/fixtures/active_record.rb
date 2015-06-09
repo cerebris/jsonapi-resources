@@ -262,10 +262,6 @@ class Breed
     $breed_data.remove(@id)
   end
 
-  def save
-    true
-  end
-
   def valid?
     @errors.clear
     if name.is_a?(String) && name.length > 0
