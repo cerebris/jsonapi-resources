@@ -617,7 +617,7 @@ class PostResource < JSONAPI::Resource
     super(context) - [:author, :subject]
   end
 
-  def self.createable_fields(context)
+  def self.creatable_fields(context)
     super(context) - [:subject]
   end
 

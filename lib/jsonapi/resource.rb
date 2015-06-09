@@ -292,8 +292,17 @@ module JSONAPI
         _updateable_associations | _attributes.keys - [:id]
       end
 
-      # Override in your resource to filter the createable keys
-      def createable_fields(context = nil)
+      def method_missing(method, *args)
+        if method.to_s.match /createable_fields/
+          ActiveSupport::Deprecation.warn("`createable_fields` is deprecated, please use `creatable_fields` instead")
+          self.send(:creatable_fields, *args)
+        else
+          super
+        end
+      end
+
+      # Override in your resource to filter the creatable keys
+      def creatable_fields(context = nil)
         _updateable_associations | _attributes.keys
       end
 
@@ -617,5 +626,6 @@ module JSONAPI
         end
       end
     end
+
   end
 end
