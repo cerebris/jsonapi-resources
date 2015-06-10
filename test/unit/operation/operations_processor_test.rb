@@ -304,8 +304,8 @@ class OperationsProcessorTest < Minitest::Test
     op = JSONAPI::OperationsProcessor.new
 
     count = Planet.count
-    pluto = Planet.find(2)
-    assert_equal(pluto.name, 'Pluto')
+    makemake = Planet.find(2)
+    assert_equal(makemake.name, 'Makemake')
 
     operations = [
       JSONAPI::RemoveResourceOperation.new(PlanetResource, resource_id: 2),

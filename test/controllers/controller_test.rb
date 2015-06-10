@@ -1983,7 +1983,7 @@ class BreedsControllerTest < ActionController::TestCase
            }
          }
 
-    assert_response :created
+    assert_response :accepted
     assert json_response['data'].is_a?(Hash)
     assert_equal 'Tabby', json_response['data']['attributes']['name']
   end
@@ -2017,7 +2017,7 @@ class BreedsControllerTest < ActionController::TestCase
            }
          }
 
-    assert_response :created
+    assert_response :accepted
     assert json_response['data'].is_a?(Hash)
     assert_equal 'Calic', json_response['data']['attributes']['name']
 
@@ -2320,5 +2320,42 @@ class CategoriesControllerTest < ActionController::TestCase
     assert_response :success
     assert json_response['data'].is_a?(Array)
     assert_equal 4, json_response['data'].size
+  end
+end
+
+class Api::V1::PlanetsControllerTest < ActionController::TestCase
+  def test_save_model_callbacks
+    set_content_type_header!
+    post :create,
+         {
+           data: {
+             type: 'planets',
+             attributes: {
+               name: 'Zeus',
+               description: 'The largest planet in the solar system. Discovered in 2015.'
+             }
+           }
+         }
+
+    assert_response :created
+    assert json_response['data'].is_a?(Hash)
+    assert_equal 'Zeus', json_response['data']['attributes']['name']
+  end
+
+  def test_save_model_callbacks_fail
+    set_content_type_header!
+    post :create,
+         {
+           data: {
+             type: 'planets',
+             attributes: {
+               name: 'Pluto',
+               description: 'Yes, it is a planet.'
+             }
+           }
+         }
+
+    assert_response :unprocessable_entity
+    assert_match /Save failed or was cancelled/, json_response['errors'][0]['detail']
   end
 end

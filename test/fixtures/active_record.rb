@@ -222,6 +222,16 @@ class Planet < ActiveRecord::Base
   belongs_to :planet_type
 
   has_and_belongs_to_many :tags, join_table: :planets_tags
+
+  # Test model callback cancelling save
+  before_save :check_not_pluto
+
+  def check_not_pluto
+    # Pluto can't be a planet, so cancel the save
+    if name.downcase == 'pluto'
+      return false
+    end
+  end
 end
 
 class PlanetType < ActiveRecord::Base
@@ -260,10 +270,6 @@ class Breed
 
   def destroy
     $breed_data.remove(@id)
-  end
-
-  def save
-    true
   end
 
   def valid?
@@ -701,6 +707,11 @@ class BreedResource < JSONAPI::Resource
   def self.find_by_key(id, options = {})
     BreedResource.new($breed_data.breeds[id.to_i], options[:context])
   end
+
+  def _save
+    super
+    return :accepted
+  end
 end
 
 class PlanetResource < JSONAPI::Resource
@@ -968,7 +979,7 @@ saturn = Planet.create(name: 'Satern',
                        description: 'Saturn is the sixth planet from the Sun and the second largest planet in the Solar System, after Jupiter.',
                        planet_type_id: planetoid.id)
 titan = Moon.create(name:'Titan', description: 'Best known of the Saturn moons.', planet_id: saturn.id)
-pluto = Planet.create(name: 'Pluto', description: 'Pluto is the smallest planet.', planet_type_id: planetoid.id)
+makemake = Planet.create(name: 'Makemake', description: 'A small planetoid in the Kuiperbelt.', planet_type_id: planetoid.id)
 uranus = Planet.create(name: 'Uranus', description: 'Insert adolescent jokes here.', planet_type_id: gas_giant.id)
 jupiter = Planet.create(name: 'Jupiter', description: 'A gas giant.', planet_type_id: gas_giant.id)
 betax = Planet.create(name: 'Beta X', description: 'Newly discovered Planet X', planet_type_id: unknown.id)

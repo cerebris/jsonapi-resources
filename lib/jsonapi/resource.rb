@@ -35,20 +35,26 @@ module JSONAPI
     end
 
     def change(callback)
+      completed = false
+
       if @changing
         run_callbacks callback do
-          yield
+          completed = (yield == :completed)
         end
       else
         run_callbacks is_new? ? :create : :update do
           @changing = true
           run_callbacks callback do
-            yield
+            completed = (yield == :completed)
           end
 
-          save if @save_needed || is_new?
+          if @save_needed || is_new?
+            completed = (save == :completed)
+          end
         end
       end
+
+      return completed ? :completed : :accepted
     end
 
     def remove
@@ -111,18 +117,42 @@ module JSONAPI
       end
     end
 
+    # Override this on a resource to return a different result code. Any
+    # value other than :completed will result in operations returning
+    # `:accepted`
+    #
+    # For example to return `:accepted` if your model does not immediately
+    # save resources to the database you could override `_save` as follows:
+    #
+    # ```
+    # def _save
+    #   super
+    #   return :accepted
+    # end
+    # ```
     def _save
       unless @model.valid?
         raise JSONAPI::Exceptions::ValidationErrors.new(@model.errors.messages)
       end
 
-      saved = @model.save
+      if defined? @model.save
+        saved = @model.save
+        unless saved
+          raise JSONAPI::Exceptions::SaveFailed.new
+        end
+      else
+        saved = true
+      end
+
       @save_needed = !saved
-      saved
+
+      return :completed
     end
 
     def _remove
       @model.destroy
+
+      return :completed
     end
 
     def _create_has_many_links(association_type, association_key_values)
@@ -139,6 +169,8 @@ module JSONAPI
           raise JSONAPI::Exceptions::HasManyRelationExists.new(association_key_value)
         end
       end
+
+      return :completed
     end
 
     def _replace_has_many_links(association_type, association_key_values)
@@ -146,6 +178,8 @@ module JSONAPI
 
       send("#{association.foreign_key}=", association_key_values)
       @save_needed = true
+
+      return :completed
     end
 
     def _replace_has_one_link(association_type, association_key_value)
@@ -153,12 +187,16 @@ module JSONAPI
 
       send("#{association.foreign_key}=", association_key_value)
       @save_needed = true
+
+      return :completed
     end
 
     def _remove_has_many_link(association_type, key)
       association = self.class._associations[association_type]
 
       @model.send(association.type).delete(key)
+
+      return :completed
     end
 
     def _remove_has_one_link(association_type)
@@ -166,6 +204,8 @@ module JSONAPI
 
       send("#{association.foreign_key}=", nil)
       @save_needed = true
+
+      return :completed
     end
 
     def _replace_fields(field_data)
@@ -191,6 +231,8 @@ module JSONAPI
       field_data[:has_many].each do |association_type, values|
         replace_has_many_links(association_type, values)
       end if field_data[:has_many]
+
+      return :completed
     end
 
     class << self
