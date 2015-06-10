@@ -27,7 +27,7 @@ module JSONAPI
     private
 
     def serializer
-      @serializer ||= JSONAPI::ResourceSerializer.new(
+      @serializer ||= @options.fetch(:resource_serializer_klass, JSONAPI::ResourceSerializer).new(
         @options.fetch(:primary_resource_klass),
         include_directives: @options[:include_directives],
         fields: @options[:fields],

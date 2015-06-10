@@ -64,6 +64,10 @@ module JSONAPI
       @resource_klass ||= resource_klass_name.safe_constantize
     end
 
+    def resource_serializer_klass
+      @resource_serializer_klass ||= JSONAPI::ResourceSerializer
+    end
+
     def base_url
       @base_url ||= request.protocol + request.host_with_port
     end
@@ -142,7 +146,8 @@ module JSONAPI
           base_url: base_url,
           key_formatter: key_formatter,
           route_formatter: route_formatter,
-          base_meta: base_response_meta
+          base_meta: base_response_meta,
+          resource_serializer_klass: resource_serializer_klass
         }
       )
     end
