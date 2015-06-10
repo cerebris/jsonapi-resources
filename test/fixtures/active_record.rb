@@ -613,11 +613,11 @@ class PostResource < JSONAPI::Resource
   filters :title, :author, :tags, :comments
   filters :id, :ids
 
-  def self.updateable_fields(context)
+  def self.updatable_fields(context)
     super(context) - [:author, :subject]
   end
 
-  def self.createable_fields(context)
+  def self.creatable_fields(context)
     super(context) - [:subject]
   end
 

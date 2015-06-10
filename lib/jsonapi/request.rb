@@ -316,11 +316,22 @@ module JSONAPI
                        )
     end
 
+    # TODO: Please remove after `createable_fields` is removed
+    # :nocov:
+    def creatable_fields
+      if @resource_klass.respond_to?(:createable_fields)
+        creatable_fields = @resource_klass.createable_fields(@context)
+      else
+        creatable_fields = @resource_klass.creatable_fields(@context)
+      end
+    end
+    # :nocov:
+
     def parse_add_operation(data)
       Array.wrap(data).each do |params|
         verify_type(params[:type])
 
-        data = parse_params(params, @resource_klass.createable_fields(@context))
+        data = parse_params(params, creatable_fields)
         @operations.push JSONAPI::CreateResourceOperation.new(
                            @resource_klass,
                            {
@@ -486,12 +497,23 @@ module JSONAPI
       raise JSONAPI::Exceptions::ParametersNotAllowed.new(params_not_allowed) if params_not_allowed.length > 0
     end
 
+    # TODO: Please remove after `updateable_fields` is removed
+    # :nocov:
+    def updatable_fields
+      if @resource_klass.respond_to?(:updateable_fields)
+        @resource_klass.updateable_fields(@context)
+      else
+        @resource_klass.updatable_fields(@context)
+      end
+    end
+    # :nocov:
+
     def parse_add_association_operation(data, association_type, parent_key)
       association = resource_klass._association(association_type)
 
       if association.is_a?(JSONAPI::Association::HasMany)
         object_params = {relationships: {format_key(association.name) => {data: data}}}
-        verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
+        verified_param_set = parse_params(object_params, updatable_fields)
 
         @operations.push JSONAPI::CreateHasManyAssociationOperation.new(
                            resource_klass,
@@ -509,8 +531,7 @@ module JSONAPI
 
       if association.is_a?(JSONAPI::Association::HasOne)
         object_params = {relationships: {format_key(association.name) => {data: data}}}
-
-        verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
+        verified_param_set = parse_params(object_params, updatable_fields)
 
         @operations.push JSONAPI::ReplaceHasOneAssociationOperation.new(
                            resource_klass,
@@ -526,7 +547,7 @@ module JSONAPI
         end
 
         object_params = {relationships: {format_key(association.name) => {data: data}}}
-        verified_param_set = parse_params(object_params, @resource_klass.updateable_fields(@context))
+        verified_param_set = parse_params(object_params, updatable_fields)
 
         @operations.push JSONAPI::ReplaceHasManyAssociationOperation.new(
                            resource_klass,
@@ -564,7 +585,7 @@ module JSONAPI
                          @resource_klass,
                          {
                            resource_id: key,
-                           data: parse_params(data, @resource_klass.updateable_fields(@context))
+                           data: parse_params(data, updatable_fields)
                          }
                        )
     end

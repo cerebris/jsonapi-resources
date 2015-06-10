@@ -132,8 +132,22 @@ class ResourceTest < ActiveSupport::TestCase
     end
   end
 
-  def test_updateable_fields_does_not_include_id
-    assert(!CatResource.updateable_fields.include?(:id))
+  def test_updatable_fields_does_not_include_id
+    assert(!CatResource.updatable_fields.include?(:id))
+  end
+
+  # TODO: Please remove after `updateable_fields` is removed
+  def test_updateable_fields_delegates_to_updatable_fields_with_deprecation
+    ActiveSupport::Deprecation.silence do
+      assert_empty(CatResource.updateable_fields(nil) - [:mother, :father, :name, :breed])
+    end
+  end
+
+  # TODO: Please remove after `createable_fields` is removed
+  def test_createable_fields_delegates_to_creatable_fields_with_deprecation
+    ActiveSupport::Deprecation.silence do
+      assert_empty(CatResource.createable_fields(nil) - [:mother, :father, :name, :breed, :id])
+    end
   end
 
   def test_has_many_association_filters

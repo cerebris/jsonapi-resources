@@ -287,14 +287,29 @@ module JSONAPI
         @_primary_key = key.to_sym
       end
 
-      # Override in your resource to filter the updateable keys
-      def updateable_fields(context = nil)
-        _updateable_associations | _attributes.keys - [:id]
+      # TODO: remove this after the createable_fields and updateable_fields are phased out
+      # :nocov:
+      def method_missing(method, *args)
+        if method.to_s.match /createable_fields/
+          ActiveSupport::Deprecation.warn("`createable_fields` is deprecated, please use `creatable_fields` instead")
+          self.creatable_fields(*args)
+        elsif method.to_s.match /updateable_fields/
+          ActiveSupport::Deprecation.warn("`updateable_fields` is deprecated, please use `updatable_fields` instead")
+          self.updatable_fields(*args)
+        else
+          super
+        end
+      end
+      # :nocov:
+
+      # Override in your resource to filter the updatable keys
+      def updatable_fields(context = nil)
+        _updatable_associations | _attributes.keys - [:id]
       end
 
-      # Override in your resource to filter the createable keys
-      def createable_fields(context = nil)
-        _updateable_associations | _attributes.keys
+      # Override in your resource to filter the creatable keys
+      def creatable_fields(context = nil)
+        _updatable_associations | _attributes.keys
       end
 
       # Override in your resource to filter the sortable keys
@@ -464,7 +479,7 @@ module JSONAPI
         default_attribute_options.merge(@_attributes[attr])
       end
 
-      def _updateable_associations
+      def _updatable_associations
         @_associations.map { |key, association| key }
       end
 
@@ -617,5 +632,6 @@ module JSONAPI
         end
       end
     end
+
   end
 end
