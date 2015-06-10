@@ -184,7 +184,7 @@ module JSONAPI
       association = resource_klass._association(association_name)
       if association && format_key(association_name) == include_parts.first
         unless include_parts.last.empty?
-          check_include(Resource.resource_for(@resource_klass.module_path + association.class_name.to_s), include_parts.last.partition('.'))
+          check_include(Resource.resource_for(@resource_klass.module_path + association.class_name.to_s.underscore), include_parts.last.partition('.'))
         end
       else
         @errors.concat(JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type),

@@ -148,14 +148,15 @@ module ActionDispatch
           association_name = association.first
           association = source._associations[association_name]
 
-          formatted_association_name = format_route(association.name)
-          related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(association.class_name.underscore.pluralize))
-          options[:controller] ||= related_resource._type.to_s
+          unless association.polymorphic?
+            formatted_association_name = format_route(association.name)
 
-
-          match "#{formatted_association_name}", controller: options[:controller],
-                association: association.name, source: resource_type_with_module_prefix(source._type),
-                action: 'get_related_resource', via: [:get]
+            related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(association.class_name.underscore.pluralize))
+            options[:controller] ||= related_resource._type.to_s
+            match "#{formatted_association_name}", controller: options[:controller],
+                  association: association.name, source: resource_type_with_module_prefix(source._type),
+                  action: 'get_related_resource', via: [:get]
+          end
         end
 
         def jsonapi_related_resources(*association)

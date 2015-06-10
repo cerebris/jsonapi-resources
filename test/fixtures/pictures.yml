@@ -1,0 +1,11 @@
+picture_1:
+  id: 1
+  name: enterprise_gizmo.jpg
+  imageable_id: 1
+  imageable_type: Product
+
+picture_2:
+  id: 2
+  name: company_brochure.jpg
+  imageable_id: 1
+  imageable_type: Document
