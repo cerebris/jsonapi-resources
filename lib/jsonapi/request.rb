@@ -316,14 +316,18 @@ module JSONAPI
                        )
     end
 
-    def parse_add_operation(data)
-      # TODO: Please remove the deprecation warning and clean up the code
+    # TODO: Please remove after `createabel_fields` is removed
+    # :nocov:
+    def creatable_fields
       if @resource_klass.respond_to?(:createable_fields)
         creatable_fields = @resource_klass.createable_fields(@context)
       else
         creatable_fields = @resource_klass.creatable_fields(@context)
       end
+    end
+    # :nocov:
 
+    def parse_add_operation(data)
       Array.wrap(data).each do |params|
         verify_type(params[:type])
 
@@ -493,7 +497,8 @@ module JSONAPI
       raise JSONAPI::Exceptions::ParametersNotAllowed.new(params_not_allowed) if params_not_allowed.length > 0
     end
 
-    # TODO: Remove after the 'updateable_fields' deprecation expired
+    # TODO: Please remove after `updateable_fields` is removed
+    # :nocov:
     def updatable_fields
       if @resource_klass.respond_to?(:updateable_fields)
         @resource_klass.updateable_fields(@context)
@@ -501,6 +506,7 @@ module JSONAPI
         @resource_klass.updatable_fields(@context)
       end
     end
+    # :nocov:
 
     def parse_add_association_operation(data, association_type, parent_key)
       association = resource_klass._association(association_type)

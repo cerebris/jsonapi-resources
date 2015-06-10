@@ -287,6 +287,8 @@ module JSONAPI
         @_primary_key = key.to_sym
       end
 
+      # TODO: remove this after the createable_fields and updateable_fields are phased out
+      # :nocov:
       def method_missing(method, *args)
         if method.to_s.match /createable_fields/
           ActiveSupport::Deprecation.warn("`createable_fields` is deprecated, please use `creatable_fields` instead")
@@ -298,6 +300,7 @@ module JSONAPI
           super
         end
       end
+      # :nocov:
 
       # Override in your resource to filter the updatable keys
       def updatable_fields(context = nil)
