@@ -280,6 +280,25 @@ class ContactResource < JSONAPI::Resource
 end
 ```
 
+##### Default Filters
+
+A default filter may be defined for a resource using the `default` option on the `filter` method. This default is used
+unless the request overrides this value.
+
+For example:
+
+```ruby
+ class CommentResource < JSONAPI::Resource
+  attributes :body, :status
+  has_one :post
+  has_one :author
+  
+  filter :status, default: 'published,pending'
+end
+```
+
+The default value is used as if it came from the request.
+
 ##### Finders
 
 Basic finding by filters is supported by resources. This is implemented in the `find` and `find_by_key` finder methods. 
