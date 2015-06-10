@@ -50,8 +50,6 @@ Resources must be derived from `JSONAPI::Resource`, or a class that is itself de
 For example:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
 end
 ```
@@ -64,8 +62,6 @@ the `attribute` method, and multiple attributes can be declared with the `attrib
 For example:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
   attribute :name_first
   attributes :name_last, :email, :twitter
@@ -81,8 +77,6 @@ This allows a resource's methods to access the underlying model.
 For example, a computed attribute for `full_name` could be defined as such:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
   attributes :name_first, :name_last, :email, :twitter
   attribute :full_name
@@ -127,8 +121,6 @@ the `update` or `create` methods, override the `self.updatable_fields` and `self
 This example prevents `full_name` from being set:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
   attributes :name_first, :name_last, :full_name
 
@@ -280,8 +272,6 @@ declared using the `filter` method, and multiple filters can be declared with th
 For example:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
   attributes :name_first, :name_last, :email, :twitter
 
@@ -762,7 +752,6 @@ The `ResourceSerializer` can be used to serialize a resource into JSON API compl
  method that takes a resource instance or array of resource instances to serialize. For example:
 
 ```ruby
-require 'jsonapi/resource_serializer'
 post = Post.find(1)
 JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(PostResource.new(post))
 ```
