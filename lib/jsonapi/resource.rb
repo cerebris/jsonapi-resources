@@ -117,6 +117,19 @@ module JSONAPI
       end
     end
 
+    # Override this on a resource to return a different result code. Any
+    # value other than :completed will result in operations returning
+    # `:accepted`
+    #
+    # For example to return `:accepted` if your model does not immediately
+    # save resources to the database you could override `_save` as follows:
+    #
+    # ```
+    # def _save
+    #   super
+    #   return :accepted
+    # end
+    # ```
     def _save
       unless @model.valid?
         raise JSONAPI::Exceptions::ValidationErrors.new(@model.errors.messages)
