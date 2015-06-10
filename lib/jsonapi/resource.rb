@@ -35,26 +35,26 @@ module JSONAPI
     end
 
     def change(callback)
-      deferred = false
+      completed = false
 
       if @changing
         run_callbacks callback do
-          deferred = true if yield == :deferred
+          completed = (yield == :completed)
         end
       else
         run_callbacks is_new? ? :create : :update do
           @changing = true
           run_callbacks callback do
-            deferred = true if yield == :deferred
+            completed = (yield == :completed)
           end
 
           if @save_needed || is_new?
-            deferred = true if save == :deferred
+            completed = (save == :completed)
           end
         end
       end
 
-      return deferred ? :deferred : :completed
+      return completed ? :completed : :accepted
     end
 
     def remove

@@ -149,7 +149,7 @@ module JSONAPI
       resource = @resource_klass.create(context)
       result = resource.replace_fields(@data)
 
-      return JSONAPI::ResourceOperationResult.new((result == :deferred ? :accepted : :created), resource)
+      return JSONAPI::ResourceOperationResult.new((result == :completed ? :created : :accepted), resource)
 
     rescue JSONAPI::Exceptions::Error => e
       return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
@@ -167,7 +167,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: context)
       result = resource.remove
 
-      return JSONAPI::OperationResult.new(result == :deferred ? :accepted : :no_content)
+      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
 
     rescue JSONAPI::Exceptions::Error => e
       return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
@@ -187,7 +187,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: context)
       result = resource.replace_fields(data)
 
-      return JSONAPI::ResourceOperationResult.new(result == :deferred ? :accepted : :ok, resource)
+      return JSONAPI::ResourceOperationResult.new(result == :completed ? :ok : :accepted, resource)
     end
   end
 
@@ -205,7 +205,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: context)
       result = resource.replace_has_one_link(@association_type, @key_value)
 
-      return JSONAPI::OperationResult.new(result == :deferred ? :accepted : :no_content)
+      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
@@ -223,7 +223,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: context)
       result = resource.create_has_many_links(@association_type, @data)
 
-      return JSONAPI::OperationResult.new(result == :deferred ? :accepted : :no_content)
+      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
@@ -241,7 +241,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: context)
       result = resource.replace_has_many_links(@association_type, @data)
 
-      return JSONAPI::OperationResult.new(result == :deferred ? :accepted : :no_content)
+      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
@@ -259,7 +259,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: context)
       result = resource.remove_has_many_link(@association_type, @associated_key)
 
-      return JSONAPI::OperationResult.new(result == :deferred ? :accepted : :no_content)
+      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
@@ -276,7 +276,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: context)
       result = resource.remove_has_one_link(@association_type)
 
-      return JSONAPI::OperationResult.new(result == :deferred ? :accepted : :no_content)
+      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 end
