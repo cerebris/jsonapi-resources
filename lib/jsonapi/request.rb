@@ -316,7 +316,7 @@ module JSONAPI
                        )
     end
 
-    # TODO: Please remove after `createabel_fields` is removed
+    # TODO: Please remove after `createable_fields` is removed
     # :nocov:
     def creatable_fields
       if @resource_klass.respond_to?(:createable_fields)
