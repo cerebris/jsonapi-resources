@@ -746,7 +746,7 @@ end
 
 These codes can be customized in your app by creating an initializer to override any or all of the codes.
 
-In addition textual error coses can be returned by setting the configuration option `use_text_errors = true`. For
+In addition textual error codes can be returned by setting the configuration option `use_text_errors = true`. For
 example:
 
 ```ruby
