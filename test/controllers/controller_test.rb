@@ -2148,6 +2148,33 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
   end
 
+  def test_books_record_count_in_meta
+    Api::V2::BookResource.paginator :offset
+    JSONAPI.configuration.record_count_in_meta = true
+    get :index, {include: 'book-comments'}
+    JSONAPI.configuration.record_count_in_meta = false
+
+    assert_response :success
+    assert_equal 1000, json_response['meta']['record-count']
+    assert_equal 10, json_response['data'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+  end
+
+  def test_books_record_count_in_meta_custom_name
+    Api::V2::BookResource.paginator :offset
+    JSONAPI.configuration.record_count_in_meta = true
+    JSONAPI.configuration.record_count_meta_key = 'total_records'
+
+    get :index, {include: 'book-comments'}
+    JSONAPI.configuration.record_count_in_meta = false
+    JSONAPI.configuration.record_count_meta_key = :record_count
+
+    assert_response :success
+    assert_equal 1000, json_response['meta']['total-records']
+    assert_equal 10, json_response['data'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+  end
+
   def test_books_offset_pagination_no_params_includes_query_count_one_level
     Api::V2::BookResource.paginator :offset
 

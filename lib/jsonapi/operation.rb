@@ -46,9 +46,13 @@ module JSONAPI
                                              sort_criteria: @sort_criteria,
                                              paginator: @paginator)
 
+      options = {}
+      options[:pagination_params] = pagination_params if JSONAPI.configuration.pagination_links
+      options[:record_count] = record_count if JSONAPI.configuration.record_count_in_meta
+
       return JSONAPI::ResourcesOperationResult.new(:ok,
                                                    resource_records,
-                                                   pagination_params: pagination_params)
+                                                   options)
 
     rescue JSONAPI::Exceptions::Error => e
       return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
