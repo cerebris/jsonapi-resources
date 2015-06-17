@@ -23,6 +23,20 @@ module JSONAPI
       super(resource_klass, false)
     end
 
+    def record_count
+      @_record_count ||= @resource_klass.find_count(@resource_klass.verify_filters(@filters, @context),
+                                                     context: @context,
+                                                     include_directives: @include_directives)
+    end
+
+    def pagination_params
+      if @paginator && JSONAPI.configuration.pagination_links
+        return @paginator.links_page_params(record_count: record_count)
+      else
+        return {}
+      end
+    end
+
     def apply(context)
       resource_records = @resource_klass.find(@resource_klass.verify_filters(@filters, context),
                                              context: context,
@@ -30,7 +44,9 @@ module JSONAPI
                                              sort_criteria: @sort_criteria,
                                              paginator: @paginator)
 
-      return JSONAPI::ResourcesOperationResult.new(:ok, resource_records)
+      return JSONAPI::ResourcesOperationResult.new(:ok,
+                                                   resource_records,
+                                                   pagination_params: pagination_params)
 
     rescue JSONAPI::Exceptions::Error => e
       return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)

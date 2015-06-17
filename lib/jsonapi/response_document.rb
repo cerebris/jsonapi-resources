@@ -64,6 +64,21 @@ module JSONAPI
       @operation_results.results.each do |result|
         links.merge!(result.links)
 
+        # Build pagination links
+        if result.is_a?(JSONAPI::ResourcesOperationResult)
+          result.pagination_params.each_pair do |link_name, params|
+            query_params = {}
+            query_params[:page] = params
+
+            request = @options[:request]
+            query_params[:fields] = request.params[:fields] if request.params[:fields]
+            query_params[:include] = request.params[:include] if request.params[:include]
+            query_params[:sort] = request.params[:sort] if request.params[:sort]
+            query_params[:filter] = request.params[:filter] if request.params[:filter]
+
+            links[link_name] = serializer.find_link(query_params)
+          end
+        end
       end
 
       links.deep_transform_keys { |key| @key_formatter.format(key) }
