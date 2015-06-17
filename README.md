@@ -534,8 +534,9 @@ Callbacks can also be defined for `JSONAPI::OperationsProcessor` events:
 - `:remove_has_many_association_operation`: A `remove_has_many_association_operation`.
 - `:remove_has_one_association_operation`: A `remove_has_one_association_operation`.
 
-The operation callbacks have access to two meta data hashes, `@operations_meta` and `@operation_meta`, the full list of
-`@operations`, each individual `@operation` and the `@result` variables.
+The operation callbacks have access to two meta data hashes, `@operations_meta` and `@operation_meta`, two links hashes,
+`@operations_links` and `@operation_links`, the full list of `@operations`, each individual `@operation` and the 
+`@result` variables.
 
 ##### Custom `OperationsProcessor` Example to Return total_count in Meta
 
