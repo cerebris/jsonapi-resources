@@ -2305,6 +2305,18 @@ class Api::V4::BooksControllerTest < ActionController::TestCase
     assert_equal 1000, json_response['meta']['totalRecords']
     JSONAPI.configuration.operations_processor = :active_record
   end
+
+  def test_books_operation_links
+    JSONAPI.configuration.operations_processor = :counting_active_record
+    Api::V4::BookResource.paginator :offset
+    get :index, {page: {offset: 50, limit: 12}}
+    assert_response :success
+    assert_equal 12, json_response['data'].size
+    assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
+    assert_equal 5, json_response['links'].size
+    assert_equal 'https://test_corp.com', json_response['links']['spec']
+    JSONAPI.configuration.operations_processor = :active_record
+  end
 end
 
 class CategoriesControllerTest < ActionController::TestCase
