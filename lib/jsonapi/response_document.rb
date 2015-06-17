@@ -13,6 +13,9 @@ module JSONAPI
       meta = top_level_meta
       hash.merge!(meta: meta) unless meta.empty?
 
+      links = top_level_links
+      hash.merge!(links: links) unless links.empty?
+
       hash
     end
 
@@ -37,6 +40,8 @@ module JSONAPI
       )
     end
 
+    # Rolls up the top level meta data from the base_meta, the set of operations,
+    # and the result of each operation. The keys are then formatted.
     def top_level_meta
       meta = @options.fetch(:base_meta, {})
 
@@ -47,6 +52,21 @@ module JSONAPI
       end
 
       meta.deep_transform_keys { |key| @key_formatter.format(key) }
+    end
+
+    # Rolls up the top level links from the base_links, the set of operations,
+    # and the result of each operation. The keys are then formatted.
+    def top_level_links
+      links = @options.fetch(:base_links, {})
+
+      links.merge!(@operation_results.links)
+
+      @operation_results.results.each do |result|
+        links.merge!(result.links)
+
+      end
+
+      links.deep_transform_keys { |key| @key_formatter.format(key) }
     end
 
     def results_to_hash
