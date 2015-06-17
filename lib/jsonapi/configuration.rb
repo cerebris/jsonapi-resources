@@ -13,7 +13,8 @@ module JSONAPI
                 :default_paginator,
                 :default_page_size,
                 :maximum_page_size,
-                :use_text_errors
+                :use_text_errors,
+                :pagination_links
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -30,8 +31,12 @@ module JSONAPI
       # :none, :offset, :paged, or a custom paginator name
       self.default_paginator = :none
 
+      # Output pagination links at top level
+      self.pagination_links = true
+
       self.default_page_size = 10
       self.maximum_page_size = 20
+
       self.use_text_errors = false
     end
 
@@ -68,6 +73,10 @@ module JSONAPI
 
     def use_text_errors=(use_text_errors)
       @use_text_errors = use_text_errors
+    end
+
+    def pagination_links=(pagination_links)
+      @pagination_links = pagination_links
     end
   end
 
