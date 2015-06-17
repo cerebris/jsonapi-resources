@@ -14,6 +14,12 @@ module JSONAPI
     end
 
     class << self
+      def requires_record_count
+        # :nocov:
+        false
+        # :nocov:
+      end
+
       def paginator_for(paginator)
         paginator_class_name = "#{paginator.to_s.camelize}Paginator"
         paginator_class_name.safe_constantize if paginator_class_name
@@ -28,6 +34,10 @@ class OffsetPaginator < JSONAPI::Paginator
   def initialize(params)
     parse_pagination_params(params)
     verify_pagination_params
+  end
+
+  def self.requires_record_count
+    true
   end
 
   def apply(relation, order_options)
@@ -112,6 +122,10 @@ class PagedPaginator < JSONAPI::Paginator
   def initialize(params)
     parse_pagination_params(params)
     verify_pagination_params
+  end
+
+  def self.requires_record_count
+    true
   end
 
   def apply(relation, order_options)

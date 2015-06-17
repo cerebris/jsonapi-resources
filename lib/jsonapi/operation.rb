@@ -31,7 +31,9 @@ module JSONAPI
 
     def pagination_params
       if @paginator && JSONAPI.configuration.pagination_links
-        return @paginator.links_page_params(record_count: record_count)
+        options = {}
+        options[:record_count] = record_count if @paginator.class.requires_record_count
+        return @paginator.links_page_params(options)
       else
         return {}
       end
