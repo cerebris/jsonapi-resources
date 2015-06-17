@@ -1174,6 +1174,42 @@ end
 
 You would specify this in `JSONAPI.configure` as `:upper_camelized`.
 
+## Configuration
+
+JR has a few configuration options. Some have already been mentioned above. To set configuration options create an 
+initializer and add the options you wish to set. All options have defaults, so you only need to set the options that
+are different. The default options are shown below.
+
+```ruby
+JSONAPI.configure do |config|
+  #:underscored_key, :camelized_key, :dasherized_key, or custom
+  config.json_key_format = :dasherized_key
+
+  #:underscored_route, :camelized_route, :dasherized_route, or custom
+  config.route_format = :dasherized_route
+
+  #:basic, :active_record, or custom
+  config.operations_processor = :active_record
+
+  config.allowed_request_params = [:include, :fields, :format, :controller, :action, :sort, :page]
+
+  # :none, :offset, :paged, or a custom paginator name
+  config.default_paginator = :none
+
+  # Output pagination links at top level
+  config.pagination_links = true
+
+  config.default_page_size = 10
+  config.maximum_page_size = 20
+
+  # Output the record count in top level meta data for find operations
+  config.record_count_in_meta = false
+  config.record_count_meta_key = :record_count
+
+  config.use_text_errors = false
+end
+```
+
 ## Contributing
 
 1. Fork it ( http://github.com/cerebris/jsonapi-resources/fork )
