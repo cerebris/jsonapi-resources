@@ -67,6 +67,10 @@ module JSONAPI
       }
     end
 
+    def find_link(query_params)
+      "#{@base_url}/#{formatted_module_path_from_klass(@primary_resource_klass)}#{@route_formatter.format(@primary_resource_klass._type.to_s)}?#{query_params.to_query}"
+    end
+
     private
     # Process the primary source object(s). This will then serialize associated object recursively based on the
     # requested includes. Fields are controlled fields option for each resource type, such
@@ -200,7 +204,6 @@ module JSONAPI
     end
 
     def formatted_module_path(source)
-      source.class.name =~ /::[^:]+\Z/ ? (@route_formatter.format($`).freeze.gsub('::', '/') + '/').downcase : ''
       formatted_module_path_from_klass(source.class)
     end
 
