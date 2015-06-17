@@ -201,6 +201,11 @@ module JSONAPI
 
     def formatted_module_path(source)
       source.class.name =~ /::[^:]+\Z/ ? (@route_formatter.format($`).freeze.gsub('::', '/') + '/').downcase : ''
+      formatted_module_path_from_klass(source.class)
+    end
+
+    def formatted_module_path_from_klass(klass)
+      klass.name =~ /::[^:]+\Z/ ? (@route_formatter.format($`).freeze.gsub('::', '/') + '/').downcase : ''
     end
 
     def self_href(source)
