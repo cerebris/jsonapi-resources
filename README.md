@@ -540,6 +540,9 @@ The operation callbacks have access to two meta data hashes, `@operations_meta` 
 
 ##### Custom `OperationsProcessor` Example to Return total_count in Meta
 
+Note: this can also be accomplished with the `record_count_in_meta` option, and in most cases that will be the better
+option. 
+
 To return the total record count of a find operation in the meta data of a find operation you can create a custom
 OperationsProcessor. For example:
 
