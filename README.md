@@ -890,8 +890,6 @@ contact_links_phone_numbers GET       /contacts/:contact_id/links/phone-numbers(
       contact_phone_numbers GET       /contacts/:contact_id/phone-numbers(.:format)             phone_numbers#get_related_resources {:association=>"phone_numbers", :source=>"contacts"}
                    contacts GET       /contacts(.:format)                                       contacts#index
                             POST      /contacts(.:format)                                       contacts#create
-                new_contact GET       /contacts/new(.:format)                                   contacts#new
-               edit_contact GET       /contacts/:id/edit(.:format)                              contacts#edit
                     contact GET       /contacts/:id(.:format)                                   contacts#show
                             PATCH     /contacts/:id(.:format)                                   contacts#update
                             PUT       /contacts/:id(.:format)                                   contacts#update
@@ -902,8 +900,6 @@ contact_links_phone_numbers GET       /contacts/:contact_id/links/phone-numbers(
        phone_number_contact GET       /phone-numbers/:phone_number_id/contact(.:format)         contacts#get_related_resource {:association=>"contact", :source=>"phone_numbers"}
               phone_numbers GET       /phone-numbers(.:format)                                  phone_numbers#index
                             POST      /phone-numbers(.:format)                                  phone_numbers#create
-           new_phone_number GET       /phone-numbers/new(.:format)                              phone_numbers#new
-          edit_phone_number GET       /phone-numbers/:id/edit(.:format)                         phone_numbers#edit
                phone_number GET       /phone-numbers/:id(.:format)                              phone_numbers#show
                             PATCH     /phone-numbers/:id(.:format)                              phone_numbers#update
                             PUT       /phone-numbers/:id(.:format)                              phone_numbers#update
@@ -933,8 +929,6 @@ gives routes that are only related to the primary resource, and none for its rel
       Prefix Verb   URI Pattern                  Controller#Action
     contacts GET    /contacts(.:format)          contacts#index
              POST   /contacts(.:format)          contacts#create
- new_contact GET    /contacts/new(.:format)      contacts#new
-edit_contact GET    /contacts/:id/edit(.:format) contacts#edit
      contact GET    /contacts/:id(.:format)      contacts#show
              PATCH  /contacts/:id(.:format)      contacts#update
              PUT    /contacts/:id(.:format)      contacts#update
@@ -973,8 +967,6 @@ contact_links_phone_numbers GET    /contacts/:contact_id/links/phone-numbers(.:f
                             DELETE /contacts/:contact_id/links/phone-numbers/:keys(.:format) contacts#destroy_association {:association=>"phone_numbers"}
                    contacts GET    /contacts(.:format)                                       contacts#index
                             POST   /contacts(.:format)                                       contacts#create
-                new_contact GET    /contacts/new(.:format)                                   contacts#new
-               edit_contact GET    /contacts/:id/edit(.:format)                              contacts#edit
                     contact GET    /contacts/:id(.:format)                                   contacts#show
                             PATCH  /contacts/:id(.:format)                                   contacts#update
                             PUT    /contacts/:id(.:format)                                   contacts#update
@@ -1004,8 +996,6 @@ gives the following routes:
 contact_phone_numbers GET    /contacts/:contact_id/phone-numbers(.:format) phone_numbers#get_related_resources {:association=>"phone_numbers", :source=>"contacts"}
              contacts GET    /contacts(.:format)                           contacts#index
                       POST   /contacts(.:format)                           contacts#create
-          new_contact GET    /contacts/new(.:format)                       contacts#new
-         edit_contact GET    /contacts/:id/edit(.:format)                  contacts#edit
               contact GET    /contacts/:id(.:format)                       contacts#show
                       PATCH  /contacts/:id(.:format)                       contacts#update
                       PUT    /contacts/:id(.:format)                       contacts#update
@@ -1034,8 +1024,6 @@ gives the following routes:
 phone_number_contact GET    /phone-numbers/:phone_number_id/contact(.:format) contacts#get_related_resource {:association=>"contact", :source=>"phone_numbers"}
        phone_numbers GET    /phone-numbers(.:format)                          phone_numbers#index
                      POST   /phone-numbers(.:format)                          phone_numbers#create
-    new_phone_number GET    /phone-numbers/new(.:format)                      phone_numbers#new
-   edit_phone_number GET    /phone-numbers/:id/edit(.:format)                 phone_numbers#edit
         phone_number GET    /phone-numbers/:id(.:format)                      phone_numbers#show
                      PATCH  /phone-numbers/:id(.:format)                      phone_numbers#update
                      PUT    /phone-numbers/:id(.:format)                      phone_numbers#update

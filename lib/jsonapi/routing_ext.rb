@@ -26,6 +26,13 @@ module ActionDispatch
           options.merge!(res.routing_resource_options)
           options[:path] = format_route(@resource_type)
 
+          if options[:except]
+            options[:except] << :new unless options[:except].include?(:new) || options[:except].include?('new')
+            options[:except] << :edit unless options[:except].include?(:edit) || options[:except].include?('edit')
+          else
+            options[:except] = [:new, :edit]
+          end
+
           resource @resource_type, options do
             @scope[:jsonapi_resource] = @resource_type
 
@@ -61,6 +68,13 @@ module ActionDispatch
           options[:param] = :id
 
           options[:path] = format_route(@resource_type)
+
+          if options[:except]
+            options[:except] << :new unless options[:except].include?(:new) || options[:except].include?('new')
+            options[:except] << :edit unless options[:except].include?(:edit) || options[:except].include?('edit')
+          else
+            options[:except] = [:new, :edit]
+          end
 
           resources @resource_type, options do
             @scope[:jsonapi_resource] = @resource_type
