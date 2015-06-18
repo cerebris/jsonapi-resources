@@ -353,13 +353,8 @@ $breed_data.add(Breed.new(3, 'to_delete'))
 ### OperationsProcessor
 class CountingActiveRecordOperationsProcessor < ActiveRecordOperationsProcessor
   after_find_operation do
-
-    count = @operation.resource_klass.find_count(@operation.resource_klass.verify_filters(@operation.filters, @context),
-                                 context: @context,
-                                 include_directives: @operation.include_directives,
-                                 sort_criteria: @operation.sort_criteria)
-
-    @operation_meta[:total_records] = count
+    @operation_meta[:total_records] = @operation.record_count
+    @operation_links['spec'] = 'https://test_corp.com'
   end
 end
 

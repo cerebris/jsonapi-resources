@@ -123,6 +123,10 @@ module JSONAPI
       {}
     end
 
+    def base_response_links
+      {}
+    end
+
     def render_errors(errors)
       operation_results = JSONAPI::OperationResults.new()
       result = JSONAPI::ErrorsOperationResult.new(errors[0].status, errors)
@@ -147,7 +151,9 @@ module JSONAPI
           key_formatter: key_formatter,
           route_formatter: route_formatter,
           base_meta: base_response_meta,
-          resource_serializer_klass: resource_serializer_klass
+          base_links: base_response_links,
+          resource_serializer_klass: resource_serializer_klass,
+          request: @request
         }
       )
     end

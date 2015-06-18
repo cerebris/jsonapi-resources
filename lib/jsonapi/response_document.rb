@@ -13,6 +13,9 @@ module JSONAPI
       meta = top_level_meta
       hash.merge!(meta: meta) unless meta.empty?
 
+      links = top_level_links
+      hash.merge!(links: links) unless links.empty?
+
       hash
     end
 
@@ -37,6 +40,8 @@ module JSONAPI
       )
     end
 
+    # Rolls up the top level meta data from the base_meta, the set of operations,
+    # and the result of each operation. The keys are then formatted.
     def top_level_meta
       meta = @options.fetch(:base_meta, {})
 
@@ -44,9 +49,43 @@ module JSONAPI
 
       @operation_results.results.each do |result|
         meta.merge!(result.meta)
+
+        if JSONAPI.configuration.top_level_meta_include_record_count
+          meta[JSONAPI.configuration.top_level_meta_record_count_key] = result.record_count
+        end
       end
 
       meta.deep_transform_keys { |key| @key_formatter.format(key) }
+    end
+
+    # Rolls up the top level links from the base_links, the set of operations,
+    # and the result of each operation. The keys are then formatted.
+    def top_level_links
+      links = @options.fetch(:base_links, {})
+
+      links.merge!(@operation_results.links)
+
+      @operation_results.results.each do |result|
+        links.merge!(result.links)
+
+        # Build pagination links
+        if result.is_a?(JSONAPI::ResourcesOperationResult)
+          result.pagination_params.each_pair do |link_name, params|
+            query_params = {}
+            query_params[:page] = params
+
+            request = @options[:request]
+            query_params[:fields] = request.params[:fields] if request.params[:fields]
+            query_params[:include] = request.params[:include] if request.params[:include]
+            query_params[:sort] = request.params[:sort] if request.params[:sort]
+            query_params[:filter] = request.params[:filter] if request.params[:filter]
+
+            links[link_name] = serializer.find_link(query_params)
+          end
+        end
+      end
+
+      links.deep_transform_keys { |key| @key_formatter.format(key) }
     end
 
     def results_to_hash

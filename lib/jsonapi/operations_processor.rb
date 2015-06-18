@@ -41,16 +41,21 @@ module JSONAPI
 
       run_callbacks :operations do
         transaction do
+          # Links and meta data global to the set of operations
           @operations_meta = {}
+          @operations_links = {}
           @operations.each do |operation|
             @operation = operation
+            # Links and meta data for each operation
             @operation_meta = {}
+            @operation_links = {}
             run_callbacks :operation do
               @result = nil
               run_callbacks @operation.class.name.demodulize.underscore.to_sym do
                 @result = process_operation(@operation)
               end
               @result.meta.merge!(@operation_meta)
+              @result.links.merge!(@operation_links)
               @results.add_result(@result)
               if @results.has_errors?
                 rollback
@@ -58,6 +63,7 @@ module JSONAPI
             end
           end
           @results.meta = @operations_meta
+          @results.links = @operations_links
         end
       end
       @results

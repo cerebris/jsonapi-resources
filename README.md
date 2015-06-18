@@ -534,10 +534,14 @@ Callbacks can also be defined for `JSONAPI::OperationsProcessor` events:
 - `:remove_has_many_association_operation`: A `remove_has_many_association_operation`.
 - `:remove_has_one_association_operation`: A `remove_has_one_association_operation`.
 
-The operation callbacks have access to two meta data hashes, `@operations_meta` and `@operation_meta`, the full list of
-`@operations`, each individual `@operation` and the `@result` variables.
+The operation callbacks have access to two meta data hashes, `@operations_meta` and `@operation_meta`, two links hashes,
+`@operations_links` and `@operation_links`, the full list of `@operations`, each individual `@operation` and the 
+`@result` variables.
 
 ##### Custom `OperationsProcessor` Example to Return total_count in Meta
+
+Note: this can also be accomplished with the `top_level_meta_include_record_count` option, and in most cases that will
+be the better option. 
 
 To return the total record count of a find operation in the meta data of a find operation you can create a custom
 OperationsProcessor. For example:
@@ -545,12 +549,7 @@ OperationsProcessor. For example:
 ```ruby
 class CountingActiveRecordOperationsProcessor < ActiveRecordOperationsProcessor
   after_find_operation do
-    count = @operation.resource_klass.find_count(@operation.resource_klass.verify_filters(@operation.filters, @context),
-                                 context: @context,
-                                 include_directives: @operation.include_directives,
-                                 sort_criteria: @operation.sort_criteria)
-
-    @operation_meta[:total_records] = count
+    @operation_meta[:total_records] = @operation.record_count
   end
 end
 ```
@@ -1178,6 +1177,42 @@ end
 ```
 
 You would specify this in `JSONAPI.configure` as `:upper_camelized`.
+
+## Configuration
+
+JR has a few configuration options. Some have already been mentioned above. To set configuration options create an 
+initializer and add the options you wish to set. All options have defaults, so you only need to set the options that
+are different. The default options are shown below.
+
+```ruby
+JSONAPI.configure do |config|
+  #:underscored_key, :camelized_key, :dasherized_key, or custom
+  config.json_key_format = :dasherized_key
+
+  #:underscored_route, :camelized_route, :dasherized_route, or custom
+  config.route_format = :dasherized_route
+
+  #:basic, :active_record, or custom
+  config.operations_processor = :active_record
+
+  config.allowed_request_params = [:include, :fields, :format, :controller, :action, :sort, :page]
+
+  # :none, :offset, :paged, or a custom paginator name
+  config.default_paginator = :none
+
+  # Output pagination links at top level
+  config.top_level_links_include_pagination = true
+
+  config.default_page_size = 10
+  config.maximum_page_size = 20
+
+  # Output the record count in top level meta data for find operations
+  config.top_level_meta_include_record_count = false
+  config.top_level_meta_record_count_key = :record_count
+
+  config.use_text_errors = false
+end
+```
 
 ## Contributing
 
