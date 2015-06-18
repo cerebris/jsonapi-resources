@@ -50,8 +50,8 @@ module JSONAPI
       @operation_results.results.each do |result|
         meta.merge!(result.meta)
 
-        if JSONAPI.configuration.record_count_in_meta
-          meta[JSONAPI.configuration.record_count_meta_key] = result.record_count
+        if JSONAPI.configuration.top_level_meta_include_record_count
+          meta[JSONAPI.configuration.top_level_meta_record_count_key] = result.record_count
         end
       end
 

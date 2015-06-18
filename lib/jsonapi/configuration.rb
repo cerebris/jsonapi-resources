@@ -14,9 +14,9 @@ module JSONAPI
                 :default_page_size,
                 :maximum_page_size,
                 :use_text_errors,
-                :pagination_links,
-                :record_count_in_meta,
-                :record_count_meta_key
+                :top_level_links_include_pagination,
+                :top_level_meta_include_record_count,
+                :top_level_meta_record_count_key
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -34,15 +34,15 @@ module JSONAPI
       self.default_paginator = :none
 
       # Output pagination links at top level
-      self.pagination_links = true
+      self.top_level_links_include_pagination = true
 
       self.default_page_size = 10
       self.maximum_page_size = 20
 
       # Metadata
       # Output record count in top level meta for find operation
-      self.record_count_in_meta = false
-      self.record_count_meta_key = :record_count
+      self.top_level_meta_include_record_count = false
+      self.top_level_meta_record_count_key = :record_count
 
       self.use_text_errors = false
     end
@@ -82,16 +82,16 @@ module JSONAPI
       @use_text_errors = use_text_errors
     end
 
-    def pagination_links=(pagination_links)
-      @pagination_links = pagination_links
+    def top_level_links_include_pagination=(top_level_links_include_pagination)
+      @top_level_links_include_pagination = top_level_links_include_pagination
     end
 
-    def record_count_in_meta=(record_count_in_meta)
-      @record_count_in_meta = record_count_in_meta
+    def top_level_meta_include_record_count=(top_level_meta_include_record_count)
+      @top_level_meta_include_record_count = top_level_meta_include_record_count
     end
 
-    def record_count_meta_key=(record_count_meta_key)
-      @record_count_meta_key = record_count_meta_key
+    def top_level_meta_record_count_key=(top_level_meta_record_count_key)
+      @top_level_meta_record_count_key = top_level_meta_record_count_key
     end
   end
 

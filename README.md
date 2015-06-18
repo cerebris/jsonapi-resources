@@ -540,8 +540,8 @@ The operation callbacks have access to two meta data hashes, `@operations_meta` 
 
 ##### Custom `OperationsProcessor` Example to Return total_count in Meta
 
-Note: this can also be accomplished with the `record_count_in_meta` option, and in most cases that will be the better
-option. 
+Note: this can also be accomplished with the `top_level_meta_include_record_count` option, and in most cases that will
+be the better option. 
 
 To return the total record count of a find operation in the meta data of a find operation you can create a custom
 OperationsProcessor. For example:
@@ -1201,14 +1201,14 @@ JSONAPI.configure do |config|
   config.default_paginator = :none
 
   # Output pagination links at top level
-  config.pagination_links = true
+  config.top_level_links_include_pagination = true
 
   config.default_page_size = 10
   config.maximum_page_size = 20
 
   # Output the record count in top level meta data for find operations
-  config.record_count_in_meta = false
-  config.record_count_meta_key = :record_count
+  config.top_level_meta_include_record_count = false
+  config.top_level_meta_record_count_key = :record_count
 
   config.use_text_errors = false
 end

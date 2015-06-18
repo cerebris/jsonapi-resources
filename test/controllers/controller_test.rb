@@ -2150,9 +2150,9 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
   def test_books_record_count_in_meta
     Api::V2::BookResource.paginator :offset
-    JSONAPI.configuration.record_count_in_meta = true
+    JSONAPI.configuration.top_level_meta_include_record_count = true
     get :index, {include: 'book-comments'}
-    JSONAPI.configuration.record_count_in_meta = false
+    JSONAPI.configuration.top_level_meta_include_record_count = false
 
     assert_response :success
     assert_equal 1000, json_response['meta']['record-count']
@@ -2162,12 +2162,12 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
   def test_books_record_count_in_meta_custom_name
     Api::V2::BookResource.paginator :offset
-    JSONAPI.configuration.record_count_in_meta = true
-    JSONAPI.configuration.record_count_meta_key = 'total_records'
+    JSONAPI.configuration.top_level_meta_include_record_count = true
+    JSONAPI.configuration.top_level_meta_record_count_key = 'total_records'
 
     get :index, {include: 'book-comments'}
-    JSONAPI.configuration.record_count_in_meta = false
-    JSONAPI.configuration.record_count_meta_key = :record_count
+    JSONAPI.configuration.top_level_meta_include_record_count = false
+    JSONAPI.configuration.top_level_meta_record_count_key = :record_count
 
     assert_response :success
     assert_equal 1000, json_response['meta']['total-records']
