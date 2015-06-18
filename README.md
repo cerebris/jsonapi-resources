@@ -50,8 +50,6 @@ Resources must be derived from `JSONAPI::Resource`, or a class that is itself de
 For example:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
 end
 ```
@@ -64,8 +62,6 @@ the `attribute` method, and multiple attributes can be declared with the `attrib
 For example:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
   attribute :name_first
   attributes :name_last, :email, :twitter
@@ -81,8 +77,6 @@ This allows a resource's methods to access the underlying model.
 For example, a computed attribute for `full_name` could be defined as such:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
   attributes :name_first, :name_last, :email, :twitter
   attribute :full_name
@@ -127,8 +121,6 @@ the `update` or `create` methods, override the `self.updatable_fields` and `self
 This example prevents `full_name` from being set:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
   attributes :name_first, :name_last, :full_name
 
@@ -280,8 +272,6 @@ declared using the `filter` method, and multiple filters can be declared with th
 For example:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
   attributes :name_first, :name_last, :email, :twitter
 
@@ -289,6 +279,25 @@ class ContactResource < JSONAPI::Resource
   filters :name_first, :name_last
 end
 ```
+
+##### Default Filters
+
+A default filter may be defined for a resource using the `default` option on the `filter` method. This default is used
+unless the request overrides this value.
+
+For example:
+
+```ruby
+ class CommentResource < JSONAPI::Resource
+  attributes :body, :status
+  has_one :post
+  has_one :author
+  
+  filter :status, default: 'published,pending'
+end
+```
+
+The default value is used as if it came from the request.
 
 ##### Finders
 
@@ -729,13 +738,14 @@ module JSONAPI
   KEY_NOT_INCLUDED_IN_URL = 110
   INVALID_INCLUDE = 112
   RELATION_EXISTS = 113
-  INVALID_SORT_PARAM = 114
+  INVALID_SORT_CRITERIA = 114
   INVALID_LINKS_OBJECT = 115
   TYPE_MISMATCH = 116
   INVALID_PAGE_OBJECT = 117
   INVALID_PAGE_VALUE = 118
   INVALID_FIELD_FORMAT = 119
   INVALID_FILTERS_SYNTAX = 120
+  SAVE_FAILED = 121
   FORBIDDEN = 403
   RECORD_NOT_FOUND = 404
   UNSUPPORTED_MEDIA_TYPE = 415
@@ -761,7 +771,6 @@ The `ResourceSerializer` can be used to serialize a resource into JSON API compl
  method that takes a resource instance or array of resource instances to serialize. For example:
 
 ```ruby
-require 'jsonapi/resource_serializer'
 post = Post.find(1)
 JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(PostResource.new(post))
 ```
