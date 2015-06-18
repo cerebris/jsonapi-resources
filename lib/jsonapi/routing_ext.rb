@@ -37,15 +37,15 @@ module ActionDispatch
           end
         end
 
-        def jsonapi_relationships
+        def jsonapi_relationships(options = {})
           res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
           res._associations.each do |association_name, association|
             if association.is_a?(JSONAPI::Association::HasMany)
-              jsonapi_links(association_name)
-              jsonapi_related_resources(association_name)
+              jsonapi_links(association_name, options)
+              jsonapi_related_resources(association_name, options)
             else
-              jsonapi_link(association_name)
-              jsonapi_related_resource(association_name)
+              jsonapi_link(association_name, options)
+              jsonapi_related_resource(association_name, options)
             end
           end
         end
