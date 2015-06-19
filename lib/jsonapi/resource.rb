@@ -278,8 +278,9 @@ module JSONAPI
 
       # Methods used in defining a resource class
       def attributes(*attrs)
+        options = attrs.extract_options!.dup
         attrs.each do |attr|
-          attribute(attr)
+          attribute(attr, options)
         end
       end
 
