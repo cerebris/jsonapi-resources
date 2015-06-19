@@ -264,6 +264,7 @@ module JSONAPI
       @operations.push JSONAPI::FindOperation.new(
                          @resource_klass,
                          {
+                           context: @context,
                            filters: @filters,
                            include_directives: @include_directives,
                            sort_criteria: @sort_criteria,
@@ -276,6 +277,7 @@ module JSONAPI
       @operations.push JSONAPI::ShowOperation.new(
                          @resource_klass,
                          {
+                           context: @context,
                            id: @id,
                            include_directives: @include_directives
                          }
@@ -286,6 +288,7 @@ module JSONAPI
       @operations.push JSONAPI::ShowAssociationOperation.new(
                          @resource_klass,
                          {
+                           context: @context,
                            association_type: association_type,
                            parent_key: @resource_klass.verify_key(parent_key)
                          }
@@ -296,6 +299,7 @@ module JSONAPI
       @operations.push JSONAPI::ShowRelatedResourceOperation.new(
                          @resource_klass,
                          {
+                           context: @context,
                            association_type: association_type,
                            source_klass: @source_klass,
                            source_id: @source_id
@@ -307,6 +311,7 @@ module JSONAPI
       @operations.push JSONAPI::ShowRelatedResourcesOperation.new(
                          @resource_klass,
                          {
+                           context: @context,
                            association_type: association_type,
                            source_klass: @source_klass,
                            source_id: @source_id,
@@ -336,6 +341,7 @@ module JSONAPI
         @operations.push JSONAPI::CreateResourceOperation.new(
                            @resource_klass,
                            {
+                             context: @context,
                              data: data
                            }
                          )
@@ -519,6 +525,7 @@ module JSONAPI
         @operations.push JSONAPI::CreateHasManyAssociationOperation.new(
                            resource_klass,
                            {
+                             context: @context,
                              resource_id: parent_key,
                              association_type: association_type,
                              data: verified_param_set[:has_many].values[0]
@@ -537,6 +544,7 @@ module JSONAPI
         @operations.push JSONAPI::ReplaceHasOneAssociationOperation.new(
                            resource_klass,
                            {
+                             context: @context,
                              resource_id: parent_key,
                              association_type: association_type,
                              key_value: verified_param_set[:has_one].values[0]
@@ -553,6 +561,7 @@ module JSONAPI
         @operations.push JSONAPI::ReplaceHasManyAssociationOperation.new(
                            resource_klass,
                            {
+                             context: @context,
                              resource_id: parent_key,
                              association_type: association_type,
                              data: verified_param_set[:has_many].values[0]
@@ -585,6 +594,7 @@ module JSONAPI
       @operations.push JSONAPI::ReplaceFieldsOperation.new(
                          @resource_klass,
                          {
+                           context: @context,
                            resource_id: key,
                            data: parse_params(data, updatable_fields)
                          }
@@ -615,6 +625,7 @@ module JSONAPI
         @operations.push JSONAPI::RemoveResourceOperation.new(
                            @resource_klass,
                            {
+                             context: @context,
                              resource_id: key
                            }
                          )
@@ -637,6 +648,7 @@ module JSONAPI
           @operations.push JSONAPI::RemoveHasManyAssociationOperation.new(
                              resource_klass,
                              {
+                               context: @context,
                                resource_id: parent_key,
                                association_type: association_type,
                                associated_key: key
@@ -647,6 +659,7 @@ module JSONAPI
         @operations.push JSONAPI::RemoveHasOneAssociationOperation.new(
                            resource_klass,
                            {
+                             context: @context,
                              resource_id: parent_key,
                              association_type: association_type
                            }

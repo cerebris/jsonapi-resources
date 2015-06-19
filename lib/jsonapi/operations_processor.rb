@@ -27,7 +27,6 @@ module JSONAPI
     def process(request)
       @results = JSONAPI::OperationResults.new
       @request = request
-      @context = request.context
       @operations = request.operations
 
       # Use transactions if more than one operation and if one of the operations can be transactional
@@ -82,7 +81,7 @@ module JSONAPI
     end
 
     def process_operation(operation)
-      operation.apply(@context)
+      operation.apply
     end
   end
 end
