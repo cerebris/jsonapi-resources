@@ -3,12 +3,13 @@ module JSONAPI
     attr_reader :resource_klass, :options, :transactional
 
     def initialize(resource_klass, options = {})
+      @context = options[:context]
       @resource_klass = resource_klass
       @options = options
       @transactional = true
     end
 
-    def apply(context)
+    def apply
     end
   end
 
@@ -20,7 +21,8 @@ module JSONAPI
       @include_directives = options[:include_directives]
       @sort_criteria = options.fetch(:sort_criteria, [])
       @paginator = options[:paginator]
-      super(resource_klass, false)
+      @transactional = false
+      super(resource_klass, options)
     end
 
     def record_count
@@ -39,9 +41,9 @@ module JSONAPI
       end
     end
 
-    def apply(context)
-      resource_records = @resource_klass.find(@resource_klass.verify_filters(@filters, context),
-                                             context: context,
+    def apply
+      resource_records = @resource_klass.find(@resource_klass.verify_filters(@filters, @context),
+                                             context: @context,
                                              include_directives: @include_directives,
                                              sort_criteria: @sort_criteria,
                                              paginator: @paginator)
@@ -74,11 +76,11 @@ module JSONAPI
       super(resource_klass, options)
     end
 
-    def apply(context)
-      key = @resource_klass.verify_key(@id, context)
+    def apply
+      key = @resource_klass.verify_key(@id, @context)
 
       resource_record = resource_klass.find_by_key(key,
-                                                   context: context,
+                                                   context: @context,
                                                    include_directives: @include_directives)
 
       return JSONAPI::ResourceOperationResult.new(:ok, resource_record)
@@ -98,8 +100,8 @@ module JSONAPI
       super(resource_klass, options)
     end
 
-    def apply(context)
-      parent_resource = resource_klass.find_by_key(@parent_key, context: context)
+    def apply
+      parent_resource = resource_klass.find_by_key(@parent_key, context: @context)
 
       return JSONAPI::LinksObjectOperationResult.new(:ok,
                                                      parent_resource,
@@ -121,8 +123,8 @@ module JSONAPI
       super(resource_klass, options)
     end
 
-    def apply(context)
-      source_resource = @source_klass.find_by_key(@source_id, context: context)
+    def apply
+      source_resource = @source_klass.find_by_key(@source_id, context: @context)
 
       related_resource = source_resource.send(@association_type)
 
@@ -147,8 +149,8 @@ module JSONAPI
       super(resource_klass, options)
     end
 
-    def apply(context)
-      source_resource = @source_klass.find_by_key(@source_id, context: context)
+    def apply
+      source_resource = @source_klass.find_by_key(@source_id, context: @context)
 
       related_resource = source_resource.send(@association_type,
                                               {
@@ -172,8 +174,8 @@ module JSONAPI
       super(resource_klass, options)
     end
 
-    def apply(context)
-      resource = @resource_klass.create(context)
+    def apply
+      resource = @resource_klass.create(@context)
       result = resource.replace_fields(@data)
 
       return JSONAPI::ResourceOperationResult.new((result == :completed ? :created : :accepted), resource)
@@ -190,8 +192,8 @@ module JSONAPI
       super(resource_klass, options)
     end
 
-    def apply(context)
-      resource = @resource_klass.find_by_key(@resource_id, context: context)
+    def apply
+      resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.remove
 
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
@@ -210,8 +212,8 @@ module JSONAPI
       super(resource_klass, options)
     end
 
-    def apply(context)
-      resource = @resource_klass.find_by_key(@resource_id, context: context)
+    def apply
+      resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.replace_fields(data)
 
       return JSONAPI::ResourceOperationResult.new(result == :completed ? :ok : :accepted, resource)
@@ -228,8 +230,8 @@ module JSONAPI
       super(resource_klass, options)
     end
 
-    def apply(context)
-      resource = @resource_klass.find_by_key(@resource_id, context: context)
+    def apply
+      resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.replace_has_one_link(@association_type, @key_value)
 
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
@@ -246,8 +248,8 @@ module JSONAPI
       super(resource_klass, options)
     end
 
-    def apply(context)
-      resource = @resource_klass.find_by_key(@resource_id, context: context)
+    def apply
+      resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.create_has_many_links(@association_type, @data)
 
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
@@ -264,8 +266,8 @@ module JSONAPI
       super(resource_klass, options)
     end
 
-    def apply(context)
-      resource = @resource_klass.find_by_key(@resource_id, context: context)
+    def apply
+      resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.replace_has_many_links(@association_type, @data)
 
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
@@ -282,8 +284,8 @@ module JSONAPI
       super(resource_klass, options)
     end
 
-    def apply(context)
-      resource = @resource_klass.find_by_key(@resource_id, context: context)
+    def apply
+      resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.remove_has_many_link(@association_type, @associated_key)
 
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
@@ -299,8 +301,8 @@ module JSONAPI
       super(resource_klass, options)
     end
 
-    def apply(context)
-      resource = @resource_klass.find_by_key(@resource_id, context: context)
+    def apply
+      resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.remove_has_one_link(@association_type)
 
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
