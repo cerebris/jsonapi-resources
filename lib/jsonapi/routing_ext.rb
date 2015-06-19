@@ -70,6 +70,7 @@ module ActionDispatch
           options[:path] = format_route(@resource_type)
 
           if options[:except]
+            options[:except] = Array(options[:except])
             options[:except] << :new unless options[:except].include?(:new) || options[:except].include?('new')
             options[:except] << :edit unless options[:except].include?(:edit) || options[:except].include?('edit')
           else
@@ -92,7 +93,7 @@ module ActionDispatch
           if only = options[:only]
             Array(only).map(&:to_sym)
           elsif except = options[:except]
-            default_methods - except
+            default_methods - Array(except)
           else
             default_methods
           end

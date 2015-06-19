@@ -110,7 +110,7 @@ TestApp.routes.draw do
     JSONAPI.configuration.route_format = :underscored_route
     namespace :v2 do
       jsonapi_resources :posts do
-        jsonapi_link :author, except: [:destroy]
+        jsonapi_link :author, except: :destroy
       end
 
       jsonapi_resource :preferences, except: [:create, :destroy]
