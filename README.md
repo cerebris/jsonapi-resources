@@ -793,14 +793,14 @@ This returns results like this:
     "relationships": {
       "section": {
         "links": {
-          "self": "http://example.com/posts/1/links/section",
+          "self": "http://example.com/posts/1/relationships/section",
           "related": "http://example.com/posts/1/section"
         },
         "data": null
       },
       "author": {
         "links": {
-          "self": "http://example.com/posts/1/links/author",
+          "self": "http://example.com/posts/1/relationships/author",
           "related": "http://example.com/posts/1/author"
         },
         "data": {
@@ -810,13 +810,13 @@ This returns results like this:
       },
       "tags": {
         "links": {
-          "self": "http://example.com/posts/1/links/tags",
+          "self": "http://example.com/posts/1/relationships/tags",
           "related": "http://example.com/posts/1/tags"
         }
       },
       "comments": {
         "links": {
-          "self": "http://example.com/posts/1/links/comments",
+          "self": "http://example.com/posts/1/relationships/comments",
           "related": "http://example.com/posts/1/comments"
         }
       }
