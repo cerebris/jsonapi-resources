@@ -227,6 +227,16 @@ class PostsControllerTest < ActionController::TestCase
     assert_nil json_response['included']
   end
 
+  def test_show_does_not_include_records_count_in_meta
+    JSONAPI.configuration.top_level_meta_include_record_count = true
+    get :show, { id: Post.first.id }
+    assert_response :success
+    assert_equal json_response['meta'], nil
+  ensure
+    JSONAPI.configuration.top_level_meta_include_record_count = false
+  end
+
+
   def test_show_single_with_includes
     get :show, {id: '1', include: 'comments'}
     assert_response :success
