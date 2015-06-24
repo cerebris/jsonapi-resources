@@ -19,7 +19,7 @@ module JSONAPI
         super
         @class_name = options.fetch(:class_name, name.to_s.capitalize)
         @type = class_name.underscore.pluralize.to_sym
-        @foreign_key ||= @key.nil? ? "#{name}_id".to_sym : @key
+        @foreign_key ||= "#{name}_id".to_sym
       end
     end
 
@@ -28,7 +28,7 @@ module JSONAPI
         super
         @class_name = options.fetch(:class_name, name.to_s.capitalize.singularize)
         @type = class_name.underscore.pluralize.to_sym
-        @foreign_key  ||= @key.nil? ? "#{name.to_s.singularize}_ids".to_sym : @key
+        @foreign_key  ||= "#{name.to_s.singularize}_ids".to_sym
       end
     end
   end
