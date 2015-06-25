@@ -198,8 +198,8 @@ module JSONAPI
     def _replace_polymorphic_has_one_link(association_type, key_value, key_type)
       association = self.class._associations[association_type.to_sym]
 
-      model.send("#{association_type}_id=", key_value)
-      model.send("#{association_type}_type=", key_type.to_s.classify)
+      model.send("#{association.foreign_key}=", key_value)
+      model.send("#{association.polymorphic_type}=", key_type.to_s.classify)
 
       @save_needed = true
 
