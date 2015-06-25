@@ -239,31 +239,42 @@ end
 ##### Options
 
 The association methods support the following options:
+
  * `class_name` - a string specifying the underlying class for the related resource
- * `foreign_key` - the method on the resource used to fetch the related resource. Defaults to `<resource_name>_id` for 
-    has_one and `<resource_name>_ids` for has_many relationships.
+ * `foreign_key` - the method on the resource used to fetch the related resource. Defaults to `<resource_name>_id` for has_one and `<resource_name>_ids` for has_many relationships.
  * `acts_as_set` - allows the entire set of related records to be replaced in one operation. Defaults to false if not set.
+ * `polymorphic` - set to true to identify `has_one` associations that are polymorphic.
 
 Examples:
 
 ```ruby
- class CommentResource < JSONAPI::Resource
+class CommentResource < JSONAPI::Resource
   attributes :body
   has_one :post
   has_one :author, class_name: 'Person'
   has_many :tags, acts_as_set: true
- end
-```
+end
 
-```ruby
 class ExpenseEntryResource < JSONAPI::Resource
   attributes :cost, :transaction_date
 
   has_one :currency, class_name: 'Currency', foreign_key: 'currency_code'
   has_one :employee
 end
+
+class TagResource < JSONAPI::Resource
+  attributes :name
+  has_one :taggable, polymorphic: true
+end
 ```
 
+The polymorphic association will require the resource and controller to exist, although routing to them will cause an error.
+
+```ruby
+class TaggableResource < JSONAPI::Resource; end
+class TaggablesController < JSONAPI::ResourceController; end
+```
+ 
 #### Filters
 
 Filters for locating objects of the resource type are specified in the resource definition. Single filters can be 
@@ -279,6 +290,7 @@ class ContactResource < JSONAPI::Resource
   filters :name_first, :name_last
 end
 ```
+
 
 ##### Default Filters
 
