@@ -406,9 +406,7 @@ module JSONAPI
           when 'relationships'
             value.each do |link_key, link_value|
               param = unformat_key(link_key)
-
               association = @resource_klass._association(param)
-
               if association.is_a?(JSONAPI::Association::HasOne)
                 if link_value.nil?
                   linkage = nil
@@ -424,7 +422,12 @@ module JSONAPI
 
                 unless links_object[:id].nil?
                   association_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(links_object[:type]).to_s)
-                  checked_has_one_associations[param] = association_resource.verify_key(links_object[:id], @context)
+                  association_id = association_resource.verify_key(links_object[:id], @context)
+                  if association.polymorphic?
+                    checked_has_one_associations[param] = { id: association_id, type: unformat_key(links_object[:type].to_s) }
+                  else
+                    checked_has_one_associations[param] = association_id
+                  end
                 else
                   checked_has_one_associations[param] = nil
                 end
@@ -544,8 +547,8 @@ module JSONAPI
                              context: @context,
                              resource_id: parent_key,
                              association_type: association_type,
-                             key_value: verified_param_set[:has_one].values[0],
-                             key_type: data['type']
+                             key_value: verified_param_set[:has_one].values[0][:id],
+                             key_type: verified_param_set[:has_one].values[0][:type]
                            }
                          )
       elsif association.is_a?(JSONAPI::Association::HasOne)

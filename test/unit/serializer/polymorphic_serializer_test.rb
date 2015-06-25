@@ -175,6 +175,34 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
     )
   end
 
+  def test_create_resource_with_polymorphic_relationship
+    document = Document.find(1)
+    post "/pictures/",
+      {
+        data: {
+          type: "pictures",
+          attributes: {
+            name: "hello.jpg"
+          },
+          relationships: {
+            imageable: {
+              data: {
+                type: "documents",
+                id: document.id.to_s
+              }
+            }
+          }
+        }
+      }.to_json,
+      {
+        'Content-Type' => JSONAPI::MEDIA_TYPE
+      }
+    assert_equal response.status, 201
+    picture = Picture.find(json_response["data"]["id"])
+    assert_not_nil picture.imageable, "imageable should be present"
+  ensure
+    picture.destroy
+  end
 
   def test_polymorphic_create_relationship
     picture = Picture.find(3)
