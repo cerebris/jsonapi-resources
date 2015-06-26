@@ -7,11 +7,15 @@ module JSONAPI
       @options             = options
       @acts_as_set         = options.fetch(:acts_as_set, false) == true
       @foreign_key         = options[:foreign_key ] ? options[:foreign_key ].to_sym : nil
-      @module_path         = options[:module_path] || ''
+      @module_path         = options.fetch(:module_path, '')
     end
 
     def primary_key
-      @primary_key ||= Resource.resource_for(@module_path + @name)._primary_key
+      @primary_key ||= resource_klass._primary_key
+    end
+
+    def resource_klass
+      @resource_klass ||= Resource.resource_for(@module_path + @class_name)
     end
 
     class HasOne < Association

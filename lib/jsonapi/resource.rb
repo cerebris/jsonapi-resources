@@ -159,7 +159,7 @@ module JSONAPI
       association = self.class._associations[association_type]
 
       association_key_values.each do |association_key_value|
-        related_resource = Resource.resource_for(self.class.module_path + association.type.to_s).find_by_key(association_key_value, context: @context)
+        related_resource = association.resource_klass.find_by_key(association_key_value, context: @context)
 
         # ToDo: Add option to skip relations that already exist instead of returning an error?
         relation = @model.send(association.type).where(association.primary_key => association_key_value).first
@@ -642,31 +642,29 @@ module JSONAPI
 
           if @_associations[attr].is_a?(JSONAPI::Association::HasOne)
             define_method attr do
-              type_name = self.class._associations[attr].type.to_s
-              resource_class = Resource.resource_for(self.class.module_path + type_name)
-              if resource_class
+              resource_klass = self.class._associations[attr].resource_klass
+              if resource_klass
                 associated_model = public_send(associated_records_method_name)
-                return associated_model ? resource_class.new(associated_model, @context) : nil
+                return associated_model ? resource_klass.new(associated_model, @context) : nil
               end
             end unless method_defined?(attr)
           elsif @_associations[attr].is_a?(JSONAPI::Association::HasMany)
             define_method attr do |options = {}|
-              type_name = self.class._associations[attr].type.to_s
-              resource_class = Resource.resource_for(self.class.module_path + type_name)
+              resource_klass = self.class._associations[attr].resource_klass
               filters = options.fetch(:filters, {})
               sort_criteria =  options.fetch(:sort_criteria, {})
               paginator = options[:paginator]
 
               resources = []
 
-              if resource_class
+              if resource_klass
                 records = public_send(associated_records_method_name)
-                records = resource_class.apply_filters(records, filters, options)
+                records = resource_klass.apply_filters(records, filters, options)
                 order_options = self.class.construct_order_options(sort_criteria)
-                records = resource_class.apply_sort(records, order_options)
-                records = resource_class.apply_pagination(records, paginator, order_options)
+                records = resource_klass.apply_sort(records, order_options)
+                records = resource_klass.apply_pagination(records, paginator, order_options)
                 records.each do |record|
-                  resources.push resource_class.new(record, @context)
+                  resources.push resource_klass.new(record, @context)
                 end
               end
               return resources
