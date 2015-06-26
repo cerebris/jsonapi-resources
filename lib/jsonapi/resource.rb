@@ -641,7 +641,7 @@ module JSONAPI
           end unless method_defined?(associated_records_method_name)
 
           if @_associations[attr].is_a?(JSONAPI::Association::HasOne)
-            define_method attr do
+            define_method attr do |options = {}|
               resource_klass = self.class._associations[attr].resource_klass
               if resource_klass
                 associated_model = public_send(associated_records_method_name)
