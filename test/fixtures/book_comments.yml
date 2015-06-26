@@ -6,6 +6,7 @@ book_<%= book_num %>_comment_<%= comment_num %>:
   body: This is comment <%= comment_num %> on book <%= book_num %>.
   author_id: 1
   book_id: <%= book_num %>
+  approved: <%= comment_num.even? %>
   <% comment_id = comment_id + 1 %>
   <% end %>
 <% end %>

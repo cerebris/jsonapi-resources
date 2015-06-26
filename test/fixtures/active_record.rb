@@ -13,7 +13,8 @@ ActiveRecord::Schema.define do
     t.string     :email
     t.datetime   :date_joined
     t.belongs_to :preferences
-    t.integer :hair_cut_id, index: true
+    t.integer    :hair_cut_id, index: true
+    t.boolean    :book_admin, default: false
     t.timestamps null: false
   end
 
@@ -107,12 +108,14 @@ ActiveRecord::Schema.define do
   create_table :books, force: true do |t|
     t.string :title
     t.string :isbn
+    t.boolean :banned, default: false
   end
 
   create_table :book_comments, force: true do |t|
     t.text       :body
     t.belongs_to :book, index: true
     t.integer    :author_id
+    t.boolean    :approved, default: true
     t.timestamps null: false
   end
 
@@ -445,9 +448,15 @@ module Api
     end
 
     class BooksController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
     end
 
     class BookCommentsController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
     end
   end
 
@@ -821,15 +830,84 @@ module Api
 
     class BookResource < JSONAPI::Resource
       attribute :title
-      attribute :isbn
+      attributes :isbn, :banned
 
       has_many :book_comments
+
+      filters :banned
+
+      def self.apply_filter(records, filter, value, options)
+        context = options[:context]
+        current_user = context ? context[:current_user] : nil
+
+        case filter
+          when :banned
+            # Only book admins my filter for banned books
+            if current_user && current_user.book_admin
+              records.where('books.banned = ?', value[0] == 'true')
+            end
+          else
+            return super(records, filter, value)
+        end
+      end
+
+      def self.records(options = {})
+        context = options[:context]
+        current_user = context ? context[:current_user] : nil
+
+        # Hide the banned books from people who are not book admins
+        unless current_user && current_user.book_admin
+          _model_class.where('books.banned = ?', false)
+        else
+          _model_class
+        end
+      end
+
+      def records_for(association_name, options = {})
+        case association_name
+          when :book_comments
+            resource_klass = self.class._associations[association_name].resource_klass
+            resource_klass.records(options).where(book_id: self.id)
+          else
+            model.send association_name
+        end
+      end
     end
 
     class BookCommentResource < JSONAPI::Resource
-      attributes :body
+      attributes :body, :approved
+
       has_one :book
       has_one :author, class_name: 'Person'
+
+      filters :approved, :book
+
+      def self.apply_filter(records, filter, value, options)
+        context = options[:context]
+        current_user = context ? context[:current_user] : nil
+
+        case filter
+          when :approved
+            # Only book admins my filter for unapproved comments
+            if current_user && current_user.book_admin
+              records.where('book_comments.approved = ?', value[0] == 'true')
+            end
+          else
+            return super(records, filter, value)
+        end
+      end
+
+      def self.records(options = {})
+        context = options[:context]
+        current_user = context ? context[:current_user] : nil
+
+        # Hide the unapproved comments from people who are not book admins
+        unless current_user && current_user.book_admin
+          _model_class.where('book_comments.approved = ?', true)
+        else
+          _model_class
+        end
+      end
     end
   end
 end
