@@ -6,7 +6,7 @@ module JSONAPI
 
     included do
       before_filter :ensure_correct_media_type, only: [:create, :update, :create_association, :update_association]
-      before_filter :setup_request
+      append_before_filter :setup_request
       after_filter :setup_response
     end
 
