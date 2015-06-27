@@ -803,7 +803,6 @@ module Api
       filters :writer
     end
 
-    # AuthorResource = AuthorResource.dup
     PersonResource = PersonResource.dup
     CommentResource = CommentResource.dup
     TagResource = TagResource.dup
@@ -824,7 +823,6 @@ end
 module Api
   module V2
     PreferencesResource = PreferencesResource.dup
-    # AuthorResource = AuthorResource.dup
     PersonResource = PersonResource.dup
     PostResource = PostResource.dup
 
