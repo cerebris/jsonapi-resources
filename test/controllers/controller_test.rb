@@ -54,19 +54,19 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_index_include_one_level_query_count
-    query_count = count_queries do
+    count_queries do
       get :index, {include: 'author'}
     end
     assert_response :success
-    assert_equal 2, query_count
+    assert_query_count(2)
   end
 
   def test_index_include_two_levels_query_count
-    query_count = count_queries do
+    count_queries do
       get :index, {include: 'author,author.comments'}
     end
     assert_response :success
-    assert_equal 3, query_count
+    assert_query_count(3)
   end
 
   def test_index_filter_by_ids_and_fields
@@ -2179,25 +2179,25 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   def test_books_offset_pagination_no_params_includes_query_count_one_level
     Api::V2::BookResource.paginator :offset
 
-    query_count = count_queries do
+    count_queries do
       get :index, {include: 'book-comments'}
     end
     assert_response :success
     assert_equal 10, json_response['data'].size
     assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
-    assert_equal 3, query_count
+    assert_query_count(3)
   end
 
   def test_books_offset_pagination_no_params_includes_query_count_two_levels
     Api::V2::BookResource.paginator :offset
 
-    query_count = count_queries do
+    count_queries do
       get :index, {include: 'book-comments,book-comments.author'}
     end
     assert_response :success
     assert_equal 10, json_response['data'].size
     assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
-    assert_equal 4, query_count
+    assert_query_count(4)
   end
 
   def test_books_offset_pagination
@@ -2320,19 +2320,19 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   def test_books_included_paged
     Api::V2::BookResource.paginator :offset
 
-    query_count = count_queries do
+    count_queries do
       get :index, {filter: {id: '0'}, include: 'book-comments'}
     end
     assert_response :success
     assert_equal 1, json_response['data'].size
     assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
-    assert_equal 3, query_count
+    assert_query_count(3)
   end
 
   def test_books_banned_non_book_admin
     $test_user = Person.find(1)
     Api::V2::BookResource.paginator :offset
-    query_count = count_queries do
+    count_queries do
       JSONAPI.configuration.top_level_meta_include_record_count = true
       get :index, {page: {offset: 50, limit: 12}}
       JSONAPI.configuration.top_level_meta_include_record_count = false
@@ -2341,6 +2341,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_equal 12, json_response['data'].size
     assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
     assert_equal 901, json_response['meta']['record-count']
+    assert_query_count(4)
   end
 
   def test_books_banned_admin
@@ -2360,7 +2361,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   def test_books_not_banned_admin
     $test_user = Person.find(5)
     Api::V2::BookResource.paginator :offset
-    query_count = count_queries do
+    count_queries do
       JSONAPI.configuration.top_level_meta_include_record_count = true
       get :index, {page: {offset: 50, limit: 12}, filter: {banned: 'false'}}
       JSONAPI.configuration.top_level_meta_include_record_count = false
@@ -2369,12 +2370,13 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_equal 12, json_response['data'].size
     assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
     assert_equal 901, json_response['meta']['record-count']
+    assert_query_count(2)
   end
 
   def test_books_banned_non_book_admin
     $test_user = Person.find(1)
     Api::V2::BookResource.paginator :offset
-    query_count = count_queries do
+    count_queries do
       JSONAPI.configuration.top_level_meta_include_record_count = true
       get :index, {page: {offset: 590, limit: 20}}
       JSONAPI.configuration.top_level_meta_include_record_count = false
@@ -2383,13 +2385,14 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_equal 20, json_response['data'].size
     assert_equal 'Book 590', json_response['data'][0]['attributes']['title']
     assert_equal 901, json_response['meta']['record-count']
+    assert_query_count(2)
   end
 
   def test_books_included_exclude_unapproved
     $test_user = Person.find(1)
     Api::V2::BookResource.paginator :none
 
-    query_count = count_queries do
+    count_queries do
       get :index, {filter: {id: '0,1,2,3,4'}, include: 'book-comments'}
     end
     assert_response :success
@@ -2397,7 +2400,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
     assert_equal 130, json_response['included'].size
     assert_equal 26, json_response['data'][0]['relationships']['book-comments']['data'].size
-    assert_equal 3, query_count
+    assert_query_count(3)
   end
 end
 
@@ -2409,12 +2412,12 @@ class Api::V2::BookCommentsControllerTest < ActionController::TestCase
 
   def test_book_comments_exclude_unapproved
     $test_user = Person.find(1)
-    query_count = count_queries do
+    count_queries do
       get :index
     end
     assert_response :success
     assert_equal 130, json_response['data'].size
-    assert_equal 1, query_count
+    assert_query_count(1)
   end
 end
 
