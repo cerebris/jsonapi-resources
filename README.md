@@ -280,6 +280,8 @@ class ContactResource < JSONAPI::Resource
 end
 ```
 
+Then a request could pass in a filter for example `http://example.com/contacts?filter[last_name]=Smith` and the system will find all people where the last name exactly matches Smith.
+
 ##### Default Filters
 
 A default filter may be defined for a resource using the `default` option on the `filter` method. This default is used
