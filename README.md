@@ -280,7 +280,7 @@ class ContactResource < JSONAPI::Resource
 end
 ```
 
-Then a request could pass in a filter for example `http://example.com/contacts?filter[last_name]=Smith` and the system will find all people where the last name exactly matches Smith.
+Then a request could pass in a filter for example `http://example.com/contacts?filter[name_last]=Smith` and the system will find all people where the last name exactly matches Smith.
 
 ##### Default Filters
 
