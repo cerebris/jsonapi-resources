@@ -15,7 +15,7 @@ require 'rails/test_help'
 require 'jsonapi-resources'
 
 require File.expand_path('../helpers/value_matchers', __FILE__)
-require File.expand_path('../helpers/hash_helpers', __FILE__)
+require File.expand_path('../helpers/assertions', __FILE__)
 require File.expand_path('../helpers/functional_helpers', __FILE__)
 
 Rails.env = 'test'
@@ -200,7 +200,7 @@ end
 Minitest::Test = MiniTest::Unit::TestCase unless defined?(Minitest::Test)
 
 class Minitest::Test
-  include Helpers::HashHelpers
+  include Helpers::Assertions
   include Helpers::ValueMatchers
   include Helpers::FunctionalHelpers
 end
