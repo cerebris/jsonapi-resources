@@ -364,8 +364,30 @@ module JSONAPI
         _associations.keys | _attributes.keys
       end
 
-      def apply_includes(records, directives)
-        records = records.includes(*directives.model_includes) if directives
+      def resolve_association_names_to_relations(resource_klass, model_includes, options = {})
+        model_includes.map do |include|
+          case include
+            when Hash
+              converted_hash = {}
+              include.each_pair do |name, directive|
+                association = resource_klass._associations[name]
+                converted_hash[association.relation_name(options)] =
+                  resolve_association_names_to_relations(association.resource_klass, directive, options)
+              end
+            when Symbol
+              association = resource_klass._associations[include]
+              association.relation_name(options)
+          end
+        end
+      end
+
+      def apply_includes(records, options = {})
+        include_directives = options[:include_directives]
+        if include_directives
+          model_includes = resolve_association_names_to_relations(self, include_directives.model_includes, options)
+          records = records.includes(model_includes)
+        end
+
         records
       end
 
@@ -395,7 +417,7 @@ module JSONAPI
           filters.each do |filter, value|
             if _associations.include?(filter)
               if _associations[filter].is_a?(JSONAPI::Association::HasMany)
-                required_includes.push(filter)
+                required_includes.push(filter.to_s)
                 records = apply_filter(records, "#{filter}.#{_associations[filter].primary_key}", value, options)
               else
                 records = apply_filter(records, "#{_associations[filter].foreign_key}", value, options)
@@ -407,20 +429,16 @@ module JSONAPI
         end
 
         if required_includes.any?
-          records.includes(required_includes)
-        elsif records.respond_to? :to_ary
-          records
-        else
-          records.all
+          records = apply_includes(records, include_directives: IncludeDirectives.new(required_includes), options: options)
         end
+
+        records
       end
 
       def filter_records(filters, options)
-        include_directives = options[:include_directives]
-
         records = records(options)
-        records = apply_includes(records, include_directives)
-        apply_filters(records, filters, options)
+        records = apply_filters(records, filters, options)
+        apply_includes(records, options)
       end
 
       def sort_records(records, order_options)
@@ -453,9 +471,8 @@ module JSONAPI
 
       def find_by_key(key, options = {})
         context = options[:context]
-        include_directives = options[:include_directives]
         records = records(options)
-        records = apply_includes(records, include_directives)
+        records = apply_includes(records, options)
         model = records.where({_primary_key => key}).first
         if model.nil?
           raise JSONAPI::Exceptions::RecordNotFound.new(key)
@@ -619,9 +636,9 @@ module JSONAPI
         attrs.each do |attr|
           check_reserved_association_name(attr)
 
-          @_associations[attr] = klass.new(attr, options)
+          association = @_associations[attr] = klass.new(attr, options)
 
-          foreign_key = @_associations[attr].foreign_key
+          foreign_key = association.foreign_key
 
           define_method foreign_key do
             @model.method(foreign_key).call
@@ -631,48 +648,60 @@ module JSONAPI
             @model.method("#{foreign_key}=").call(value)
           end unless method_defined?("#{foreign_key}=")
 
-          associated_records_method_name = case @_associations[attr]
-          when JSONAPI::Association::HasOne then "record_for_#{attr}"
-          when JSONAPI::Association::HasMany then "records_for_#{attr}"
+          associated_records_method_name = case association
+            when JSONAPI::Association::HasOne then "record_for_#{attr}"
+            when JSONAPI::Association::HasMany then "records_for_#{attr}"
           end
 
           define_method associated_records_method_name do |options={}|
-            records_for(attr, options)
+            relation_name = association.relation_name(options)
+            records_for(relation_name, options)
           end unless method_defined?(associated_records_method_name)
 
-          if @_associations[attr].is_a?(JSONAPI::Association::HasOne)
+          if association.is_a?(JSONAPI::Association::HasOne)
             define_method attr do |options = {}|
-              resource_klass = self.class._associations[attr].resource_klass
+              context = options.fetch(:context, @context)
+
+              resource_klass = association.resource_klass
               if resource_klass
-                associated_model = public_send(associated_records_method_name)
+                associated_model = public_send(associated_records_method_name, context: context)
                 return associated_model ? resource_klass.new(associated_model, @context) : nil
               end
             end unless method_defined?(attr)
-          elsif @_associations[attr].is_a?(JSONAPI::Association::HasMany)
+          elsif association.is_a?(JSONAPI::Association::HasMany)
             define_method attr do |options = {}|
-              resource_klass = self.class._associations[attr].resource_klass
-              filters = options.fetch(:filters, {})
-              sort_criteria =  options.fetch(:sort_criteria, {})
-              paginator = options[:paginator]
+              context = options.fetch(:context, @context)
+              resource_klass = association.resource_klass
 
               resources = []
 
-              if resource_klass
-                records = public_send(associated_records_method_name)
+              records = public_send(associated_records_method_name, context: context)
+
+              filters = options.fetch(:filters, {})
+              unless filters.nil? || filters.empty?
                 records = resource_klass.apply_filters(records, filters, options)
+              end
+
+              sort_criteria =  options.fetch(:sort_criteria, {})
+              unless sort_criteria.nil? || sort_criteria.empty?
                 order_options = self.class.construct_order_options(sort_criteria)
                 records = resource_klass.apply_sort(records, order_options)
-                records = resource_klass.apply_pagination(records, paginator, order_options)
-                records.each do |record|
-                  resources.push resource_klass.new(record, @context)
-                end
               end
+
+              paginator = options[:paginator]
+              if paginator
+                records = resource_klass.apply_pagination(records, paginator, order_options)
+              end
+
+              records.each do |record|
+                resources.push resource_klass.new(record, @context)
+              end
+
               return resources
             end unless method_defined?(attr)
           end
         end
       end
     end
-
   end
 end
