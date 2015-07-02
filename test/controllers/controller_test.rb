@@ -2341,7 +2341,64 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_equal 12, json_response['data'].size
     assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
     assert_equal 901, json_response['meta']['record-count']
-    assert_query_count(4)
+    assert_query_count(2)
+  end
+
+  def test_books_banned_non_book_admin_includes
+    $test_user = Person.find(1)
+    Api::V2::BookResource.paginator :offset
+    count_queries do
+      JSONAPI.configuration.top_level_meta_include_record_count = true
+      get :index, {page: {offset: 0, limit: 12}, include: 'approved-book-comments'}
+      # get :index, {page: {offset: 0, limit: 12}, include: 'book-comments'}
+      JSONAPI.configuration.top_level_meta_include_record_count = false
+    end
+
+    # show_queries
+    assert_response :success
+    assert_equal 12, json_response['data'].size
+    assert_equal 130, json_response['included'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+    assert_equal 26, json_response['data'][0]['relationships']['approved-book-comments']['data'].size
+    assert_equal 'book-comments', json_response['included'][0]['type']
+    assert_equal 901, json_response['meta']['record-count']
+    assert_query_count(3)
+  end
+
+  def test_books_banned_non_book_admin_includes_switched
+    $test_user = Person.find(1)
+    Api::V2::BookResource.paginator :offset
+    count_queries do
+      JSONAPI.configuration.top_level_meta_include_record_count = true
+      get :index, {page: {offset: 0, limit: 12}, include: 'book-comments'}
+      JSONAPI.configuration.top_level_meta_include_record_count = false
+    end
+
+    # show_queries
+    assert_response :success
+    assert_equal 12, json_response['data'].size
+    assert_equal 130, json_response['included'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+    assert_equal 26, json_response['data'][0]['relationships']['book-comments']['data'].size
+    assert_equal 'book-comments', json_response['included'][0]['type']
+    assert_equal 901, json_response['meta']['record-count']
+    assert_query_count(3)
+  end
+
+  def test_books_banned_non_book_admin_includes_nested_includes
+    $test_user = Person.find(1)
+    Api::V2::BookResource.paginator :offset
+    count_queries do
+      JSONAPI.configuration.top_level_meta_include_record_count = true
+      get :index, {page: {offset: 0, limit: 12}, include: 'book-comments,book-comments.author'}
+      JSONAPI.configuration.top_level_meta_include_record_count = false
+    end
+    assert_response :success
+    assert_equal 12, json_response['data'].size
+    assert_equal 131, json_response['included'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+    assert_equal 901, json_response['meta']['record-count']
+    assert_query_count(3)
   end
 
   def test_books_banned_admin
@@ -2373,7 +2430,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_query_count(2)
   end
 
-  def test_books_banned_non_book_admin
+  def test_books_banned_non_book_admin_overlapped
     $test_user = Person.find(1)
     Api::V2::BookResource.paginator :offset
     count_queries do

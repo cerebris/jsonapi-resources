@@ -292,6 +292,7 @@ end
 
 class Book < ActiveRecord::Base
   has_many :book_comments
+  has_many :approved_book_comments, -> { where(approved: true) }, class_name: "BookComment"
 end
 
 class BookComment < ActiveRecord::Base
@@ -830,44 +831,54 @@ module Api
       attribute :title
       attributes :isbn, :banned
 
-      has_many :book_comments
+      has_many :book_comments, relation_name: -> (options = {}) {
+        context = options[:context]
+        current_user = context ? context[:current_user] : nil
+
+        unless current_user && current_user.book_admin
+          :approved_book_comments
+        else
+          :book_comments
+        end
+      }
+      has_many :approved_book_comments, class_name: "BookComments"
 
       filters :banned
 
-      def self.apply_filter(records, filter, value, options)
-        context = options[:context]
-        current_user = context ? context[:current_user] : nil
+      class << self
+        def apply_filter(records, filter, value, options)
+          context = options[:context]
+          current_user = context ? context[:current_user] : nil
 
-        case filter
-          when :banned
-            # Only book admins my filter for banned books
-            if current_user && current_user.book_admin
-              records.where('books.banned = ?', value[0] == 'true')
-            end
-          else
-            return super(records, filter, value)
+          case filter
+            when :banned
+              # Only book admins my filter for banned books
+              if current_user && current_user.book_admin
+                return records.where('books.banned = ?', value[0] == 'true')
+              end
+            else
+              return super(records, filter, value)
+          end
         end
-      end
 
-      def self.records(options = {})
-        context = options[:context]
-        current_user = context ? context[:current_user] : nil
-
-        # Hide the banned books from people who are not book admins
-        unless current_user && current_user.book_admin
-          _model_class.where('books.banned = ?', false)
-        else
-          _model_class
+        def books
+          Book.arel_table
         end
-      end
 
-      def records_for(association_name, options = {})
-        case association_name
-          when :book_comments
-            resource_klass = self.class._associations[association_name].resource_klass
-            resource_klass.records(options).where(book_id: self.id)
-          else
-            model.send association_name
+        def not_banned_books
+          books[:banned].eq(false)
+        end
+
+        def records(options = {})
+          context = options[:context]
+          current_user = context ? context[:current_user] : nil
+
+          records = _model_class
+          # Hide the banned books from people who are not book admins
+          unless current_user && current_user.book_admin
+            records = records.where(not_banned_books)
+          end
+          records
         end
       end
     end
@@ -880,30 +891,40 @@ module Api
 
       filters :approved, :book
 
-      def self.apply_filter(records, filter, value, options)
-        context = options[:context]
-        current_user = context ? context[:current_user] : nil
-
-        case filter
-          when :approved
-            # Only book admins my filter for unapproved comments
-            if current_user && current_user.book_admin
-              records.where('book_comments.approved = ?', value[0] == 'true')
-            end
-          else
-            return super(records, filter, value)
+      class << self
+        def book_comments
+          BookComment.arel_table
         end
-      end
 
-      def self.records(options = {})
-        context = options[:context]
-        current_user = context ? context[:current_user] : nil
+        def approved_comments(approved = true)
+          book_comments[:approved].eq(approved)
+        end
 
-        # Hide the unapproved comments from people who are not book admins
-        unless current_user && current_user.book_admin
-          _model_class.where('book_comments.approved = ?', true)
-        else
-          _model_class
+        def apply_filter(records, filter, value, options)
+          context = options[:context]
+          current_user = context ? context[:current_user] : nil
+
+          case filter
+            when :approved
+              # Only book admins my filter for unapproved comments
+              if current_user && current_user.book_admin
+                records.where(approved_comments(value[0] == 'true'))
+              end
+            else
+              return super(records, filter, value)
+          end
+        end
+
+        def records(options = {})
+          context = options[:context]
+          current_user = context ? context[:current_user] : nil
+
+          records = _model_class
+          # Hide the unapproved comments from people who are not book admins
+          unless current_user && current_user.book_admin
+            records = records.where(approved_comments)
+          end
+          records
         end
       end
     end
