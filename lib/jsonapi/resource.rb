@@ -365,7 +365,16 @@ module JSONAPI
       end
 
       def apply_includes(records, directives)
-        records = records.includes(*directives.model_includes) if directives
+        if directives
+          includes = *directives.model_includes.select do |elem|
+            if elem.is_a? Hash
+              true
+            elsif not @model.nil?
+              @model.reflect_on_association(elem)
+            end
+          end
+          records = records.includes(includes)
+        end
         records
       end
 
