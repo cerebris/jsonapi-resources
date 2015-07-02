@@ -82,6 +82,18 @@ module JSONAPI
 
     def process_operation(operation)
       operation.apply
+
+    rescue JSONAPI::Exceptions::Error => e
+      # :nocov:
+      raise e
+      # :nocov:
+
+    rescue => e
+      # :nocov:
+      internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
+      Rails.logger.error { "Internal Server Error: #{e.message} #{e.backtrace.join("\n")}" }
+      return JSONAPI::ErrorsOperationResult.new(internal_server_error.errors[0].code, internal_server_error.errors)
+      # :nocov:
     end
   end
 end

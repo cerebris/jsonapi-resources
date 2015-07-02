@@ -2,6 +2,22 @@ module JSONAPI
   module Exceptions
     class Error < RuntimeError; end
 
+    class InternalServerError < Error
+      attr_accessor :exception
+
+      def initialize(exception)
+        @exception = exception
+      end
+
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::INTERNAL_SERVER_ERROR,
+                            status: 500,
+                            title: 'Internal Server Error',
+                            detail: 'Internal Server Error')]
+      end
+
+    end
+
     class InvalidResource < Error
       attr_accessor :resource
       def initialize(resource)
