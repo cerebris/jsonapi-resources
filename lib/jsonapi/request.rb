@@ -537,34 +537,37 @@ module JSONAPI
 
     def parse_update_association_operation(data, association_type, parent_key)
       association = resource_klass._association(association_type)
-      if association.polymorphic?
-        object_params = {relationships: {format_key(association.name) => {data: data}}}
-        verified_param_set = parse_params(object_params, updatable_fields)
 
-        @operations.push JSONAPI::ReplacePolymorphicHasOneAssociationOperation.new(
-                           resource_klass,
-                           {
-                             context: @context,
-                             resource_id: parent_key,
-                             association_type: association_type,
-                             key_value: verified_param_set[:has_one].values[0][:id],
-                             key_type: verified_param_set[:has_one].values[0][:type]
-                           }
-                         )
-      elsif association.is_a?(JSONAPI::Association::HasOne)
-        object_params = {relationships: {format_key(association.name) => {data: data}}}
-        verified_param_set = parse_params(object_params, updatable_fields)
+      if association.is_a?(JSONAPI::Association::HasOne)
+        if association.polymorphic?
+          object_params = {relationships: {format_key(association.name) => {data: data}}}
+          verified_param_set = parse_params(object_params, updatable_fields)
 
-        @operations.push JSONAPI::ReplaceHasOneAssociationOperation.new(
-                           resource_klass,
-                           {
-                             context: @context,
-                             resource_id: parent_key,
-                             association_type: association_type,
-                             key_value: verified_param_set[:has_one].values[0]
-                           }
-                         )
-      else
+          @operations.push JSONAPI::ReplacePolymorphicHasOneAssociationOperation.new(
+                             resource_klass,
+                             {
+                               context: @context,
+                               resource_id: parent_key,
+                               association_type: association_type,
+                               key_value: verified_param_set[:has_one].values[0][:id],
+                               key_type: verified_param_set[:has_one].values[0][:type]
+                             }
+                           )
+        else
+          object_params = {relationships: {format_key(association.name) => {data: data}}}
+          verified_param_set = parse_params(object_params, updatable_fields)
+
+          @operations.push JSONAPI::ReplaceHasOneAssociationOperation.new(
+                             resource_klass,
+                             {
+                               context: @context,
+                               resource_id: parent_key,
+                               association_type: association_type,
+                               key_value: verified_param_set[:has_one].values[0]
+                             }
+                           )
+        end
+      elsif association.is_a?(JSONAPI::Association::HasMany)
         unless association.acts_as_set
           raise JSONAPI::Exceptions::HasManySetReplacementForbidden.new
         end
