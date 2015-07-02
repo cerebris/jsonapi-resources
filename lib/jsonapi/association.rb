@@ -8,6 +8,7 @@ module JSONAPI
       @acts_as_set         = options.fetch(:acts_as_set, false) == true
       @foreign_key         = options[:foreign_key ] ? options[:foreign_key ].to_sym : nil
       @module_path         = options.fetch(:module_path, '')
+      @relation_name       = options.fetch(:relation_name, @name)
     end
 
     def primary_key
@@ -16,6 +17,17 @@ module JSONAPI
 
     def resource_klass
       @resource_klass ||= Resource.resource_for(@module_path + @class_name)
+    end
+
+    def relation_name(options = {})
+      case @relation_name
+        when Symbol
+          @relation_name
+        when String
+          @relation_name.to_sym
+        when Proc
+          @relation_name.call(options)
+      end
     end
 
     class HasOne < Association
