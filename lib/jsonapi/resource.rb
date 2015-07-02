@@ -17,6 +17,7 @@ module JSONAPI
                                        :replace_has_many_links,
                                        :create_has_one_link,
                                        :replace_has_one_link,
+                                       :replace_polymorphic_has_one_link,
                                        :remove_has_many_link,
                                        :remove_has_one_link,
                                        :replace_fields
@@ -78,6 +79,12 @@ module JSONAPI
     def replace_has_one_link(association_type, association_key_value)
       change :replace_has_one_link do
         _replace_has_one_link(association_type, association_key_value)
+      end
+    end
+
+    def replace_polymorphic_has_one_link(association_type, association_key_value, association_key_type)
+      change :replace_polymorphic_has_one_link do
+        _replace_polymorphic_has_one_link(association_type, association_key_value, association_key_type)
       end
     end
 
@@ -186,6 +193,17 @@ module JSONAPI
       association = self.class._associations[association_type]
 
       send("#{association.foreign_key}=", association_key_value)
+      @save_needed = true
+
+      return :completed
+    end
+
+    def _replace_polymorphic_has_one_link(association_type, key_value, key_type)
+      association = self.class._associations[association_type]
+
+      send("#{association.foreign_key}=", key_value)
+      send("#{association.polymorphic_type}=", key_type.singularize.capitalize)
+
       @save_needed = true
 
       return :completed
@@ -618,10 +636,9 @@ module JSONAPI
 
         attrs.each do |attr|
           check_reserved_association_name(attr)
+          @_associations[attr] = association = klass.new(attr, options)
 
-          @_associations[attr] = klass.new(attr, options)
-
-          foreign_key = @_associations[attr].foreign_key
+          foreign_key = association.foreign_key
 
           define_method foreign_key do
             @model.method(foreign_key).call
@@ -631,7 +648,7 @@ module JSONAPI
             @model.method("#{foreign_key}=").call(value)
           end unless method_defined?("#{foreign_key}=")
 
-          associated_records_method_name = case @_associations[attr]
+          associated_records_method_name = case association
           when JSONAPI::Association::HasOne then "record_for_#{attr}"
           when JSONAPI::Association::HasMany then "records_for_#{attr}"
           end
@@ -640,16 +657,20 @@ module JSONAPI
             records_for(attr, options)
           end unless method_defined?(associated_records_method_name)
 
-          if @_associations[attr].is_a?(JSONAPI::Association::HasOne)
+          if association.is_a?(JSONAPI::Association::HasOne)
             define_method attr do
               type_name = self.class._associations[attr].type.to_s
-              resource_class = Resource.resource_for(self.class.module_path + type_name)
-              if resource_class
+              if association.polymorphic?
                 associated_model = public_send(associated_records_method_name)
-                return associated_model ? resource_class.new(associated_model, @context) : nil
+                resource_class = Resource.resource_for(self.class.module_path + associated_model.class.to_s.underscore) if associated_model
+                return resource_class.new(associated_model, @context) if resource_class
+              else
+                resource_class = Resource.resource_for(self.class.module_path + type_name)
+                associated_model = public_send(associated_records_method_name) if resource_class
+                return resource_class.new(associated_model, @context) if associated_model
               end
             end unless method_defined?(attr)
-          elsif @_associations[attr].is_a?(JSONAPI::Association::HasMany)
+          elsif association.is_a?(JSONAPI::Association::HasMany)
             define_method attr do |options = {}|
               type_name = self.class._associations[attr].type.to_s
               resource_class = Resource.resource_for(self.class.module_path + type_name)

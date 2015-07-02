@@ -172,6 +172,7 @@ module JSONAPI
               resource = source.send(name)
               if resource
                 id = resource.id
+                type = association.type_for_source(source)
                 associations_only = already_serialized?(type, id)
                 if include_linkage && !associations_only
                   add_included_object(type, id, object_hash(resource, ia))
@@ -236,7 +237,7 @@ module JSONAPI
       linkage = {}
       linkage_id = foreign_key_value(source, association)
       if linkage_id
-        linkage[:type] = format_key(association.type)
+        linkage[:type] = format_key(association.type_for_source(source))
         linkage[:id] = linkage_id
       else
         linkage = nil
