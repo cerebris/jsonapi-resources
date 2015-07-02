@@ -33,7 +33,7 @@ module JSONAPI
     class HasOne < Association
       def initialize(name, options={})
         super
-        @class_name = options.fetch(:class_name, name.to_s.capitalize)
+        @class_name = options.fetch(:class_name, name.to_s.camelize)
         @type = class_name.underscore.pluralize.to_sym
         @foreign_key ||= @key.nil? ? "#{name}_id".to_sym : @key
       end
@@ -42,7 +42,7 @@ module JSONAPI
     class HasMany < Association
       def initialize(name, options={})
         super
-        @class_name = options.fetch(:class_name, name.to_s.capitalize.singularize)
+        @class_name = options.fetch(:class_name, name.to_s.camelize.singularize)
         @type = class_name.underscore.pluralize.to_sym
         @foreign_key  ||= @key.nil? ? "#{name.to_s.singularize}_ids".to_sym : @key
       end
