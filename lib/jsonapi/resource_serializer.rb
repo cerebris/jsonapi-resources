@@ -1,5 +1,6 @@
 module JSONAPI
   class ResourceSerializer
+
     # Options can include
     # include:
     #     Purpose: determines which objects will be side loaded with the source objects in a linked section
@@ -232,6 +233,7 @@ module JSONAPI
     def has_one_linkage(source, association)
       linkage = {}
       linkage_id = foreign_key_value(source, association)
+
       if linkage_id
         linkage[:type] = format_key(association.type_for_source(source))
         linkage[:id] = linkage_id
@@ -243,9 +245,10 @@ module JSONAPI
 
     def has_many_linkage(source, association)
       linkage = []
-      linkage_ids = foreign_key_value(source, association)
-      linkage_ids.each do |linkage_id|
-        linkage.append(type: format_key(association.type), id: linkage_id)
+      linkage_types_and_values = foreign_key_types_and_values(source, association)
+
+      linkage_types_and_values.each do |type, value|
+        linkage.append({type: format_key(type), id: value})
       end
       linkage
     end
@@ -285,6 +288,20 @@ module JSONAPI
         value.map { |value| IdValueFormatter.format(value) }
       elsif association.is_a?(JSONAPI::Association::HasOne)
         IdValueFormatter.format(value)
+      end
+    end
+
+    def foreign_key_types_and_values(source, association)
+      if association.is_a?(JSONAPI::Association::HasMany)
+        if association.polymorphic?
+          source.model.send(association.name).pluck(:type, :id).map do |type, id|
+            [type.pluralize, IdValueFormatter.format(id)]
+          end
+        else
+          source.send(association.foreign_key).map do |value|
+            [association.type, IdValueFormatter.format(value)]
+          end
+        end
       end
     end
 

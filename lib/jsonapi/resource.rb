@@ -719,6 +719,9 @@ module JSONAPI
               end
 
               return records.collect do |record|
+                if association.polymorphic?
+                  resource_klass = Resource.resource_for(self.class.module_path + record.class.to_s.underscore)
+                end
                 resource_klass.new(record, @context)
               end
             end unless method_defined?(attr)

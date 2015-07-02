@@ -1,0 +1,8 @@
+car:
+  id: 1
+  type: Car
+  person_id: 1
+boat:
+  id: 2
+  type: Boat
+  person_id: 1
