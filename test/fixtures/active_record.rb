@@ -611,6 +611,13 @@ class PostResource < JSONAPI::Resource
     @model.title
   end
 
+  def title=(title)
+    @model.title = title
+    if title == 'BOOM'
+      raise 'The Server just tested going boom. If this was a real emergency you would be really dead right now.'
+    end
+  end
+
   filters :title, :author, :tags, :comments
   filters :id, :ids
 

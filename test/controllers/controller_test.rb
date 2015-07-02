@@ -631,6 +631,28 @@ class PostsControllerTest < ActionController::TestCase
                           json_response['data']['relationships']['tags']['data'])
   end
 
+  def test_update_with_internal_server_error
+    set_content_type_header!
+    post_object = Post.find(3)
+    title = post_object.title
+
+    put :update,
+        {
+          id: 3,
+          data: {
+            id: '3',
+            type: 'posts',
+            attributes: {
+              title: 'BOOM'
+            }
+          }
+        }
+
+    assert_response 500
+    post_object = Post.find(3)
+    assert_equal title, post_object.title
+  end
+
   def test_update_remove_links
     set_content_type_header!
     put :update,
