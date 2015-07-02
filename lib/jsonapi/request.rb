@@ -522,7 +522,7 @@ module JSONAPI
       association = resource_klass._association(association_type)
       if association.is_a?(JSONAPI::Association::HasOne)
         if association.polymorphic?
-          object_params = {relationships: {format_key(association.name) => {data: data}}}
+          object_params = { relationships: { format_key(association.name) => { data: data } } }
           verified_param_set = parse_params(object_params, updatable_fields)
 
           @operations.push JSONAPI::ReplacePolymorphicHasOneAssociationOperation.new(
@@ -534,7 +534,7 @@ module JSONAPI
                              key_type: verified_param_set[:has_one].values[0][:type]
                            )
         else
-          object_params = {relationships: {format_key(association.name) => {data: data}}}
+          object_params = { relationships: { format_key(association.name) => { data: data } } }
           verified_param_set = parse_params(object_params, updatable_fields)
 
           @operations.push JSONAPI::ReplaceHasOneAssociationOperation.new(
@@ -545,7 +545,7 @@ module JSONAPI
                              key_value: verified_param_set[:has_one].values[0]
                            )
         end
-      else
+      elsif association.is_a?(JSONAPI::Association::HasMany)
         unless association.acts_as_set
           fail JSONAPI::Exceptions::HasManySetReplacementForbidden.new
         end
