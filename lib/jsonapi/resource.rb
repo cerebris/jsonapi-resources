@@ -685,13 +685,16 @@ module JSONAPI
 
               resources = []
 
-              if resource_class
+              if resource_class || association.polymorphic?
                 records = public_send(associated_records_method_name)
                 records = resource_class.apply_filters(records, filters, options)
                 order_options = self.class.construct_order_options(sort_criteria)
                 records = resource_class.apply_sort(records, order_options)
                 records = resource_class.apply_pagination(records, paginator, order_options)
                 records.each do |record|
+                  if association.polymorphic?
+                    resource_class = Resource.resource_for(self.class.module_path + record.class.to_s.underscore)
+                  end
                   resources.push resource_class.new(record, @context)
                 end
               end

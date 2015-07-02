@@ -5,6 +5,7 @@ require 'json'
 class PolymorphismTest < ActionDispatch::IntegrationTest
   def setup
     @pictures = Picture.all
+    @person = Person.find(1)
 
     JSONAPI.configuration.json_key_format = :camelized_key
     JSONAPI.configuration.route_format = :camelized_route
@@ -22,7 +23,113 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
     assert imageable.polymorphic?
   end
 
-  def test_polymorphic_serialization
+  def test_polymorphic_has_many_serialization
+    serialized_data = JSONAPI::ResourceSerializer.new(
+      PersonResource,
+      include: %w(vehicles)
+    ).serialize_to_hash(PersonResource.new(@person))
+
+    assert_hash_equals(
+      {
+        :data => {
+          "id" => "1",
+          "type" => "people",
+          "links" => {
+            :self => "/people/1"
+          },
+          "attributes" => {
+            "name" => "Joe Author",
+            "email" => "joe@xyz.fake",
+            "dateJoined" => "2013-08-07 16:25:00 -0400"
+          },
+          "relationships" => {
+            "comments" => {
+              :links => {
+                :self => "/people/1/relationships/comments",
+                :related => "/people/1/comments"
+              }
+            },
+            "posts" => {
+              :links => {
+                :self => "/people/1/relationships/posts",
+                :related => "/people/1/posts"
+              }
+            },
+            "vehicles" => {
+              :links => {
+                :self => "/people/1/relationships/vehicles",
+                :related => "/people/1/vehicles"
+              },
+              :data => [
+                { :type => "cars", :id=> "1" },
+                { :type => "boats", :id=>"2" }
+              ]
+            },
+            "preferences" => {
+              :links => {
+                :self => "/people/1/relationships/preferences",
+                :related => "/people/1/preferences"
+              },
+              :data => {
+                :type => "preferences",
+                :id=>"1"
+              }
+            },
+            "hairCut" => {
+              :links => {
+                :self => "/people/1/relationships/hairCut",
+                :related => "/people/1/hairCut"
+              },
+              :data => nil
+            }
+          }
+        },
+        :included => [
+          {
+            "id" => "1",
+            "type" => "cars",
+            "links" => {
+              :self => "/cars/1"
+            },
+            "relationships" => {
+              "person" => {
+                :links => {
+                  :self => "/cars/1/relationships/person",
+                  :related => "/cars/1/person"
+                },
+                :data => {
+                  :type => "people",
+                  :id => "1"
+                }
+              }
+            }
+          },
+          {
+            "id" => "2",
+            "type" => "boats",
+            "links" => {
+              :self => "/boats/2"
+            },
+            "relationships" => {
+              "person" => {
+                :links => {
+                  :self => "/boats/2/relationships/person",
+                  :related => "/boats/2/person"
+                },
+                :data => {
+                  :type => "people",
+                  :id => "1"
+                }
+              }
+            }
+          }
+        ]
+      },
+      serialized_data
+    )
+  end
+
+  def test_polymorphic_has_one_serialization
     serialized_data = JSONAPI::ResourceSerializer.new(
       PictureResource,
       include: %w(imageable)
