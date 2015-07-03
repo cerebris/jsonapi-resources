@@ -398,6 +398,16 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 'This is comment 18 on book 1.', json_response['data'][9]['attributes']['body']
   end
 
+  # def test_pagination_related_resources_data_includes
+  #   Api::V2::BookResource.paginator :none
+  #   Api::V2::BookCommentResource.paginator :none
+  #   get '/api/v2/books?filter[]'
+  #   assert_equal 200, status
+  #   assert_equal 10, json_response['data'].size
+  #   assert_equal 'This is comment 18 on book 1.', json_response['data'][9]['attributes']['body']
+  # end
+
+
   def test_flow_self
     get '/posts'
     assert_equal 200, status

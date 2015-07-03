@@ -432,7 +432,7 @@ module JSONAPI
         end
 
         if required_includes.any?
-          records = apply_includes(records, include_directives: IncludeDirectives.new(required_includes), options: options)
+          records = apply_includes(records, options.merge(include_directives: IncludeDirectives.new(required_includes)))
         end
 
         records

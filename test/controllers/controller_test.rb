@@ -114,7 +114,10 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_filter_association_single
-    get :index, {filter: {tags: '5,1'}}
+    count_queries do
+      get :index, {filter: {tags: '5,1'}}
+    end
+    assert_query_count(1)
     assert_response :success
     assert_equal 3, json_response['data'].size
     assert_match /New post/, response.body
@@ -123,7 +126,10 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_filter_associations_multiple
-    get :index, {filter: {tags: '5,1', comments: '3'}}
+    count_queries do
+      get :index, {filter: {tags: '5,1', comments: '3'}}
+    end
+    assert_query_count(1)
     assert_response :success
     assert_equal 1, json_response['data'].size
     assert_match /JR Solves your serialization woes!/, response.body
@@ -2452,6 +2458,26 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_equal 255, json_response['included'].size
     assert_equal 51, json_response['data'][0]['relationships']['book-comments']['data'].size
     assert_query_count(2)
+  end
+
+  def test_books_filter_by_book_comment_id_limited_user
+    $test_user = Person.find(1)
+    count_queries do
+      get :index, {filter: {book_comments: '0,52' }}
+    end
+    assert_response :success
+    assert_equal 1, json_response['data'].size
+    assert_query_count(1)
+  end
+
+  def test_books_filter_by_book_comment_id_admin_user
+    $test_user = Person.find(5)
+    count_queries do
+      get :index, {filter: {book_comments: '0,52' }}
+    end
+    assert_response :success
+    assert_equal 2, json_response['data'].size
+    assert_query_count(1)
   end
 end
 

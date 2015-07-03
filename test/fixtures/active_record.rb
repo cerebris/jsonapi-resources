@@ -842,7 +842,7 @@ module Api
         end
       }
 
-      filters :banned
+      filters :banned, :book_comments
 
       class << self
         def apply_filter(records, filter, value, options)
