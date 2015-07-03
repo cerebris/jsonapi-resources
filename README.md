@@ -269,7 +269,8 @@ end
 ```ruby
 class BookResource < JSONAPI::Resource
 
-  # Only book_admins may see unapproved comments for a book. Using a lambda to select the correct relation on the model
+  # Only book_admins may see unapproved comments for a book. Using 
+  # a lambda to select the correct relation on the model
   has_many :book_comments, relation_name: -> (options = {}) {
     context = options[:context]
     current_user = context ? context[:current_user] : nil
