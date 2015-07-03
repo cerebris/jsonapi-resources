@@ -2449,35 +2449,26 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     $test_user = Person.find(5)
     Api::V2::BookResource.paginator :none
 
-    count_queries do
-      get :index, {filter: {id: '0,1,2,3,4'}, include: 'book-comments'}
-    end
+    get :index, {filter: {id: '0,1,2,3,4'}, include: 'book-comments'}
     assert_response :success
     assert_equal 5, json_response['data'].size
     assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
     assert_equal 255, json_response['included'].size
     assert_equal 51, json_response['data'][0]['relationships']['book-comments']['data'].size
-    assert_query_count(2)
   end
 
   def test_books_filter_by_book_comment_id_limited_user
     $test_user = Person.find(1)
-    count_queries do
-      get :index, {filter: {book_comments: '0,52' }}
-    end
+    get :index, {filter: {book_comments: '0,52' }}
     assert_response :success
     assert_equal 1, json_response['data'].size
-    assert_query_count(1)
   end
 
   def test_books_filter_by_book_comment_id_admin_user
     $test_user = Person.find(5)
-    count_queries do
-      get :index, {filter: {book_comments: '0,52' }}
-    end
+    get :index, {filter: {book_comments: '0,52' }}
     assert_response :success
     assert_equal 2, json_response['data'].size
-    assert_query_count(1)
   end
 end
 
