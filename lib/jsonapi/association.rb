@@ -22,7 +22,9 @@ module JSONAPI
     def relation_name(options = {})
       case @relation_name
         when Symbol
+          # :nocov:
           @relation_name
+          # :nocov:
         when String
           @relation_name.to_sym
         when Proc

@@ -2344,27 +2344,6 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_query_count(2)
   end
 
-  def test_books_banned_non_book_admin_includes
-    $test_user = Person.find(1)
-    Api::V2::BookResource.paginator :offset
-    count_queries do
-      JSONAPI.configuration.top_level_meta_include_record_count = true
-      get :index, {page: {offset: 0, limit: 12}, include: 'approved-book-comments'}
-      # get :index, {page: {offset: 0, limit: 12}, include: 'book-comments'}
-      JSONAPI.configuration.top_level_meta_include_record_count = false
-    end
-
-    # show_queries
-    assert_response :success
-    assert_equal 12, json_response['data'].size
-    assert_equal 130, json_response['included'].size
-    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
-    assert_equal 26, json_response['data'][0]['relationships']['approved-book-comments']['data'].size
-    assert_equal 'book-comments', json_response['included'][0]['type']
-    assert_equal 901, json_response['meta']['record-count']
-    assert_query_count(3)
-  end
-
   def test_books_banned_non_book_admin_includes_switched
     $test_user = Person.find(1)
     Api::V2::BookResource.paginator :offset
@@ -2374,7 +2353,6 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
       JSONAPI.configuration.top_level_meta_include_record_count = false
     end
 
-    # show_queries
     assert_response :success
     assert_equal 12, json_response['data'].size
     assert_equal 130, json_response['included'].size
@@ -2390,7 +2368,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     Api::V2::BookResource.paginator :offset
     count_queries do
       JSONAPI.configuration.top_level_meta_include_record_count = true
-      get :index, {page: {offset: 0, limit: 12}, include: 'book-comments,book-comments.author'}
+      get :index, {page: {offset: 0, limit: 12}, include: 'book-comments.author'}
       JSONAPI.configuration.top_level_meta_include_record_count = false
     end
     assert_response :success
@@ -2398,7 +2376,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_equal 131, json_response['included'].size
     assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
     assert_equal 901, json_response['meta']['record-count']
-    assert_query_count(3)
+    assert_query_count(4)
   end
 
   def test_books_banned_admin
@@ -2413,6 +2391,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_equal 12, json_response['data'].size
     assert_equal 'Book 651', json_response['data'][0]['attributes']['title']
     assert_equal 99, json_response['meta']['record-count']
+    assert_query_count(2)
   end
 
   def test_books_not_banned_admin
@@ -2457,17 +2436,53 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
     assert_equal 130, json_response['included'].size
     assert_equal 26, json_response['data'][0]['relationships']['book-comments']['data'].size
-    assert_query_count(3)
+    assert_query_count(2)
+  end
+
+  def test_books_included_all_comments_for_admin
+    $test_user = Person.find(5)
+    Api::V2::BookResource.paginator :none
+
+    count_queries do
+      get :index, {filter: {id: '0,1,2,3,4'}, include: 'book-comments'}
+    end
+    assert_response :success
+    assert_equal 5, json_response['data'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+    assert_equal 255, json_response['included'].size
+    assert_equal 51, json_response['data'][0]['relationships']['book-comments']['data'].size
+    assert_query_count(2)
   end
 end
 
 class Api::V2::BookCommentsControllerTest < ActionController::TestCase
   def setup
     JSONAPI.configuration.json_key_format = :dasherized_key
+    Api::V2::BookCommentResource.paginator :none
     $test_user = Person.find(1)
   end
 
-  def test_book_comments_exclude_unapproved
+  def test_book_comments_all_for_admin
+    $test_user = Person.find(5)
+    count_queries do
+      get :index
+    end
+    assert_response :success
+    assert_equal 255, json_response['data'].size
+    assert_query_count(1)
+  end
+
+  def test_book_comments_unapproved_context_based
+    $test_user = Person.find(5)
+    count_queries do
+      get :index, {filter: {approved: 'false'}}
+    end
+    assert_response :success
+    assert_equal 125, json_response['data'].size
+    assert_query_count(1)
+  end
+
+  def test_book_comments_exclude_unapproved_context_based
     $test_user = Person.find(1)
     count_queries do
       get :index
@@ -2478,7 +2493,7 @@ class Api::V2::BookCommentsControllerTest < ActionController::TestCase
   end
 end
 
-  class Api::V4::BooksControllerTest < ActionController::TestCase
+class Api::V4::BooksControllerTest < ActionController::TestCase
   def setup
     JSONAPI.configuration.json_key_format = :camelized_key
   end

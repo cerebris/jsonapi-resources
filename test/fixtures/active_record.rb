@@ -841,7 +841,6 @@ module Api
           :book_comments
         end
       }
-      has_many :approved_book_comments, class_name: "BookComments"
 
       filters :banned
 
@@ -911,7 +910,9 @@ module Api
                 records.where(approved_comments(value[0] == 'true'))
               end
             else
+              #:nocov:
               return super(records, filter, value)
+            #:nocov:
           end
         end
 

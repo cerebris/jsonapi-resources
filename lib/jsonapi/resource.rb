@@ -365,19 +365,22 @@ module JSONAPI
       end
 
       def resolve_association_names_to_relations(resource_klass, model_includes, options = {})
-        model_includes.map do |include|
-          case include
-            when Hash
-              converted_hash = {}
-              include.each_pair do |name, directive|
-                association = resource_klass._associations[name]
-                converted_hash[association.relation_name(options)] =
-                  resolve_association_names_to_relations(association.resource_klass, directive, options)
-              end
-            when Symbol
-              association = resource_klass._associations[include]
-              association.relation_name(options)
-          end
+        case model_includes
+          when Array
+            return model_includes.map do |value|
+              resolve_association_names_to_relations(resource_klass, value, options)
+            end
+          when Hash
+            model_includes.keys.each do |key|
+              association = resource_klass._associations[key]
+              value = model_includes[key]
+              model_includes.delete(key)
+              model_includes[association.relation_name(options)] = resolve_association_names_to_relations(association.resource_klass, value, options)
+            end
+            return model_includes
+          when Symbol
+            association = resource_klass._associations[model_includes]
+            return association.relation_name(options)
         end
       end
 
@@ -638,44 +641,44 @@ module JSONAPI
 
           association = @_associations[attr] = klass.new(attr, options)
 
-          foreign_key = association.foreign_key
+          associated_records_method_name = case association
+                                             when JSONAPI::Association::HasOne then "record_for_#{attr}"
+                                             when JSONAPI::Association::HasMany then "records_for_#{attr}"
+                                           end
 
-          define_method foreign_key do
-            @model.method(foreign_key).call
-          end unless method_defined?(foreign_key)
+          foreign_key = association.foreign_key
 
           define_method "#{foreign_key}=" do |value|
             @model.method("#{foreign_key}=").call(value)
           end unless method_defined?("#{foreign_key}=")
 
-          associated_records_method_name = case association
-            when JSONAPI::Association::HasOne then "record_for_#{attr}"
-            when JSONAPI::Association::HasMany then "records_for_#{attr}"
-          end
-
           define_method associated_records_method_name do |options={}|
-            relation_name = association.relation_name(options)
+            relation_name = association.relation_name(options.merge({context: @context}))
             records_for(relation_name, options)
           end unless method_defined?(associated_records_method_name)
 
           if association.is_a?(JSONAPI::Association::HasOne)
-            define_method attr do |options = {}|
-              context = options.fetch(:context, @context)
+            define_method foreign_key do
+              @model.method(foreign_key).call
+            end unless method_defined?(foreign_key)
 
+            define_method attr do |options = {}|
               resource_klass = association.resource_klass
               if resource_klass
-                associated_model = public_send(associated_records_method_name, context: context)
+                associated_model = public_send(associated_records_method_name)
                 return associated_model ? resource_klass.new(associated_model, @context) : nil
               end
             end unless method_defined?(attr)
           elsif association.is_a?(JSONAPI::Association::HasMany)
+            define_method foreign_key do
+              records = public_send(associated_records_method_name)
+              return records.collect do |record|
+                record.send(association.resource_klass._primary_key)
+              end
+            end unless method_defined?(foreign_key)
             define_method attr do |options = {}|
-              context = options.fetch(:context, @context)
               resource_klass = association.resource_klass
-
-              resources = []
-
-              records = public_send(associated_records_method_name, context: context)
+              records = public_send(associated_records_method_name)
 
               filters = options.fetch(:filters, {})
               unless filters.nil? || filters.empty?
@@ -693,11 +696,9 @@ module JSONAPI
                 records = resource_klass.apply_pagination(records, paginator, order_options)
               end
 
-              records.each do |record|
-                resources.push resource_klass.new(record, @context)
+              return records.collect do |record|
+                resource_klass.new(record, @context)
               end
-
-              return resources
             end unless method_defined?(attr)
           end
         end
