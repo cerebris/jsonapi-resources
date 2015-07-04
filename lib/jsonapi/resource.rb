@@ -6,7 +6,7 @@ module JSONAPI
 
     @@resource_types = {}
 
-    attr :context
+    attr_reader :context
     attr_reader :model
 
     define_jsonapi_resources_callbacks :create,
@@ -48,13 +48,11 @@ module JSONAPI
             completed = (yield == :completed)
           end
 
-          if @save_needed || is_new?
-            completed = (save == :completed)
-          end
+          completed = (save == :completed) if @save_needed || is_new?
         end
       end
 
-      return completed ? :completed : :accepted
+      completed ? :completed : :accepted
     end
 
     def remove
@@ -106,11 +104,12 @@ module JSONAPI
 
     # Override this on a resource to customize how the associated records
     # are fetched for a model. Particularly helpful for authorization.
-    def records_for(association_name, options = {})
+    def records_for(association_name, _options = {})
       model.send association_name
     end
 
     private
+
     def save
       run_callbacks :save do
         _save
@@ -132,27 +131,25 @@ module JSONAPI
     # ```
     def _save
       unless @model.valid?
-        raise JSONAPI::Exceptions::ValidationErrors.new(@model.errors.messages)
+        fail JSONAPI::Exceptions::ValidationErrors.new(@model.errors.messages)
       end
 
       if defined? @model.save
         saved = @model.save
-        unless saved
-          raise JSONAPI::Exceptions::SaveFailed.new
-        end
+        fail JSONAPI::Exceptions::SaveFailed.new unless saved
       else
         saved = true
       end
 
       @save_needed = !saved
 
-      return :completed
+      :completed
     end
 
     def _remove
       @model.destroy
 
-      return :completed
+      :completed
     end
 
     def _create_has_many_links(association_type, association_key_values)
@@ -161,16 +158,16 @@ module JSONAPI
       association_key_values.each do |association_key_value|
         related_resource = Resource.resource_for(self.class.module_path + association.type.to_s).find_by_key(association_key_value, context: @context)
 
-        # ToDo: Add option to skip relations that already exist instead of returning an error?
+        # TODO: Add option to skip relations that already exist instead of returning an error?
         relation = @model.send(association.type).where(association.primary_key => association_key_value).first
         if relation.nil?
           @model.send(association.type) << related_resource.model
         else
-          raise JSONAPI::Exceptions::HasManyRelationExists.new(association_key_value)
+          fail JSONAPI::Exceptions::HasManyRelationExists.new(association_key_value)
         end
       end
 
-      return :completed
+      :completed
     end
 
     def _replace_has_many_links(association_type, association_key_values)
@@ -179,7 +176,7 @@ module JSONAPI
       send("#{association.foreign_key}=", association_key_values)
       @save_needed = true
 
-      return :completed
+      :completed
     end
 
     def _replace_has_one_link(association_type, association_key_value)
@@ -188,7 +185,7 @@ module JSONAPI
       send("#{association.foreign_key}=", association_key_value)
       @save_needed = true
 
-      return :completed
+      :completed
     end
 
     def _remove_has_many_link(association_type, key)
@@ -196,7 +193,7 @@ module JSONAPI
 
       @model.send(association.type).delete(key)
 
-      return :completed
+      :completed
     end
 
     def _remove_has_one_link(association_type)
@@ -205,7 +202,7 @@ module JSONAPI
       send("#{association.foreign_key}=", nil)
       @save_needed = true
 
-      return :completed
+      :completed
     end
 
     def _replace_fields(field_data)
@@ -232,7 +229,7 @@ module JSONAPI
         replace_has_many_links(association_type, values)
       end if field_data[:has_many]
 
-      return :completed
+      :completed
     end
 
     class << self
@@ -253,15 +250,15 @@ module JSONAPI
         resource_name = JSONAPI::Resource._resource_name_from_type(type)
         resource = resource_name.safe_constantize if resource_name
         if resource.nil?
-          raise NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
+          fail NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
         end
         resource
       end
 
-      attr_accessor :_attributes, :_associations, :_allowed_filters , :_type, :_paginator
+      attr_accessor :_attributes, :_associations, :_allowed_filters, :_type, :_paginator
 
       def create(context)
-        self.new(self.create_model, context)
+        new(create_model, context)
       end
 
       def create_model
@@ -303,7 +300,7 @@ module JSONAPI
       end
 
       def default_attribute_options
-        {format: :default}
+        { format: :default }
       end
 
       def has_one(*attrs)
@@ -319,7 +316,7 @@ module JSONAPI
       end
 
       def filters(*attrs)
-        @_allowed_filters.merge!(attrs.inject( Hash.new ) { |h, attr| h[attr] = {}; h })
+        @_allowed_filters.merge!(attrs.inject({}) { |h, attr| h[attr] = {}; h })
       end
 
       def filter(attr, *args)
@@ -334,11 +331,11 @@ module JSONAPI
       # :nocov:
       def method_missing(method, *args)
         if method.to_s.match /createable_fields/
-          ActiveSupport::Deprecation.warn("`createable_fields` is deprecated, please use `creatable_fields` instead")
-          self.creatable_fields(*args)
+          ActiveSupport::Deprecation.warn('`createable_fields` is deprecated, please use `creatable_fields` instead')
+          creatable_fields(*args)
         elsif method.to_s.match /updateable_fields/
-          ActiveSupport::Deprecation.warn("`updateable_fields` is deprecated, please use `updatable_fields` instead")
-          self.updatable_fields(*args)
+          ActiveSupport::Deprecation.warn('`updateable_fields` is deprecated, please use `updatable_fields` instead')
+          updatable_fields(*args)
         else
           super
         end
@@ -346,17 +343,17 @@ module JSONAPI
       # :nocov:
 
       # Override in your resource to filter the updatable keys
-      def updatable_fields(context = nil)
+      def updatable_fields(_context = nil)
         _updatable_associations | _attributes.keys - [:id]
       end
 
       # Override in your resource to filter the creatable keys
-      def creatable_fields(context = nil)
+      def creatable_fields(_context = nil)
         _updatable_associations | _attributes.keys
       end
 
       # Override in your resource to filter the sortable keys
-      def sortable_fields(context = nil)
+      def sortable_fields(_context = nil)
         _attributes.keys
       end
 
@@ -370,9 +367,7 @@ module JSONAPI
       end
 
       def apply_pagination(records, paginator, order_options)
-        if paginator
-          records = paginator.apply(records, order_options)
-        end
+        records = paginator.apply(records, order_options) if paginator
         records
       end
 
@@ -384,7 +379,7 @@ module JSONAPI
         end
       end
 
-      def apply_filter(records, filter, value, options = {})
+      def apply_filter(records, filter, value, _options = {})
         records.where(filter => value)
       end
 
@@ -445,10 +440,10 @@ module JSONAPI
 
         resources = []
         records.each do |model|
-          resources.push self.new(model, context)
+          resources.push new(model, context)
         end
 
-        return resources
+        resources
       end
 
       def find_by_key(key, options = {})
@@ -456,16 +451,14 @@ module JSONAPI
         include_directives = options[:include_directives]
         records = records(options)
         records = apply_includes(records, include_directives)
-        model = records.where({_primary_key => key}).first
-        if model.nil?
-          raise JSONAPI::Exceptions::RecordNotFound.new(key)
-        end
-        self.new(model, context)
+        model = records.where(_primary_key => key).first
+        fail JSONAPI::Exceptions::RecordNotFound.new(key) if model.nil?
+        new(model, context)
       end
 
       # Override this method if you want to customize the relation for
       # finder methods (find, find_by_key)
-      def records(options = {})
+      def records(_options = {})
         _model_class
       end
 
@@ -494,7 +487,7 @@ module JSONAPI
       end
 
       # override to allow for key processing and checking
-      def verify_key(key, context = nil)
+      def verify_key(key, _context = nil)
         key && Integer(key)
       rescue
         raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
@@ -502,19 +495,19 @@ module JSONAPI
 
       # override to allow for key processing and checking
       def verify_keys(keys, context = nil)
-        return keys.collect do |key|
+        keys.collect do |key|
           verify_key(key, context)
         end
       end
 
       # override to allow for custom filters
-      def verify_custom_filter(filter, value, context = nil)
-        return filter, value
+      def verify_custom_filter(filter, value, _context = nil)
+        [filter, value]
       end
 
       # override to allow for custom association logic, such as uuids, multiple keys or permission checks on keys
-      def verify_association_filter(filter, raw, context = nil)
-        return filter, raw
+      def verify_association_filter(filter, raw, _context = nil)
+        [filter, raw]
       end
 
       # quasi private class methods
@@ -523,12 +516,12 @@ module JSONAPI
       end
 
       def _updatable_associations
-        @_associations.map { |key, association| key }
+        @_associations.map { |key, _association| key }
       end
 
       def _has_association?(type)
         type = type.to_s
-        @_associations.has_key?(type.singularize.to_sym) || @_associations.has_key?(type.pluralize.to_sym)
+        @_associations.key?(type.singularize.to_sym) || @_associations.key?(type.pluralize.to_sym)
       end
 
       def _association(type)
@@ -537,7 +530,7 @@ module JSONAPI
       end
 
       def _model_name
-        @_model_name ||= self.name.demodulize.sub(/Resource$/, '')
+        @_model_name ||= name.demodulize.sub(/Resource$/, '')
       end
 
       def _primary_key
@@ -558,7 +551,7 @@ module JSONAPI
           class_name = "#{type.to_s.singularize}_resource".camelize
           @@resource_types[type] = class_name
         end
-        return class_name
+        class_name
       end
 
       def _paginator
@@ -578,19 +571,20 @@ module JSONAPI
       end
 
       def module_path
-        @module_path ||= self.name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').downcase : ''
+        @module_path ||= name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').downcase : ''
       end
 
       def construct_order_options(sort_params)
         return {} unless sort_params
 
-        sort_params.each_with_object({}) { |sort, order_hash|
+        sort_params.each_with_object({}) do |sort, order_hash|
           field = sort[:field] == 'id' ? _primary_key : sort[:field]
           order_hash[field] = sort[:direction]
-        }
+        end
       end
 
       private
+
       def check_reserved_resource_name(type, name)
         if [:ids, :types, :hrefs, :links].include?(type)
           warn "[NAME COLLISION] `#{name}` is a reserved resource name."
@@ -632,11 +626,11 @@ module JSONAPI
           end unless method_defined?("#{foreign_key}=")
 
           associated_records_method_name = case @_associations[attr]
-          when JSONAPI::Association::HasOne then "record_for_#{attr}"
-          when JSONAPI::Association::HasMany then "records_for_#{attr}"
+                                           when JSONAPI::Association::HasOne then "record_for_#{attr}"
+                                           when JSONAPI::Association::HasMany then "records_for_#{attr}"
           end
 
-          define_method associated_records_method_name do |options={}|
+          define_method associated_records_method_name do |options = {}|
             records_for(attr, options)
           end unless method_defined?(associated_records_method_name)
 
@@ -675,6 +669,5 @@ module JSONAPI
         end
       end
     end
-
   end
 end

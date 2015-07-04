@@ -60,6 +60,7 @@ module JSONAPI
     end
 
     private
+
     def resource_klass
       @resource_klass ||= resource_klass_name.safe_constantize
     end
@@ -78,17 +79,15 @@ module JSONAPI
 
     def ensure_correct_media_type
       unless request.content_type == JSONAPI::MEDIA_TYPE
-        raise JSONAPI::Exceptions::UnsupportedMediaTypeError.new(request.content_type)
+        fail JSONAPI::Exceptions::UnsupportedMediaTypeError.new(request.content_type)
       end
     rescue => e
       handle_exceptions(e)
     end
 
     def setup_request
-      @request = JSONAPI::Request.new(params, {
-                                              context: context,
-                                              key_formatter: key_formatter
-                                            })
+      @request = JSONAPI::Request.new(params,                                               context: context,
+                                                                                            key_formatter: key_formatter)
       render_errors(@request.errors) unless @request.errors.empty?
     rescue => e
       handle_exceptions(e)
@@ -128,7 +127,7 @@ module JSONAPI
     end
 
     def render_errors(errors)
-      operation_results = JSONAPI::OperationResults.new()
+      operation_results = JSONAPI::OperationResults.new
       result = JSONAPI::ErrorsOperationResult.new(errors[0].status, errors)
       operation_results.add_result(result)
 
@@ -143,18 +142,16 @@ module JSONAPI
     def create_response_document(operation_results)
       JSONAPI::ResponseDocument.new(
         operation_results,
-        {
-          primary_resource_klass: resource_klass,
-          include_directives: @request ? @request.include_directives : nil,
-          fields: @request ? @request.fields : nil,
-          base_url: base_url,
-          key_formatter: key_formatter,
-          route_formatter: route_formatter,
-          base_meta: base_response_meta,
-          base_links: base_response_links,
-          resource_serializer_klass: resource_serializer_klass,
-          request: @request
-        }
+        primary_resource_klass: resource_klass,
+        include_directives: @request ? @request.include_directives : nil,
+        fields: @request ? @request.fields : nil,
+        base_url: base_url,
+        key_formatter: key_formatter,
+        route_formatter: route_formatter,
+        base_meta: base_response_meta,
+        base_links: base_response_links,
+        resource_serializer_klass: resource_serializer_klass,
+        request: @request
       )
     end
 
@@ -169,11 +166,11 @@ module JSONAPI
     # Note: Be sure to either call super(e) or handle JSONAPI::Exceptions::Error and raise unhandled exceptions
     def handle_exceptions(e)
       case e
-        when JSONAPI::Exceptions::Error
-          render_errors(e.errors)
-        else # raise all other exceptions
-          # :nocov:
-          raise e
+      when JSONAPI::Exceptions::Error
+        render_errors(e.errors)
+      else # raise all other exceptions
+        # :nocov:
+        fail e
         # :nocov:
       end
     end

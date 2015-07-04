@@ -15,7 +15,7 @@ module JSONAPI
       @operations = []
       @fields = {}
       @filters = {}
-      @sort_criteria = [{field: 'id', direction: :asc}]
+      @sort_criteria = [{ field: 'id', direction: :asc }]
       @source_klass = nil
       @source_id = nil
       @include_directives = nil
@@ -111,7 +111,7 @@ module JSONAPI
       parse_remove_operation(params)
     end
 
-    def setup_destroy_association_action  (params)
+    def setup_destroy_association_action(params)
       parse_remove_association_operation(params)
     end
 
@@ -139,7 +139,7 @@ module JSONAPI
           extracted_fields[field] = resource_fields
         end
       else
-        raise JSONAPI::Exceptions::InvalidFieldFormat.new
+        fail JSONAPI::Exceptions::InvalidFieldFormat.new
       end
 
       # Validate the fields
@@ -148,13 +148,13 @@ module JSONAPI
         extracted_fields[type] = []
         begin
           if type != format_key(type)
-            raise JSONAPI::Exceptions::InvalidResource.new(type)
+            fail JSONAPI::Exceptions::InvalidResource.new(type)
           end
           type_resource = Resource.resource_for(@resource_klass.module_path + underscored_type.to_s)
         rescue NameError
           @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
         rescue JSONAPI::Exceptions::InvalidResource => e
-        @errors.concat(e.errors)
+          @errors.concat(e.errors)
         end
 
         if type_resource.nil? || !(@resource_klass._type == underscored_type ||
@@ -189,7 +189,7 @@ module JSONAPI
         end
       else
         @errors.concat(JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type),
-                                                               include_parts.first,).errors)
+                                                               include_parts.first).errors)
       end
     end
 
@@ -238,10 +238,10 @@ module JSONAPI
 
       @sort_criteria = CSV.parse_line(URI.unescape(sort_criteria)).collect do |sort|
         if sort.start_with?('-')
-          sort_criteria = {field: unformat_key(sort[1..-1]).to_s}
+          sort_criteria = { field: unformat_key(sort[1..-1]).to_s }
           sort_criteria[:direction] = :desc
         else
-          sort_criteria = {field: unformat_key(sort).to_s}
+          sort_criteria = { field: unformat_key(sort).to_s }
           sort_criteria[:direction] = :asc
         end
 
@@ -262,64 +262,54 @@ module JSONAPI
 
     def add_find_operation
       @operations.push JSONAPI::FindOperation.new(
-                         @resource_klass,
-                         {
-                           context: @context,
-                           filters: @filters,
-                           include_directives: @include_directives,
-                           sort_criteria: @sort_criteria,
-                           paginator: @paginator
-                         }
-                       )
+        @resource_klass,
+        context: @context,
+        filters: @filters,
+        include_directives: @include_directives,
+        sort_criteria: @sort_criteria,
+        paginator: @paginator
+      )
     end
 
     def add_show_operation
       @operations.push JSONAPI::ShowOperation.new(
-                         @resource_klass,
-                         {
-                           context: @context,
-                           id: @id,
-                           include_directives: @include_directives
-                         }
-                       )
+        @resource_klass,
+        context: @context,
+        id: @id,
+        include_directives: @include_directives
+      )
     end
 
     def add_show_association_operation(association_type, parent_key)
       @operations.push JSONAPI::ShowAssociationOperation.new(
-                         @resource_klass,
-                         {
-                           context: @context,
-                           association_type: association_type,
-                           parent_key: @resource_klass.verify_key(parent_key)
-                         }
-                       )
+        @resource_klass,
+        context: @context,
+        association_type: association_type,
+        parent_key: @resource_klass.verify_key(parent_key)
+      )
     end
 
     def add_show_related_resource_operation(association_type)
       @operations.push JSONAPI::ShowRelatedResourceOperation.new(
-                         @resource_klass,
-                         {
-                           context: @context,
-                           association_type: association_type,
-                           source_klass: @source_klass,
-                           source_id: @source_id
-                         }
-                       )
+        @resource_klass,
+        context: @context,
+        association_type: association_type,
+        source_klass: @source_klass,
+        source_id: @source_id
+      )
     end
 
     def add_show_related_resources_operation(association_type)
       @operations.push JSONAPI::ShowRelatedResourcesOperation.new(
-                         @resource_klass,
-                         {
-                           context: @context,
-                           association_type: association_type,
-                           source_klass: @source_klass,
-                           source_id: @source_id,
-                           filters: @source_klass.verify_filters(@filters, @context),
-                           sort_criteria: @sort_criteria,
-                           paginator: @paginator
-                         }
-                       )
+        @resource_klass,
+        context: @context,
+        association_type: association_type,
+        source_klass: @source_klass,
+        source_id: @source_id,
+        filters: @source_klass.verify_filters(@filters, @context),
+        sort_criteria: @sort_criteria,
+        paginator: @paginator
+      )
     end
 
     # TODO: Please remove after `createable_fields` is removed
@@ -339,12 +329,10 @@ module JSONAPI
 
         data = parse_params(params, creatable_fields)
         @operations.push JSONAPI::CreateResourceOperation.new(
-                           @resource_klass,
-                           {
-                             context: @context,
-                             data: data
-                           }
-                         )
+          @resource_klass,
+          context: @context,
+          data: data
+        )
       end
     rescue JSONAPI::Exceptions::Error => e
       @errors.concat(e.errors)
@@ -352,9 +340,9 @@ module JSONAPI
 
     def verify_type(type)
       if type.nil?
-        raise JSONAPI::Exceptions::ParameterMissing.new(:type)
+        fail JSONAPI::Exceptions::ParameterMissing.new(:type)
       elsif unformat_key(type).to_sym != @resource_klass._type
-        raise JSONAPI::Exceptions::InvalidResource.new(type)
+        fail JSONAPI::Exceptions::InvalidResource.new(type)
       end
     end
 
@@ -366,8 +354,8 @@ module JSONAPI
         }
       end
 
-      if !raw.is_a?(Hash) || raw.length != 2 || !(raw.has_key?('type') && raw.has_key?('id'))
-        raise JSONAPI::Exceptions::InvalidLinksObject.new
+      if !raw.is_a?(Hash) || raw.length != 2 || !(raw.key?('type') && raw.key?('id'))
+        fail JSONAPI::Exceptions::InvalidLinksObject.new
       end
 
       {
@@ -377,9 +365,7 @@ module JSONAPI
     end
 
     def parse_has_many_links_object(raw)
-      if raw.nil?
-        raise JSONAPI::Exceptions::InvalidLinksObject.new
-      end
+      fail JSONAPI::Exceptions::InvalidLinksObject.new if raw.nil?
 
       links_object = {}
       if raw.is_a?(Array)
@@ -389,7 +375,7 @@ module JSONAPI
           links_object[link_object[:type]].push(link_object[:id])
         end
       else
-        raise JSONAPI::Exceptions::InvalidLinksObject.new
+        fail JSONAPI::Exceptions::InvalidLinksObject.new
       end
       links_object
     end
@@ -403,73 +389,73 @@ module JSONAPI
 
       params.each do |key, value|
         case key.to_s
-          when 'relationships'
-            value.each do |link_key, link_value|
-              param = unformat_key(link_key)
+        when 'relationships'
+          value.each do |link_key, link_value|
+            param = unformat_key(link_key)
 
-              association = @resource_klass._association(param)
+            association = @resource_klass._association(param)
 
-              if association.is_a?(JSONAPI::Association::HasOne)
-                if link_value.nil?
-                  linkage = nil
-                else
-                  linkage = link_value[:data]
+            if association.is_a?(JSONAPI::Association::HasOne)
+              if link_value.nil?
+                linkage = nil
+              else
+                linkage = link_value[:data]
+              end
+
+              links_object = parse_has_one_links_object(linkage)
+              # Since we do not yet support polymorphic associations we will raise an error if the type does not match the
+              # association's type.
+              # TODO: Support Polymorphic associations
+              if links_object[:type] && (links_object[:type].to_s != association.type.to_s)
+                fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
+              end
+
+              unless links_object[:id].nil?
+                association_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(links_object[:type]).to_s)
+                checked_has_one_associations[param] = association_resource.verify_key(links_object[:id], @context)
+              else
+                checked_has_one_associations[param] = nil
+              end
+            elsif association.is_a?(JSONAPI::Association::HasMany)
+              if link_value.is_a?(Array) && link_value.length == 0
+                linkage = []
+              elsif link_value.is_a?(Hash)
+                linkage = link_value[:data]
+              else
+                fail JSONAPI::Exceptions::InvalidLinksObject.new
+              end
+
+              links_object = parse_has_many_links_object(linkage)
+
+              # Since we do not yet support polymorphic associations we will raise an error if the type does not match the
+              # association's type.
+              # TODO: Support Polymorphic associations
+
+              if links_object.length == 0
+                checked_has_many_associations[param] = []
+              else
+                if links_object.length > 1 || !links_object.key?(unformat_key(association.type).to_s)
+                  fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
                 end
 
-                links_object = parse_has_one_links_object(linkage)
-                # Since we do not yet support polymorphic associations we will raise an error if the type does not match the
-                # association's type.
-                # ToDo: Support Polymorphic associations
-                if links_object[:type] && (links_object[:type].to_s != association.type.to_s)
-                  raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
-                end
-
-                unless links_object[:id].nil?
-                  association_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(links_object[:type]).to_s)
-                  checked_has_one_associations[param] = association_resource.verify_key(links_object[:id], @context)
-                else
-                  checked_has_one_associations[param] = nil
-                end
-              elsif association.is_a?(JSONAPI::Association::HasMany)
-                if link_value.is_a?(Array) && link_value.length == 0
-                  linkage = []
-                elsif link_value.is_a?(Hash)
-                  linkage = link_value[:data]
-                else
-                  raise JSONAPI::Exceptions::InvalidLinksObject.new
-                end
-
-                links_object = parse_has_many_links_object(linkage)
-
-                # Since we do not yet support polymorphic associations we will raise an error if the type does not match the
-                # association's type.
-                # ToDo: Support Polymorphic associations
-
-                if links_object.length == 0
-                  checked_has_many_associations[param] = []
-                else
-                  if links_object.length > 1 || !links_object.has_key?(unformat_key(association.type).to_s)
-                    raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
-                  end
-
-                  links_object.each_pair do |type, keys|
-                    association_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(type).to_s)
-                    checked_has_many_associations[param] = association_resource.verify_keys(keys, @context)
-                  end
+                links_object.each_pair do |type, keys|
+                  association_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(type).to_s)
+                  checked_has_many_associations[param] = association_resource.verify_keys(keys, @context)
                 end
               end
             end
-          when 'id'
-            checked_attributes['id'] = unformat_value(:id, value)
-          when 'attributes'
-            value.each do |key, value|
-              param = unformat_key(key)
-              checked_attributes[param] = unformat_value(param, value)
-            end
+          end
+        when 'id'
+          checked_attributes['id'] = unformat_value(:id, value)
+        when 'attributes'
+          value.each do |key, value|
+            param = unformat_key(key)
+            checked_attributes[param] = unformat_value(param, value)
+          end
         end
       end
 
-      return {
+      {
         'attributes' => checked_attributes,
         'has_one' => checked_has_one_associations,
         'has_many' => checked_has_many_associations
@@ -487,21 +473,21 @@ module JSONAPI
 
       params.each do |key, value|
         case key.to_s
-          when 'relationships'
-            value.each_key do |links_key|
-              params_not_allowed.push(links_key) unless formatted_allowed_fields.include?(links_key.to_sym)
-            end
-          when 'attributes'
-            value.each do |attr_key, attr_value|
-              params_not_allowed.push(attr_key) unless formatted_allowed_fields.include?(attr_key.to_sym)
-            end
-          when 'type', 'id'
-          else
-            params_not_allowed.push(key)
+        when 'relationships'
+          value.each_key do |links_key|
+            params_not_allowed.push(links_key) unless formatted_allowed_fields.include?(links_key.to_sym)
+          end
+        when 'attributes'
+          value.each do |attr_key, _attr_value|
+            params_not_allowed.push(attr_key) unless formatted_allowed_fields.include?(attr_key.to_sym)
+          end
+        when 'type', 'id'
+        else
+          params_not_allowed.push(key)
         end
       end
 
-      raise JSONAPI::Exceptions::ParametersNotAllowed.new(params_not_allowed) if params_not_allowed.length > 0
+      fail JSONAPI::Exceptions::ParametersNotAllowed.new(params_not_allowed) if params_not_allowed.length > 0
     end
 
     # TODO: Please remove after `updateable_fields` is removed
@@ -519,18 +505,16 @@ module JSONAPI
       association = resource_klass._association(association_type)
 
       if association.is_a?(JSONAPI::Association::HasMany)
-        object_params = {relationships: {format_key(association.name) => {data: data}}}
+        object_params = { relationships: { format_key(association.name) => { data: data } } }
         verified_param_set = parse_params(object_params, updatable_fields)
 
         @operations.push JSONAPI::CreateHasManyAssociationOperation.new(
-                           resource_klass,
-                           {
-                             context: @context,
-                             resource_id: parent_key,
-                             association_type: association_type,
-                             data: verified_param_set[:has_many].values[0]
-                           }
-                         )
+          resource_klass,
+          context: @context,
+          resource_id: parent_key,
+          association_type: association_type,
+          data: verified_param_set[:has_many].values[0]
+        )
       end
     end
 
@@ -538,74 +522,62 @@ module JSONAPI
       association = resource_klass._association(association_type)
 
       if association.is_a?(JSONAPI::Association::HasOne)
-        object_params = {relationships: {format_key(association.name) => {data: data}}}
+        object_params = { relationships: { format_key(association.name) => { data: data } } }
         verified_param_set = parse_params(object_params, updatable_fields)
 
         @operations.push JSONAPI::ReplaceHasOneAssociationOperation.new(
-                           resource_klass,
-                           {
-                             context: @context,
-                             resource_id: parent_key,
-                             association_type: association_type,
-                             key_value: verified_param_set[:has_one].values[0]
-                           }
-                         )
+          resource_klass,
+          context: @context,
+          resource_id: parent_key,
+          association_type: association_type,
+          key_value: verified_param_set[:has_one].values[0]
+        )
       else
         unless association.acts_as_set
-          raise JSONAPI::Exceptions::HasManySetReplacementForbidden.new
+          fail JSONAPI::Exceptions::HasManySetReplacementForbidden.new
         end
 
-        object_params = {relationships: {format_key(association.name) => {data: data}}}
+        object_params = { relationships: { format_key(association.name) => { data: data } } }
         verified_param_set = parse_params(object_params, updatable_fields)
 
         @operations.push JSONAPI::ReplaceHasManyAssociationOperation.new(
-                           resource_klass,
-                           {
-                             context: @context,
-                             resource_id: parent_key,
-                             association_type: association_type,
-                             data: verified_param_set[:has_many].values[0]
-                           }
-                         )
+          resource_klass,
+          context: @context,
+          resource_id: parent_key,
+          association_type: association_type,
+          data: verified_param_set[:has_many].values[0]
+        )
       end
     end
 
     def parse_single_replace_operation(data, keys)
-      if data[:id].nil?
-        raise JSONAPI::Exceptions::MissingKey.new
-      end
+      fail JSONAPI::Exceptions::MissingKey.new if data[:id].nil?
 
       type = data[:type]
       if type.nil? || type != format_key(@resource_klass._type).to_s
-        raise JSONAPI::Exceptions::ParameterMissing.new(:type)
+        fail JSONAPI::Exceptions::ParameterMissing.new(:type)
       end
 
       key = data[:id]
-      if !keys.include?(key)
-        raise JSONAPI::Exceptions::KeyNotIncludedInURL.new(key)
+      unless keys.include?(key)
+        fail JSONAPI::Exceptions::KeyNotIncludedInURL.new(key)
       end
 
-      if !keys.include?(:id)
-        data.delete(:id)
-      end
+      data.delete(:id) unless keys.include?(:id)
 
       verify_type(data[:type])
 
       @operations.push JSONAPI::ReplaceFieldsOperation.new(
-                         @resource_klass,
-                         {
-                           context: @context,
-                           resource_id: key,
-                           data: parse_params(data, updatable_fields)
-                         }
-                       )
+        @resource_klass,
+        context: @context,
+        resource_id: key,
+        data: parse_params(data, updatable_fields)
+      )
     end
 
     def parse_replace_operation(data, keys)
       if data.is_a?(Array)
-        if keys.count != data.count
-          raise JSONAPI::Exceptions::CountMismatch
-        end
+        fail JSONAPI::Exceptions::CountMismatch if keys.count != data.count
 
         data.each do |object_params|
           parse_single_replace_operation(object_params, keys)
@@ -623,12 +595,10 @@ module JSONAPI
 
       keys.each do |key|
         @operations.push JSONAPI::RemoveResourceOperation.new(
-                           @resource_klass,
-                           {
-                             context: @context,
-                             resource_id: key
-                           }
-                         )
+          @resource_klass,
+          context: @context,
+          resource_id: key
+        )
       end
     rescue ActionController::UnpermittedParameters => e
       @errors.concat(JSONAPI::Exceptions::ParametersNotAllowed.new(e.params).errors)
@@ -646,29 +616,25 @@ module JSONAPI
         keys = parse_key_array(params[:keys])
         keys.each do |key|
           @operations.push JSONAPI::RemoveHasManyAssociationOperation.new(
-                             resource_klass,
-                             {
-                               context: @context,
-                               resource_id: parent_key,
-                               association_type: association_type,
-                               associated_key: key
-                             }
-                           )
+            resource_klass,
+            context: @context,
+            resource_id: parent_key,
+            association_type: association_type,
+            associated_key: key
+          )
         end
       else
         @operations.push JSONAPI::RemoveHasOneAssociationOperation.new(
-                           resource_klass,
-                           {
-                             context: @context,
-                             resource_id: parent_key,
-                             association_type: association_type
-                           }
-                         )
+          resource_klass,
+          context: @context,
+          resource_id: parent_key,
+          association_type: association_type
+        )
       end
     end
 
     def parse_key_array(raw)
-      return @resource_klass.verify_keys(raw.split(/,/), context)
+      @resource_klass.verify_keys(raw.split(/,/), context)
     end
 
     def format_key(key)

@@ -1,6 +1,5 @@
 module JSONAPI
   class IncludeDirectives
-
     # Construct an IncludeDirectives Hash from an array of dot separated include strings.
     # For example ['posts.comments.tags']
     # will transform into =>
@@ -21,7 +20,7 @@ module JSONAPI
     # }
 
     def initialize(includes_array)
-      @include_directives_hash = {include_related: {}}
+      @include_directives_hash = { include_related: {} }
       includes_array.each do |include|
         parse_include(include)
       end
@@ -36,11 +35,12 @@ module JSONAPI
     end
 
     private
+
     def get_related(current_path)
       current = @include_directives_hash
       current_path.split('.').each do |fragment|
         fragment = fragment.to_sym
-        current[:include_related][fragment] ||= {include: false, include_related: {}}
+        current[:include_related][fragment] ||= { include: false, include_related: {} }
         current = current[:include_related][fragment]
       end
       current

@@ -1,6 +1,6 @@
 #!/usr/bin/env rake
-require "bundler/gem_tasks"
-require "rake/testtask"
+require 'bundler/gem_tasks'
+require 'rake/testtask'
 require './test/test_helper.rb'
 
 TestApp.load_tasks
