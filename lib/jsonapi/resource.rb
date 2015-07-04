@@ -549,7 +549,7 @@ module JSONAPI
       end
 
       def _allowed_filters
-        !@_allowed_filters.nil? ? @_allowed_filters : { :id => {} }
+        !@_allowed_filters.nil? ? @_allowed_filters : { id: {} }
       end
 
       def _resource_name_from_type(type)

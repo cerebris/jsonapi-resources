@@ -5,14 +5,14 @@ module JSONAPI
     # For example ['posts.comments.tags']
     # will transform into =>
     # {
-    #   :posts=>{
-    #     :include=>true,
-    #     :include_related=>{
-    #       :comments=>{
-    #         :include=>true,
-    #         :include_related=>{
-    #           :tags=>{
-    #             :include=>true
+    #   posts:{
+    #     include:true,
+    #     include_related:{
+    #       comments:{
+    #         include:true,
+    #         include_related:{
+    #           tags:{
+    #             include:true
     #           }
     #         }
     #       }
