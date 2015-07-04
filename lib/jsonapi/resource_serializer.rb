@@ -21,7 +21,6 @@ module JSONAPI
       @include_directives = options[:include_directives]
       @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
       @route_formatter = options.fetch(:route_formatter, JSONAPI.configuration.route_formatter)
-      # @paginator = options[:paginator]
       @base_url = options.fetch(:base_url, '')
     end
 
