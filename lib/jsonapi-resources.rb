@@ -20,4 +20,3 @@ require 'jsonapi/include_directives'
 require 'jsonapi/operation_result'
 require 'jsonapi/operation_results'
 require 'jsonapi/callbacks'
-

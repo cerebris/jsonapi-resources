@@ -13,9 +13,9 @@ end
 version = ENV['RAILS_VERSION'] || 'default'
 rails = case version
         when 'master'
-          {:github => 'rails/rails'}
+          { github: 'rails/rails' }
         when 'default'
-            '>= 4.2'
+          '>= 4.2'
         else
           "~> #{version}"
         end

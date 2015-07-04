@@ -2,7 +2,6 @@ require 'active_support/callbacks'
 
 module JSONAPI
   module Callbacks
-
     def self.included(base)
       base.class_eval do
         include ActiveSupport::Callbacks

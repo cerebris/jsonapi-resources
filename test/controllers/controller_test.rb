@@ -76,10 +76,10 @@ class PostsControllerTest < ActionController::TestCase
 
     # type, id, links, attributes, relationships
     assert_equal 5, json_response['data'][0].size
-    assert json_response['data'][0].has_key?('type')
-    assert json_response['data'][0].has_key?('id')
-    assert json_response['data'][0]['attributes'].has_key?('title')
-    assert json_response['data'][0].has_key?('links')
+    assert json_response['data'][0].key?('type')
+    assert json_response['data'][0].key?('id')
+    assert json_response['data'][0]['attributes'].key?('title')
+    assert json_response['data'][0].key?('links')
   end
 
   def test_index_filter_by_ids_and_fields_specify_type
@@ -89,10 +89,10 @@ class PostsControllerTest < ActionController::TestCase
 
     # type, id, links, attributes, relationships
     assert_equal 5, json_response['data'][0].size
-    assert json_response['data'][0].has_key?('type')
-    assert json_response['data'][0].has_key?('id')
-    assert json_response['data'][0]['attributes'].has_key?('title')
-    assert json_response['data'][0].has_key?('links')
+    assert json_response['data'][0].key?('type')
+    assert json_response['data'][0].key?('id')
+    assert json_response['data'][0]['attributes'].key?('title')
+    assert json_response['data'][0].key?('links')
   end
 
   def test_index_filter_by_ids_and_fields_specify_unrelated_type
@@ -108,9 +108,9 @@ class PostsControllerTest < ActionController::TestCase
 
     # type, id, links, relationships
     assert_equal 4, json_response['data'][0].size
-    assert json_response['data'][0].has_key?('type')
-    assert json_response['data'][0].has_key?('id')
-    assert json_response['data'][0]['relationships'].has_key?('author')
+    assert json_response['data'][0].key?('type')
+    assert json_response['data'][0].key?('id')
+    assert json_response['data'][0]['relationships'].key?('author')
   end
 
   def test_filter_association_single
@@ -236,7 +236,6 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration.top_level_meta_include_record_count = false
   end
 
-
   def test_show_single_with_includes
     get :show, {id: '1', include: 'comments'}
     assert_response :success
@@ -327,7 +326,7 @@ class PostsControllerTest < ActionController::TestCase
          }
 
     assert_response :unprocessable_entity
-    # Todo: check if this validation is working
+    # TODO: check if this validation is working
     assert_match /author - can't be blank/, response.body
   end
 
@@ -1550,7 +1549,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     get :show, {id: 1, include: 'isoCurrency,employee', 'fields' => {'expenseEntries' => 'transactionDate'}}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
-    assert json_response['data']['attributes'].has_key?('transactionDate')
+    assert json_response['data']['attributes'].key?('transactionDate')
     assert_equal 2, json_response['included'].size
   end
 
@@ -1559,7 +1558,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
                                                                      'isoCurrencies' => 'id,name'}}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
-    assert json_response['data']['attributes'].has_key?('transactionDate')
+    assert json_response['data']['attributes'].key?('transactionDate')
     assert_equal 2, json_response['included'].size
   end
 
@@ -1895,7 +1894,7 @@ class PeopleControllerTest < ActionController::TestCase
   def test_get_related_resource
     JSONAPI.configuration.json_key_format = :dasherized_key
     JSONAPI.configuration.route_format = :underscored_key
-    get :get_related_resource, {post_id: '2', association: 'author', :source=>'posts'}
+    get :get_related_resource, {post_id: '2', association: 'author', source:'posts'}
     assert_response :success
     assert_hash_equals(
       {
@@ -1948,7 +1947,7 @@ class PeopleControllerTest < ActionController::TestCase
   end
 
   def test_get_related_resource_nil
-    get :get_related_resource, {post_id: '17', association: 'author', :source=>'posts'}
+    get :get_related_resource, {post_id: '17', association: 'author', source:'posts'}
     assert_response :success
     assert_hash_equals json_response,
                        {
