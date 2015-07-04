@@ -4,6 +4,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   def setup
     JSONAPI.configuration.json_key_format = :underscored_key
     JSONAPI.configuration.route_format = :underscored_route
+    $test_user = Person.find(1)
   end
 
   def after_teardown
@@ -337,7 +338,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     Api::V2::BookResource.paginator :none
     get '/api/v2/books'
     assert_equal 200, status
-    assert_equal 1000, json_response['data'].size
+    assert_equal 901, json_response['data'].size
   end
 
   def test_pagination_offset_style
@@ -385,7 +386,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books/1/book_comments?page[limit]=10'
     assert_equal 200, status
     assert_equal 10, json_response['data'].size
-    assert_equal 'This is comment 9 on book 1.', json_response['data'][9]['attributes']['body']
+    assert_equal 'This is comment 18 on book 1.', json_response['data'][9]['attributes']['body']
   end
 
   def test_pagination_related_resources_data_includes
@@ -394,8 +395,18 @@ class RequestTest < ActionDispatch::IntegrationTest
     get '/api/v2/books/1/book_comments?page[limit]=10&include=author,book'
     assert_equal 200, status
     assert_equal 10, json_response['data'].size
-    assert_equal 'This is comment 9 on book 1.', json_response['data'][9]['attributes']['body']
+    assert_equal 'This is comment 18 on book 1.', json_response['data'][9]['attributes']['body']
   end
+
+  # def test_pagination_related_resources_data_includes
+  #   Api::V2::BookResource.paginator :none
+  #   Api::V2::BookCommentResource.paginator :none
+  #   get '/api/v2/books?filter[]'
+  #   assert_equal 200, status
+  #   assert_equal 10, json_response['data'].size
+  #   assert_equal 'This is comment 18 on book 1.', json_response['data'][9]['attributes']['body']
+  # end
+
 
   def test_flow_self
     get '/posts'

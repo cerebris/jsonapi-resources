@@ -243,7 +243,9 @@ The association methods support the following options:
  * `foreign_key` - the method on the resource used to fetch the related resource. Defaults to `<resource_name>_id` for 
     has_one and `<resource_name>_ids` for has_many relationships.
  * `acts_as_set` - allows the entire set of related records to be replaced in one operation. Defaults to false if not set.
-
+ * `relation_name` - the name of the relation to use on the model. A lambda may be provided which allows conditional 
+    selection of the relation based on the context.
+    
 Examples:
 
 ```ruby
@@ -261,6 +263,25 @@ class ExpenseEntryResource < JSONAPI::Resource
 
   has_one :currency, class_name: 'Currency', foreign_key: 'currency_code'
   has_one :employee
+end
+```
+
+```ruby
+class BookResource < JSONAPI::Resource
+
+  # Only book_admins may see unapproved comments for a book. Using 
+  # a lambda to select the correct relation on the model
+  has_many :book_comments, relation_name: -> (options = {}) {
+    context = options[:context]
+    current_user = context ? context[:current_user] : nil
+
+    unless current_user && current_user.book_admin
+      :approved_book_comments
+    else
+      :book_comments
+    end
+  }
+  ...
 end
 ```
 

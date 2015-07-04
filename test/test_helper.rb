@@ -15,7 +15,7 @@ require 'rails/test_help'
 require 'jsonapi-resources'
 
 require File.expand_path('../helpers/value_matchers', __FILE__)
-require File.expand_path('../helpers/hash_helpers', __FILE__)
+require File.expand_path('../helpers/assertions', __FILE__)
 require File.expand_path('../helpers/functional_helpers', __FILE__)
 
 Rails.env = 'test'
@@ -59,12 +59,28 @@ end
 
 def count_queries(&block)
   @query_count = 0
-  ActiveSupport::Notifications.subscribe('sql.active_record') do
+  @queries = []
+  ActiveSupport::Notifications.subscribe('sql.active_record') do |name, started, finished, unique_id, payload|
     @query_count = @query_count + 1
+    @queries.push payload[:sql]
   end
   yield block
   ActiveSupport::Notifications.unsubscribe('sql.active_record')
   @query_count
+end
+
+def assert_query_count(expected, msg = nil)
+  msg = message(msg) {
+    "Expected #{expected} queries, ran #{@query_count} queries"
+  }
+  show_queries unless expected == @query_count
+  assert expected == @query_count, msg
+end
+
+def show_queries
+  @queries.each_with_index do |query, index|
+    puts "sql[#{index}]: #{query}"
+  end
 end
 
 TestApp.initialize!
@@ -184,7 +200,7 @@ end
 Minitest::Test = MiniTest::Unit::TestCase unless defined?(Minitest::Test)
 
 class Minitest::Test
-  include Helpers::HashHelpers
+  include Helpers::Assertions
   include Helpers::ValueMatchers
   include Helpers::FunctionalHelpers
 end

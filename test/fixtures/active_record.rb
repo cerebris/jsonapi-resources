@@ -13,7 +13,8 @@ ActiveRecord::Schema.define do
     t.string     :email
     t.datetime   :date_joined
     t.belongs_to :preferences
-    t.integer :hair_cut_id, index: true
+    t.integer    :hair_cut_id, index: true
+    t.boolean    :book_admin, default: false
     t.timestamps null: false
   end
 
@@ -107,12 +108,14 @@ ActiveRecord::Schema.define do
   create_table :books, force: true do |t|
     t.string :title
     t.string :isbn
+    t.boolean :banned, default: false
   end
 
   create_table :book_comments, force: true do |t|
     t.text       :body
     t.belongs_to :book, index: true
     t.integer    :author_id
+    t.boolean    :approved, default: true
     t.timestamps null: false
   end
 
@@ -289,6 +292,7 @@ end
 
 class Book < ActiveRecord::Base
   has_many :book_comments
+  has_many :approved_book_comments, -> { where(approved: true) }, class_name: "BookComment"
 end
 
 class BookComment < ActiveRecord::Base
@@ -445,9 +449,15 @@ module Api
     end
 
     class BooksController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
     end
 
     class BookCommentsController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
     end
   end
 
@@ -801,7 +811,6 @@ module Api
       filters :writer
     end
 
-    # AuthorResource = AuthorResource.dup
     PersonResource = PersonResource.dup
     CommentResource = CommentResource.dup
     TagResource = TagResource.dup
@@ -822,21 +831,110 @@ end
 module Api
   module V2
     PreferencesResource = PreferencesResource.dup
-    # AuthorResource = AuthorResource.dup
     PersonResource = PersonResource.dup
     PostResource = PostResource.dup
 
     class BookResource < JSONAPI::Resource
       attribute :title
-      attribute :isbn
+      attributes :isbn, :banned
 
-      has_many :book_comments
+      has_many :book_comments, relation_name: -> (options = {}) {
+        context = options[:context]
+        current_user = context ? context[:current_user] : nil
+
+        unless current_user && current_user.book_admin
+          :approved_book_comments
+        else
+          :book_comments
+        end
+      }
+
+      filters :banned, :book_comments
+
+      class << self
+        def apply_filter(records, filter, value, options)
+          context = options[:context]
+          current_user = context ? context[:current_user] : nil
+
+          case filter
+            when :banned
+              # Only book admins my filter for banned books
+              if current_user && current_user.book_admin
+                return records.where('books.banned = ?', value[0] == 'true')
+              end
+            else
+              return super(records, filter, value)
+          end
+        end
+
+        def books
+          Book.arel_table
+        end
+
+        def not_banned_books
+          books[:banned].eq(false)
+        end
+
+        def records(options = {})
+          context = options[:context]
+          current_user = context ? context[:current_user] : nil
+
+          records = _model_class
+          # Hide the banned books from people who are not book admins
+          unless current_user && current_user.book_admin
+            records = records.where(not_banned_books)
+          end
+          records
+        end
+      end
     end
 
     class BookCommentResource < JSONAPI::Resource
-      attributes :body
+      attributes :body, :approved
+
       has_one :book
       has_one :author, class_name: 'Person'
+
+      filters :approved, :book
+
+      class << self
+        def book_comments
+          BookComment.arel_table
+        end
+
+        def approved_comments(approved = true)
+          book_comments[:approved].eq(approved)
+        end
+
+        def apply_filter(records, filter, value, options)
+          context = options[:context]
+          current_user = context ? context[:current_user] : nil
+
+          case filter
+            when :approved
+              # Only book admins my filter for unapproved comments
+              if current_user && current_user.book_admin
+                records.where(approved_comments(value[0] == 'true'))
+              end
+            else
+              #:nocov:
+              return super(records, filter, value)
+            #:nocov:
+          end
+        end
+
+        def records(options = {})
+          context = options[:context]
+          current_user = context ? context[:current_user] : nil
+
+          records = _model_class
+          # Hide the unapproved comments from people who are not book admins
+          unless current_user && current_user.book_admin
+            records = records.where(approved_comments)
+          end
+          records
+        end
+      end
     end
   end
 end

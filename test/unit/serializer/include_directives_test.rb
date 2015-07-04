@@ -105,4 +105,9 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
       },
       directives)
   end
+
+  def test_three_levels_include_full_model_includes
+    directives = JSONAPI::IncludeDirectives.new(['posts.comments.tags'])
+    assert_array_equals([{:posts=>[{:comments=>[:tags]}]}], directives.model_includes)
+  end
 end
