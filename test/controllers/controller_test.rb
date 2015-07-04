@@ -1901,7 +1901,7 @@ class PeopleControllerTest < ActionController::TestCase
   def test_get_related_resource
     JSONAPI.configuration.json_key_format = :dasherized_key
     JSONAPI.configuration.route_format = :underscored_key
-    get :get_related_resource, {post_id: '2', association: 'author', :source=>'posts'}
+    get :get_related_resource, {post_id: '2', association: 'author', source:'posts'}
     assert_response :success
     assert_hash_equals(
       {
@@ -1954,7 +1954,7 @@ class PeopleControllerTest < ActionController::TestCase
   end
 
   def test_get_related_resource_nil
-    get :get_related_resource, {post_id: '17', association: 'author', :source=>'posts'}
+    get :get_related_resource, {post_id: '17', association: 'author', source:'posts'}
     assert_response :success
     assert_hash_equals json_response,
                        {
