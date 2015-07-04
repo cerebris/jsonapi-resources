@@ -52,7 +52,7 @@ module JSONAPI
         end
       end
 
-      completed ? :completed : :accepted
+      return completed ? :completed : :accepted
     end
 
     def remove
@@ -515,7 +515,7 @@ module JSONAPI
 
       # override to allow for key processing and checking
       def verify_keys(keys, context = nil)
-        keys.collect do |key|
+        return keys.collect do |key|
           verify_key(key, context)
         end
       end
@@ -571,7 +571,7 @@ module JSONAPI
           class_name = "#{type.to_s.underscore.singularize}_resource".camelize
           @@resource_types[type] = class_name
         end
-        class_name
+        return class_name
       end
 
       def _paginator

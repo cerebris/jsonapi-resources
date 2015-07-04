@@ -455,7 +455,7 @@ module JSONAPI
         end
       end
 
-      {
+      return {
         'attributes' => checked_attributes,
         'has_one' => checked_has_one_associations,
         'has_many' => checked_has_many_associations
