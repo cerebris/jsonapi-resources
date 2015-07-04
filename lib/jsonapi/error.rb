@@ -1,9 +1,8 @@
 module JSONAPI
   class Error
-
     attr_accessor :title, :detail, :id, :href, :code, :path, :links, :status
 
-    def initialize(options={})
+    def initialize(options = {})
       @title          = options[:title]
       @detail         = options[:detail]
       @id             = options[:id]

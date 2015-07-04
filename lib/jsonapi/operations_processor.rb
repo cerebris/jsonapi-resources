@@ -34,7 +34,7 @@ module JSONAPI
       @transactional = false
       if @operations.length > 1
         @operations.each do |operation|
-          @transactional = @transactional | operation.transactional
+          @transactional |= operation.transactional
         end
       end
 
@@ -56,9 +56,7 @@ module JSONAPI
               @result.meta.merge!(@operation_meta)
               @result.links.merge!(@operation_links)
               @results.add_result(@result)
-              if @results.has_errors?
-                rollback
-              end
+              rollback if @results.has_errors?
             end
           end
           @results.meta = @operations_meta

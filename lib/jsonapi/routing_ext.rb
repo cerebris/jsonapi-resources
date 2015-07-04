@@ -1,7 +1,6 @@
 module ActionDispatch
   module Routing
     class Mapper
-
       Resource.class_eval do
         def unformat_route(route)
           JSONAPI.configuration.route_formatter.unformat(route.to_s)
@@ -17,7 +16,7 @@ module ActionDispatch
           JSONAPI.configuration.route_formatter.format(route.to_s)
         end
 
-        def jsonapi_resource(*resources, &block)
+        def jsonapi_resource(*resources, &_block)
           @resource_type = resources.first
           res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
 
@@ -57,7 +56,7 @@ module ActionDispatch
           end
         end
 
-        def jsonapi_resources(*resources, &block)
+        def jsonapi_resources(*resources, &_block)
           @resource_type = resources.first
           res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
 
@@ -111,17 +110,17 @@ module ActionDispatch
 
           if methods.include?(:show)
             match "relationships/#{formatted_association_name}", controller: options[:controller],
-                  action: 'show_association', association: link_type.to_s, via: [:get]
+                                                                 action: 'show_association', association: link_type.to_s, via: [:get]
           end
 
           if methods.include?(:update)
             match "relationships/#{formatted_association_name}", controller: options[:controller],
-                  action: 'update_association', association: link_type.to_s, via: [:put, :patch]
+                                                                 action: 'update_association', association: link_type.to_s, via: [:put, :patch]
           end
 
           if methods.include?(:destroy)
             match "relationships/#{formatted_association_name}", controller: options[:controller],
-                  action: 'destroy_association', association: link_type.to_s, via: [:delete]
+                                                                 action: 'destroy_association', association: link_type.to_s, via: [:delete]
           end
         end
 
@@ -137,22 +136,22 @@ module ActionDispatch
 
           if methods.include?(:show)
             match "relationships/#{formatted_association_name}", controller: options[:controller],
-                   action: 'show_association', association: link_type.to_s, via: [:get]
+                                                                 action: 'show_association', association: link_type.to_s, via: [:get]
           end
 
           if methods.include?(:create)
             match "relationships/#{formatted_association_name}", controller: options[:controller],
-                  action: 'create_association', association: link_type.to_s, via: [:post]
+                                                                 action: 'create_association', association: link_type.to_s, via: [:post]
           end
 
           if methods.include?(:update)
             match "relationships/#{formatted_association_name}", controller: options[:controller],
-                  action: 'update_association', association: link_type.to_s, via: [:put, :patch]
+                                                                 action: 'update_association', association: link_type.to_s, via: [:put, :patch]
           end
 
           if methods.include?(:destroy)
             match "relationships/#{formatted_association_name}/:keys", controller: options[:controller],
-                  action: 'destroy_association', association: link_type.to_s, via: [:delete]
+                                                                       action: 'destroy_association', association: link_type.to_s, via: [:delete]
           end
         end
 
@@ -167,10 +166,9 @@ module ActionDispatch
           related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(association.class_name.underscore.pluralize))
           options[:controller] ||= related_resource._type.to_s
 
-
           match "#{formatted_association_name}", controller: options[:controller],
-                association: association.name, source: resource_type_with_module_prefix(source._type),
-                action: 'get_related_resource', via: [:get]
+                                                 association: association.name, source: resource_type_with_module_prefix(source._type),
+                                                 action: 'get_related_resource', via: [:get]
         end
 
         def jsonapi_related_resources(*association)
@@ -185,14 +183,15 @@ module ActionDispatch
           options[:controller] ||= related_resource._type.to_s
 
           match "#{formatted_association_name}", controller: options[:controller],
-                association: association.name, source: resource_type_with_module_prefix(source._type),
-                action: 'get_related_resources', via: [:get]
+                                                 association: association.name, source: resource_type_with_module_prefix(source._type),
+                                                 action: 'get_related_resources', via: [:get]
         end
 
         private
+
         def resource_type_with_module_prefix(resource = nil)
           resource_name = resource || @scope[:jsonapi_resource]
-          [@scope[:module], resource_name].compact.collect(&:to_s).join("/")
+          [@scope[:module], resource_name].compact.collect(&:to_s).join('/')
         end
       end
     end

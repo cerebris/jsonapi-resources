@@ -27,8 +27,8 @@ module JSONAPI
 
     def record_count
       @_record_count ||= @resource_klass.find_count(@resource_klass.verify_filters(@filters, @context),
-                                                     context: @context,
-                                                     include_directives: @include_directives)
+                                                    context: @context,
+                                                    include_directives: @include_directives)
     end
 
     def pagination_params
@@ -43,10 +43,10 @@ module JSONAPI
 
     def apply
       resource_records = @resource_klass.find(@resource_klass.verify_filters(@filters, @context),
-                                             context: @context,
-                                             include_directives: @include_directives,
-                                             sort_criteria: @sort_criteria,
-                                             paginator: @paginator)
+                                              context: @context,
+                                              include_directives: @include_directives,
+                                              sort_criteria: @sort_criteria,
+                                              paginator: @paginator)
 
       options = {}
       if JSONAPI.configuration.top_level_links_include_pagination
@@ -153,11 +153,9 @@ module JSONAPI
       source_resource = @source_klass.find_by_key(@source_id, context: @context)
 
       related_resource = source_resource.send(@association_type,
-                                              {
-                                                filters:  @filters,
-                                                sort_criteria: @sort_criteria,
-                                                paginator: @paginator
-                                              })
+                                              filters:  @filters,
+                                              sort_criteria: @sort_criteria,
+                                              paginator: @paginator)
 
       return JSONAPI::ResourceOperationResult.new(:ok, related_resource)
 
@@ -216,7 +214,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.replace_fields(data)
 
-      return JSONAPI::ResourceOperationResult.new(result == :completed ? :ok : :accepted, resource)
+      JSONAPI::ResourceOperationResult.new(result == :completed ? :ok : :accepted, resource)
     end
   end
 
@@ -234,7 +232,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.replace_has_one_link(@association_type, @key_value)
 
-      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
@@ -252,7 +250,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.create_has_many_links(@association_type, @data)
 
-      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
@@ -270,7 +268,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.replace_has_many_links(@association_type, @data)
 
-      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
@@ -288,7 +286,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.remove_has_many_link(@association_type, @associated_key)
 
-      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
@@ -305,7 +303,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.remove_has_one_link(@association_type)
 
-      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 end

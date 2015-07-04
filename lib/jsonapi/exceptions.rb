@@ -15,7 +15,6 @@ module JSONAPI
                             title: 'Internal Server Error',
                             detail: 'Internal Server Error')]
       end
-
     end
 
     class InvalidResource < Error
@@ -26,9 +25,9 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_RESOURCE,
-                             status: :bad_request,
-                             title: 'Invalid resource',
-                             detail: "#{resource} is not a valid resource.")]
+                            status: :bad_request,
+                            title: 'Invalid resource',
+                            detail: "#{resource} is not a valid resource.")]
       end
     end
 
@@ -40,9 +39,9 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::RECORD_NOT_FOUND,
-                             status: :not_found,
-                             title: 'Record not found',
-                             detail: "The record identified by #{id} could not be found.")]
+                            status: :not_found,
+                            title: 'Record not found',
+                            detail: "The record identified by #{id} could not be found.")]
       end
     end
 
@@ -54,9 +53,9 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::UNSUPPORTED_MEDIA_TYPE,
-                             status: :unsupported_media_type,
-                             title: 'Unsupported media type',
-                             detail: "All requests that create or update resources must use the '#{JSONAPI::MEDIA_TYPE}' Content-Type. This request specified '#{media_type}.'")]
+                            status: :unsupported_media_type,
+                            title: 'Unsupported media type',
+                            detail: "All requests that create or update resources must use the '#{JSONAPI::MEDIA_TYPE}' Content-Type. This request specified '#{media_type}.'")]
       end
     end
 
@@ -91,9 +90,9 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_FILTERS_SYNTAX,
-                             status: :bad_request,
-                             title: 'Invalid filters syntax',
-                             detail: "#{filters} is not a valid syntax for filtering.")]
+                            status: :bad_request,
+                            title: 'Invalid filters syntax',
+                            detail: "#{filters} is not a valid syntax for filtering.")]
       end
     end
 
@@ -105,9 +104,9 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::FILTER_NOT_ALLOWED,
-                             status: :bad_request,
-                             title: 'Filter not allowed',
-                             detail: "#{filter} is not allowed.")]
+                            status: :bad_request,
+                            title: 'Filter not allowed',
+                            detail: "#{filter} is not allowed.")]
       end
     end
 
@@ -120,9 +119,9 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_FILTER_VALUE,
-                             status: :bad_request,
-                             title: 'Invalid filter value',
-                             detail: "#{value} is not a valid value for #{filter}.")]
+                            status: :bad_request,
+                            title: 'Invalid filter value',
+                            detail: "#{value} is not a valid value for #{filter}.")]
       end
     end
 
@@ -135,9 +134,9 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_FIELD_VALUE,
-                             status: :bad_request,
-                             title: 'Invalid field value',
-                             detail: "#{value} is not a valid value for #{field}.")]
+                            status: :bad_request,
+                            title: 'Invalid field value',
+                            detail: "#{value} is not a valid value for #{field}.")]
       end
     end
 
@@ -182,9 +181,9 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_FIELD,
-                             status: :bad_request,
-                             title: 'Invalid field',
-                             detail: "#{field} is not a valid field for #{type}.")]
+                            status: :bad_request,
+                            title: 'Invalid field',
+                            detail: "#{field} is not a valid field for #{type}.")]
       end
     end
 
@@ -225,13 +224,12 @@ module JSONAPI
       end
 
       def errors
-            params.collect { |param|
-              JSONAPI::Error.new(code: JSONAPI::PARAM_NOT_ALLOWED,
+        params.collect do |param|
+          JSONAPI::Error.new(code: JSONAPI::PARAM_NOT_ALLOWED,
                              status: :bad_request,
                              title: 'Param not allowed',
                              detail: "#{param} is not allowed.")
-            }
-
+        end
       end
     end
 
@@ -243,18 +241,18 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::PARAM_MISSING,
-                             status: :bad_request,
-                             title: 'Missing Parameter',
-                             detail: "The required parameter, #{param}, is missing.")]
+                            status: :bad_request,
+                            title: 'Missing Parameter',
+                            detail: "The required parameter, #{param}, is missing.")]
       end
     end
 
     class CountMismatch < Error
       def errors
         [JSONAPI::Error.new(code: JSONAPI::COUNT_MISMATCH,
-                              status: :bad_request,
-                              title: 'Count to key mismatch',
-                              detail: 'The resource collection does not contain the same number of objects as the number of keys.')]
+                            status: :bad_request,
+                            title: 'Count to key mismatch',
+                            detail: 'The resource collection does not contain the same number of objects as the number of keys.')]
       end
     end
 
@@ -266,18 +264,18 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::KEY_NOT_INCLUDED_IN_URL,
-                              status: :bad_request,
-                              title: 'Key is not included in URL',
-                              detail: "The URL does not support the key #{key}")]
+                            status: :bad_request,
+                            title: 'Key is not included in URL',
+                            detail: "The URL does not support the key #{key}")]
       end
     end
 
     class MissingKey < Error
       def errors
         [JSONAPI::Error.new(code: JSONAPI::KEY_ORDER_MISMATCH,
-                              status: :bad_request,
-                              title: 'A key is required',
-                              detail: 'The resource object does not contain a key.')]
+                            status: :bad_request,
+                            title: 'A key is required',
+                            detail: 'The resource object does not contain a key.')]
       end
     end
 
@@ -289,9 +287,9 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::LOCKED,
-                             status: :locked,
-                             title: 'Locked resource',
-                             detail: "#{message}")]
+                            status: :locked,
+                            title: 'Locked resource',
+                            detail: "#{message}")]
       end
     end
 
@@ -339,7 +337,6 @@ module JSONAPI
       end
     end
 
-
     class PageParametersNotAllowed < Error
       attr_accessor :params
       def initialize(params)
@@ -347,13 +344,12 @@ module JSONAPI
       end
 
       def errors
-        params.collect { |param|
+        params.collect do |param|
           JSONAPI::Error.new(code: JSONAPI::PARAM_NOT_ALLOWED,
                              status: :bad_request,
                              title: 'Page parameter not allowed',
                              detail: "#{param} is not an allowed page parameter.")
-        }
-
+        end
       end
     end
 
