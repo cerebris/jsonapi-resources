@@ -214,7 +214,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.replace_fields(data)
 
-      JSONAPI::ResourceOperationResult.new(result == :completed ? :ok : :accepted, resource)
+      return JSONAPI::ResourceOperationResult.new(result == :completed ? :ok : :accepted, resource)
     end
   end
 
@@ -232,7 +232,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.replace_has_one_link(@association_type, @key_value)
 
-      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
@@ -250,7 +250,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.create_has_many_links(@association_type, @data)
 
-      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
@@ -268,7 +268,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.replace_has_many_links(@association_type, @data)
 
-      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
@@ -286,7 +286,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.remove_has_many_link(@association_type, @associated_key)
 
-      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
@@ -303,7 +303,7 @@ module JSONAPI
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
       result = resource.remove_has_one_link(@association_type)
 
-      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 end
