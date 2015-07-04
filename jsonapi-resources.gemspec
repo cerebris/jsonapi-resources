@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = JSONAPI::Resources::VERSION
   spec.authors       = ['Dan Gebhardt', 'Larry Gebhardt']
   spec.email         = ['dan@cerebris.com', 'larry@cerebris.com']
-  spec.summary       = %q{Easily support JSON API in Rails.}
-  spec.description   = %q{A resource-centric approach to implementing the controllers, routes, and serializers needed to support the JSON API spec.}
+  spec.summary       = 'Easily support JSON API in Rails.'
+  spec.description   = 'A resource-centric approach to implementing the controllers, routes, and serializers needed to support the JSON API spec.'
   spec.homepage      = 'https://github.com/cerebris/jsonapi-resources'
   spec.license       = 'MIT'
 

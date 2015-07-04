@@ -97,7 +97,7 @@ ActiveRecord::Schema.define do
     t.string   :spouse_name
     t.text     :bio
     t.float    :quality_rating
-    t.decimal  :salary, :precision => 12, :scale => 2
+    t.decimal  :salary, precision: 12, scale: 2
     t.datetime :date_time_joined
     t.date     :birthday
     t.time     :bedtime
@@ -706,7 +706,7 @@ class BreedResource < JSONAPI::Resource
   attribute :name, format: :title
 
   # This is unneeded, just here for testing
-  routing_options :param => :id
+  routing_options param: :id
 
   def self.find(filters, options = {})
     breeds = []

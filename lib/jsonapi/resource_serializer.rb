@@ -1,6 +1,5 @@
 module JSONAPI
   class ResourceSerializer
-
     # Options can include
     # include:
     #     Purpose: determines which objects will be side loaded with the source objects in a linked section
@@ -45,7 +44,7 @@ module JSONAPI
         end
       end
 
-      primary_hash = {data: is_resource_collection ? primary_objects : primary_objects[0]}
+      primary_hash = { data: is_resource_collection ? primary_objects : primary_objects[0] }
 
       primary_hash[:included] = included_objects if included_objects.size > 0
       primary_hash
@@ -72,6 +71,7 @@ module JSONAPI
     end
 
     private
+
     # Process the primary source object(s). This will then serialize associated object recursively based on the
     # requested includes. Fields are controlled fields option for each resource type, such
     # as fields: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}
@@ -100,7 +100,7 @@ module JSONAPI
       obj_hash = {}
 
       id_format = source.class._attribute_options(:id)[:format]
-      #protect against ids that were declared as an attribute, but did not have a format set.
+      # protect against ids that were declared as an attribute, but did not have a format set.
       id_format = 'id' if id_format == :default
       obj_hash['id'] = format_value(source.id, id_format)
 
@@ -115,7 +115,7 @@ module JSONAPI
       relationships = relationship_data(source, include_directives)
       obj_hash['relationships'] = relationships unless relationships.nil? || relationships.empty?
 
-      return obj_hash
+      obj_hash
     end
 
     def requested_fields(model)
@@ -125,9 +125,7 @@ module JSONAPI
     def attribute_hash(source)
       requested = requested_fields(source.class._type)
       fields = source.fetchable_fields & source.class._attributes.keys.to_a
-      unless requested.nil?
-        fields = requested & fields
-      end
+      fields = requested & fields unless requested.nil?
 
       fields.each_with_object({}) do |name, hash|
         format = source.class._attribute_options(name)[:format]
@@ -141,9 +139,7 @@ module JSONAPI
       associations = source.class._associations
       requested = requested_fields(source.class._type)
       fields = associations.keys
-      unless requested.nil?
-        fields = requested & fields
-      end
+      fields = requested & fields unless requested.nil?
 
       field_set = Set.new(fields)
 
@@ -217,7 +213,7 @@ module JSONAPI
 
     def already_serialized?(type, id)
       type = format_key(type)
-      return @included_objects.key?(type) && @included_objects[type].key?(id)
+      @included_objects.key?(type) && @included_objects[type].key?(id)
     end
 
     def format_route(route)
@@ -248,7 +244,7 @@ module JSONAPI
       linkage = []
       linkage_ids = foreign_key_value(source, association)
       linkage_ids.each do |linkage_id|
-        linkage.append({type: format_key(association.type), id: linkage_id})
+        linkage.append(type: format_key(association.type), id: linkage_id)
       end
       linkage
     end
@@ -301,16 +297,12 @@ module JSONAPI
     def add_included_object(type, id, object_hash, primary = false)
       type = format_key(type)
 
-      unless @included_objects.key?(type)
-        @included_objects[type] = {}
-      end
+      @included_objects[type] = {} unless @included_objects.key?(type)
 
       if already_serialized?(type, id)
-        if primary
-          set_primary(type, id)
-        end
+        set_primary(type, id) if primary
       else
-        @included_objects[type].store(id, {primary: primary, object_hash: object_hash})
+        @included_objects[type].store(id, primary: primary, object_hash: object_hash)
       end
     end
 

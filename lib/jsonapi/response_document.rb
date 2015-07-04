@@ -90,7 +90,7 @@ module JSONAPI
 
     def results_to_hash
       if @operation_results.has_errors?
-        {errors: @operation_results.all_errors}
+        { errors: @operation_results.all_errors }
       else
         if @operation_results.results.length == 1
           result = @operation_results.results[0]

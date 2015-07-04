@@ -1,6 +1,6 @@
 class ActiveRecordOperationsProcessor < JSONAPI::OperationsProcessor
-
   private
+
   def transaction
     if @transactional
       ActiveRecord::Base.transaction do
@@ -12,7 +12,7 @@ class ActiveRecordOperationsProcessor < JSONAPI::OperationsProcessor
   end
 
   def rollback
-    raise ActiveRecord::Rollback if @transactional
+    fail ActiveRecord::Rollback if @transactional
   end
 
   def process_operation(operation)

@@ -62,37 +62,21 @@ module JSONAPI
       @operations_processor = JSONAPI::OperationsProcessor.operations_processor_for(@operations_processor_name)
     end
 
-    def allowed_request_params=(allowed_request_params)
-      @allowed_request_params = allowed_request_params
-    end
+    attr_writer :allowed_request_params
 
-    def default_paginator=(default_paginator)
-      @default_paginator = default_paginator
-    end
+    attr_writer :default_paginator
 
-    def default_page_size=(default_page_size)
-      @default_page_size = default_page_size
-    end
+    attr_writer :default_page_size
 
-    def maximum_page_size=(maximum_page_size)
-      @maximum_page_size = maximum_page_size
-    end
+    attr_writer :maximum_page_size
 
-    def use_text_errors=(use_text_errors)
-      @use_text_errors = use_text_errors
-    end
+    attr_writer :use_text_errors
 
-    def top_level_links_include_pagination=(top_level_links_include_pagination)
-      @top_level_links_include_pagination = top_level_links_include_pagination
-    end
+    attr_writer :top_level_links_include_pagination
 
-    def top_level_meta_include_record_count=(top_level_meta_include_record_count)
-      @top_level_meta_include_record_count = top_level_meta_include_record_count
-    end
+    attr_writer :top_level_meta_include_record_count
 
-    def top_level_meta_record_count_key=(top_level_meta_record_count_key)
-      @top_level_meta_record_count_key = top_level_meta_record_count_key
-    end
+    attr_writer :top_level_meta_record_count_key
   end
 
   class << self
