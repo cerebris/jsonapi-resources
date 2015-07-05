@@ -852,10 +852,6 @@ end
 class PictureResource < JSONAPI::Resource
   attribute :name
   has_one :imageable, polymorphic: true
-
-  def imageable_type=(type)
-    model.imageable_type = type
-  end
 end
 
 class DocumentResource < JSONAPI::Resource
