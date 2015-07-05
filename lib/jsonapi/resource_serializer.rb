@@ -279,16 +279,11 @@ module JSONAPI
       end
     end
 
-    # Extracts the foreign key value for an association.
+    # Extracts the foreign key value for a has_one association.
     def foreign_key_value(source, association)
       foreign_key = association.foreign_key
       value = source.send(foreign_key)
-
-      if association.is_a?(JSONAPI::Association::HasMany)
-        value.map { |value| IdValueFormatter.format(value) }
-      elsif association.is_a?(JSONAPI::Association::HasOne)
-        IdValueFormatter.format(value)
-      end
+      IdValueFormatter.format(value)
     end
 
     def foreign_key_types_and_values(source, association)
