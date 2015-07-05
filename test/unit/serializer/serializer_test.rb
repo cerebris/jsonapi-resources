@@ -254,6 +254,12 @@ class SerializerTest < ActionDispatch::IntegrationTest
                  related: "/people/1/hairCut"
                },
                data: nil
+             },
+             vehicles: {
+               links: {
+                 self: "/people/1/relationships/vehicles",
+                 related: "/people/1/vehicles"
+               }
              }
             }
           }
@@ -356,6 +362,12 @@ class SerializerTest < ActionDispatch::IntegrationTest
                   related: '/people/1/hairCut'
                 },
                 data: nil
+              },
+              vehicles: {
+                links: {
+                  self: "/people/1/relationships/vehicles",
+                  related: "/people/1/vehicles"
+                }
               }
             }
           }
@@ -611,7 +623,13 @@ class SerializerTest < ActionDispatch::IntegrationTest
                 related: "/people/2/hairCut"
               },
               data: nil
-            }
+            },
+            vehicles: {
+              links: {
+                self: "/people/2/relationships/vehicles",
+                related: "/people/2/vehicles"
+              }
+            },
           }
         },
         included: [

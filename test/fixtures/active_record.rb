@@ -187,6 +187,11 @@ ActiveRecord::Schema.define do
     t.string  :name
     t.timestamps null: false
   end
+
+  create_table :vehicles, force: true do |t|
+    t.string :type
+    t.integer :person_id
+  end
 end
 
 ### MODELS
@@ -194,6 +199,7 @@ class Person < ActiveRecord::Base
   has_many :posts, foreign_key: 'author_id'
   has_many :comments, foreign_key: 'author_id'
   has_many :expense_entries, foreign_key: 'employee_id', dependent: :restrict_with_exception
+  has_many :vehicles
   belongs_to :preferences
   belongs_to :hair_cut
 
@@ -366,6 +372,16 @@ end
 
 class Picture < ActiveRecord::Base
   belongs_to :imageable, polymorphic: true
+end
+
+class Vehicle < ActiveRecord::Base
+  belongs_to :person
+end
+
+class Car < Vehicle
+end
+
+class Boat < Vehicle
 end
 
 class Document < ActiveRecord::Base
@@ -576,6 +592,7 @@ class PersonResource < JSONAPI::Resource
 
   has_many :comments
   has_many :posts
+  has_many :vehicles, polymorphic: true
 
   has_one :preferences
   has_one :hair_cut
@@ -593,6 +610,16 @@ class PersonResource < JSONAPI::Resource
     end
     return filter, values
   end
+end
+
+class VehicleResource < JSONAPI::Resource
+  has_one :person
+end
+
+class CarResource < VehicleResource
+end
+
+class BoatResource < VehicleResource
 end
 
 class CommentResource < JSONAPI::Resource
@@ -825,10 +852,6 @@ end
 class PictureResource < JSONAPI::Resource
   attribute :name
   has_one :imageable, polymorphic: true
-
-  def imageable_type=(type)
-    model.imageable_type = type
-  end
 end
 
 class DocumentResource < JSONAPI::Resource
@@ -892,6 +915,9 @@ module Api
     EmployeeResource = EmployeeResource.dup
     FriendResource = FriendResource.dup
     HairCutResource = HairCutResource.dup
+    VehicleResource = VehicleResource.dup
+    CarResource = CarResource.dup
+    BoatResource = BoatResource.dup
   end
 end
 

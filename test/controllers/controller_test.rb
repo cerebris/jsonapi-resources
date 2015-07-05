@@ -1944,7 +1944,13 @@ class PeopleControllerTest < ActionController::TestCase
                "related" => "http://test.host/people/1/hair_cut"
              },
              "data" => nil
-            }
+           },
+           vehicles: {
+             links: {
+               self: "http://test.host/people/1/relationships/vehicles",
+               related: "http://test.host/people/1/vehicles"
+             }
+           }
          }
         }
       },

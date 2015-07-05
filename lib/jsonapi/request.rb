@@ -392,9 +392,7 @@ module JSONAPI
         when 'relationships'
           value.each do |link_key, link_value|
             param = unformat_key(link_key)
-
             association = @resource_klass._association(param)
-
             if association.is_a?(JSONAPI::Association::HasOne)
               if link_value.nil?
                 linkage = nil
@@ -404,12 +402,17 @@ module JSONAPI
 
               links_object = parse_has_one_links_object(linkage)
               if !association.polymorphic? && links_object[:type] && (links_object[:type].to_s != association.type.to_s)
-                raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
+                fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
               end
 
               unless links_object[:id].nil?
                 association_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(links_object[:type]).to_s)
-                checked_has_one_associations[param] = association_resource.verify_key(links_object[:id], @context)
+                association_id = association_resource.verify_key(links_object[:id], @context)
+                if association.polymorphic?
+                  checked_has_one_associations[param] = { id: association_id, type: unformat_key(links_object[:type].to_s) }
+                else
+                  checked_has_one_associations[param] = association_id
+                end
               else
                 checked_has_one_associations[param] = nil
               end
@@ -426,12 +429,12 @@ module JSONAPI
 
               # Since we do not yet support polymorphic associations we will raise an error if the type does not match the
               # association's type.
-              # TODO: Support Polymorphic associations
+              # ToDo: Support Polymorphic associations
 
               if links_object.length == 0
                 checked_has_many_associations[param] = []
               else
-                if links_object.length > 1 || !links_object.key?(unformat_key(association.type).to_s)
+                if links_object.length > 1 || !links_object.has_key?(unformat_key(association.type).to_s)
                   fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
                 end
 
@@ -519,7 +522,7 @@ module JSONAPI
       association = resource_klass._association(association_type)
       if association.is_a?(JSONAPI::Association::HasOne)
         if association.polymorphic?
-          object_params = {relationships: {format_key(association.name) => {data: data}}}
+          object_params = { relationships: { format_key(association.name) => { data: data } } }
           verified_param_set = parse_params(object_params, updatable_fields)
 
           @operations.push JSONAPI::ReplacePolymorphicHasOneAssociationOperation.new(
@@ -527,11 +530,11 @@ module JSONAPI
                              context: @context,
                              resource_id: parent_key,
                              association_type: association_type,
-                             key_value: verified_param_set[:has_one].values[0],
-                             key_type: data['type']
+                             key_value: verified_param_set[:has_one].values[0][:id],
+                             key_type: verified_param_set[:has_one].values[0][:type]
                            )
         else
-          object_params = {relationships: {format_key(association.name) => {data: data}}}
+          object_params = { relationships: { format_key(association.name) => { data: data } } }
           verified_param_set = parse_params(object_params, updatable_fields)
 
           @operations.push JSONAPI::ReplaceHasOneAssociationOperation.new(
@@ -542,7 +545,7 @@ module JSONAPI
                              key_value: verified_param_set[:has_one].values[0]
                            )
         end
-      else
+      elsif association.is_a?(JSONAPI::Association::HasMany)
         unless association.acts_as_set
           fail JSONAPI::Exceptions::HasManySetReplacementForbidden.new
         end

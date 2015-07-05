@@ -196,10 +196,10 @@ module JSONAPI
     end
 
     def _replace_polymorphic_has_one_link(association_type, key_value, key_type)
-      association = self.class._associations[association_type]
+      association = self.class._associations[association_type.to_sym]
 
-      send("#{association.foreign_key}=", key_value)
-      send("#{association.polymorphic_type}=", key_type.singularize.capitalize)
+      model.send("#{association.foreign_key}=", key_value)
+      model.send("#{association.polymorphic_type}=", key_type.to_s.classify)
 
       @save_needed = true
 
@@ -239,7 +239,12 @@ module JSONAPI
         if value.nil?
           remove_has_one_link(association_type)
         else
-          replace_has_one_link(association_type, value)
+          case value
+          when Hash
+            replace_polymorphic_has_one_link(association_type.to_s, value.fetch(:id), value.fetch(:type))
+          else
+            replace_has_one_link(association_type, value)
+          end
         end
       end if field_data[:has_one]
 
@@ -714,6 +719,9 @@ module JSONAPI
               end
 
               return records.collect do |record|
+                if association.polymorphic?
+                  resource_klass = Resource.resource_for(self.class.module_path + record.class.to_s.underscore)
+                end
                 resource_klass.new(record, @context)
               end
             end unless method_defined?(attr)
