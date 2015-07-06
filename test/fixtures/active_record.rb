@@ -407,6 +407,19 @@ class CountingActiveRecordOperationsProcessor < ActiveRecordOperationsProcessor
   end
 end
 
+# This processor swaps in a mock for the operation that will raise an exception
+# when it receives the :apply method. This is used to test the
+# exception_class_whitelist configuration.
+class ErrorRaisingOperationsProcessor < ActiveRecordOperationsProcessor
+  def process_operation(operation)
+    mock_operation = Minitest::Mock.new
+    mock_operation.expect(:apply, true) do
+      raise PostsController::SpecialError
+    end
+    super(mock_operation)
+  end
+end
+
 ### CONTROLLERS
 class AuthorsController < JSONAPI::ResourceController
 end
@@ -416,6 +429,13 @@ end
 
 class PostsController < ActionController::Base
   include JSONAPI::ActsAsResourceController
+  class SpecialError < StandardError; end
+
+  # This is used to test that classes that are whitelisted are reraised by
+  # the operations processor.
+  rescue_from PostsController::SpecialError do
+    head :forbidden
+  end
 end
 
 class CommentsController < JSONAPI::ResourceController

@@ -272,7 +272,7 @@ end
 ```ruby
 class BookResource < JSONAPI::Resource
 
-  # Only book_admins may see unapproved comments for a book. Using 
+  # Only book_admins may see unapproved comments for a book. Using
   # a lambda to select the correct relation on the model
   has_many :book_comments, relation_name: -> (options = {}) {
     context = options[:context]
@@ -1240,6 +1240,14 @@ JSONAPI.configure do |config|
   config.top_level_meta_record_count_key = :record_count
 
   config.use_text_errors = false
+
+  # List of classes that should not be rescued by the operations processor.
+  # For example, if you use Pundit for authorization, you might
+  # raise a Pundit::NotAuthorizedError at some point during operations
+  # processing. If you want to use Rails' `rescue_from` macro to
+  # catch this error and render a 403 status code, you should add
+  # the `Pundit::NotAuthorizedError` to the `exception_class_whitelist`.
+  config.exception_class_whitelist = []
 end
 ```
 
