@@ -11,6 +11,22 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['data'].is_a?(Array)
   end
 
+  def test_exception_class_whitelist
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.operations_processor = :error_raising
+    # test that the operations processor rescues the error when it
+    # has not been added to the exception_class_whitelist
+    get :index
+    assert_response 500
+    # test that the operations processor does not rescue the error when it
+    # has been added to the exception_class_whitelist
+    JSONAPI.configuration.exception_class_whitelist << PostsController::SpecialError
+    get :index
+    assert_response 403
+  ensure
+    JSONAPI.configuration = original_config
+  end
+
   def test_index_filter_with_empty_result
     get :index, {filter: {title: 'post that does not exist'}}
     assert_response :success

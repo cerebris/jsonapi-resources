@@ -16,7 +16,8 @@ module JSONAPI
                 :use_text_errors,
                 :top_level_links_include_pagination,
                 :top_level_meta_include_record_count,
-                :top_level_meta_record_count_key
+                :top_level_meta_record_count_key,
+                :exception_class_whitelist
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -45,6 +46,14 @@ module JSONAPI
       self.top_level_meta_record_count_key = :record_count
 
       self.use_text_errors = false
+
+      # List of classes that should not be rescued by the operations processor.
+      # For example, if you use Pundit for authorization, you might
+      # raise a Pundit::NotAuthorizedError at some point during operations
+      # processing. If you want to use Rails' `rescue_from` macro to
+      # catch this error and render a 403 status code, you should add
+      # the `Pundit::NotAuthorizedError` to the `exception_class_whitelist`.
+      self.exception_class_whitelist = []
     end
 
     def json_key_format=(format)
@@ -77,6 +86,8 @@ module JSONAPI
     attr_writer :top_level_meta_include_record_count
 
     attr_writer :top_level_meta_record_count_key
+
+    attr_writer :exception_class_whitelist
   end
 
   class << self

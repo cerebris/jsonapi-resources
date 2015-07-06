@@ -12,6 +12,7 @@ end
 
 require 'rails/all'
 require 'rails/test_help'
+require 'minitest/mock'
 require 'jsonapi-resources'
 
 require File.expand_path('../helpers/value_matchers', __FILE__)
@@ -260,4 +261,3 @@ class TitleValueFormatter < JSONAPI::ValueFormatter
     end
   end
 end
-
