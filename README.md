@@ -1247,7 +1247,7 @@ JSONAPI.configure do |config|
   # processing. If you want to use Rails' `rescue_from` macro to
   # catch this error and render a 403 status code, you should add
   # the `Pundit::NotAuthorizedError` to the `exception_class_whitelist`.
-  self.exception_class_whitelist = []
+  config.exception_class_whitelist = []
 end
 ```
 
