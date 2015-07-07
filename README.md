@@ -178,10 +178,10 @@ updating the attribute. See the [Value Formatters](#value-formatters) section fo
 
 #### Primary Key
 
-Resources are always represented using a key of `id`. If the underlying model does not use `id` as the primary key you
-can use the `primary_key` method to tell the resource which field on the model to use as the primary key. Note: this
-doesn't have to be the actual primary key of the model. For example you may wish to use integers internally and a
-different scheme publicly.
+Resources are always represented using a key of `id`. The resource will interrogate the model to find the primary key.
+If the underlying model does not use `id` as the primary key _and_ does not support the `primary_key` method you
+must use the `primary_key` method to tell the resource which field on the model to use as the primary key. **Note:**
+this _must_ be the actual primary key of the model.
 
 By default only integer values are allowed for primary key. To change this behavior you can override
 `verify_key` class method:
