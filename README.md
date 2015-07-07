@@ -916,9 +916,9 @@ gives the following routes
 
 ```
                      Prefix Verb      URI Pattern                                               Controller#Action
-contact_links_phone_numbers GET       /contacts/:contact_id/links/phone-numbers(.:format)       contacts#show_association {:association=>"phone_numbers"}
-                            POST      /contacts/:contact_id/links/phone-numbers(.:format)       contacts#create_association {:association=>"phone_numbers"}
-                            DELETE    /contacts/:contact_id/links/phone-numbers/:keys(.:format) contacts#destroy_association {:association=>"phone_numbers"}
+contact_relationships_phone_numbers GET       /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#show_association {:association=>"phone_numbers"}
+                            POST      /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#create_association {:association=>"phone_numbers"}
+                            DELETE    /contacts/:contact_id/relationships/phone-numbers/:keys(.:format) contacts#destroy_association {:association=>"phone_numbers"}
       contact_phone_numbers GET       /contacts/:contact_id/phone-numbers(.:format)             phone_numbers#get_related_resources {:association=>"phone_numbers", :source=>"contacts"}
                    contacts GET       /contacts(.:format)                                       contacts#index
                             POST      /contacts(.:format)                                       contacts#create
@@ -926,9 +926,9 @@ contact_links_phone_numbers GET       /contacts/:contact_id/links/phone-numbers(
                             PATCH     /contacts/:id(.:format)                                   contacts#update
                             PUT       /contacts/:id(.:format)                                   contacts#update
                             DELETE    /contacts/:id(.:format)                                   contacts#destroy
- phone_number_links_contact GET       /phone-numbers/:phone_number_id/links/contact(.:format)   phone_numbers#show_association {:association=>"contact"}
-                            PUT|PATCH /phone-numbers/:phone_number_id/links/contact(.:format)   phone_numbers#update_association {:association=>"contact"}
-                            DELETE    /phone-numbers/:phone_number_id/links/contact(.:format)   phone_numbers#destroy_association {:association=>"contact"}
+ phone_number_relationships_contact GET       /phone-numbers/:phone_number_id/relationships/contact(.:format)   phone_numbers#show_association {:association=>"contact"}
+                            PUT|PATCH /phone-numbers/:phone_number_id/relationships/contact(.:format)   phone_numbers#update_association {:association=>"contact"}
+                            DELETE    /phone-numbers/:phone_number_id/relationships/contact(.:format)   phone_numbers#destroy_association {:association=>"contact"}
        phone_number_contact GET       /phone-numbers/:phone_number_id/contact(.:format)         contacts#get_related_resource {:association=>"contact", :source=>"phone_numbers"}
               phone_numbers GET       /phone-numbers(.:format)                                  phone_numbers#index
                             POST      /phone-numbers(.:format)                                  phone_numbers#create
@@ -994,9 +994,9 @@ end
 Gives the following routes:
 
 ```
-contact_links_phone_numbers GET    /contacts/:contact_id/links/phone-numbers(.:format)       contacts#show_association {:association=>"phone_numbers"}
-                            POST   /contacts/:contact_id/links/phone-numbers(.:format)       contacts#create_association {:association=>"phone_numbers"}
-                            DELETE /contacts/:contact_id/links/phone-numbers/:keys(.:format) contacts#destroy_association {:association=>"phone_numbers"}
+contact_relationships_phone_numbers GET    /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#show_association {:association=>"phone_numbers"}
+                            POST   /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#create_association {:association=>"phone_numbers"}
+                            DELETE /contacts/:contact_id/relationships/phone-numbers/:keys(.:format) contacts#destroy_association {:association=>"phone_numbers"}
                    contacts GET    /contacts(.:format)                                       contacts#index
                             POST   /contacts(.:format)                                       contacts#create
                     contact GET    /contacts/:id(.:format)                                   contacts#show
