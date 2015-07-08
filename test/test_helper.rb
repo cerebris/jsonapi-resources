@@ -14,6 +14,7 @@ require 'rails/all'
 require 'rails/test_help'
 require 'minitest/mock'
 require 'jsonapi-resources'
+require 'pry'
 
 require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/assertions', __FILE__)
@@ -41,6 +42,12 @@ class TestApp < Rails::Application
 
   # Turn off millisecond precision to maintain Rails 4.0 and 4.1 compatibility in test results
   ActiveSupport::JSON::Encoding.time_precision = 0 if Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR >= 1
+end
+
+module MyEngine
+  class Engine < ::Rails::Engine
+    isolate_namespace MyEngine
+  end
 end
 
 # Patch RAILS 4.0 to not use millisecond precision
@@ -196,6 +203,16 @@ TestApp.routes.draw do
 
     namespace :v8 do
       jsonapi_resources :numeros_telefone
+    end
+  end
+
+  mount MyEngine::Engine => "/boomshaka", as: :my_engine
+end
+
+MyEngine::Engine.routes.draw do
+  namespace :api do
+    namespace :v1 do
+      jsonapi_resources :people
     end
   end
 end
