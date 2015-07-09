@@ -669,7 +669,8 @@ module JSONAPI
           end unless method_defined?("#{foreign_key}=")
 
           define_method associated_records_method_name do |options = {}|
-            relation_name = association.relation_name(options.merge({context: @context}))
+            options = options.merge({context: @context})
+            relation_name = association.relation_name(options)
             records_for(relation_name, options)
           end unless method_defined?(associated_records_method_name)
 
