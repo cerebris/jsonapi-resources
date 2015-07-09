@@ -275,7 +275,6 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :success
     assert json_response['data'].is_a?(Hash)
     assert_nil json_response['data']['attributes']
-    assert_equal '1', json_response['data']['relationships']['author']['data']['id']
   end
 
   def test_show_single_with_fields_string
@@ -326,7 +325,6 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :created
     assert json_response['data'].is_a?(Hash)
-    assert_equal '3', json_response['data']['relationships']['author']['data']['id']
     assert_equal 'JR is Great', json_response['data']['attributes']['title']
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
   end
@@ -431,7 +429,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :created
     assert json_response['data'].is_a?(Array)
     assert_equal json_response['data'].size, 2
-    assert_equal json_response['data'][0]['relationships']['author']['data']['id'], '3'
+    assert_nil json_response['data'][0]['relationships']['author']['data']
     assert_match /JR is Great/, response.body
     assert_match /Ember is Great/, response.body
   end
@@ -561,7 +559,8 @@ class PostsControllerTest < ActionController::TestCase
                author: {data: {type: 'people', id: '3'}},
                tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
              }
-           }
+           },
+           include: 'author'
          }
 
     assert_response :created
@@ -585,7 +584,8 @@ class PostsControllerTest < ActionController::TestCase
                author: {data: {type: 'people', id: '3'}},
                tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
              }
-           }
+           },
+           include: 'author'
          }
 
     assert_response :created
@@ -639,7 +639,7 @@ class PostsControllerTest < ActionController::TestCase
               tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
             }
           },
-          include: 'tags'
+          include: 'tags,author,section'
         }
 
     assert_response :success
@@ -709,7 +709,7 @@ class PostsControllerTest < ActionController::TestCase
               tags: []
             }
           },
-          include: 'tags'
+          include: 'tags,author,section'
         }
 
     assert_response :success
@@ -1246,15 +1246,11 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :success
     assert_equal json_response['data'].size, 2
-    assert_equal json_response['data'][0]['relationships']['author']['data']['id'], '3'
-    assert_equal json_response['data'][0]['relationships']['section']['data']['id'], javascript.id.to_s
     assert_equal json_response['data'][0]['attributes']['title'], 'A great new Post QWERTY'
     assert_equal json_response['data'][0]['attributes']['body'], 'AAAA'
     assert matches_array?([{'type' => 'tags', 'id' => '3'}, {'type' => 'tags', 'id' => '4'}],
                           json_response['data'][0]['relationships']['tags']['data'])
 
-    assert_equal json_response['data'][1]['relationships']['author']['data']['id'], '3'
-    assert_equal json_response['data'][1]['relationships']['section']['data']['id'], javascript.id.to_s
     assert_equal json_response['data'][1]['attributes']['title'], 'A great new Post ASDFG'
     assert_equal json_response['data'][1]['attributes']['body'], 'Not First!!!!'
     assert matches_array?([{'type' => 'tags', 'id' => '3'}, {'type' => 'tags', 'id' => '4'}],
@@ -1601,7 +1597,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
                iso_currency: {data: {type: 'iso_currencies', id: 'USD'}}
              }
            },
-           include: 'iso_currency',
+           include: 'iso_currency,employee',
            fields: {expense_entries: 'id,transaction_date,iso_currency,cost,employee'}
          }
 
@@ -1632,7 +1628,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
                isoCurrency: {data: {type: 'iso_currencies', id: 'USD'}}
              }
            },
-           include: 'isoCurrency',
+           include: 'isoCurrency,employee',
            fields: {expenseEntries: 'id,transactionDate,isoCurrency,cost,employee'}
          }
 
@@ -1663,7 +1659,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
                'iso-currency' => {data: {type: 'iso_currencies', id: 'USD'}}
              }
            },
-           include: 'iso-currency',
+           include: 'iso-currency,employee',
            fields: {'expense-entries' => 'id,transaction-date,iso-currency,cost,employee'}
          }
 
@@ -1948,18 +1944,13 @@ class PeopleControllerTest < ActionController::TestCase
              links: {
                self: 'http://test.host/people/1/relationships/preferences',
                related: 'http://test.host/people/1/preferences'
-             },
-             data: {
-               type: 'preferences',
-               id: '1'
              }
            },
            "hair-cut" => {
              "links" => {
                "self" => "http://test.host/people/1/relationships/hair_cut",
                "related" => "http://test.host/people/1/hair_cut"
-             },
-             "data" => nil
+             }
            },
            vehicles: {
              links: {
@@ -2160,7 +2151,6 @@ class Api::V1::PostsControllerTest < ActionController::TestCase
 
     assert_response :created
     assert json_response['data'].is_a?(Hash)
-    assert_equal '3', json_response['data']['relationships']['writer']['data']['id']
     assert_equal 'JR - now with Namespacing', json_response['data']['attributes']['title']
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread now that it has namespaced resources.',
                  json_response['data']['attributes']['body']

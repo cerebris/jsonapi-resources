@@ -881,7 +881,7 @@ end
 
 class ProductResource < JSONAPI::Resource
   attribute :name
-  has_one :picture
+  has_one :picture, force_resource_linkage: true
 
   def picture_id
     model.picture.id

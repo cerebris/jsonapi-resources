@@ -22,6 +22,8 @@ module JSONAPI
       @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
       @route_formatter = options.fetch(:route_formatter, JSONAPI.configuration.route_formatter)
       @base_url = options.fetch(:base_url, '')
+      @force_has_one_resource_linkage = options.fetch(:force_has_one_resource_linkage, JSONAPI.configuration.force_has_one_resource_linkage)
+      @force_has_many_resource_linkage = options.fetch(:force_has_many_resource_linkage, JSONAPI.configuration.force_has_many_resource_linkage)
     end
 
     # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
@@ -254,6 +256,7 @@ module JSONAPI
     end
 
     def link_object_has_one(source, association)
+      include_linkage = include_linkage | @force_has_one_resource_linkage | association.force_resource_linkage
       link_object_hash = {}
       link_object_hash[:links] = {}
       link_object_hash[:links][:self] = self_link(source, association)
@@ -263,6 +266,8 @@ module JSONAPI
     end
 
     def link_object_has_many(source, association, include_linkage)
+      # TODO:
+      # include_linkage = include_linkage | @force_has_one_resource_linkage | association.force_resource_linkage
       link_object_hash = {}
       link_object_hash[:links] = {}
       link_object_hash[:links][:self] = self_link(source, association)
@@ -271,9 +276,9 @@ module JSONAPI
       link_object_hash
     end
 
-    def link_object(source, association, include_linkage = false)
+    def link_object(source, association, include_linkage)
       if association.is_a?(JSONAPI::Association::HasOne)
-        link_object_has_one(source, association)
+        link_object_has_one(source, association, include_linkage)
       elsif association.is_a?(JSONAPI::Association::HasMany)
         link_object_has_many(source, association, include_linkage)
       end
