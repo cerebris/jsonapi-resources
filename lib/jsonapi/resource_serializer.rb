@@ -21,6 +21,10 @@ module JSONAPI
       @include_directives = options[:include_directives]
       @key_formatter      = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
       @url_generator      = generate_link_builder(primary_resource_klass, options)
+      @always_include_to_one_linkage_data = options.fetch(:always_include_to_one_linkage_data,
+                                                          JSONAPI.configuration.always_include_to_one_linkage_data)
+      @always_include_to_many_linkage_data = options.fetch(:always_include_to_many_linkage_data,
+                                                           JSONAPI.configuration.always_include_to_many_linkage_data)
     end
 
     # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
@@ -80,18 +84,18 @@ module JSONAPI
       if source.respond_to?(:to_ary)
         source.each do |resource|
           id = resource.id
-          if already_serialized?(@primary_class_name, id)
+          if already_serialized?(resource.class._type, id)
             set_primary(@primary_class_name, id)
           end
 
-          add_included_object(@primary_class_name, id, object_hash(resource,  include_directives), true)
+          add_included_object(id, object_hash(resource,  include_directives), true)
         end
       else
         return {} if source.nil?
 
         resource = source
         id = resource.id
-        add_included_object(@primary_class_name, id, object_hash(source,  include_directives), true)
+        add_included_object(id, object_hash(source, include_directives), true)
       end
     end
 
@@ -171,7 +175,7 @@ module JSONAPI
                 type = relationship.type_for_source(source)
                 relationships_only = already_serialized?(type, id)
                 if include_linkage && !relationships_only
-                  add_included_object(type, id, object_hash(resource, ia))
+                  add_included_object(id, object_hash(resource, ia))
                 elsif include_linked_children || relationships_only
                   relationship_data(resource, ia)
                 end
@@ -182,7 +186,7 @@ module JSONAPI
                 id = resource.id
                 relationships_only = already_serialized?(type, id)
                 if include_linkage && !relationships_only
-                  add_included_object(type, id, object_hash(resource, ia))
+                  add_included_object(id, object_hash(resource, ia))
                 elsif include_linked_children || relationships_only
                   relationship_data(resource, ia)
                 end
@@ -236,12 +240,13 @@ module JSONAPI
       linkage
     end
 
-    def link_object_to_one(source, relationship)
+    def link_object_to_one(source, relationship, include_linkage)
+      include_linkage = include_linkage | @always_include_to_one_linkage_data | relationship.always_include_linkage_data
       link_object_hash = {}
       link_object_hash[:links] = {}
       link_object_hash[:links][:self] = self_link(source, relationship)
       link_object_hash[:links][:related] = related_link(source, relationship)
-      link_object_hash[:data] = to_one_linkage(source, relationship)
+      link_object_hash[:data] = to_one_linkage(source, relationship) if include_linkage
       link_object_hash
     end
 
@@ -256,7 +261,7 @@ module JSONAPI
 
     def link_object(source, relationship, include_linkage = false)
       if relationship.is_a?(JSONAPI::Relationship::ToOne)
-        link_object_to_one(source, relationship)
+        link_object_to_one(source, relationship, include_linkage)
       elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
         link_object_to_many(source, relationship, include_linkage)
       end
@@ -290,12 +295,13 @@ module JSONAPI
     end
 
     # Collects the hashes for all objects processed by the serializer
-    def add_included_object(type, id, object_hash, primary = false)
-      type = format_key(type)
+    def add_included_object(id, object_hash, primary = false)
+      type = object_hash['type']
 
       @included_objects[type] = {} unless @included_objects.key?(type)
 
       if already_serialized?(type, id)
+        @included_objects[type][id][:object_hash].merge!(object_hash)
         set_primary(type, id) if primary
       else
         @included_objects[type].store(id, primary: primary, object_hash: object_hash)

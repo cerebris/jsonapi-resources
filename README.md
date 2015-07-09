@@ -1277,6 +1277,11 @@ JSONAPI.configure do |config|
   # catch this error and render a 403 status code, you should add
   # the `Pundit::NotAuthorizedError` to the `exception_class_whitelist`.
   config.exception_class_whitelist = []
+  
+  # Resource Linkage
+  # Controls the serialization of resource linkage for non compound documents
+  # NOTE: always_include_has_many_linkage_data is not currently implemented
+  config.always_include_has_one_linkage_data = false  
 end
 ```
 

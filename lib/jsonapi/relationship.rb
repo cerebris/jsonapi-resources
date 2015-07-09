@@ -1,7 +1,7 @@
 module JSONAPI
   class Relationship
     attr_reader :acts_as_set, :foreign_key, :type, :options, :name,
-                :class_name, :polymorphic
+                :class_name, :polymorphic, :always_include_linkage_data
 
     def initialize(name, options = {})
       @name = name.to_s
@@ -11,6 +11,7 @@ module JSONAPI
       @module_path = options[:module_path] || ''
       @relation_name = options.fetch(:relation_name, @name)
       @polymorphic = options.fetch(:polymorphic, false) == true
+      @always_include_linkage_data = options.fetch(:always_include_linkage_data, false) == true
     end
 
     alias_method :polymorphic?, :polymorphic
