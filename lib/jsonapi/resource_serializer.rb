@@ -83,18 +83,18 @@ module JSONAPI
       if source.respond_to?(:to_ary)
         source.each do |resource|
           id = resource.id
-          if already_serialized?(@primary_class_name, id)
+          if already_serialized?(resource.class._type, id)
             set_primary(@primary_class_name, id)
           end
 
-          add_included_object(@primary_class_name, id, object_hash(resource,  include_directives), true)
+          add_included_object(id, object_hash(resource,  include_directives), true)
         end
       else
         return {} if source.nil?
 
         resource = source
         id = resource.id
-        add_included_object(@primary_class_name, id, object_hash(source,  include_directives), true)
+        add_included_object(id, object_hash(source,  include_directives), true)
       end
     end
 
@@ -161,8 +161,6 @@ module JSONAPI
             hash[format_key(name)] = link_object(source, association, include_linkage)
           end
 
-          type = association.type
-
           # If the object has been serialized once it will be in the related objects list,
           # but it's possible all children won't have been captured. So we must still go
           # through the associations.
@@ -171,10 +169,9 @@ module JSONAPI
               resource = source.send(name)
               if resource
                 id = resource.id
-                type = association.type_for_source(source)
-                associations_only = already_serialized?(type, id)
+                associations_only = already_serialized?(resource.class._type, id)
                 if include_linkage && !associations_only
-                  add_included_object(type, id, object_hash(resource, ia))
+                  add_included_object(id, object_hash(resource, ia))
                 elsif include_linked_children || associations_only
                   relationship_data(resource, ia)
                 end
@@ -183,9 +180,9 @@ module JSONAPI
               resources = source.send(name)
               resources.each do |resource|
                 id = resource.id
-                associations_only = already_serialized?(type, id)
+                associations_only = already_serialized?(resource.class._type, id)
                 if include_linkage && !associations_only
-                  add_included_object(type, id, object_hash(resource, ia))
+                  add_included_object(id, object_hash(resource, ia))
                 elsif include_linked_children || associations_only
                   relationship_data(resource, ia)
                 end
@@ -255,13 +252,13 @@ module JSONAPI
       linkage
     end
 
-    def link_object_has_one(source, association)
+    def link_object_has_one(source, association, include_linkage)
       include_linkage = include_linkage | @force_has_one_resource_linkage | association.force_resource_linkage
       link_object_hash = {}
       link_object_hash[:links] = {}
       link_object_hash[:links][:self] = self_link(source, association)
       link_object_hash[:links][:related] = related_link(source, association)
-      link_object_hash[:data] = has_one_linkage(source, association)
+      link_object_hash[:data] = has_one_linkage(source, association) if include_linkage
       link_object_hash
     end
 
@@ -312,12 +309,13 @@ module JSONAPI
     end
 
     # Collects the hashes for all objects processed by the serializer
-    def add_included_object(type, id, object_hash, primary = false)
-      type = format_key(type)
+    def add_included_object(id, object_hash, primary = false)
+      type = object_hash['type']
 
       @included_objects[type] = {} unless @included_objects.key?(type)
 
       if already_serialized?(type, id)
+        @included_objects[type][id][:object_hash].merge!(object_hash)
         set_primary(type, id) if primary
       else
         @included_objects[type].store(id, primary: primary, object_hash: object_hash)
