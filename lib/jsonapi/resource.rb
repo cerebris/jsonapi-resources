@@ -638,7 +638,7 @@ module JSONAPI
       def check_reserved_attribute_name(name)
         # Allow :id since it can be used to specify the format. Since it is a method on the base Resource
         # an attribute method won't be created for it.
-        if [:type, :href, :links].include?(name.to_sym)
+        if [:type, :href, :links, :model].include?(name.to_sym)
           warn "[NAME COLLISION] `#{name}` is a reserved key in #{@@resource_types[_type]}."
         end
       end
