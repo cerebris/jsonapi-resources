@@ -31,93 +31,93 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
 
     assert_hash_equals(
       {
-        :data => {
-          'id' => '1',
-          'type' => 'people',
-          'links' => {
-            :self => '/people/1'
+        data: {
+          id: '1',
+          type: 'people',
+          links: {
+            self: '/people/1'
           },
-          'attributes' => {
-            'name' => 'Joe Author',
-            'email' => 'joe@xyz.fake',
-            'dateJoined' => '2013-08-07 16:25:00 -0400'
+          attributes: {
+            name: 'Joe Author',
+            email: 'joe@xyz.fake',
+            dateJoined: '2013-08-07 16:25:00 -0400'
           },
-          'relationships' => {
-            'comments' => {
-              :links => {
-                :self => '/people/1/relationships/comments',
-                :related => '/people/1/comments'
+          relationships: {
+            comments: {
+              links: {
+                self: '/people/1/relationships/comments',
+                related: '/people/1/comments'
               }
             },
-            'posts' => {
-              :links => {
-                :self => '/people/1/relationships/posts',
-                :related => '/people/1/posts'
+            posts: {
+              links: {
+                self: '/people/1/relationships/posts',
+                related: '/people/1/posts'
               }
             },
-            'vehicles' => {
-              :links => {
-                :self => '/people/1/relationships/vehicles',
-                :related => '/people/1/vehicles'
+            vehicles: {
+              links: {
+                self: '/people/1/relationships/vehicles',
+                related: '/people/1/vehicles'
               },
               :data => [
-                { :type => 'cars', :id=> '1' },
-                { :type => 'boats', :id=>'2' }
+                { type: 'cars', id: '1' },
+                { type: 'boats', id: '2' }
               ]
             },
-            'preferences' => {
-              :links => {
-                :self => '/people/1/relationships/preferences',
-                :related => '/people/1/preferences'
+            preferences: {
+              links: {
+                self: '/people/1/relationships/preferences',
+                related: '/people/1/preferences'
               }
             },
-            'hairCut' => {
-              :links => {
-                :self => '/people/1/relationships/hairCut',
-                :related => '/people/1/hairCut'
+            hairCut: {
+              links: {
+                self: '/people/1/relationships/hairCut',
+                related: '/people/1/hairCut'
               }
             }
           }
         },
         included: [
           {
-            'id': '1',
-            'type' => 'cars',
-            'links' => {
-              :self => '/cars/1'
+            id: '1',
+            type: 'cars',
+            links: {
+              self: '/cars/1'
             },
-            'attributes': {
-              'make': 'Mazda',
-              'vehicleModel': 'Miata MX5',
-              'driveLayout': 'Front Engine RWD',
-              'serialNumber': '32432adfsfdysua'
+            attributes: {
+              make: 'Mazda',
+              vehicleModel: 'Miata MX5',
+              driveLayout: 'Front Engine RWD',
+              serialNumber: '32432adfsfdysua'
             },
-            'relationships' => {
-              'person' => {
-                :links => {
-                  :self => '/cars/1/relationships/person',
-                  :related => '/cars/1/person'
+            relationships: {
+              person: {
+                links: {
+                  self: '/cars/1/relationships/person',
+                  related: '/cars/1/person'
                 }
               }
             }
           },
           {
-            'id' => '2',
-            'type' => 'boats',
-            'links' => {
-              :self => '/boats/2'
+            id: '2',
+            type: 'boats',
+            links: {
+              self: '/boats/2'
             },
-            'attributes': {
-              'make': 'Chris-Craft',
-              'vehicleModel': 'Launch 20',
-              'lengthAtWaterLine': '15.5ft',
-              'serialNumber': '434253JJJSD'
+            attributes: {
+              make: 'Chris-Craft',
+              vehicleModel: 'Launch 20',
+              lengthAtWaterLine: '15.5ft',
+              serialNumber: '434253JJJSD'
             },
-            'relationships' => {
-              'person' => {
-                :links => {
-                  :self => '/boats/2/relationships/person',
-                  :related => '/boats/2/person'
+            relationships: {
+              person: {
+                links: {
+                  self: '/boats/2/relationships/person',
+                  related: '/boats/2/person'
                 }
               }
             }
