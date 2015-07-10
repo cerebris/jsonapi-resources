@@ -1164,11 +1164,19 @@ module Api
   end
 end
 
+module MyEngine
+  module Api
+    module V1
+      class PersonResource < JSONAPI::Resource
+      end
+    end
+  end
+end
+
 warn 'start testing Name Collisions'
 # The name collisions only emmit warnings. Exceptions would change the flow of the tests
 
 class LinksResource < JSONAPI::Resource
-
 end
 
 class BadlyNamedAttributesResource < JSONAPI::Resource

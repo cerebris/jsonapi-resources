@@ -1,3 +1,5 @@
+require_relative "link_builder"
+
 module JSONAPI
   class ResourceSerializer
 
@@ -12,16 +14,15 @@ module JSONAPI
     # key_formatter: KeyFormatter class to override the default configuration
     # base_url: a string to prepend to generated resource links
 
-    def initialize(primary_resource_klass, options = {})
-      @primary_resource_klass = primary_resource_klass
-      @primary_class_name = @primary_resource_klass._type
+    attr_reader :url_generator
 
-      @fields =  options.fetch(:fields, {})
-      @include = options.fetch(:include, [])
+    def initialize(primary_resource_klass, options = {})
+      @primary_class_name = primary_resource_klass._type
+      @fields             = options.fetch(:fields, {})
+      @include            = options.fetch(:include, [])
       @include_directives = options[:include_directives]
-      @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
-      @route_formatter = options.fetch(:route_formatter, JSONAPI.configuration.route_formatter)
-      @base_url = options.fetch(:base_url, '')
+      @key_formatter      = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
+      @url_generator      = generate_link_builder(primary_resource_klass, options)
     end
 
     # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
@@ -68,7 +69,7 @@ module JSONAPI
     end
 
     def find_link(query_params)
-      "#{@base_url}/#{formatted_module_path_from_klass(@primary_resource_klass)}#{@route_formatter.format(@primary_resource_klass._type.to_s)}?#{query_params.to_query}"
+      url_generator.query_link(query_params)
     end
 
     private
@@ -196,21 +197,9 @@ module JSONAPI
 
     def relationship_links(source)
       links = {}
-      links[:self] = self_href(source)
+      links[:self] = url_generator.self_link(source)
 
       links
-    end
-
-    def formatted_module_path(source)
-      formatted_module_path_from_klass(source.class)
-    end
-
-    def formatted_module_path_from_klass(klass)
-      klass.name =~ /::[^:]+\Z/ ? (@route_formatter.format($`).freeze.gsub('::', '/') + '/').downcase : ''
-    end
-
-    def self_href(source)
-      "#{@base_url}/#{formatted_module_path(source)}#{@route_formatter.format(source.class._type.to_s)}/#{source.id}"
     end
 
     def already_serialized?(type, id)
@@ -218,16 +207,12 @@ module JSONAPI
       @included_objects.key?(type) && @included_objects[type].key?(id)
     end
 
-    def format_route(route)
-      @route_formatter.format(route.to_s)
-    end
-
     def self_link(source, association)
-      "#{self_href(source)}/relationships/#{format_route(association.name)}"
+      url_generator.relationships_self_link(source, association)
     end
 
     def related_link(source, association)
-      "#{self_href(source)}/#{format_route(association.name)}"
+      url_generator.relationships_related_link(source, association)
     end
 
     def has_one_linkage(source, association)
@@ -326,6 +311,14 @@ module JSONAPI
     def format_value(value, format)
       value_formatter = JSONAPI::ValueFormatter.value_formatter_for(format)
       value_formatter.format(value)
+    end
+
+    def generate_link_builder(primary_resource_klass, options)
+      LinkBuilder.new(
+        base_url: options.fetch(:base_url, ''),
+        route_formatter: options.fetch(:route_formatter, JSONAPI.configuration.route_formatter),
+        primary_resource_klass: primary_resource_klass,
+      )
     end
   end
 end
