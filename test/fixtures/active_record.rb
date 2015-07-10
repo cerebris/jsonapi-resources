@@ -18,6 +18,11 @@ ActiveRecord::Schema.define do
     t.timestamps null: false
   end
 
+  create_table :author_details, force: true do |t|
+    t.integer :person_id
+    t.string  :author_stuff
+  end
+
   create_table :posts, force: true do |t|
     t.string     :title
     t.text       :body
@@ -190,6 +195,11 @@ ActiveRecord::Schema.define do
 
   create_table :vehicles, force: true do |t|
     t.string :type
+    t.string :make
+    t.string :vehicle_model
+    t.string :length_at_water_line
+    t.string :drive_layout
+    t.string :serial_number
     t.integer :person_id
   end
 end
@@ -202,10 +212,15 @@ class Person < ActiveRecord::Base
   has_many :vehicles
   belongs_to :preferences
   belongs_to :hair_cut
+  has_one :author_detail
 
   ### Validations
   validates :name, presence: true
   validates :date_joined, presence: true
+end
+
+class AuthorDetail < ActiveRecord::Base
+  belongs_to :author, class_name: 'Person', foreign_key: 'person_id'
 end
 
 class Post < ActiveRecord::Base
@@ -615,7 +630,7 @@ class PersonResource < JSONAPI::Resource
   has_many :vehicles, polymorphic: true
 
   has_one :preferences
-  has_one :hair_cut
+  belongs_to :hair_cut
 
   filter :name
 
@@ -633,19 +648,22 @@ class PersonResource < JSONAPI::Resource
 end
 
 class VehicleResource < JSONAPI::Resource
-  has_one :person
+  belongs_to :person
+  attributes :make, :vehicle_model, :serial_number
 end
 
 class CarResource < VehicleResource
+  attributes :drive_layout
 end
 
 class BoatResource < VehicleResource
+  attributes :length_at_water_line
 end
 
 class CommentResource < JSONAPI::Resource
   attributes :body
-  has_one :post
-  has_one :author, class_name: 'Person'
+  belongs_to :post
+  belongs_to :author, class_name: 'Person'
   has_many :tags
 
   filters :body
@@ -668,8 +686,8 @@ class PostResource < JSONAPI::Resource
   attribute :body
   attribute :subject
 
-  has_one :author, class_name: 'Person'
-  has_one :section
+  belongs_to :author, class_name: 'Person'
+  belongs_to :section
   has_many :tags, acts_as_set: true
   has_many :comments, acts_as_set: false
 
@@ -777,8 +795,8 @@ class ExpenseEntryResource < JSONAPI::Resource
   attributes :cost
   attribute :transaction_date, format: :date
 
-  has_one :iso_currency, foreign_key: 'currency_code'
-  has_one :employee, class_name: 'Person'
+  belongs_to :iso_currency, foreign_key: 'currency_code'
+  belongs_to :employee, class_name: 'Person'
 end
 
 class EmployeeResource < JSONAPI::Resource
@@ -819,7 +837,7 @@ class PlanetResource < JSONAPI::Resource
   attribute :description
 
   has_many :moons
-  has_one :planet_type
+  belongs_to :planet_type
 
   has_many :tags, acts_as_set: true
 end
@@ -839,13 +857,13 @@ class MoonResource < JSONAPI::Resource
   attribute :name
   attribute :description
 
-  has_one :planet
+  belongs_to :planet
 end
 
 class PreferencesResource < JSONAPI::Resource
   attribute :advanced_mode
 
-  has_one :author, foreign_key: :person_id, class_name: 'Person'
+  belongs_to :author, foreign_key: :person_id, class_name: 'Person'
   has_many :friends, class_name: 'Person'
 
   def self.find_by_key(key, options = {})
@@ -871,7 +889,7 @@ end
 
 class PictureResource < JSONAPI::Resource
   attribute :name
-  has_one :imageable, polymorphic: true
+  belongs_to :imageable, polymorphic: true
 end
 
 class DocumentResource < JSONAPI::Resource
@@ -881,7 +899,7 @@ end
 
 class ProductResource < JSONAPI::Resource
   attribute :name
-  has_one :picture
+  has_one :picture, force_resource_linkage: true
 
   def picture_id
     model.picture.id
@@ -910,8 +928,8 @@ module Api
       attribute :body
       attribute :subject
 
-      has_one :writer, foreign_key: 'author_id'
-      has_one :section
+      belongs_to :writer, foreign_key: 'author_id'
+      belongs_to :section
       has_many :comments, acts_as_set: false
 
       def subject
@@ -1005,8 +1023,8 @@ module Api
     class BookCommentResource < JSONAPI::Resource
       attributes :body, :approved
 
-      has_one :book
-      has_one :author, class_name: 'Person'
+      belongs_to :book
+      belongs_to :author, class_name: 'Person'
 
       filters :approved, :book
 
@@ -1081,6 +1099,7 @@ module Api
       attributes :name, :email
       model_name 'Person'
       has_many :posts
+      has_one :author_detail
 
       filter :name
 
@@ -1098,6 +1117,10 @@ module Api
       def fetchable_fields
         super - [:email]
       end
+    end
+
+    class AuthorDetailResource < JSONAPI::Resource
+      attributes :author_stuff
     end
 
     PersonResource = PersonResource.dup
@@ -1130,7 +1153,7 @@ module Api
       attribute :tax
       attribute :total
 
-      has_one :customer
+      belongs_to :customer
       has_many :line_items
       has_many :order_flags, acts_as_set: true
     end
@@ -1146,7 +1169,7 @@ module Api
       attribute :quantity
       attribute :item_cost
 
-      has_one :purchase_order
+      belongs_to :purchase_order
     end
   end
 

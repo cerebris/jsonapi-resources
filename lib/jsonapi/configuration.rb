@@ -17,7 +17,9 @@ module JSONAPI
                 :top_level_links_include_pagination,
                 :top_level_meta_include_record_count,
                 :top_level_meta_record_count_key,
-                :exception_class_whitelist
+                :exception_class_whitelist,
+                :force_has_one_resource_linkage,
+                :force_has_many_resource_linkage
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -54,6 +56,12 @@ module JSONAPI
       # catch this error and render a 403 status code, you should add
       # the `Pundit::NotAuthorizedError` to the `exception_class_whitelist`.
       self.exception_class_whitelist = []
+
+      # Resource Linkage
+      # Controls the serialization of resource linkage for non compound documents
+      # NOTE: force_has_many_resource_linkage is not currently implemented
+      self.force_has_one_resource_linkage = false
+      self.force_has_many_resource_linkage = false
     end
 
     def json_key_format=(format)
@@ -88,6 +96,10 @@ module JSONAPI
     attr_writer :top_level_meta_record_count_key
 
     attr_writer :exception_class_whitelist
+
+    attr_writer :force_has_one_resource_linkage
+
+    attr_writer :force_has_many_resource_linkage
   end
 
   class << self

@@ -393,7 +393,7 @@ module JSONAPI
           value.each do |link_key, link_value|
             param = unformat_key(link_key)
             association = @resource_klass._association(param)
-            if association.is_a?(JSONAPI::Association::HasOne)
+            if association.is_a?(JSONAPI::Association::HasOne) || association.is_a?(JSONAPI::Association::BelongsTo)
               if link_value.nil?
                 linkage = nil
               else
@@ -520,7 +520,7 @@ module JSONAPI
 
     def parse_update_association_operation(data, association_type, parent_key)
       association = resource_klass._association(association_type)
-      if association.is_a?(JSONAPI::Association::HasOne)
+      if association.is_a?(JSONAPI::Association::HasOne) || association.is_a?(JSONAPI::Association::BelongsTo)
         if association.polymorphic?
           object_params = { relationships: { format_key(association.name) => { data: data } } }
           verified_param_set = parse_params(object_params, updatable_fields)

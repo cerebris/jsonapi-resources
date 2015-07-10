@@ -214,7 +214,7 @@ end
 
 #### Associations
 
-Related resources need to be specified in the resource. These are declared with the `has_one` and the `has_many` methods.
+Related resources need to be specified in the resource. These are declared with the `belongs_to`, `has_one`, and the `has_many` methods.
 
 Here's a simple example where a post has a single author and an author can have many posts:
 
@@ -222,7 +222,7 @@ Here's a simple example where a post has a single author and an author can have 
 class PostResource < JSONAPI::Resource
   attribute :title, :body
 
-  has_one :author
+  belongs_to :author
 end
 ```
 
@@ -243,7 +243,7 @@ The association methods support the following options:
  * `class_name` - a string specifying the underlying class for the related resource
  * `foreign_key` - the method on the resource used to fetch the related resource. Defaults to `<resource_name>_id` for has_one and `<resource_name>_ids` for has_many relationships.
  * `acts_as_set` - allows the entire set of related records to be replaced in one operation. Defaults to false if not set.
- * `polymorphic` - set to true to identify associations that are polymorphic.
+ * `polymorphic` - set to true to identify associations that are polymorphic. Note: not supported by `has_one`
  * `relation_name` - the name of the relation to use on the model. A lambda may be provided which allows conditional selection of the relation based on the context.
 
 Examples:
@@ -251,21 +251,21 @@ Examples:
 ```ruby
 class CommentResource < JSONAPI::Resource
   attributes :body
-  has_one :post
-  has_one :author, class_name: 'Person'
+  belongs_to :post
+  belongs_to :author, class_name: 'Person'
   has_many :tags, acts_as_set: true
 end
 
 class ExpenseEntryResource < JSONAPI::Resource
   attributes :cost, :transaction_date
 
-  has_one :currency, class_name: 'Currency', foreign_key: 'currency_code'
-  has_one :employee
+  belongs_to :currency, class_name: 'Currency', foreign_key: 'currency_code'
+  belongs_to :employee
 end
 
 class TagResource < JSONAPI::Resource
   attributes :name
-  has_one :taggable, polymorphic: true
+  has_many :taggable, polymorphic: true
 end
 ```
 
@@ -322,8 +322,8 @@ For example:
 ```ruby
  class CommentResource < JSONAPI::Resource
   attributes :body, :status
-  has_one :post
-  has_one :author
+  belongs_to :post
+  belongs_to :author
 
   filter :status, default: 'published,pending'
 end
@@ -360,7 +360,7 @@ When you create a relationship, a method is created to fetch record(s) for that 
 
 ```ruby
 class PostResource < JSONAPI::Resource
-  has_one :author
+  belongs_to :author
   has_many :comments
 
   # def record_for_author(options = {})
@@ -675,8 +675,8 @@ class PostResource < JSONAPI::Resource
   attribute :body
   attribute :subject
 
-  has_one :author, class_name: 'Person'
-  has_one :section
+  belongs_to :author, class_name: 'Person'
+  belongs_to :section
   has_many :tags, acts_as_set: true
   has_many :comments, acts_as_set: false
   def subject
@@ -698,8 +698,8 @@ module Api
       attribute :body
       attribute :subject
 
-      has_one :writer, foreign_key: 'author_id'
-      has_one :section
+      belongs_to :writer, foreign_key: 'author_id'
+      belongs_to :section
       has_many :comments, acts_as_set: false
 
       def subject
@@ -1039,7 +1039,7 @@ A single additional route was created to allow you GET the phone numbers through
 
 ###### `jsonapi_related_resource`
 
-Like `jsonapi_related_resources`, but for has_one related resources.
+Like `jsonapi_related_resources`, but for `has_one` or `belongs_to` related resources.
 
 ```ruby
 Rails.application.routes.draw do
@@ -1248,6 +1248,11 @@ JSONAPI.configure do |config|
   # catch this error and render a 403 status code, you should add
   # the `Pundit::NotAuthorizedError` to the `exception_class_whitelist`.
   config.exception_class_whitelist = []
+  
+  # Resource Linkage
+  # Controls the serialization of resource linkage for non compound documents
+  # NOTE: force_has_many_resource_linkage is not currently implemented
+  config.force_has_one_resource_linkage = false  
 end
 ```
 
