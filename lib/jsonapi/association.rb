@@ -49,6 +49,16 @@ module JSONAPI
     class HasOne < Association
       def initialize(name, options = {})
         super
+        @polymorphic = false
+        @class_name = options.fetch(:class_name, name.to_s.camelize)
+        @type = class_name.underscore.pluralize.to_sym
+        @foreign_key ||= "#{name}_id".to_sym
+      end
+    end
+
+    class BelongsTo < Association
+      def initialize(name, options = {})
+        super
         @class_name = options.fetch(:class_name, name.to_s.camelize)
         @type = class_name.underscore.pluralize.to_sym
         @foreign_key ||= "#{name}_id".to_sym

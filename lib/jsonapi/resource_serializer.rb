@@ -54,9 +54,10 @@ module JSONAPI
     end
 
     def serialize_to_links_hash(source, requested_association)
-      if requested_association.is_a?(JSONAPI::Association::HasOne)
+      case requested_association
+      when JSONAPI::Association::HasOne, JSONAPI::Association::BelongsTo
         data = has_one_linkage(source, requested_association)
-      else
+      when JSONAPI::Association::HasMany
         data = has_many_linkage(source, requested_association)
       end
 
@@ -165,7 +166,8 @@ module JSONAPI
           # but it's possible all children won't have been captured. So we must still go
           # through the associations.
           if include_linkage || include_linked_children
-            if association.is_a?(JSONAPI::Association::HasOne)
+            case association
+            when JSONAPI::Association::HasOne, JSONAPI::Association::BelongsTo
               resource = source.send(name)
               if resource
                 id = resource.id
@@ -176,7 +178,7 @@ module JSONAPI
                   relationship_data(resource, ia)
                 end
               end
-            elsif association.is_a?(JSONAPI::Association::HasMany)
+            when JSONAPI::Association::HasMany
               resources = source.send(name)
               resources.each do |resource|
                 id = resource.id
@@ -274,9 +276,10 @@ module JSONAPI
     end
 
     def link_object(source, association, include_linkage)
-      if association.is_a?(JSONAPI::Association::HasOne)
+      case association
+      when JSONAPI::Association::HasOne, JSONAPI::Association::BelongsTo
         link_object_has_one(source, association, include_linkage)
-      elsif association.is_a?(JSONAPI::Association::HasMany)
+      when JSONAPI::Association::HasMany
         link_object_has_many(source, association, include_linkage)
       end
     end

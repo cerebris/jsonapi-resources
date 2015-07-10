@@ -330,6 +330,10 @@ module JSONAPI
         _associate(Association::HasOne, *attrs)
       end
 
+      def belongs_to(*attrs)
+        _associate(Association::BelongsTo, *attrs)
+      end
+
       def has_many(*attrs)
         _associate(Association::HasMany, *attrs)
       end
@@ -659,6 +663,7 @@ module JSONAPI
 
           associated_records_method_name = case association
                                            when JSONAPI::Association::HasOne then "record_for_#{attr}"
+                                           when JSONAPI::Association::BelongsTo then "record_for_#{attr}"
                                            when JSONAPI::Association::HasMany then "records_for_#{attr}"
                                            end
 
@@ -674,7 +679,22 @@ module JSONAPI
             records_for(relation_name, options)
           end unless method_defined?(associated_records_method_name)
 
-          if association.is_a?(JSONAPI::Association::HasOne)
+          case association
+          when JSONAPI::Association::HasOne
+            define_method foreign_key do
+              record = public_send(associated_records_method_name)
+              record.send(association.resource_klass._primary_key)
+            end unless method_defined?(foreign_key)
+
+            define_method attr do |options = {}|
+              resource_klass = association.resource_klass
+              if resource_klass
+                associated_model = public_send(associated_records_method_name)
+                return associated_model ? resource_klass.new(associated_model, @context) : nil
+              end
+            end unless method_defined?(attr)
+
+          when JSONAPI::Association::BelongsTo
             define_method foreign_key do
               @model.method(foreign_key).call
             end unless method_defined?(foreign_key)
@@ -692,7 +712,8 @@ module JSONAPI
                 end
               end
             end unless method_defined?(attr)
-          elsif association.is_a?(JSONAPI::Association::HasMany)
+
+          when JSONAPI::Association::HasMany
             define_method foreign_key do
               records = public_send(associated_records_method_name)
               return records.collect do |record|
