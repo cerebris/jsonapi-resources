@@ -126,7 +126,7 @@ module JSONAPI
     def apply
       source_resource = @source_klass.find_by_key(@source_id, context: @context)
 
-      related_resource = source_resource.send(@association_type)
+      related_resource = source_resource.public_send(@association_type)
 
       return JSONAPI::ResourceOperationResult.new(:ok, related_resource)
 
@@ -152,7 +152,7 @@ module JSONAPI
     def apply
       source_resource = @source_klass.find_by_key(@source_id, context: @context)
 
-      related_resource = source_resource.send(@association_type,
+      related_resource = source_resource.public_send(@association_type,
                                               filters:  @filters,
                                               sort_criteria: @sort_criteria,
                                               paginator: @paginator)
