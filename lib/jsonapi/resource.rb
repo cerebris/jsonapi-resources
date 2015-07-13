@@ -577,7 +577,7 @@ module JSONAPI
       end
 
       def _primary_key
-        @_primary_key ||= :id
+        @_primary_key ||= _model_class.respond_to?(:primary_key) ? _model_class.primary_key : :id
       end
 
       def _as_parent_key

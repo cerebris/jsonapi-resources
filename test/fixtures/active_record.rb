@@ -673,6 +673,9 @@ class PostResource < JSONAPI::Resource
   has_many :tags, acts_as_set: true
   has_many :comments, acts_as_set: false
 
+  # Not needed - just for testing
+  primary_key :id
+
   before_save do
     msg = "Before save"
   end
@@ -763,7 +766,6 @@ class HairCutResource < JSONAPI::Resource
 end
 
 class IsoCurrencyResource < JSONAPI::Resource
-  primary_key :code
   attributes :name, :country_name, :minor_unit
 
   filter :country_name
