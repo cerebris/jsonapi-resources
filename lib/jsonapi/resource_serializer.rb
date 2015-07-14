@@ -1,5 +1,3 @@
-require_relative "link_builder"
-
 module JSONAPI
   class ResourceSerializer
 
