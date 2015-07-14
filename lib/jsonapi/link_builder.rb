@@ -58,7 +58,7 @@ module JSONAPI
 
     def engine_path_from_resource_class(klass)
       path_name = engine_resources_path_name_from_class(klass)
-      engine_name.routes.url_helpers.send(path_name)
+      engine_name.routes.url_helpers.public_send(path_name)
     end
 
     def engine_primary_resources_path
@@ -71,7 +71,7 @@ module JSONAPI
 
     def engine_resource_path(source)
       resource_path_name = engine_resource_path_name_from_source(source)
-      engine_name.routes.url_helpers.send(resource_path_name, source.id)
+      engine_name.routes.url_helpers.public_send(resource_path_name, source.id)
     end
 
     def engine_resource_path_name_from_source(source)

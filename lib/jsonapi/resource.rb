@@ -28,7 +28,7 @@ module JSONAPI
     end
 
     def id
-      model.send(self.class._primary_key)
+      model.public_send(self.class._primary_key)
     end
 
     def is_new?
@@ -112,7 +112,7 @@ module JSONAPI
     # Override this on a resource to customize how the associated records
     # are fetched for a model. Particularly helpful for authorization.
     def records_for(association_name, _options = {})
-      model.send association_name
+      model.public_send association_name
     end
 
     private
@@ -166,9 +166,9 @@ module JSONAPI
         related_resource = association.resource_klass.find_by_key(association_key_value, context: @context)
 
         # TODO: Add option to skip relations that already exist instead of returning an error?
-        relation = @model.send(association.type).where(association.primary_key => association_key_value).first
+        relation = @model.public_send(association.type).where(association.primary_key => association_key_value).first
         if relation.nil?
-          @model.send(association.type) << related_resource.model
+          @model.public_send(association.type) << related_resource.model
         else
           fail JSONAPI::Exceptions::HasManyRelationExists.new(association_key_value)
         end
@@ -198,8 +198,8 @@ module JSONAPI
     def _replace_polymorphic_has_one_link(association_type, key_value, key_type)
       association = self.class._associations[association_type.to_sym]
 
-      model.send("#{association.foreign_key}=", key_value)
-      model.send("#{association.polymorphic_type}=", key_type.to_s.classify)
+      model.public_send("#{association.foreign_key}=", key_value)
+      model.public_send("#{association.polymorphic_type}=", key_type.to_s.classify)
 
       @save_needed = true
 
@@ -209,7 +209,7 @@ module JSONAPI
     def _remove_has_many_link(association_type, key)
       association = self.class._associations[association_type]
 
-      @model.send(association.type).delete(key)
+      @model.public_send(association.type).delete(key)
 
       :completed
     end
@@ -314,11 +314,11 @@ module JSONAPI
         @_attributes ||= {}
         @_attributes[attr] = options
         define_method attr do
-          @model.send(attr)
+          @model.public_send(attr)
         end unless method_defined?(attr)
 
         define_method "#{attr}=" do |value|
-          @model.send "#{attr}=", value
+          @model.public_send "#{attr}=", value
         end unless method_defined?("#{attr}=")
       end
 
@@ -696,7 +696,7 @@ module JSONAPI
             define_method foreign_key do
               records = public_send(associated_records_method_name)
               return records.collect do |record|
-                record.send(association.resource_klass._primary_key)
+                record.public_send(association.resource_klass._primary_key)
               end
             end unless method_defined?(foreign_key)
             define_method attr do |options = {}|

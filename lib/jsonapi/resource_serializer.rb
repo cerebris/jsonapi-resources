@@ -132,7 +132,7 @@ module JSONAPI
       fields.each_with_object({}) do |name, hash|
         format = source.class._attribute_options(name)[:format]
         unless name == :id
-          hash[format_key(name)] = format_value(source.send(name), format)
+          hash[format_key(name)] = format_value(source.public_send(name), format)
         end
       end
     end
@@ -167,7 +167,7 @@ module JSONAPI
           # through the associations.
           if include_linkage || include_linked_children
             if association.is_a?(JSONAPI::Association::HasOne)
-              resource = source.send(name)
+              resource = source.public_send(name)
               if resource
                 id = resource.id
                 type = association.type_for_source(source)
@@ -179,7 +179,7 @@ module JSONAPI
                 end
               end
             elsif association.is_a?(JSONAPI::Association::HasMany)
-              resources = source.send(name)
+              resources = source.public_send(name)
               resources.each do |resource|
                 id = resource.id
                 associations_only = already_serialized?(type, id)
@@ -267,18 +267,18 @@ module JSONAPI
     # Extracts the foreign key value for a has_one association.
     def foreign_key_value(source, association)
       foreign_key = association.foreign_key
-      value = source.send(foreign_key)
+      value = source.public_send(foreign_key)
       IdValueFormatter.format(value)
     end
 
     def foreign_key_types_and_values(source, association)
       if association.is_a?(JSONAPI::Association::HasMany)
         if association.polymorphic?
-          source.model.send(association.name).pluck(:type, :id).map do |type, id|
+          source.model.public_send(association.name).pluck(:type, :id).map do |type, id|
             [type.pluralize, IdValueFormatter.format(id)]
           end
         else
-          source.send(association.foreign_key).map do |value|
+          source.public_send(association.foreign_key).map do |value|
             [association.type, IdValueFormatter.format(value)]
           end
         end
