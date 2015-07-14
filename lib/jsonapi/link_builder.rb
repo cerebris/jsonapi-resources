@@ -8,10 +8,11 @@ module JSONAPI
       @base_url               = config[:base_url]
       @primary_resource_klass = config[:primary_resource_klass]
       @route_formatter        = config[:route_formatter]
+      @is_engine              = !!engine_name
     end
 
     def engine?
-      !!engine_name
+      @is_engine
     end
 
     def engine_name
