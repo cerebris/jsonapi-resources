@@ -1093,7 +1093,7 @@ module Api
       attributes :name, :email
       model_name 'Person'
       has_many :posts
-      has_one :author_detail, direction: :has_one
+      has_one :author_detail, direction: :reverse
 
       filter :name
 
