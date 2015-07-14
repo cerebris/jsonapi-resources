@@ -697,7 +697,7 @@ module JSONAPI
               define_method foreign_key do
                 record = public_send(associated_records_method_name)
                 return nil if record.nil?
-                record.send(association.resource_klass._primary_key)
+                record.public_send(association.resource_klass._primary_key)
               end unless method_defined?(foreign_key)
 
               define_method attr do |options = {}|
