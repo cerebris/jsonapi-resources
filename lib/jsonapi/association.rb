@@ -46,18 +46,18 @@ module JSONAPI
     end
 
     class HasOne < Association
-      attr_reader :direction
+      attr_reader :foreign_key_on
 
       def initialize(name, options = {})
         super
         @class_name = options.fetch(:class_name, name.to_s.camelize)
         @type = class_name.underscore.pluralize.to_sym
         @foreign_key ||= "#{name}_id".to_sym
-        @direction = options.fetch(:direction, :belongs_to)
+        @foreign_key_on = options.fetch(:foreign_key_on, :self)
       end
 
       def belongs_to?
-        direction == :belongs_to
+        foreign_key_on == :self
       end
 
       def polymorphic_type
