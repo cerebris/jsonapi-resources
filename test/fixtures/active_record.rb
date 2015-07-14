@@ -18,6 +18,11 @@ ActiveRecord::Schema.define do
     t.timestamps null: false
   end
 
+  create_table :author_details, force: true do |t|
+    t.integer :person_id
+    t.string  :author_stuff
+  end
+
   create_table :posts, force: true do |t|
     t.string     :title
     t.text       :body
@@ -202,10 +207,15 @@ class Person < ActiveRecord::Base
   has_many :vehicles
   belongs_to :preferences
   belongs_to :hair_cut
+  has_one :author_detail
 
   ### Validations
   validates :name, presence: true
   validates :date_joined, presence: true
+end
+
+class AuthorDetail < ActiveRecord::Base
+  belongs_to :author, class_name: 'Person', foreign_key: 'person_id'
 end
 
 class Post < ActiveRecord::Base
@@ -1083,6 +1093,7 @@ module Api
       attributes :name, :email
       model_name 'Person'
       has_many :posts
+      has_one :author_detail, direction: :has_one
 
       filter :name
 
@@ -1100,6 +1111,10 @@ module Api
       def fetchable_fields
         super - [:email]
       end
+    end
+
+    class AuthorDetailResource < JSONAPI::Resource
+      attributes :author_stuff
     end
 
     PersonResource = PersonResource.dup

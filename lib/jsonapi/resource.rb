@@ -675,23 +675,39 @@ module JSONAPI
           end unless method_defined?(associated_records_method_name)
 
           if association.is_a?(JSONAPI::Association::HasOne)
-            define_method foreign_key do
-              @model.method(foreign_key).call
-            end unless method_defined?(foreign_key)
+            if association.belongs_to?
+              define_method foreign_key do
+                @model.method(foreign_key).call
+              end unless method_defined?(foreign_key)
 
-            define_method attr do |options = {}|
-              if association.polymorphic?
-                associated_model = public_send(associated_records_method_name)
-                resource_klass = Resource.resource_for(self.class.module_path + associated_model.class.to_s.underscore) if associated_model
-                return resource_klass.new(associated_model, @context) if resource_klass
-              else
+              define_method attr do |options = {}|
+                if association.polymorphic?
+                  associated_model = public_send(associated_records_method_name)
+                  resource_klass = Resource.resource_for(self.class.module_path + associated_model.class.to_s.underscore) if associated_model
+                  return resource_klass.new(associated_model, @context) if resource_klass
+                else
+                  resource_klass = association.resource_klass
+                  if resource_klass
+                    associated_model = public_send(associated_records_method_name)
+                    return associated_model ? resource_klass.new(associated_model, @context) : nil
+                  end
+                end
+              end unless method_defined?(attr)
+            else
+              define_method foreign_key do
+                record = public_send(associated_records_method_name)
+                return nil if record.nil?
+                record.send(association.resource_klass._primary_key)
+              end unless method_defined?(foreign_key)
+
+              define_method attr do |options = {}|
                 resource_klass = association.resource_klass
                 if resource_klass
                   associated_model = public_send(associated_records_method_name)
                   return associated_model ? resource_klass.new(associated_model, @context) : nil
                 end
-              end
-            end unless method_defined?(attr)
+              end unless method_defined?(attr)
+            end
           elsif association.is_a?(JSONAPI::Association::HasMany)
             define_method foreign_key do
               records = public_send(associated_records_method_name)

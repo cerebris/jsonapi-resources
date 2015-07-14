@@ -246,6 +246,9 @@ The association methods support the following options:
  * `polymorphic` - set to true to identify associations that are polymorphic.
  * `relation_name` - the name of the relation to use on the model. A lambda may be provided which allows conditional selection of the relation based on the context.
 
+`has_one` associations support the additional option:
+ * `direction` - defaults to `:belongs_to`. To indicate that the underlying model association is a `has_one` relationship specify `:has_one`.
+ 
 Examples:
 
 ```ruby
