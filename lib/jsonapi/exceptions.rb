@@ -295,9 +295,9 @@ module JSONAPI
 
     class ValidationErrors < Error
       attr_accessor :messages, :resource_associations
-      def initialize(messages, resource_associations)
-        @messages = messages
-        @resource_associations = resource_associations
+      def initialize(resource)
+        @messages = resource.model.errors.messages
+        @resource_associations = resource.class._associations.keys
         @key_formatter = JSONAPI.configuration.key_formatter
       end
 
@@ -322,7 +322,7 @@ module JSONAPI
       private
 
       def pointer(attr_or_association_name)
-        if resource_associations.key?(attr_or_association_name)
+        if resource_associations.include?(attr_or_association_name)
           "/data/relationships/#{attr_or_association_name}"
         else
           "/data/attributes/#{attr_or_association_name}"

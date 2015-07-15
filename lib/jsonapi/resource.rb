@@ -138,10 +138,7 @@ module JSONAPI
     # ```
     def _save
       unless @model.valid?
-        fail JSONAPI::Exceptions::ValidationErrors.new(
-          @model.errors.messages,
-          self.class._associations
-        )
+        fail JSONAPI::Exceptions::ValidationErrors.new(self)
       end
 
       if defined? @model.save
