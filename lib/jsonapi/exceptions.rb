@@ -294,9 +294,10 @@ module JSONAPI
     end
 
     class ValidationErrors < Error
-      attr_accessor :messages
-      def initialize(messages)
+      attr_accessor :messages, :resource_associations
+      def initialize(messages, resource_associations)
         @messages = messages
+        @resource_associations = resource_associations
         @key_formatter = JSONAPI.configuration.key_formatter
       end
 
@@ -312,9 +313,19 @@ module JSONAPI
                                  status: :unprocessable_entity,
                                  title: "#{format_key(element[0])} - #{message}",
                                  detail: message,
-                                 source: { pointer: "/#{element[0]}" })
+                                 source: { pointer: pointer(element[0]) })
             end
           )
+        end
+      end
+
+      private
+
+      def pointer(attr_or_association_name)
+        if resource_associations.key?(attr_or_association_name)
+          "/data/relationships/#{attr_or_association_name}"
+        else
+          "/data/attributes/#{attr_or_association_name}"
         end
       end
     end
