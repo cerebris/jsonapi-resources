@@ -312,7 +312,7 @@ module JSONAPI
                                  status: :unprocessable_entity,
                                  title: "#{format_key(element[0])} - #{message}",
                                  detail: message,
-                                 source: "/#{element[0]}")
+                                 source: { pointer: "/#{element[0]}" })
             end
           )
         end
