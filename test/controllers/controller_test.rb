@@ -391,11 +391,11 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :unprocessable_entity
 
-    assert_equal "/author", json_response['errors'][0]['path']
+    assert_equal "/author", json_response['errors'][0]['source']
     assert_equal "can't be blank", json_response['errors'][0]['detail']
     assert_equal "author - can't be blank", json_response['errors'][0]['title']
 
-    assert_equal "/title", json_response['errors'][1]['path']
+    assert_equal "/title", json_response['errors'][1]['source']
     assert_equal "is too long (maximum is 35 characters)", json_response['errors'][1]['detail']
     assert_equal "title - is too long (maximum is 35 characters)", json_response['errors'][1]['title']
   end

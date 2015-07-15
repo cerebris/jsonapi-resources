@@ -1,6 +1,6 @@
 module JSONAPI
   class Error
-    attr_accessor :title, :detail, :id, :href, :code, :path, :links, :status
+    attr_accessor :title, :detail, :id, :href, :code, :source, :links, :status
 
     def initialize(options = {})
       @title          = options[:title]
@@ -12,7 +12,7 @@ module JSONAPI
                         else
                           options[:code]
                         end
-      @path           = options[:path]
+      @source         = options[:source]
       @links          = options[:links]
       @status         = options[:status]
     end
