@@ -294,9 +294,10 @@ module JSONAPI
     end
 
     class ValidationErrors < Error
-      attr_accessor :messages, :resource_associations
+      attr_reader :error_messages, :resource_associations
+
       def initialize(resource)
-        @messages = resource.model.errors.messages
+        @error_messages = resource.model.errors.messages
         @resource_associations = resource.class._associations.keys
         @key_formatter = JSONAPI.configuration.key_formatter
       end
@@ -306,20 +307,20 @@ module JSONAPI
       end
 
       def errors
-        messages.inject([]) do |arr, element|
-          arr.concat(
-            element[1].map do |message|
-              JSONAPI::Error.new(code: JSONAPI::VALIDATION_ERROR,
-                                 status: :unprocessable_entity,
-                                 title: "#{format_key(element[0])} - #{message}",
-                                 detail: message,
-                                 source: { pointer: pointer(element[0]) })
-            end
-          )
-        end
+        error_messages.map do |attr_key, messages|
+          messages.map { |message| json_api_error(attr_key, message) }
+        end.flatten
       end
 
       private
+
+      def json_api_error(attr_key, message)
+        JSONAPI::Error.new(code: JSONAPI::VALIDATION_ERROR,
+                           status: :unprocessable_entity,
+                           title: "#{format_key(attr_key)} - #{message}",
+                           detail: message,
+                           source: { pointer: pointer(attr_key) })
+      end
 
       def pointer(attr_or_association_name)
         if resource_associations.include?(attr_or_association_name)
