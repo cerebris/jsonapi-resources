@@ -370,7 +370,7 @@ module JSONAPI
       def initialize(page, value, msg = nil)
         @page = page
         @value = value
-        @msg = msg.nil? ? "#{value} is not a valid value for #{page} page parameter." : msg
+        @msg = msg || "#{value} is not a valid value for #{page} page parameter."
       end
 
       def errors
