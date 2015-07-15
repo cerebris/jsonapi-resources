@@ -286,6 +286,7 @@ class BookResource < JSONAPI::Resource
   }
   ...
 end
+```
 
 The polymorphic association will require the resource and controller to exist, although routing to them will cause an error.
 
