@@ -22,18 +22,18 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
   end
 
-  def test_get_nested_has_one
+  def test_get_nested_to_one
     get '/posts/1/author'
     assert_equal 200, status
   end
 
-  def test_get_nested_has_many
+  def test_get_nested_to_many
     get '/posts/1/comments'
     assert_equal 200, status
   end
 
-  def test_get_nested_has_many_bad_param
-    get '/posts/1/comments?association=books'
+  def test_get_nested_to_many_bad_param
+    get '/posts/1/comments?relationship=books'
     assert_equal 200, status
   end
 
@@ -204,28 +204,28 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 422, status
   end
 
-  def test_update_association_without_content_type
+  def test_update_relationship_without_content_type
     ruby = Section.find_by(name: 'ruby')
     patch '/posts/3/relationships/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json
 
     assert_equal 415, status
   end
 
-  def test_patch_update_association_has_one
+  def test_patch_update_relationship_to_one
     ruby = Section.find_by(name: 'ruby')
     patch '/posts/3/relationships/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
   end
 
-  def test_put_update_association_has_one
+  def test_put_update_relationship_to_one
     ruby = Section.find_by(name: 'ruby')
     put '/posts/3/relationships/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
   end
 
-  def test_patch_update_association_has_many_acts_as_set
+  def test_patch_update_relationship_to_many_acts_as_set
     # Comments are acts_as_set=false so PUT/PATCH should respond with 403
 
     rogue = Comment.find_by(body: 'Rogue Comment Here')
@@ -234,14 +234,14 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 403, status
   end
 
-  def test_post_update_association_has_many
+  def test_post_update_relationship_to_many
     rogue = Comment.find_by(body: 'Rogue Comment Here')
     post '/posts/5/relationships/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
   end
 
-  def test_put_update_association_has_many_acts_as_set
+  def test_put_update_relationship_to_many_acts_as_set
     # Comments are acts_as_set=false so PUT/PATCH should respond with 403. Note: JR currently treats PUT and PATCH as equivalent
 
     rogue = Comment.find_by(body: 'Rogue Comment Here')
@@ -418,7 +418,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_hash_equals post_1, json_response['data']
   end
 
-  def test_flow_link_has_one_self_link
+  def test_flow_link_to_one_self_link
     get '/posts'
     assert_equal 200, status
     post_1 = json_response['data'][0]
@@ -434,7 +434,7 @@ class RequestTest < ActionDispatch::IntegrationTest
                                     })
   end
 
-  def test_flow_link_has_many_self_link
+  def test_flow_link_to_many_self_link
     get '/posts'
     assert_equal 200, status
     post_1 = json_response['data'][0]
@@ -455,7 +455,7 @@ class RequestTest < ActionDispatch::IntegrationTest
                        })
   end
 
-  def test_flow_link_has_many_self_link_put
+  def test_flow_link_to_many_self_link_put
     get '/posts'
     assert_equal 200, status
     post_1 = json_response['data'][4]
@@ -624,7 +624,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
   end
 
-  def test_patch_formatted_dasherized_replace_has_many
+  def test_patch_formatted_dasherized_replace_to_many
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     patch '/api/v6/purchase-orders/2?include=line-items,order-flags',
@@ -652,7 +652,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
   end
 
-  def test_post_has_many_link
+  def test_post_to_many_link
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     post '/api/v6/purchase-orders/3/relationships/line-items',
@@ -666,7 +666,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 204, status
   end
 
-  def test_patch_has_many_link
+  def test_patch_to_many_link
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     patch '/api/v6/purchase-orders/3/relationships/order-flags',
@@ -680,7 +680,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 204, status
   end
 
-  def test_patch_has_one
+  def test_patch_to_one
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     patch '/api/v6/line-items/5/relationships/purchase-order',

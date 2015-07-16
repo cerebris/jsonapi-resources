@@ -5,7 +5,7 @@ module JSONAPI
     extend ActiveSupport::Concern
 
     included do
-      before_filter :ensure_correct_media_type, only: [:create, :update, :create_association, :update_association]
+      before_filter :ensure_correct_media_type, only: [:create, :update, :create_relationship, :update_relationship]
       append_before_filter :setup_request
       after_filter :setup_response
     end
@@ -18,7 +18,7 @@ module JSONAPI
       process_request_operations
     end
 
-    def show_association
+    def show_relationship
       process_request_operations
     end
 
@@ -26,11 +26,11 @@ module JSONAPI
       process_request_operations
     end
 
-    def create_association
+    def create_relationship
       process_request_operations
     end
 
-    def update_association
+    def update_relationship
       process_request_operations
     end
 
@@ -42,7 +42,7 @@ module JSONAPI
       process_request_operations
     end
 
-    def destroy_association
+    def destroy_relationship
       process_request_operations
     end
 

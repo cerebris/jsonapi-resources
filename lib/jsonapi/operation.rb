@@ -90,12 +90,12 @@ module JSONAPI
     end
   end
 
-  class ShowAssociationOperation < Operation
-    attr_reader :parent_key, :association_type
+  class ShowRelationshipOperation < Operation
+    attr_reader :parent_key, :relationship_type
 
     def initialize(resource_klass, options = {})
       @parent_key = options.fetch(:parent_key)
-      @association_type = options.fetch(:association_type)
+      @relationship_type = options.fetch(:relationship_type)
       @transactional = false
       super(resource_klass, options)
     end
@@ -105,7 +105,7 @@ module JSONAPI
 
       return JSONAPI::LinksObjectOperationResult.new(:ok,
                                                      parent_resource,
-                                                     resource_klass._association(@association_type))
+                                                     resource_klass._relationship(@relationship_type))
 
     rescue JSONAPI::Exceptions::Error => e
       return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
@@ -113,12 +113,12 @@ module JSONAPI
   end
 
   class ShowRelatedResourceOperation < Operation
-    attr_reader :source_klass, :source_id, :association_type
+    attr_reader :source_klass, :source_id, :relationship_type
 
     def initialize(resource_klass, options = {})
       @source_klass = options.fetch(:source_klass)
       @source_id = options.fetch(:source_id)
-      @association_type = options.fetch(:association_type)
+      @relationship_type = options.fetch(:relationship_type)
       @transactional = false
       super(resource_klass, options)
     end
@@ -126,7 +126,7 @@ module JSONAPI
     def apply
       source_resource = @source_klass.find_by_key(@source_id, context: @context)
 
-      related_resource = source_resource.public_send(@association_type)
+      related_resource = source_resource.public_send(@relationship_type)
 
       return JSONAPI::ResourceOperationResult.new(:ok, related_resource)
 
@@ -136,12 +136,12 @@ module JSONAPI
   end
 
   class ShowRelatedResourcesOperation < Operation
-    attr_reader :source_klass, :source_id, :association_type, :filters, :sort_criteria, :paginator
+    attr_reader :source_klass, :source_id, :relationship_type, :filters, :sort_criteria, :paginator
 
     def initialize(resource_klass, options = {})
       @source_klass = options.fetch(:source_klass)
       @source_id = options.fetch(:source_id)
-      @association_type = options.fetch(:association_type)
+      @relationship_type = options.fetch(:relationship_type)
       @filters = options[:filters]
       @sort_criteria = options[:sort_criteria]
       @paginator = options[:paginator]
@@ -152,7 +152,7 @@ module JSONAPI
     def apply
       source_resource = @source_klass.find_by_key(@source_id, context: @context)
 
-      related_resource = source_resource.public_send(@association_type,
+      related_resource = source_resource.public_send(@relationship_type,
                                               filters:  @filters,
                                               sort_criteria: @sort_criteria,
                                               paginator: @paginator)
@@ -218,109 +218,109 @@ module JSONAPI
     end
   end
 
-  class ReplaceHasOneAssociationOperation < Operation
-    attr_reader :resource_id, :association_type, :key_value
+  class ReplaceToOneRelationshipOperation < Operation
+    attr_reader :resource_id, :relationship_type, :key_value
 
     def initialize(resource_klass, options = {})
       @resource_id = options.fetch(:resource_id)
       @key_value = options.fetch(:key_value)
-      @association_type = options.fetch(:association_type).to_sym
+      @relationship_type = options.fetch(:relationship_type).to_sym
       super(resource_klass, options)
     end
 
     def apply
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
-      result = resource.replace_has_one_link(@association_type, @key_value)
+      result = resource.replace_to_one_link(@relationship_type, @key_value)
 
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
-  class ReplacePolymorphicHasOneAssociationOperation < Operation
-    attr_reader :resource_id, :association_type, :key_value, :key_type
+  class ReplacePolymorphicToOneRelationshipOperation < Operation
+    attr_reader :resource_id, :relationship_type, :key_value, :key_type
 
     def initialize(resource_klass, options = {})
       @resource_id = options.fetch(:resource_id)
       @key_value = options.fetch(:key_value)
       @key_type = options.fetch(:key_type)
-      @association_type = options.fetch(:association_type).to_sym
+      @relationship_type = options.fetch(:relationship_type).to_sym
       super(resource_klass, options)
     end
 
     def apply
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
-      result = resource.replace_polymorphic_has_one_link(@association_type, @key_value, @key_type)
+      result = resource.replace_polymorphic_to_one_link(@relationship_type, @key_value, @key_type)
 
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
-  class CreateHasManyAssociationOperation < Operation
-    attr_reader :resource_id, :association_type, :data
+  class CreateToManyRelationshipOperation < Operation
+    attr_reader :resource_id, :relationship_type, :data
 
     def initialize(resource_klass, options)
       @resource_id = options.fetch(:resource_id)
       @data = options.fetch(:data)
-      @association_type = options.fetch(:association_type).to_sym
+      @relationship_type = options.fetch(:relationship_type).to_sym
       super(resource_klass, options)
     end
 
     def apply
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
-      result = resource.create_has_many_links(@association_type, @data)
+      result = resource.create_to_many_links(@relationship_type, @data)
 
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
-  class ReplaceHasManyAssociationOperation < Operation
-    attr_reader :resource_id, :association_type, :data
+  class ReplaceToManyRelationshipOperation < Operation
+    attr_reader :resource_id, :relationship_type, :data
 
     def initialize(resource_klass, options)
       @resource_id = options.fetch(:resource_id)
       @data = options.fetch(:data)
-      @association_type = options.fetch(:association_type).to_sym
+      @relationship_type = options.fetch(:relationship_type).to_sym
       super(resource_klass, options)
     end
 
     def apply
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
-      result = resource.replace_has_many_links(@association_type, @data)
+      result = resource.replace_to_many_links(@relationship_type, @data)
 
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
-  class RemoveHasManyAssociationOperation < Operation
-    attr_reader :resource_id, :association_type, :associated_key
+  class RemoveToManyRelationshipOperation < Operation
+    attr_reader :resource_id, :relationship_type, :associated_key
 
     def initialize(resource_klass, options)
       @resource_id = options.fetch(:resource_id)
       @associated_key = options.fetch(:associated_key)
-      @association_type = options.fetch(:association_type).to_sym
+      @relationship_type = options.fetch(:relationship_type).to_sym
       super(resource_klass, options)
     end
 
     def apply
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
-      result = resource.remove_has_many_link(@association_type, @associated_key)
+      result = resource.remove_to_many_link(@relationship_type, @associated_key)
 
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 
-  class RemoveHasOneAssociationOperation < Operation
-    attr_reader :resource_id, :association_type
+  class RemoveToOneRelationshipOperation < Operation
+    attr_reader :resource_id, :relationship_type
 
     def initialize(resource_klass, options)
       @resource_id = options.fetch(:resource_id)
-      @association_type = options.fetch(:association_type).to_sym
+      @relationship_type = options.fetch(:relationship_type).to_sym
       super(resource_klass, options)
     end
 
     def apply
       resource = @resource_klass.find_by_key(@resource_id, context: @context)
-      result = resource.remove_has_one_link(@association_type)
+      result = resource.remove_to_one_link(@relationship_type)
 
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end

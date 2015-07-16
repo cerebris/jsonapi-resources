@@ -1,5 +1,5 @@
 module JSONAPI
-  class Association
+  class Relationship
     attr_reader :acts_as_set, :foreign_key, :type, :options, :name,
                 :class_name, :polymorphic
 
@@ -45,12 +45,19 @@ module JSONAPI
       end
     end
 
-    class HasOne < Association
+    class ToOne < Relationship
+      attr_reader :foreign_key_on
+
       def initialize(name, options = {})
         super
         @class_name = options.fetch(:class_name, name.to_s.camelize)
         @type = class_name.underscore.pluralize.to_sym
         @foreign_key ||= "#{name}_id".to_sym
+        @foreign_key_on = options.fetch(:foreign_key_on, :self)
+      end
+
+      def belongs_to?
+        foreign_key_on == :self
       end
 
       def polymorphic_type
@@ -58,7 +65,7 @@ module JSONAPI
       end
     end
 
-    class HasMany < Association
+    class ToMany < Relationship
       def initialize(name, options = {})
         super
         @class_name = options.fetch(:class_name, name.to_s.camelize.singularize)

@@ -212,11 +212,33 @@ class AuthorResource < JSONAPI::Resource
 end
 ```
 
-#### Associations
+#### Relationships
 
-Related resources need to be specified in the resource. These are declared with the `has_one` and the `has_many` methods.
+Related resources need to be specified in the resource. These may be declared with the `relationship` or the `has_one`
+and the `has_many` methods.
 
-Here's a simple example where a post has a single author and an author can have many posts:
+Here's a simple example using the `relationship` method where a post has a single author and an author can have many
+posts:
+
+```ruby
+class PostResource < JSONAPI::Resource
+  attribute :title, :body
+
+  relationship :author, to: :one
+end
+```
+
+And the corresponding author:
+
+```ruby
+class AuthorResource < JSONAPI::Resource
+  attribute :name
+
+  relationship :posts, to: :many
+end
+```
+
+And here's the equivalent resources using the `has_one` and `has_many` methods:
 
 ```ruby
 class PostResource < JSONAPI::Resource
@@ -238,14 +260,17 @@ end
 
 ##### Options
 
-The association methods support the following options:
+The relationship methods (`relationship`, `has_one`, and `has_many`) support the following options:
 
  * `class_name` - a string specifying the underlying class for the related resource
  * `foreign_key` - the method on the resource used to fetch the related resource. Defaults to `<resource_name>_id` for has_one and `<resource_name>_ids` for has_many relationships.
  * `acts_as_set` - allows the entire set of related records to be replaced in one operation. Defaults to false if not set.
- * `polymorphic` - set to true to identify associations that are polymorphic.
+ * `polymorphic` - set to true to identify relationships that are polymorphic.
  * `relation_name` - the name of the relation to use on the model. A lambda may be provided which allows conditional selection of the relation based on the context.
 
+`to_one` relationships support the additional option:
+ * `foreign_key_on` - defaults to `:self`. To indicate that the foreign key is on the related resource specify `:related`.
+ 
 Examples:
 
 ```ruby
@@ -288,7 +313,8 @@ class BookResource < JSONAPI::Resource
 end
 ```
 
-The polymorphic association will require the resource and controller to exist, although routing to them will cause an error.
+The polymorphic relationship will require the resource and controller to exist, although routing to them will cause an
+error.
 
 ```ruby
 class TaggableResource < JSONAPI::Resource; end
@@ -298,7 +324,8 @@ class TaggablesController < JSONAPI::ResourceController; end
 #### Filters
 
 Filters for locating objects of the resource type are specified in the resource definition. Single filters can be
-declared using the `filter` method, and multiple filters can be declared with the `filters` method on the resource class.
+declared using the `filter` method, and multiple filters can be declared with the `filters` method on the resource
+class.
 
 For example:
 
@@ -311,7 +338,8 @@ class ContactResource < JSONAPI::Resource
 end
 ```
 
-Then a request could pass in a filter for example `http://example.com/contacts?filter[name_last]=Smith` and the system will find all people where the last name exactly matches Smith.
+Then a request could pass in a filter for example `http://example.com/contacts?filter[name_last]=Smith` and the system 
+will find all people where the last name exactly matches Smith.
 
 ##### Default Filters
 
@@ -357,7 +385,7 @@ end
 ```
 
 When you create a relationship, a method is created to fetch record(s) for that relationship. This method calls
-`records_for(association_name)` by default.
+`records_for(relationship_name)` by default.
 
 ```ruby
 class PostResource < JSONAPI::Resource
@@ -375,13 +403,13 @@ end
 
 ```
 
-For example, you may want raise an error if the user is not authorized to view the associated records.
+For example, you may want raise an error if the user is not authorized to view the related records.
 
 ```ruby
 class BaseResource < JSONAPI::Resource
-  def records_for(association_name, options={})
+  def records_for(relationship_name, options={})
     context = options[:context]
-    records = model.public_send(association_name)
+    records = model.public_send(relationship_name)
 
     unless context.current_user.can_view?(records)
       raise NotAuthorizedError
@@ -564,17 +592,17 @@ Callbacks can also be defined for `JSONAPI::OperationsProcessor` events:
 - `:operation`: Any individual operation.
 - `:find_operation`: A `find_operation`.
 - `:show_operation`: A `show_operation`.
-- `:show_association_operation`: A `show_association_operation`.
+- `:show_relationship_operation`: A `show_relationship_operation`.
 - `:show_related_resource_operation`: A `show_related_resource_operation`.
 - `:show_related_resources_operation`: A `show_related_resources_operation`.
 - `:create_resource_operation`: A `create_resource_operation`.
 - `:remove_resource_operation`: A `remove_resource_operation`.
 - `:replace_fields_operation`: A `replace_fields_operation`.
-- `:replace_has_one_association_operation`: A `replace_has_one_association_operation`.
-- `:create_has_many_association_operation`: A `create_has_many_association_operation`.
-- `:replace_has_many_association_operation`: A `replace_has_many_association_operation`.
-- `:remove_has_many_association_operation`: A `remove_has_many_association_operation`.
-- `:remove_has_one_association_operation`: A `remove_has_one_association_operation`.
+- `:replace_has_one_relationship_operation`: A `replace_has_one_relationship_operation`.
+- `:create_has_many_relationship_operation`: A `create_has_many_relationship_operation`.
+- `:replace_has_many_relationship_operation`: A `replace_has_many_relationship_operation`.
+- `:remove_has_many_relationship_operation`: A `remove_has_many_relationship_operation`.
+- `:remove_has_one_relationship_operation`: A `remove_has_one_relationship_operation`.
 
 The operation callbacks have access to two meta data hashes, `@operations_meta` and `@operation_meta`, two links hashes,
 `@operations_links` and `@operation_links`, the full list of `@operations`, each individual `@operation` and the
@@ -875,7 +903,7 @@ An array of resources. Nested resources can be specified with dot notation.
 A hash of resource types and arrays of fields for each resource type.
 
   *Purpose*: determines which fields are serialized for a resource type. This encompasses both attributes and
-  association ids in the links section for a resource. Fields are global for a resource type.
+  relationship ids in the links section for a resource. Fields are global for a resource type.
 
   *Example*: ```fields: { people: [:email, :comments], posts: [:title, :author], comments: [:body, :post]}```
 
@@ -904,7 +932,7 @@ JR has a couple of helper methods available to assist you with setting up routes
 ##### `jsonapi_resources`
 
 Like `resources` in `ActionDispatch`, `jsonapi_resources` provides resourceful routes mapping between HTTP verbs and URLs
-and controller actions. This will also setup mappings for relationship URLs for a resource's associations. For example:
+and controller actions. This will also setup mappings for relationship URLs for a resource's relationships. For example:
 
 ```ruby
 Rails.application.routes.draw do
@@ -917,20 +945,20 @@ gives the following routes
 
 ```
                      Prefix Verb      URI Pattern                                               Controller#Action
-contact_relationships_phone_numbers GET       /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#show_association {:association=>"phone_numbers"}
-                            POST      /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#create_association {:association=>"phone_numbers"}
-                            DELETE    /contacts/:contact_id/relationships/phone-numbers/:keys(.:format) contacts#destroy_association {:association=>"phone_numbers"}
-      contact_phone_numbers GET       /contacts/:contact_id/phone-numbers(.:format)             phone_numbers#get_related_resources {:association=>"phone_numbers", :source=>"contacts"}
+contact_relationships_phone_numbers GET       /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#show_relationship {:relationship=>"phone_numbers"}
+                            POST      /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#create_relationship {:relationship=>"phone_numbers"}
+                            DELETE    /contacts/:contact_id/relationships/phone-numbers/:keys(.:format) contacts#destroy_relationship {:relationship=>"phone_numbers"}
+      contact_phone_numbers GET       /contacts/:contact_id/phone-numbers(.:format)             phone_numbers#get_related_resources {:relationship=>"phone_numbers", :source=>"contacts"}
                    contacts GET       /contacts(.:format)                                       contacts#index
                             POST      /contacts(.:format)                                       contacts#create
                     contact GET       /contacts/:id(.:format)                                   contacts#show
                             PATCH     /contacts/:id(.:format)                                   contacts#update
                             PUT       /contacts/:id(.:format)                                   contacts#update
                             DELETE    /contacts/:id(.:format)                                   contacts#destroy
- phone_number_relationships_contact GET       /phone-numbers/:phone_number_id/relationships/contact(.:format)   phone_numbers#show_association {:association=>"contact"}
-                            PUT|PATCH /phone-numbers/:phone_number_id/relationships/contact(.:format)   phone_numbers#update_association {:association=>"contact"}
-                            DELETE    /phone-numbers/:phone_number_id/relationships/contact(.:format)   phone_numbers#destroy_association {:association=>"contact"}
-       phone_number_contact GET       /phone-numbers/:phone_number_id/contact(.:format)         contacts#get_related_resource {:association=>"contact", :source=>"phone_numbers"}
+ phone_number_relationships_contact GET       /phone-numbers/:phone_number_id/relationships/contact(.:format)   phone_numbers#show_relationship {:relationship=>"contact"}
+                            PUT|PATCH /phone-numbers/:phone_number_id/relationships/contact(.:format)   phone_numbers#update_relationship {:relationship=>"contact"}
+                            DELETE    /phone-numbers/:phone_number_id/relationships/contact(.:format)   phone_numbers#destroy_relationship {:relationship=>"contact"}
+       phone_number_contact GET       /phone-numbers/:phone_number_id/contact(.:format)         contacts#get_related_resource {:relationship=>"contact", :source=>"phone_numbers"}
               phone_numbers GET       /phone-numbers(.:format)                                  phone_numbers#index
                             POST      /phone-numbers(.:format)                                  phone_numbers#create
                phone_number GET       /phone-numbers/:id(.:format)                              phone_numbers#show
@@ -995,9 +1023,9 @@ end
 Gives the following routes:
 
 ```
-contact_relationships_phone_numbers GET    /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#show_association {:association=>"phone_numbers"}
-                            POST   /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#create_association {:association=>"phone_numbers"}
-                            DELETE /contacts/:contact_id/relationships/phone-numbers/:keys(.:format) contacts#destroy_association {:association=>"phone_numbers"}
+contact_relationships_phone_numbers GET    /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#show_relationship {:relationship=>"phone_numbers"}
+                            POST   /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#create_relationship {:relationship=>"phone_numbers"}
+                            DELETE /contacts/:contact_id/relationships/phone-numbers/:keys(.:format) contacts#destroy_relationship {:relationship=>"phone_numbers"}
                    contacts GET    /contacts(.:format)                                       contacts#index
                             POST   /contacts(.:format)                                       contacts#create
                     contact GET    /contacts/:id(.:format)                                   contacts#show
@@ -1007,7 +1035,7 @@ contact_relationships_phone_numbers GET    /contacts/:contact_id/relationships/p
 
 ```
 
-The new routes allow you to show, create and destroy the associations between resources.
+The new routes allow you to show, create and destroy the relationships between resources.
 
 ###### `jsonapi_related_resources`
 
@@ -1026,7 +1054,7 @@ gives the following routes:
 
 ```
                Prefix Verb   URI Pattern                                   Controller#Action
-contact_phone_numbers GET    /contacts/:contact_id/phone-numbers(.:format) phone_numbers#get_related_resources {:association=>"phone_numbers", :source=>"contacts"}
+contact_phone_numbers GET    /contacts/:contact_id/phone-numbers(.:format) phone_numbers#get_related_resources {:relationship=>"phone_numbers", :source=>"contacts"}
              contacts GET    /contacts(.:format)                           contacts#index
                       POST   /contacts(.:format)                           contacts#create
               contact GET    /contacts/:id(.:format)                       contacts#show
@@ -1054,7 +1082,7 @@ gives the following routes:
 
 ```
               Prefix Verb   URI Pattern                                       Controller#Action
-phone_number_contact GET    /phone-numbers/:phone_number_id/contact(.:format) contacts#get_related_resource {:association=>"contact", :source=>"phone_numbers"}
+phone_number_contact GET    /phone-numbers/:phone_number_id/contact(.:format) contacts#get_related_resource {:relationship=>"contact", :source=>"phone_numbers"}
        phone_numbers GET    /phone-numbers(.:format)                          phone_numbers#index
                      POST   /phone-numbers(.:format)                          phone_numbers#create
         phone_number GET    /phone-numbers/:id(.:format)                      phone_numbers#show

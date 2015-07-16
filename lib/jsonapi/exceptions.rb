@@ -73,12 +73,12 @@ module JSONAPI
       end
     end
 
-    class HasManySetReplacementForbidden < Error
+    class ToManySetReplacementForbidden < Error
       def errors
         [JSONAPI::Error.new(code: JSONAPI::FORBIDDEN,
                             status: :forbidden,
                             title: 'Complete replacement forbidden',
-                            detail: 'Complete replacement forbidden for this association')]
+                            detail: 'Complete replacement forbidden for this relationship')]
       end
     end
 
@@ -188,17 +188,17 @@ module JSONAPI
     end
 
     class InvalidInclude < Error
-      attr_accessor :association, :resource
-      def initialize(resource, association)
+      attr_accessor :relationship, :resource
+      def initialize(resource, relationship)
         @resource = resource
-        @association = association
+        @relationship = relationship
       end
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_INCLUDE,
                             status: :bad_request,
                             title: 'Invalid field',
-                            detail: "#{association} is not a valid association of #{resource}")]
+                            detail: "#{relationship} is not a valid relationship of #{resource}")]
       end
     end
 
@@ -294,11 +294,11 @@ module JSONAPI
     end
 
     class ValidationErrors < Error
-      attr_reader :error_messages, :resource_associations
+      attr_reader :error_messages, :resource_relationships
 
       def initialize(resource)
         @error_messages = resource.model.errors.messages
-        @resource_associations = resource.class._associations.keys
+        @resource_relationships = resource.class._relationships.keys
         @key_formatter = JSONAPI.configuration.key_formatter
       end
 
@@ -322,11 +322,11 @@ module JSONAPI
                            source: { pointer: pointer(attr_key) })
       end
 
-      def pointer(attr_or_association_name)
-        if resource_associations.include?(attr_or_association_name)
-          "/data/relationships/#{attr_or_association_name}"
+      def pointer(attr_or_relationship_name)
+        if resource_relationships.include?(attr_or_relationship_name)
+          "/data/relationships/#{attr_or_relationship_name}"
         else
-          "/data/attributes/#{attr_or_association_name}"
+          "/data/attributes/#{attr_or_relationship_name}"
         end
       end
     end

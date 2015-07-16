@@ -99,7 +99,7 @@ class OperationsProcessorTest < Minitest::Test
     assert_equal(Planet.count, count + 3)
   end
 
-  def test_replace_has_one_association
+  def test_replace_to_one_relationship
     op = JSONAPI::OperationsProcessor.new()
 
     saturn = Planet.find(1)
@@ -108,11 +108,11 @@ class OperationsProcessorTest < Minitest::Test
     assert_equal(saturn.planet_type_id, planetoid.id)
 
     operations = [
-      JSONAPI::ReplaceHasOneAssociationOperation.new(
+      JSONAPI::ReplaceToOneRelationshipOperation.new(
         PlanetResource,
         {
           resource_id: saturn.id,
-          association_type: :planet_type,
+          relationship_type: :planet_type,
           key_value: gas_giant.id
         }
       )
@@ -132,11 +132,11 @@ class OperationsProcessorTest < Minitest::Test
 
     # Remove link
     operations = [
-      JSONAPI::ReplaceHasOneAssociationOperation.new(
+      JSONAPI::ReplaceToOneRelationshipOperation.new(
         PlanetResource,
         {
           resource_id: saturn.id,
-          association_type: :planet_type,
+          relationship_type: :planet_type,
           key_value: nil
         }
       )
@@ -151,11 +151,11 @@ class OperationsProcessorTest < Minitest::Test
 
     # Reset
     operations = [
-      JSONAPI::ReplaceHasOneAssociationOperation.new(
+      JSONAPI::ReplaceToOneRelationshipOperation.new(
         PlanetResource,
         {
           resource_id: saturn.id,
-          association_type: :planet_type,
+          relationship_type: :planet_type,
           key_value: 5
         }
       )
@@ -169,7 +169,7 @@ class OperationsProcessorTest < Minitest::Test
     assert_equal(saturn.planet_type_id, 5)
   end
 
-  def test_create_has_many_association
+  def test_create_to_many_relationship
     op = JSONAPI::OperationsProcessor.new()
 
     betax = Planet.find(5)
@@ -185,11 +185,11 @@ class OperationsProcessorTest < Minitest::Test
     betaz.save!
 
     operations = [
-      JSONAPI::CreateHasManyAssociationOperation.new(
+      JSONAPI::CreateToManyRelationshipOperation.new(
         PlanetTypeResource,
         {
           resource_id: gas_giant.id,
-          association_type: :planets,
+          relationship_type: :planets,
           data: [betax.id, betay.id, betaz.id]
         }
       )
@@ -217,7 +217,7 @@ class OperationsProcessorTest < Minitest::Test
     betaz.save!
   end
 
-  def test_replace_has_many_association
+  def test_replace_to_many_relationship
     op = JSONAPI::OperationsProcessor.new()
 
     betax = Planet.find(5)
@@ -233,11 +233,11 @@ class OperationsProcessorTest < Minitest::Test
     betaz.save!
 
     operations = [
-      JSONAPI::ReplaceHasManyAssociationOperation.new(
+      JSONAPI::ReplaceToManyRelationshipOperation.new(
         PlanetTypeResource,
         {
           resource_id: gas_giant.id,
-          association_type: :planets,
+          relationship_type: :planets,
           data: [betax.id, betay.id, betaz.id]
         }
       )
@@ -386,11 +386,11 @@ class OperationsProcessorTest < Minitest::Test
     assert operation_results.has_errors?
   end
 
-  def test_show_association_operation
+  def test_show_relationship_operation
     op = JSONAPI::OperationsProcessor.new
 
     operations = [
-      JSONAPI::ShowAssociationOperation.new(PlanetResource, {parent_key: '1', association_type: :planet_type})
+      JSONAPI::ShowRelationshipOperation.new(PlanetResource, {parent_key: '1', relationship_type: :planet_type})
     ]
 
     request = JSONAPI::Request.new
@@ -403,11 +403,11 @@ class OperationsProcessorTest < Minitest::Test
     refute operation_results.has_errors?
   end
 
-  def test_show_association_operation_error
+  def test_show_relationship_operation_error
     op = JSONAPI::OperationsProcessor.new
 
     operations = [
-      JSONAPI::ShowAssociationOperation.new(PlanetResource, {parent_key: '145', association_type: :planet_type})
+      JSONAPI::ShowRelationshipOperation.new(PlanetResource, {parent_key: '145', relationship_type: :planet_type})
     ]
 
     request = JSONAPI::Request.new
@@ -428,7 +428,7 @@ class OperationsProcessorTest < Minitest::Test
                                                 {
                                                   source_klass: PlanetResource,
                                                   source_id: '1',
-                                                  association_type: :planet_type})
+                                                  relationship_type: :planet_type})
     ]
 
     request = JSONAPI::Request.new
@@ -449,7 +449,7 @@ class OperationsProcessorTest < Minitest::Test
                                                 {
                                                   source_klass: PlanetResource,
                                                   source_id: '145',
-                                                  association_type: :planet_type})
+                                                  relationship_type: :planet_type})
     ]
 
     request = JSONAPI::Request.new
@@ -470,7 +470,7 @@ class OperationsProcessorTest < Minitest::Test
                                                 {
                                                   source_klass: PlanetResource,
                                                   source_id: '1',
-                                                  association_type: :moons})
+                                                  relationship_type: :moons})
     ]
 
     request = JSONAPI::Request.new
@@ -491,7 +491,7 @@ class OperationsProcessorTest < Minitest::Test
                                                 {
                                                   source_klass: PlanetResource,
                                                   source_id: '145',
-                                                  association_type: :moons})
+                                                  relationship_type: :moons})
     ]
 
     request = JSONAPI::Request.new

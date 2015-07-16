@@ -15,15 +15,15 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.json_key_format = :underscored_key
   end
 
-  def test_polymorphic_association
-    associations = PictureResource._associations
-    imageable = associations[:imageable]
+  def test_polymorphic_relationship
+    relationships = PictureResource._relationships
+    imageable = relationships[:imageable]
 
-    assert_equal associations.size, 1
+    assert_equal relationships.size, 1
     assert imageable.polymorphic?
   end
 
-  def test_polymorphic_has_many_serialization
+  def test_polymorphic_to_many_serialization
     serialized_data = JSONAPI::ResourceSerializer.new(
       PersonResource,
       include: %w(vehicles)
@@ -129,7 +129,7 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
     )
   end
 
-  def test_polymorphic_has_one_serialization
+  def test_polymorphic_to_one_serialization
     serialized_data = JSONAPI::ResourceSerializer.new(
       PictureResource,
       include: %w(imageable)
@@ -318,7 +318,7 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
 
     patch "/pictures/#{picture.id}/relationships/imageable",
           {
-            association: 'imageable',
+            relationship: 'imageable',
             data: {
               type: 'documents',
               id: '1'
@@ -343,7 +343,7 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
 
     patch "/pictures/#{picture.id}/relationships/imageable",
           {
-            association: 'imageable',
+            relationship: 'imageable',
             data: {
               type: 'documents',
               id: '1'
@@ -368,7 +368,7 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
 
     delete "/pictures/#{picture.id}/relationships/imageable",
            {
-             association: 'imageable'
+             relationship: 'imageable'
            }.to_json,
            {
              'Content-Type' => JSONAPI::MEDIA_TYPE

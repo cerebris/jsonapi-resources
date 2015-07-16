@@ -5,18 +5,18 @@ module JSONAPI
                                        :operations,
                                        :find_operation,
                                        :show_operation,
-                                       :show_association_operation,
+                                       :show_relationship_operation,
                                        :show_related_resource_operation,
                                        :show_related_resources_operation,
                                        :create_resource_operation,
                                        :remove_resource_operation,
                                        :replace_fields_operation,
-                                       :replace_has_one_association_operation,
-                                       :replace_polymorphic_has_one_association_operation,
-                                       :create_has_many_association_operation,
-                                       :replace_has_many_association_operation,
-                                       :remove_has_many_association_operation,
-                                       :remove_has_one_association_operation
+                                       :replace_to_one_relationship_operation,
+                                       :replace_polymorphic_to_one_relationship_operation,
+                                       :create_to_many_relationship_operation,
+                                       :replace_to_many_relationship_operation,
+                                       :remove_to_many_relationship_operation,
+                                       :remove_to_one_relationship_operation
 
     class << self
       def operations_processor_for(operations_processor)

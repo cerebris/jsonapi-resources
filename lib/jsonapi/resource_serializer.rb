@@ -7,7 +7,7 @@ module JSONAPI
     #     Example: ['comments','author','comments.tags','author.posts']
     # fields:
     #     Purpose: determines which fields are serialized for a resource type. This encompasses both attributes and
-    #              association ids in the links section for a resource. Fields are global for a resource type.
+    #              relationship ids in the links section for a resource. Fields are global for a resource type.
     #     Example: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}
     # key_formatter: KeyFormatter class to override the default configuration
     # base_url: a string to prepend to generated resource links
@@ -50,17 +50,17 @@ module JSONAPI
       primary_hash
     end
 
-    def serialize_to_links_hash(source, requested_association)
-      if requested_association.is_a?(JSONAPI::Association::HasOne)
-        data = has_one_linkage(source, requested_association)
+    def serialize_to_links_hash(source, requested_relationship)
+      if requested_relationship.is_a?(JSONAPI::Relationship::ToOne)
+        data = to_one_linkage(source, requested_relationship)
       else
-        data = has_many_linkage(source, requested_association)
+        data = to_many_linkage(source, requested_relationship)
       end
 
       {
         links: {
-          self: self_link(source, requested_association),
-          related: related_link(source, requested_association)
+          self: self_link(source, requested_relationship),
+          related: related_link(source, requested_relationship)
         },
         data: data
       }
@@ -136,54 +136,54 @@ module JSONAPI
     end
 
     def relationship_data(source, include_directives)
-      associations = source.class._associations
+      relationships = source.class._relationships
       requested = requested_fields(source.class._type)
-      fields = associations.keys
+      fields = relationships.keys
       fields = requested & fields unless requested.nil?
 
       field_set = Set.new(fields)
 
-      included_associations = source.fetchable_fields & associations.keys
+      included_relationships = source.fetchable_fields & relationships.keys
 
       data = {}
 
-      associations.each_with_object(data) do |(name, association), hash|
-        if included_associations.include? name
+      relationships.each_with_object(data) do |(name, relationship), hash|
+        if included_relationships.include? name
           ia = include_directives[:include_related][name]
 
           include_linkage = ia && ia[:include]
           include_linked_children = ia && !ia[:include_related].empty?
 
           if field_set.include?(name)
-            hash[format_key(name)] = link_object(source, association, include_linkage)
+            hash[format_key(name)] = link_object(source, relationship, include_linkage)
           end
 
-          type = association.type
+          type = relationship.type
 
           # If the object has been serialized once it will be in the related objects list,
           # but it's possible all children won't have been captured. So we must still go
-          # through the associations.
+          # through the relationships.
           if include_linkage || include_linked_children
-            if association.is_a?(JSONAPI::Association::HasOne)
+            if relationship.is_a?(JSONAPI::Relationship::ToOne)
               resource = source.public_send(name)
               if resource
                 id = resource.id
-                type = association.type_for_source(source)
-                associations_only = already_serialized?(type, id)
-                if include_linkage && !associations_only
+                type = relationship.type_for_source(source)
+                relationships_only = already_serialized?(type, id)
+                if include_linkage && !relationships_only
                   add_included_object(type, id, object_hash(resource, ia))
-                elsif include_linked_children || associations_only
+                elsif include_linked_children || relationships_only
                   relationship_data(resource, ia)
                 end
               end
-            elsif association.is_a?(JSONAPI::Association::HasMany)
+            elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
               resources = source.public_send(name)
               resources.each do |resource|
                 id = resource.id
-                associations_only = already_serialized?(type, id)
-                if include_linkage && !associations_only
+                relationships_only = already_serialized?(type, id)
+                if include_linkage && !relationships_only
                   add_included_object(type, id, object_hash(resource, ia))
-                elsif include_linked_children || associations_only
+                elsif include_linked_children || relationships_only
                   relationship_data(resource, ia)
                 end
               end
@@ -205,20 +205,20 @@ module JSONAPI
       @included_objects.key?(type) && @included_objects[type].key?(id)
     end
 
-    def self_link(source, association)
-      url_generator.relationships_self_link(source, association)
+    def self_link(source, relationship)
+      url_generator.relationships_self_link(source, relationship)
     end
 
-    def related_link(source, association)
-      url_generator.relationships_related_link(source, association)
+    def related_link(source, relationship)
+      url_generator.relationships_related_link(source, relationship)
     end
 
-    def has_one_linkage(source, association)
+    def to_one_linkage(source, relationship)
       linkage = {}
-      linkage_id = foreign_key_value(source, association)
+      linkage_id = foreign_key_value(source, relationship)
 
       if linkage_id
-        linkage[:type] = format_key(association.type_for_source(source))
+        linkage[:type] = format_key(relationship.type_for_source(source))
         linkage[:id] = linkage_id
       else
         linkage = nil
@@ -226,9 +226,9 @@ module JSONAPI
       linkage
     end
 
-    def has_many_linkage(source, association)
+    def to_many_linkage(source, relationship)
       linkage = []
-      linkage_types_and_values = foreign_key_types_and_values(source, association)
+      linkage_types_and_values = foreign_key_types_and_values(source, relationship)
 
       linkage_types_and_values.each do |type, value|
         linkage.append({type: format_key(type), id: value})
@@ -236,48 +236,48 @@ module JSONAPI
       linkage
     end
 
-    def link_object_has_one(source, association)
+    def link_object_to_one(source, relationship)
       link_object_hash = {}
       link_object_hash[:links] = {}
-      link_object_hash[:links][:self] = self_link(source, association)
-      link_object_hash[:links][:related] = related_link(source, association)
-      link_object_hash[:data] = has_one_linkage(source, association)
+      link_object_hash[:links][:self] = self_link(source, relationship)
+      link_object_hash[:links][:related] = related_link(source, relationship)
+      link_object_hash[:data] = to_one_linkage(source, relationship)
       link_object_hash
     end
 
-    def link_object_has_many(source, association, include_linkage)
+    def link_object_to_many(source, relationship, include_linkage)
       link_object_hash = {}
       link_object_hash[:links] = {}
-      link_object_hash[:links][:self] = self_link(source, association)
-      link_object_hash[:links][:related] = related_link(source, association)
-      link_object_hash[:data] = has_many_linkage(source, association) if include_linkage
+      link_object_hash[:links][:self] = self_link(source, relationship)
+      link_object_hash[:links][:related] = related_link(source, relationship)
+      link_object_hash[:data] = to_many_linkage(source, relationship) if include_linkage
       link_object_hash
     end
 
-    def link_object(source, association, include_linkage = false)
-      if association.is_a?(JSONAPI::Association::HasOne)
-        link_object_has_one(source, association)
-      elsif association.is_a?(JSONAPI::Association::HasMany)
-        link_object_has_many(source, association, include_linkage)
+    def link_object(source, relationship, include_linkage = false)
+      if relationship.is_a?(JSONAPI::Relationship::ToOne)
+        link_object_to_one(source, relationship)
+      elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
+        link_object_to_many(source, relationship, include_linkage)
       end
     end
 
-    # Extracts the foreign key value for a has_one association.
-    def foreign_key_value(source, association)
-      foreign_key = association.foreign_key
+    # Extracts the foreign key value for a to_one relationship.
+    def foreign_key_value(source, relationship)
+      foreign_key = relationship.foreign_key
       value = source.public_send(foreign_key)
       IdValueFormatter.format(value)
     end
 
-    def foreign_key_types_and_values(source, association)
-      if association.is_a?(JSONAPI::Association::HasMany)
-        if association.polymorphic?
-          source.model.public_send(association.name).pluck(:type, :id).map do |type, id|
+    def foreign_key_types_and_values(source, relationship)
+      if relationship.is_a?(JSONAPI::Relationship::ToMany)
+        if relationship.polymorphic?
+          source.model.public_send(relationship.name).pluck(:type, :id).map do |type, id|
             [type.pluralize, IdValueFormatter.format(id)]
           end
         else
-          source.public_send(association.foreign_key).map do |value|
-            [association.type, IdValueFormatter.format(value)]
+          source.public_send(relationship.foreign_key).map do |value|
+            [relationship.type, IdValueFormatter.format(value)]
           end
         end
       end

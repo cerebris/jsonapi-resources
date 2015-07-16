@@ -43,11 +43,11 @@ module JSONAPI
   end
 
   class LinksObjectOperationResult < OperationResult
-    attr_accessor :parent_resource, :association
+    attr_accessor :parent_resource, :relationship
 
-    def initialize(code, parent_resource, association, options = {})
+    def initialize(code, parent_resource, relationship, options = {})
       @parent_resource = parent_resource
-      @association = association
+      @relationship = relationship
       super(code, options)
     end
   end
