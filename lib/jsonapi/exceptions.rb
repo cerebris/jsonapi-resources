@@ -294,11 +294,11 @@ module JSONAPI
     end
 
     class ValidationErrors < Error
-      attr_reader :error_messages, :resource_associations
+      attr_reader :error_messages, :resource_relationships
 
       def initialize(resource)
         @error_messages = resource.model.errors.messages
-        @resource_associations = resource.class._associations.keys
+        @resource_relationships = resource.class._relationships.keys
         @key_formatter = JSONAPI.configuration.key_formatter
       end
 
@@ -322,11 +322,11 @@ module JSONAPI
                            source: { pointer: pointer(attr_key) })
       end
 
-      def pointer(attr_or_association_name)
-        if resource_associations.include?(attr_or_association_name)
-          "/data/relationships/#{attr_or_association_name}"
+      def pointer(attr_or_relationship_name)
+        if resource_relationships.include?(attr_or_relationship_name)
+          "/data/relationships/#{attr_or_relationship_name}"
         else
-          "/data/attributes/#{attr_or_association_name}"
+          "/data/attributes/#{attr_or_relationship_name}"
         end
       end
     end
