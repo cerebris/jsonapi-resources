@@ -307,9 +307,9 @@ module JSONAPI
       end
 
       def errors
-        error_messages.map do |attr_key, messages|
+        error_messages.flat_map do |attr_key, messages|
           messages.map { |message| json_api_error(attr_key, message) }
-        end.flatten
+        end
       end
 
       private
