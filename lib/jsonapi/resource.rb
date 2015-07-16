@@ -326,6 +326,21 @@ module JSONAPI
         { format: :default }
       end
 
+      def relationship(*attrs)
+        options = attrs.last.is_a?(Hash) ? attrs.last : {}
+        klass = case options[:to]
+                  when :one
+                    Association::HasOne
+                  when :many
+                    Association::HasMany
+                  else
+                    #:nocov:#
+                    fail ArgumentError.new('to: must be either :one or :many')
+                    #:nocov:#
+                end
+        _associate(klass, *attrs)
+      end
+
       def has_one(*attrs)
         _associate(Association::HasOne, *attrs)
       end
