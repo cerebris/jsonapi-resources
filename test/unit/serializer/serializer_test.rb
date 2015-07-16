@@ -1482,7 +1482,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
     )
   end
 
-  def test_serializer_has_one
+  def test_serializer_to_one
     serialized = JSONAPI::ResourceSerializer.new(
       Api::V5::AuthorResource,
       include: ['author_detail']

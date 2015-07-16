@@ -665,7 +665,7 @@ class TagResource < JSONAPI::Resource
   attributes :name
 
   has_many :posts
-  # Not including the planets association so they don't get output
+  # Not including the planets relationship so they don't get output
   #has_many :planets
 end
 

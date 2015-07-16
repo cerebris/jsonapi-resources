@@ -31,12 +31,12 @@ module JSONAPI
       "#{ primary_resources_url }?#{ query_params.to_query }"
     end
 
-    def relationships_related_link(source, association)
-      "#{ self_link(source) }/#{ route_for_association(association) }"
+    def relationships_related_link(source, relationship)
+      "#{ self_link(source) }/#{ route_for_relationship(relationship) }"
     end
 
-    def relationships_self_link(source, association)
-      "#{ self_link(source) }/relationships/#{ route_for_association(association) }"
+    def relationships_self_link(source, relationship)
+      "#{ self_link(source) }/relationships/#{ route_for_relationship(relationship) }"
     end
 
     def self_link(source)
@@ -134,8 +134,8 @@ module JSONAPI
       "#{ base_url }#{ regular_resource_path(source) }"
     end
 
-    def route_for_association(association)
-      format_route(association.name)
+    def route_for_relationship(relationship)
+      format_route(relationship.name)
     end
   end
 end

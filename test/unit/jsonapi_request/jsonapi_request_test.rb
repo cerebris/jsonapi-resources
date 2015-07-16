@@ -70,7 +70,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
     )
 
     refute request.errors.empty?
-    assert_equal 'iso_currency is not a valid association of expense-entries', request.errors[0].detail
+    assert_equal 'iso_currency is not a valid relationship of expense-entries', request.errors[0].detail
   end
 
   def test_parse_fields_underscored

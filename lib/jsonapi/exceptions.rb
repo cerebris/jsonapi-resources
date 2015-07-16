@@ -73,12 +73,12 @@ module JSONAPI
       end
     end
 
-    class HasManySetReplacementForbidden < Error
+    class ToManySetReplacementForbidden < Error
       def errors
         [JSONAPI::Error.new(code: JSONAPI::FORBIDDEN,
                             status: :forbidden,
                             title: 'Complete replacement forbidden',
-                            detail: 'Complete replacement forbidden for this association')]
+                            detail: 'Complete replacement forbidden for this relationship')]
       end
     end
 
@@ -188,17 +188,17 @@ module JSONAPI
     end
 
     class InvalidInclude < Error
-      attr_accessor :association, :resource
-      def initialize(resource, association)
+      attr_accessor :relationship, :resource
+      def initialize(resource, relationship)
         @resource = resource
-        @association = association
+        @relationship = relationship
       end
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_INCLUDE,
                             status: :bad_request,
                             title: 'Invalid field',
-                            detail: "#{association} is not a valid association of #{resource}")]
+                            detail: "#{relationship} is not a valid relationship of #{resource}")]
       end
     end
 

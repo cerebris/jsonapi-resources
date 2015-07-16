@@ -18,7 +18,7 @@ class CatResource < JSONAPI::Resource
 end
 
 class PersonWithCustomRecordsForResource < PersonResource
-  def records_for(association_name, context)
+  def records_for(relationship_name, context)
     :records_for
   end
 end
@@ -34,7 +34,7 @@ end
 
 class PersonWithCustomRecordsForErrorResource < PersonResource
   class AuthorizationError < StandardError; end
-  def records_for(association_name, context)
+  def records_for(relationship_name, context)
     raise AuthorizationError
   end
 end
@@ -62,10 +62,10 @@ class ResourceTest < ActiveSupport::TestCase
     assert_equal(attrs.keys.size, 3)
   end
 
-  def test_class_associations
-    associations = CatResource._associations
-    assert_kind_of(Hash, associations)
-    assert_equal(associations.size, 2)
+  def test_class_relationships
+    relationships = CatResource._relationships
+    assert_kind_of(Hash, relationships)
+    assert_equal(relationships.size, 2)
   end
 
   def test_find_with_customized_base_records
@@ -93,28 +93,28 @@ class ResourceTest < ActiveSupport::TestCase
     end
   end
 
-  def test_records_for_meta_method_for_has_one
+  def test_records_for_meta_method_for_to_one
     author = Person.find(1)
     author.update! preferences: Preferences.first
     author_resource = PersonWithCustomRecordsForRelationshipsResource.new(author)
     assert_equal(author_resource.record_for_preferences, :record_for_preferences)
   end
 
-  def test_records_for_meta_method_for_has_one_calling_records_for
+  def test_records_for_meta_method_for_to_one_calling_records_for
     author = Person.find(1)
     author.update! preferences: Preferences.first
     author_resource = PersonWithCustomRecordsForResource.new(author)
     assert_equal(author_resource.record_for_preferences, :records_for)
   end
 
-  def test_associated_records_meta_method_for_has_many
+  def test_associated_records_meta_method_for_to_many
     author = Person.find(1)
     author.posts << Post.find(1)
     author_resource = PersonWithCustomRecordsForRelationshipsResource.new(author)
     assert_equal(author_resource.records_for_posts, :records_for_posts)
   end
 
-  def test_associated_records_meta_method_for_has_many_calling_records_for
+  def test_associated_records_meta_method_for_to_many_calling_records_for
     author = Person.find(1)
     author.posts << Post.find(1)
     author_resource = PersonWithCustomRecordsForResource.new(author)
@@ -150,7 +150,7 @@ class ResourceTest < ActiveSupport::TestCase
     end
   end
 
-  def test_has_many_association_filters
+  def test_to_many_relationship_filters
     post_resource = PostResource.new(Post.find(1))
     comments = post_resource.comments
     assert_equal(2, comments.size)
@@ -177,7 +177,7 @@ class ResourceTest < ActiveSupport::TestCase
     end
   end
 
-  def test_has_many_association_sorts
+  def test_to_many_relationship_sorts
     post_resource = PostResource.new(Post.find(1))
     comment_ids = post_resource.comments.map{|c| c.model.id }
     assert_equal [1,2], comment_ids
@@ -204,7 +204,7 @@ class ResourceTest < ActiveSupport::TestCase
     end
   end
 
-  def test_has_many_association_pagination
+  def test_to_many_relationship_pagination
     post_resource = PostResource.new(Post.find(1))
     comments = post_resource.comments
     assert_equal 2, comments.size
