@@ -98,7 +98,7 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
     builder       = JSONAPI::LinkBuilder.new(config)
     source        = Api::V1::PersonResource.new(@steve)
-    relationship   = JSONAPI::Relationship::ToMany.new("posts", {})
+    relationship  = JSONAPI::Relationship::ToMany.new("posts", {})
     expected_link = "#{ @base_url }/api/v1/people/#{ @steve.id }/relationships/posts"
 
     assert_equal expected_link,
@@ -114,7 +114,7 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
     builder       = JSONAPI::LinkBuilder.new(config)
     source        = MyEngine::Api::V1::PersonResource.new(@steve)
-    relationship   = JSONAPI::Relationship::ToMany.new("posts", {})
+    relationship  = JSONAPI::Relationship::ToMany.new("posts", {})
     expected_link = "#{ @base_url }/boomshaka/api/v1/people/#{ @steve.id }/relationships/posts"
 
     assert_equal expected_link,
@@ -146,7 +146,7 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
     builder       = JSONAPI::LinkBuilder.new(config)
     source        = MyEngine::Api::V1::PersonResource.new(@steve)
-    relationship   = JSONAPI::Relationship::ToMany.new("posts", {})
+    relationship  = JSONAPI::Relationship::ToMany.new("posts", {})
     expected_link = "#{ @base_url }/boomshaka/api/v1/people/#{ @steve.id }/posts"
 
     assert_equal expected_link,
