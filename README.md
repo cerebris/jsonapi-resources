@@ -247,7 +247,7 @@ The association methods support the following options:
  * `relation_name` - the name of the relation to use on the model. A lambda may be provided which allows conditional selection of the relation based on the context.
 
 `has_one` associations support the additional option:
- * `foreign_key_on` - defaults to `:self`. To indicate that the foreign key is on the related resource specify `:related_resource`.
+ * `foreign_key_on` - defaults to `:self`. To indicate that the foreign key is on the related resource specify `:related`.
  
 Examples:
 

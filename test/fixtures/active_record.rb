@@ -1092,8 +1092,8 @@ module Api
     class AuthorResource < JSONAPI::Resource
       attributes :name, :email
       model_name 'Person'
-      has_many :posts
-      has_one :author_detail, foreign_key_on: :related_resource
+      relationship :posts, to: :many
+      relationship :author_detail, to: :one, foreign_key_on: :related
 
       filter :name
 
