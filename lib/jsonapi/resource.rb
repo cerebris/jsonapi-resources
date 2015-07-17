@@ -623,7 +623,7 @@ module JSONAPI
       def _model_class
         return @model if @model
         @model = _model_name.to_s.safe_constantize
-        fail "model could not be found for #{self.name}" if @model.nil?
+        fail NameError, "model could not be found for #{self.name}" if @model.nil?
         @model
       end
 
