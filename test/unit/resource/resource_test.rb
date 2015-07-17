@@ -8,6 +8,9 @@ class ArticleResource < JSONAPI::Resource
   end
 end
 
+class NoMatchResource < JSONAPI::Resource
+end
+
 class CatResource < JSONAPI::Resource
   attribute :id
   attribute :name
@@ -50,6 +53,14 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_model
     assert_equal(PostResource._model_class, Post)
+  end
+
+  def test_nil_model_class
+    error = assert_raises(StandardError) { NoMatchResource._model_class }
+    assert_equal(
+      error.message,
+      "model could not be found for NoMatchResource"
+    )
   end
 
   def test_model_alternate
