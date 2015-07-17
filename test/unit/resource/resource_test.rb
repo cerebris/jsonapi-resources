@@ -56,7 +56,7 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_nil_model_class
-    error = assert_raises(StandardError) { NoMatchResource._model_class }
+    error = assert_raises(NameError) { NoMatchResource._model_class }
     assert_equal(
       error.message,
       "model could not be found for NoMatchResource"
