@@ -254,6 +254,21 @@ end
 class Section < ActiveRecord::Base
 end
 
+class HairCut < ActiveRecord::Base
+end
+
+class Property < ActiveRecord::Base
+end
+
+class Customer < ActiveRecord::Base
+end
+
+class BadlyNamedAttributes < ActiveRecord::Base
+end
+
+class Cat < ActiveRecord::Base
+end
+
 class IsoCurrency < ActiveRecord::Base
   self.primary_key = :code
   # has_many :expense_entries, foreign_key: 'currency_code'
@@ -896,8 +911,8 @@ end
 class PreferencesResource < JSONAPI::Resource
   attribute :advanced_mode
 
-  has_one :author, foreign_key: :person_id, class_name: 'Person'
-  has_many :friends, class_name: 'Person'
+  has_one :author, foreign_key: :person_id
+  has_many :friends
 
   def self.find_by_key(key, options = {})
     new(Preferences.first)
@@ -961,7 +976,7 @@ module Api
       attribute :body
       attribute :subject
 
-      has_one :writer, foreign_key: 'author_id'
+      has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
       has_one :section
       has_many :comments, acts_as_set: false
 
