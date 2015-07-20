@@ -262,7 +262,7 @@ end
 
 The relationship methods (`relationship`, `has_one`, and `has_many`) support the following options:
 
- * `class_name` - a string specifying the underlying class for the related resource
+ * `class_name` - a string specifying the underlying class for the related resource. Defaults to the `class_name` property on the underlying model.
  * `foreign_key` - the method on the resource used to fetch the related resource. Defaults to `<resource_name>_id` for has_one and `<resource_name>_ids` for has_many relationships.
  * `acts_as_set` - allows the entire set of related records to be replaced in one operation. Defaults to false if not set.
  * `polymorphic` - set to true to identify relationships that are polymorphic.
