@@ -621,7 +621,10 @@ module JSONAPI
       end
 
       def _model_class
-        @model ||= _model_name.to_s.safe_constantize
+        return @model if @model
+        @model = _model_name.to_s.safe_constantize
+        fail NameError, "model could not be found for #{self.name}" if @model.nil?
+        @model
       end
 
       def _allowed_filter?(filter)
