@@ -261,7 +261,7 @@ module JSONAPI
     end
 
     def add_find_operation
-      @operations.push JSONAPI::FindOperation.new(
+      @operations.push Operation.resource_operation_for(@resource_klass, :find).new(
         @resource_klass,
         context: @context,
         filters: @filters,
@@ -272,7 +272,7 @@ module JSONAPI
     end
 
     def add_show_operation
-      @operations.push JSONAPI::ShowOperation.new(
+      @operations.push Operation.resource_operation_for(@resource_klass, :show).new(
         @resource_klass,
         context: @context,
         id: @id,
@@ -281,7 +281,7 @@ module JSONAPI
     end
 
     def add_show_relationship_operation(relationship_type, parent_key)
-      @operations.push JSONAPI::ShowRelationshipOperation.new(
+      @operations.push Operation.resource_operation_for(@resource_klass, :show_relationship).new(
         @resource_klass,
         context: @context,
         relationship_type: relationship_type,
@@ -290,7 +290,7 @@ module JSONAPI
     end
 
     def add_show_related_resource_operation(relationship_type)
-      @operations.push JSONAPI::ShowRelatedResourceOperation.new(
+      @operations.push Operation.resource_operation_for(@resource_klass, :show_related_resource).new(
         @resource_klass,
         context: @context,
         relationship_type: relationship_type,
@@ -300,7 +300,7 @@ module JSONAPI
     end
 
     def add_show_related_resources_operation(relationship_type)
-      @operations.push JSONAPI::ShowRelatedResourcesOperation.new(
+      @operations.push Operation.resource_operation_for(@resource_klass, :show_related_resources).new(
         @resource_klass,
         context: @context,
         relationship_type: relationship_type,
@@ -328,7 +328,7 @@ module JSONAPI
         verify_type(params[:type])
 
         data = parse_params(params, creatable_fields)
-        @operations.push JSONAPI::CreateResourceOperation.new(
+        @operations.push Operation.resource_operation_for(@resource_klass, :create_resource).new(
           @resource_klass,
           context: @context,
           data: data
@@ -508,7 +508,7 @@ module JSONAPI
         object_params = { relationships: { format_key(relationship.name) => { data: data } } }
         verified_param_set = parse_params(object_params, updatable_fields)
 
-        @operations.push JSONAPI::CreateToManyRelationshipOperation.new(
+        @operations.push Operation.resource_operation_for(@resource_klass, :create_to_many_relationship).new(
           resource_klass,
           context: @context,
           resource_id: parent_key,
@@ -525,7 +525,7 @@ module JSONAPI
           object_params = { relationships: { format_key(relationship.name) => { data: data } } }
           verified_param_set = parse_params(object_params, updatable_fields)
 
-          @operations.push JSONAPI::ReplacePolymorphicToOneRelationshipOperation.new(
+          @operations.push Operation.resource_operation_for(@resource_klass, :replace_polymorphic_to_one_relationship).new(
                              resource_klass,
                              context: @context,
                              resource_id: parent_key,
@@ -537,7 +537,7 @@ module JSONAPI
           object_params = { relationships: { format_key(relationship.name) => { data: data } } }
           verified_param_set = parse_params(object_params, updatable_fields)
 
-          @operations.push JSONAPI::ReplaceToOneRelationshipOperation.new(
+          @operations.push Operation.resource_operation_for(@resource_klass, :replace_to_one_relationship).new(
                              resource_klass,
                              context: @context,
                              resource_id: parent_key,
@@ -553,7 +553,7 @@ module JSONAPI
         object_params = { relationships: { format_key(relationship.name) => { data: data } } }
         verified_param_set = parse_params(object_params, updatable_fields)
 
-        @operations.push JSONAPI::ReplaceToManyRelationshipOperation.new(
+        @operations.push Operation.resource_operation_for(@resource_klass, :replace_to_many_relationship).new(
                            resource_klass,
                            context: @context,
                            resource_id: parent_key,
@@ -580,7 +580,7 @@ module JSONAPI
 
       verify_type(data[:type])
 
-      @operations.push JSONAPI::ReplaceFieldsOperation.new(
+      @operations.push Operation.resource_operation_for(@resource_klass, :replace_fields).new(
         @resource_klass,
         context: @context,
         resource_id: key,
@@ -607,7 +607,7 @@ module JSONAPI
       keys = parse_key_array(params.permit(:id)[:id])
 
       keys.each do |key|
-        @operations.push JSONAPI::RemoveResourceOperation.new(
+        @operations.push Operation.resource_operation_for(@resource_klass, :remove_resource).new(
           @resource_klass,
           context: @context,
           resource_id: key
@@ -628,7 +628,7 @@ module JSONAPI
       if relationship.is_a?(JSONAPI::Relationship::ToMany)
         keys = parse_key_array(params[:keys])
         keys.each do |key|
-          @operations.push JSONAPI::RemoveToManyRelationshipOperation.new(
+          @operations.push Operation.resource_operation_for(@resource_klass, :remove_to_many_relationship).new(
             resource_klass,
             context: @context,
             resource_id: parent_key,
@@ -637,7 +637,7 @@ module JSONAPI
           )
         end
       else
-        @operations.push JSONAPI::RemoveToOneRelationshipOperation.new(
+        @operations.push Operation.resource_operation_for(@resource_klass, :remove_to_one_relationship).new(
           resource_klass,
           context: @context,
           resource_id: parent_key,
