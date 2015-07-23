@@ -429,7 +429,7 @@ class ErrorRaisingOperationsProcessor < ActiveRecordOperationsProcessor
   def process_operation(operation)
     mock_operation = Minitest::Mock.new
     mock_operation.expect(:apply, true) do
-      raise PostsController::SpecialError
+      raise PostsController::SubSpecialError
     end
     super(mock_operation)
   end
@@ -445,6 +445,7 @@ end
 class PostsController < ActionController::Base
   include JSONAPI::ActsAsResourceController
   class SpecialError < StandardError; end
+  class SubSpecialError < PostsController::SpecialError; end
 
   # This is used to test that classes that are whitelisted are reraised by
   # the operations processor.

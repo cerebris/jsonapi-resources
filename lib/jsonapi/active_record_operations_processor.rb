@@ -29,7 +29,7 @@ class ActiveRecordOperationsProcessor < JSONAPI::OperationsProcessor
     raise e
 
   rescue => e
-    if JSONAPI.configuration.exception_class_whitelist.include?(e.class)
+    if JSONAPI.configuration.exception_class_whitelist.any? { |k| e.class.ancestors.include?(k) }
       raise e
     else
       internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
