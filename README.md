@@ -270,7 +270,7 @@ The relationship methods (`relationship`, `has_one`, and `has_many`) support the
 
 `to_one` relationships support the additional option:
  * `foreign_key_on` - defaults to `:self`. To indicate that the foreign key is on the related resource specify `:related`.
- 
+
 Examples:
 
 ```ruby
@@ -338,7 +338,7 @@ class ContactResource < JSONAPI::Resource
 end
 ```
 
-Then a request could pass in a filter for example `http://example.com/contacts?filter[name_last]=Smith` and the system 
+Then a request could pass in a filter for example `http://example.com/contacts?filter[name_last]=Smith` and the system
 will find all people where the last name exactly matches Smith.
 
 ##### Default Filters
@@ -1276,8 +1276,9 @@ JSONAPI.configure do |config|
   # processing. If you want to use Rails' `rescue_from` macro to
   # catch this error and render a 403 status code, you should add
   # the `Pundit::NotAuthorizedError` to the `exception_class_whitelist`.
+  # Subclasses of the whitelisted classes will also be whitelisted.
   config.exception_class_whitelist = []
-  
+
   # Resource Linkage
   # Controls the serialization of resource linkage for non compound documents
   # NOTE: always_include_has_many_linkage_data is not currently implemented
