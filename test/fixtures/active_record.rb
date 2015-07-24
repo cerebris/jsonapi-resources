@@ -92,6 +92,12 @@ ActiveRecord::Schema.define do
     t.integer :planet_id
   end
 
+  create_table :craters, id: false, force: true do |t|
+    t.string  :code
+    t.string  :description
+    t.integer :moon_id
+  end
+
   create_table :preferences, force: true do |t|
     t.integer :person_id
     t.boolean :advanced_mode, default: false
@@ -281,6 +287,14 @@ end
 
 class Moon < ActiveRecord::Base
   belongs_to :planet
+
+  has_many :craters
+end
+
+class Crater < ActiveRecord::Base
+  self.primary_key = :code
+
+  belongs_to :moon
 end
 
 class Preferences < ActiveRecord::Base
@@ -360,7 +374,7 @@ class BreedData
   end
 end
 
-class CustomerOrder < ActiveRecord::Base
+class Customer < ActiveRecord::Base
   has_many :purchase_orders
 end
 
@@ -522,6 +536,9 @@ module Api
     end
 
     class MoonsController < JSONAPI::ResourceController
+    end
+
+    class CratersController < JSONAPI::ResourceController
     end
 
     class LikesController < JSONAPI::ResourceController
@@ -861,6 +878,14 @@ class MoonResource < JSONAPI::Resource
   attribute :description
 
   has_one :planet
+  has_many :craters
+end
+
+class CraterResource < JSONAPI::Resource
+  attribute :code
+  attribute :description
+
+  has_one :moon
 end
 
 class PreferencesResource < JSONAPI::Resource
@@ -952,6 +977,7 @@ module Api
     PlanetResource = PlanetResource.dup
     PlanetTypeResource = PlanetTypeResource.dup
     MoonResource = MoonResource.dup
+    CraterResource = CraterResource.dup
     PreferencesResource = PreferencesResource.dup
     EmployeeResource = EmployeeResource.dup
     FriendResource = FriendResource.dup
@@ -1226,6 +1252,8 @@ saturn = Planet.create(name: 'Satern',
                        description: 'Saturn is the sixth planet from the Sun and the second largest planet in the Solar System, after Jupiter.',
                        planet_type_id: planetoid.id)
 titan = Moon.create(name:'Titan', description: 'Best known of the Saturn moons.', planet_id: saturn.id)
+crater1 = Crater.create(code:'S56D', description: 'Very large crater', moon_id: titan.id)
+crater2 = Crater.create(code:'A4D3', description: 'Small crater', moon_id: titan.id)
 makemake = Planet.create(name: 'Makemake', description: 'A small planetoid in the Kuiperbelt.', planet_type_id: planetoid.id)
 uranus = Planet.create(name: 'Uranus', description: 'Insert adolescent jokes here.', planet_type_id: gas_giant.id)
 jupiter = Planet.create(name: 'Jupiter', description: 'A gas giant.', planet_type_id: gas_giant.id)
