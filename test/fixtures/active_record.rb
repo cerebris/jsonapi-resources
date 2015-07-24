@@ -289,6 +289,7 @@ class Preferences < ActiveRecord::Base
 end
 
 class Fact < ActiveRecord::Base
+  validates :spouse_name, :bio, presence: true
 end
 
 class Like < ActiveRecord::Base
