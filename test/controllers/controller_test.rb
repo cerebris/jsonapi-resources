@@ -2645,7 +2645,7 @@ class Api::V1::MoonsControllerTest < ActionController::TestCase
                                   id: "1",
                                   type: "moons",
                                   links: {self: "http://test.host/moons/1"},
-                                  attributes: {name: "Titan", "description": "Best known of the Saturn moons."},
+                                  attributes: {name: "Titan", description: "Best known of the Saturn moons."},
                                   relationships: {
                                     planet: {links: {self: "http://test.host/moons/1/relationships/planet", related: "http://test.host/moons/1/planet"}},
                                     craters: {links: {self: "http://test.host/moons/1/relationships/craters", related: "http://test.host/moons/1/craters"}}}
@@ -2673,15 +2673,15 @@ class Api::V1::CratersControllerTest < ActionController::TestCase
                         data: [
                           {id:"A4D3",
                            type:"craters",
-                           links:{"self":"http://test.host/craters/A4D3"},
-                           attributes:{"code":"A4D3", "description":"Small crater"},
-                           relationships:{"moon":{"links":{"self":"http://test.host/craters/A4D3/relationships/moon", "related":"http://test.host/craters/A4D3/moon"}}}
+                           links:{self: "http://test.host/craters/A4D3"},
+                           attributes:{code: "A4D3", description: "Small crater"},
+                           relationships:{"moon": {links: {self: "http://test.host/craters/A4D3/relationships/moon", related: "http://test.host/craters/A4D3/moon"}}}
                           },
-                          {id:"S56D",
-                           type:"craters",
-                           links:{"self":"http://test.host/craters/S56D"},
-                           attributes:{"code":"S56D", "description":"Very large crater"},
-                           relationships:{"moon":{"links":{"self":"http://test.host/craters/S56D/relationships/moon", "related":"http://test.host/craters/S56D/moon"}}}
+                          {id: "S56D",
+                           type: "craters",
+                           links:{self: "http://test.host/craters/S56D"},
+                           attributes:{code: "S56D", description: "Very large crater"},
+                           relationships:{moon: {links: {self: "http://test.host/craters/S56D/relationships/moon", related: "http://test.host/craters/S56D/moon"}}}
                           }
                         ]
                       }
