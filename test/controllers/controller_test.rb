@@ -2633,28 +2633,65 @@ class Api::V1::PlanetsControllerTest < ActionController::TestCase
     assert_response :unprocessable_entity
     assert_match /Save failed or was cancelled/, json_response['errors'][0]['detail']
   end
+end
 
-  class Api::V1::CratersControllerTest < ActionController::TestCase
-    def test_get_related_resources
-      get :get_related_resources, {moon_id: '1', relationship: 'craters', source: "api/v1/moons"}
+class Api::V1::MoonsControllerTest < ActionController::TestCase
+   def test_get_related_resource
+      get :get_related_resource, {crater_id: 'S56D', relationship: 'moon', source: "api/v1/craters"}
       assert_response :success
       assert_hash_equals json_response,
-                        {
-                          data: [
-                            {id:"A4D3",
-                             type:"craters",
-                             links:{"self":"http://test.host/craters/A4D3"},
-                             attributes:{"code":"A4D3", "description":"Small crater"},
-                             relationships:{"moon":{"links":{"self":"http://test.host/craters/A4D3/relationships/moon", "related":"http://test.host/craters/A4D3/moon"}}}
-                            },
-                            {id:"S56D",
-                             type:"craters",
-                             links:{"self":"http://test.host/craters/S56D"},
-                             attributes:{"code":"S56D", "description":"Very large crater"},
-                             relationships:{"moon":{"links":{"self":"http://test.host/craters/S56D/relationships/moon", "related":"http://test.host/craters/S56D/moon"}}}
-                            }
-                          ]
-                        }
-    end
+                              {
+                                data: {
+                                  id: "1",
+                                  type: "moons",
+                                  links: {self: "http://test.host/moons/1"},
+                                  attributes: {name: "Titan", "description": "Best known of the Saturn moons."},
+                                  relationships: {
+                                    planet: {links: {self: "http://test.host/moons/1/relationships/planet", related: "http://test.host/moons/1/planet"}},
+                                    craters: {links: {self: "http://test.host/moons/1/relationships/craters", related: "http://test.host/moons/1/craters"}}}
+                                  }
+                                }
+
+   end
+end
+
+class Api::V1::CratersControllerTest < ActionController::TestCase
+  def test_show_single
+    get :show, {id: 'S56D'}
+    assert_response :success
+    assert json_response['data'].is_a?(Hash)
+    assert_equal 'S56D', json_response['data']['attributes']['code']
+    assert_equal 'Very large crater', json_response['data']['attributes']['description']
+    assert_nil json_response['included']
+  end
+
+  def test_get_related_resources
+    get :get_related_resources, {moon_id: '1', relationship: 'craters', source: "api/v1/moons"}
+    assert_response :success
+    assert_hash_equals json_response,
+                      {
+                        data: [
+                          {id:"A4D3",
+                           type:"craters",
+                           links:{"self":"http://test.host/craters/A4D3"},
+                           attributes:{"code":"A4D3", "description":"Small crater"},
+                           relationships:{"moon":{"links":{"self":"http://test.host/craters/A4D3/relationships/moon", "related":"http://test.host/craters/A4D3/moon"}}}
+                          },
+                          {id:"S56D",
+                           type:"craters",
+                           links:{"self":"http://test.host/craters/S56D"},
+                           attributes:{"code":"S56D", "description":"Very large crater"},
+                           relationships:{"moon":{"links":{"self":"http://test.host/craters/S56D/relationships/moon", "related":"http://test.host/craters/S56D/moon"}}}
+                          }
+                        ]
+                      }
+  end
+
+  def test_show_relationship
+    get :show_relationship, {crater_id: 'S56D', relationship: 'moon'}
+
+    assert_response :success
+    assert_equal "moons", json_response['data']['type']
+    assert_equal "1", json_response['data']['id']
   end
 end

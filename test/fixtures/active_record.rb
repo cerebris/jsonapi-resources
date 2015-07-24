@@ -886,6 +886,10 @@ class CraterResource < JSONAPI::Resource
   attribute :description
 
   has_one :moon
+
+  def self.verify_key(key, context = nil)
+    key && String(key)
+  end
 end
 
 class PreferencesResource < JSONAPI::Resource

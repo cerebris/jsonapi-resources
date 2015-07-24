@@ -596,7 +596,7 @@ module JSONAPI
       end
 
       def _as_parent_key
-        @_as_parent_key ||= "#{_type.to_s.singularize}_#{_primary_key}"
+        @_as_parent_key ||= "#{_type.to_s.singularize}_id"
       end
 
       def _allowed_filters
