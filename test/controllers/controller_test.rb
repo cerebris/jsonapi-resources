@@ -2675,7 +2675,7 @@ class Api::V1::CratersControllerTest < ActionController::TestCase
                            type:"craters",
                            links:{self: "http://test.host/craters/A4D3"},
                            attributes:{code: "A4D3", description: "Small crater"},
-                           relationships:{"moon": {links: {self: "http://test.host/craters/A4D3/relationships/moon", related: "http://test.host/craters/A4D3/moon"}}}
+                           relationships:{moon: {links: {self: "http://test.host/craters/A4D3/relationships/moon", related: "http://test.host/craters/A4D3/moon"}}}
                           },
                           {id: "S56D",
                            type: "craters",
