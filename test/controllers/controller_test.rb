@@ -2159,11 +2159,8 @@ class Api::V1::PostsControllerTest < ActionController::TestCase
 end
 
 class FactsControllerTest < ActionController::TestCase
-  def setup
-    JSONAPI.configuration.json_key_format = :camelized_key
-  end
-
   def test_type_formatting
+    JSONAPI.configuration.json_key_format = :camelized_key
     get :show, {id: '1'}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
@@ -2176,6 +2173,40 @@ class FactsControllerTest < ActionController::TestCase
     assert_equal '2000-01-01T20:00:00Z', json_response['data']['attributes']['bedtime']
     assert_equal 'abc', json_response['data']['attributes']['photo']
     assert_equal false, json_response['data']['attributes']['cool']
+  end
+
+  def test_create_with_invalid_data
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    set_content_type_header!
+    post :create,
+         {
+           data: {
+             type: 'facts',
+             attributes: {
+               bio: '',
+               :"quality-rating" => '',
+               :"spouse-name" => '',
+               salary: 100000,
+               :"date-time-joined" => '',
+               birthday: '',
+               bedtime: '',
+               photo: 'abc',
+               cool: false
+             },
+             relationships: {
+             }
+           }
+         }
+
+    assert_response :unprocessable_entity
+
+    assert_equal "/data/attributes/spouse-name", json_response['errors'][0]['source']['pointer']
+    assert_equal "can't be blank", json_response['errors'][0]['detail']
+    assert_equal "spouse-name - can't be blank", json_response['errors'][0]['title']
+
+    assert_equal "/data/attributes/bio", json_response['errors'][1]['source']['pointer']
+    assert_equal "can't be blank", json_response['errors'][1]['detail']
+    assert_equal "bio - can't be blank", json_response['errors'][1]['title']
   end
 end
 

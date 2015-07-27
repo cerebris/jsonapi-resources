@@ -323,10 +323,11 @@ module JSONAPI
       end
 
       def pointer(attr_or_relationship_name)
+        formatted_attr_or_relationship_name = format_key(attr_or_relationship_name)
         if resource_relationships.include?(attr_or_relationship_name)
-          "/data/relationships/#{attr_or_relationship_name}"
+          "/data/relationships/#{formatted_attr_or_relationship_name}"
         else
-          "/data/attributes/#{attr_or_relationship_name}"
+          "/data/attributes/#{formatted_attr_or_relationship_name}"
         end
       end
     end
