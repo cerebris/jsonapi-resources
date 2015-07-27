@@ -1427,13 +1427,6 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal initial_count, Post.count
   end
 
-  def test_delete_extra_param
-    initial_count = Post.count
-    delete :destroy, {id: '4', asdfg: 'aaaa'}
-    assert_response :bad_request
-    assert_equal initial_count, Post.count
-  end
-
   def test_show_to_one_relationship
     get :show_relationship, {post_id: '1', relationship: 'author'}
     assert_response :success

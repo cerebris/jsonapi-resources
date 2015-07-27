@@ -604,7 +604,7 @@ module JSONAPI
     end
 
     def parse_remove_operation(params)
-      keys = parse_key_array(params.permit(:id)[:id])
+      keys = parse_key_array(params.require(:id))
 
       keys.each do |key|
         @operations.push JSONAPI::RemoveResourceOperation.new(
@@ -613,8 +613,6 @@ module JSONAPI
           resource_id: key
         )
       end
-    rescue ActionController::UnpermittedParameters => e
-      @errors.concat(JSONAPI::Exceptions::ParametersNotAllowed.new(e.params).errors)
     rescue JSONAPI::Exceptions::Error => e
       @errors.concat(e.errors)
     end
