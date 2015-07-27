@@ -110,6 +110,7 @@ TestApp.routes.draw do
   jsonapi_resources :planets
   jsonapi_resources :planet_types
   jsonapi_resources :moons
+  jsonapi_resources :craters
   jsonapi_resources :preferences
   jsonapi_resources :facts
   jsonapi_resources :categories
@@ -130,6 +131,7 @@ TestApp.routes.draw do
       jsonapi_resources :planets
       jsonapi_resources :planet_types
       jsonapi_resources :moons
+      jsonapi_resources :craters
       jsonapi_resources :preferences
       jsonapi_resources :likes
     end

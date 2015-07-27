@@ -596,7 +596,7 @@ module JSONAPI
       end
 
       def _as_parent_key
-        @_as_parent_key ||= "#{_type.to_s.singularize}_#{_primary_key}"
+        @_as_parent_key ||= "#{_type.to_s.singularize}_id"
       end
 
       def _allowed_filters
@@ -744,7 +744,7 @@ module JSONAPI
 
               sort_criteria =  options.fetch(:sort_criteria, {})
               unless sort_criteria.nil? || sort_criteria.empty?
-                order_options = self.class.construct_order_options(sort_criteria)
+                order_options = relationship.resource_klass.construct_order_options(sort_criteria)
                 records = resource_klass.apply_sort(records, order_options)
               end
 
