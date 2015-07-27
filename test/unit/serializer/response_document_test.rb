@@ -19,8 +19,8 @@ class ResponseDocumentTest < ActionDispatch::IntegrationTest
 
   def test_response_document
     operations = [
-      JSONAPI::CreateResourceOperation.new(PlanetResource, data: {attributes: {'name' => 'Earth 2.0'}}),
-      JSONAPI::CreateResourceOperation.new(PlanetResource, data: {attributes: {'name' => 'Vulcan'}})
+      CreateResourceOperation.new(PlanetResource, data: {attributes: {'name' => 'Earth 2.0'}}),
+      CreateResourceOperation.new(PlanetResource, data: {attributes: {'name' => 'Vulcan'}})
     ]
 
     request = JSONAPI::Request.new
@@ -40,8 +40,8 @@ class ResponseDocumentTest < ActionDispatch::IntegrationTest
 
   def test_response_document_multiple_find
     operations = [
-      JSONAPI::FindOperation.new(PostResource, filters: {id: '1'}),
-      JSONAPI::FindOperation.new(PostResource, filters: {id: '2'})
+      FindOperation.new(PostResource, filters: {id: '1'}),
+      FindOperation.new(PostResource, filters: {id: '2'})
     ]
 
     request = JSONAPI::Request.new
