@@ -102,16 +102,16 @@ class AuthorResource < JSONAPI::Resource
 
   def fetchable_fields
     if (context.current_user.guest)
-      super(context) - [:email]
+      super - [:email]
     else
-      super(context)
+      super
     end
   end
 end
 ```
 
-Context flows through from the controller and can be used to control the attributes based on the current user (or other
-value).
+Context flows through from the controller to the resource and can be used to control the attributes based on the
+current user (or other value).
 
 ##### Creatable and Updatable Attributes
 
