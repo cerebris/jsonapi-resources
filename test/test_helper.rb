@@ -226,6 +226,14 @@ class Minitest::Test
   include Helpers::Assertions
   include Helpers::ValueMatchers
   include Helpers::FunctionalHelpers
+  include ActiveRecord::TestFixtures
+
+  def run_in_transaction?
+    true
+  end
+
+  self.fixture_path = "#{Rails.root}/fixtures"
+  fixtures :all
 end
 
 class ActiveSupport::TestCase
