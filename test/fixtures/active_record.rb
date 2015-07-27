@@ -254,6 +254,21 @@ end
 class Section < ActiveRecord::Base
 end
 
+class HairCut < ActiveRecord::Base
+end
+
+class Property < ActiveRecord::Base
+end
+
+class Customer < ActiveRecord::Base
+end
+
+class BadlyNamedAttributes < ActiveRecord::Base
+end
+
+class Cat < ActiveRecord::Base
+end
+
 class IsoCurrency < ActiveRecord::Base
   self.primary_key = :code
   # has_many :expense_entries, foreign_key: 'currency_code'
@@ -421,13 +436,6 @@ end
 class Product < ActiveRecord::Base
   has_one :picture, as: :imageable
 end
-
-### PORO Data - don't do this in a production app
-$breed_data = BreedData.new
-$breed_data.add(Breed.new(0, 'persian'))
-$breed_data.add(Breed.new(1, 'siamese'))
-$breed_data.add(Breed.new(2, 'sphinx'))
-$breed_data.add(Breed.new(3, 'to_delete'))
 
 ### OperationsProcessor
 class CountingActiveRecordOperationsProcessor < ActiveRecordOperationsProcessor
@@ -896,8 +904,8 @@ end
 class PreferencesResource < JSONAPI::Resource
   attribute :advanced_mode
 
-  has_one :author, foreign_key: :person_id, class_name: 'Person'
-  has_many :friends, class_name: 'Person'
+  has_one :author, foreign_key: :person_id
+  has_many :friends
 
   def self.find_by_key(key, options = {})
     new(Preferences.first)
@@ -961,7 +969,7 @@ module Api
       attribute :body
       attribute :subject
 
-      has_one :writer, foreign_key: 'author_id'
+      has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
       has_one :section
       has_many :comments, acts_as_set: false
 
@@ -1246,30 +1254,9 @@ class BadlyNamedAttributesResource < JSONAPI::Resource
 end
 warn 'end testing Name Collisions'
 
-### PORO DATA
-gas_giant = PlanetType.create(name: 'Gas Giant')
-planetoid = PlanetType.create(name: 'Planetoid')
-terrestrial = PlanetType.create(name: 'Terrestrial')
-sulfuric = PlanetType.create(name: 'Sulfuric')
-unknown = PlanetType.create(name: 'unknown')
-
-saturn = Planet.create(name: 'Satern',
-                       description: 'Saturn is the sixth planet from the Sun and the second largest planet in the Solar System, after Jupiter.',
-                       planet_type_id: planetoid.id)
-titan = Moon.create(name:'Titan', description: 'Best known of the Saturn moons.', planet_id: saturn.id)
-crater1 = Crater.create(code:'S56D', description: 'Very large crater', moon_id: titan.id)
-crater2 = Crater.create(code:'A4D3', description: 'Small crater', moon_id: titan.id)
-makemake = Planet.create(name: 'Makemake', description: 'A small planetoid in the Kuiperbelt.', planet_type_id: planetoid.id)
-uranus = Planet.create(name: 'Uranus', description: 'Insert adolescent jokes here.', planet_type_id: gas_giant.id)
-jupiter = Planet.create(name: 'Jupiter', description: 'A gas giant.', planet_type_id: gas_giant.id)
-betax = Planet.create(name: 'Beta X', description: 'Newly discovered Planet X', planet_type_id: unknown.id)
-betay = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Y', planet_type_id: unknown.id)
-betaz = Planet.create(name: 'Beta X', description: 'Newly discovered Planet Z', planet_type_id: unknown.id)
-betaw = Planet.create(name: 'Beta W', description: 'Newly discovered Planet W')
-Category.create(name: 'Category A', status: 'active')
-Category.create(name: 'Category B', status: 'active')
-Category.create(name: 'Category C', status: 'active')
-Category.create(name: 'Category D', status: 'inactive')
-Category.create(name: 'Category E', status: 'inactive')
-Category.create(name: 'Category F', status: 'inactive')
-Category.create(name: 'Category G', status: 'inactive')
+### PORO Data - don't do this in a production app
+$breed_data = BreedData.new
+$breed_data.add(Breed.new(0, 'persian'))
+$breed_data.add(Breed.new(1, 'siamese'))
+$breed_data.add(Breed.new(2, 'sphinx'))
+$breed_data.add(Breed.new(3, 'to_delete'))

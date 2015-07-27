@@ -673,6 +673,15 @@ module JSONAPI
 
         attrs.each do |attr|
           check_reserved_relationship_name(attr)
+
+          # Initialize from an ActiveRecord model's properties
+          if _model_class < ActiveRecord::Base
+            model_association = _model_class.reflect_on_association(attr)
+            if model_association
+              options[:class_name] ||= model_association.class_name
+            end
+          end
+
           @_relationships[attr] = relationship = klass.new(attr, options)
 
           associated_records_method_name = case relationship
