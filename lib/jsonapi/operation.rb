@@ -17,12 +17,12 @@ module JSONAPI
     attr_reader :filters, :include_directives, :sort_criteria, :paginator
 
     def initialize(resource_klass, options = {})
+      super(resource_klass, options)
       @filters = options[:filters]
       @include_directives = options[:include_directives]
       @sort_criteria = options.fetch(:sort_criteria, [])
       @paginator = options[:paginator]
       @transactional = false
-      super(resource_klass, options)
     end
 
     def record_count
@@ -70,10 +70,10 @@ module JSONAPI
     attr_reader :id, :include_directives
 
     def initialize(resource_klass, options = {})
+      super(resource_klass, options)
       @id = options.fetch(:id)
       @include_directives = options[:include_directives]
       @transactional = false
-      super(resource_klass, options)
     end
 
     def apply
@@ -94,10 +94,10 @@ module JSONAPI
     attr_reader :parent_key, :relationship_type
 
     def initialize(resource_klass, options = {})
+      super(resource_klass, options)
       @parent_key = options.fetch(:parent_key)
       @relationship_type = options.fetch(:relationship_type)
       @transactional = false
-      super(resource_klass, options)
     end
 
     def apply
@@ -116,11 +116,11 @@ module JSONAPI
     attr_reader :source_klass, :source_id, :relationship_type
 
     def initialize(resource_klass, options = {})
+      super(resource_klass, options)
       @source_klass = options.fetch(:source_klass)
       @source_id = options.fetch(:source_id)
       @relationship_type = options.fetch(:relationship_type)
       @transactional = false
-      super(resource_klass, options)
     end
 
     def apply
@@ -139,6 +139,7 @@ module JSONAPI
     attr_reader :source_klass, :source_id, :relationship_type, :filters, :sort_criteria, :paginator
 
     def initialize(resource_klass, options = {})
+      super(resource_klass, options)
       @source_klass = options.fetch(:source_klass)
       @source_id = options.fetch(:source_id)
       @relationship_type = options.fetch(:relationship_type)
@@ -146,7 +147,6 @@ module JSONAPI
       @sort_criteria = options[:sort_criteria]
       @paginator = options[:paginator]
       @transactional = false
-      super(resource_klass, options)
     end
 
     def apply
@@ -168,8 +168,8 @@ module JSONAPI
     attr_reader :data
 
     def initialize(resource_klass, options = {})
-      @data = options.fetch(:data)
       super(resource_klass, options)
+      @data = options.fetch(:data)
     end
 
     def apply
@@ -186,8 +186,8 @@ module JSONAPI
   class RemoveResourceOperation < Operation
     attr_reader :resource_id
     def initialize(resource_klass, options = {})
-      @resource_id = options.fetch(:resource_id)
       super(resource_klass, options)
+      @resource_id = options.fetch(:resource_id)
     end
 
     def apply
@@ -205,9 +205,9 @@ module JSONAPI
     attr_reader :data, :resource_id
 
     def initialize(resource_klass, options = {})
+      super(resource_klass, options)
       @resource_id = options.fetch(:resource_id)
       @data = options.fetch(:data)
-      super(resource_klass, options)
     end
 
     def apply
@@ -222,10 +222,10 @@ module JSONAPI
     attr_reader :resource_id, :relationship_type, :key_value
 
     def initialize(resource_klass, options = {})
+      super(resource_klass, options)
       @resource_id = options.fetch(:resource_id)
       @key_value = options.fetch(:key_value)
       @relationship_type = options.fetch(:relationship_type).to_sym
-      super(resource_klass, options)
     end
 
     def apply
@@ -240,11 +240,11 @@ module JSONAPI
     attr_reader :resource_id, :relationship_type, :key_value, :key_type
 
     def initialize(resource_klass, options = {})
+      super(resource_klass, options)
       @resource_id = options.fetch(:resource_id)
       @key_value = options.fetch(:key_value)
       @key_type = options.fetch(:key_type)
       @relationship_type = options.fetch(:relationship_type).to_sym
-      super(resource_klass, options)
     end
 
     def apply
@@ -259,10 +259,10 @@ module JSONAPI
     attr_reader :resource_id, :relationship_type, :data
 
     def initialize(resource_klass, options)
+      super(resource_klass, options)
       @resource_id = options.fetch(:resource_id)
       @data = options.fetch(:data)
       @relationship_type = options.fetch(:relationship_type).to_sym
-      super(resource_klass, options)
     end
 
     def apply
@@ -277,10 +277,10 @@ module JSONAPI
     attr_reader :resource_id, :relationship_type, :data
 
     def initialize(resource_klass, options)
+      super(resource_klass, options)
       @resource_id = options.fetch(:resource_id)
       @data = options.fetch(:data)
       @relationship_type = options.fetch(:relationship_type).to_sym
-      super(resource_klass, options)
     end
 
     def apply
@@ -295,10 +295,10 @@ module JSONAPI
     attr_reader :resource_id, :relationship_type, :associated_key
 
     def initialize(resource_klass, options)
+      super(resource_klass, options)
       @resource_id = options.fetch(:resource_id)
       @associated_key = options.fetch(:associated_key)
       @relationship_type = options.fetch(:relationship_type).to_sym
-      super(resource_klass, options)
     end
 
     def apply
@@ -313,9 +313,9 @@ module JSONAPI
     attr_reader :resource_id, :relationship_type
 
     def initialize(resource_klass, options)
+      super(resource_klass, options)
       @resource_id = options.fetch(:resource_id)
       @relationship_type = options.fetch(:relationship_type).to_sym
-      super(resource_klass, options)
     end
 
     def apply
