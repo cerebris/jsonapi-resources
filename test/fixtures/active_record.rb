@@ -648,7 +648,11 @@ module Api
 end
 
 ### RESOURCES
-class PersonResource < JSONAPI::Resource
+class BaseResource < JSONAPI::Resource
+  abstract
+end
+
+class PersonResource < BaseResource
   attributes :id, :name, :email
   attribute :date_joined, format: :date_with_timezone
 

@@ -54,6 +54,23 @@ class ContactResource < JSONAPI::Resource
 end
 ```
 
+##### Abstract Resources
+
+Resources that are not backed by a model (purely used as base classes for other resources) should be declared as 
+abstract.
+
+
+```ruby
+class BaseResource < JSONAPI::Resource
+  abstract
+  
+  has_one :creator
+end
+
+class ContactResource < BaseResource
+end
+```
+
 #### Attributes
 
 Any of a resource's attributes that are accessible must be explicitly declared. Single attributes can be declared using
