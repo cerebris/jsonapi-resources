@@ -205,6 +205,12 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 3, json_response['data'].size
   end
 
+  def test_sorting_blank
+    get :index, {sort: ''}
+
+    assert_response :success
+  end
+
   def test_sorting_asc
     get :index, {sort: 'title'}
 

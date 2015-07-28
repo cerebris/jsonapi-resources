@@ -234,7 +234,7 @@ module JSONAPI
     end
 
     def parse_sort_criteria(sort_criteria)
-      return unless sort_criteria
+      return unless sort_criteria.present?
 
       @sort_criteria = CSV.parse_line(URI.unescape(sort_criteria)).collect do |sort|
         if sort.start_with?('-')
