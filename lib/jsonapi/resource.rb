@@ -257,6 +257,7 @@ module JSONAPI
 
     class << self
       def inherited(base)
+        base.abstract(false)
         base._attributes = (_attributes || {}).dup
         base._relationships = (_relationships || {}).dup
         base._allowed_filters = (_allowed_filters || Set.new).dup
@@ -620,10 +621,20 @@ module JSONAPI
         @_paginator = paginator
       end
 
+      def abstract(val = true)
+        @abstract = val
+      end
+
+      def _abstract
+        @abstract
+      end
+
       def _model_class
+        return nil if _abstract
+
         return @model if @model
         @model = _model_name.to_s.safe_constantize
-        fail NameError, "model could not be found for #{self.name}" if @model.nil?
+        warn "[MODEL NOT FOUND] Model could not be found for #{self.name}. If this a base Resource declare it as abstract." if @model.nil?
         @model
       end
 
@@ -675,7 +686,7 @@ module JSONAPI
           check_reserved_relationship_name(attr)
 
           # Initialize from an ActiveRecord model's properties
-          if _model_class < ActiveRecord::Base
+          if _model_class && _model_class < ActiveRecord::Base
             model_association = _model_class.reflect_on_association(attr)
             if model_association
               options[:class_name] ||= model_association.class_name
