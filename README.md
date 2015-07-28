@@ -59,6 +59,8 @@ end
 Resources that are not backed by a model (purely used as base classes for other resources) should be declared as 
 abstract.
 
+Because abstract resources do not expect to be backed by a model, they won't attempt to discover the model class
+or any of its relationships.
 
 ```ruby
 class BaseResource < JSONAPI::Resource
