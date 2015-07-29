@@ -63,6 +63,22 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
     assert_equal expected_link, builder.self_link(source)
   end
 
+  def test_self_link_with_engine_app_and_camel_case_scope
+    primary_resource_klass = MyEngine::AdminApi::V1::PersonResource
+
+    config = {
+      base_url: @base_url,
+      route_formatter: @route_formatter,
+      primary_resource_klass: primary_resource_klass,
+    }
+
+    builder = JSONAPI::LinkBuilder.new(config)
+    source  = primary_resource_klass.new(@steve)
+    expected_link = "#{ @base_url }/boomshaka/admin_api/v1/people/#{ source.id }"
+
+    assert_equal expected_link, builder.self_link(source)
+  end
+
   def test_primary_resources_url_for_regular_app
     config = {
       base_url: @base_url,
@@ -167,6 +183,20 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
     assert_equal expected_link, builder.query_link(query)
   end
 
+  def test_query_link_for_regular_app_with_camel_case_scope
+    config = {
+      base_url: @base_url,
+      route_formatter: @route_formatter,
+      primary_resource_klass: AdminApi::V1::PersonResource
+    }
+
+    query         = { page: { offset: 0, limit: 12 } }
+    builder       = JSONAPI::LinkBuilder.new(config)
+    expected_link = "#{ @base_url }/admin_api/v1/people?page%5Blimit%5D=12&page%5Boffset%5D=0"
+
+    assert_equal expected_link, builder.query_link(query)
+  end
+
   def test_query_link_for_engine
     config = {
       base_url: @base_url,
@@ -177,6 +207,20 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
     query         = { page: { offset: 0, limit: 12 } }
     builder       = JSONAPI::LinkBuilder.new(config)
     expected_link = "#{ @base_url }/boomshaka/api/v1/people?page%5Blimit%5D=12&page%5Boffset%5D=0"
+
+    assert_equal expected_link, builder.query_link(query)
+  end
+
+  def test_query_link_for_engine_with_camel_case_scope
+    config = {
+      base_url: @base_url,
+      route_formatter: @route_formatter,
+      primary_resource_klass: MyEngine::AdminApi::V1::PersonResource
+    }
+
+    query         = { page: { offset: 0, limit: 12 } }
+    builder       = JSONAPI::LinkBuilder.new(config)
+    expected_link = "#{ @base_url }/boomshaka/admin_api/v1/people?page%5Blimit%5D=12&page%5Boffset%5D=0"
 
     assert_equal expected_link, builder.query_link(query)
   end

@@ -208,11 +208,23 @@ TestApp.routes.draw do
     end
   end
 
+  namespace :admin_api do
+    namespace :v1 do
+      jsonapi_resources :people
+    end
+  end
+
   mount MyEngine::Engine => "/boomshaka", as: :my_engine
 end
 
 MyEngine::Engine.routes.draw do
   namespace :api do
+    namespace :v1 do
+      jsonapi_resources :people
+    end
+  end
+
+  namespace :admin_api do
     namespace :v1 do
       jsonapi_resources :people
     end

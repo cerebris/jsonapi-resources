@@ -1233,8 +1233,22 @@ module Api
   end
 end
 
+module AdminApi
+  module V1
+    class PersonResource < JSONAPI::Resource
+    end
+  end
+end
+
 module MyEngine
   module Api
+    module V1
+      class PersonResource < JSONAPI::Resource
+      end
+    end
+  end
+
+  module AdminApi
     module V1
       class PersonResource < JSONAPI::Resource
       end
