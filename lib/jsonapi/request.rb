@@ -104,7 +104,7 @@ module JSONAPI
     def setup_update_action(params)
       parse_fields(params[:fields])
       parse_include_directives(params[:include])
-      parse_replace_operation(params.require(:data), params.require(:id))
+      parse_replace_operation(params.require(:data), params[:id])
     end
 
     def setup_destroy_action(params)
@@ -563,7 +563,7 @@ module JSONAPI
       end
     end
 
-    def parse_single_replace_operation(data, keys)
+    def parse_single_replace_operation(data, keys, id_key_presence_check_required: true)
       fail JSONAPI::Exceptions::MissingKey.new if data[:id].nil?
 
       type = data[:type]
@@ -572,7 +572,7 @@ module JSONAPI
       end
 
       key = data[:id]
-      unless keys.include?(key)
+      if id_key_presence_check_required && !keys.include?(key)
         fail JSONAPI::Exceptions::KeyNotIncludedInURL.new(key)
       end
 
@@ -596,7 +596,8 @@ module JSONAPI
           parse_single_replace_operation(object_params, keys)
         end
       else
-        parse_single_replace_operation(data, [keys])
+        parse_single_replace_operation(data, [keys],
+                                       id_key_presence_check_required: keys.present?)
       end
 
     rescue JSONAPI::Exceptions::Error => e

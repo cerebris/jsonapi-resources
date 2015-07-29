@@ -2100,6 +2100,18 @@ class Api::V2::PreferencesControllerTest < ActionController::TestCase
     get :show
     assert_response :success
   end
+
+  def test_update_singleton_resource_without_id
+    set_content_type_header!
+    patch :update,
+      data: {
+        id: "1",
+        type: "preferences",
+        attributes: {
+        }
+      }
+    assert_response :success
+  end
 end
 
 class Api::V1::PostsControllerTest < ActionController::TestCase
