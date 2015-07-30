@@ -276,6 +276,14 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 2, json_response['included'].size
   end
 
+  def test_show_single_with_include_disallowed
+    JSONAPI.configuration.allowed_request_params.delete(:include)
+    get :show, {id: '1', include: 'comments'}
+    assert_response :bad_request
+  ensure
+    JSONAPI.configuration.allowed_request_params << :include
+  end
+
   def test_show_single_with_fields
     get :show, {id: '1', fields: {posts: 'author'}}
     assert_response :success

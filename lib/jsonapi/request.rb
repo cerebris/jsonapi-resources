@@ -196,6 +196,10 @@ module JSONAPI
     def parse_include_directives(include)
       return if include.nil?
 
+      unless JSONAPI.configuration.allowed_request_params.include?(:include)
+        fail JSONAPI::Exceptions::ParametersNotAllowed.new([:include])
+      end
+
       included_resources = CSV.parse_line(include)
       return if included_resources.nil?
 
