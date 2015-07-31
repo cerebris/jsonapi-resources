@@ -691,4 +691,32 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 204, status
   end
 
+  def test_include_parameter_allowed
+    get '/api/v2/books/1/book_comments?include=author'
+    assert_equal 200, status
+  end
+
+  def test_include_parameter_not_allowed
+    JSONAPI.configuration.allow_include = false
+    get '/api/v2/books/1/book_comments?include=author'
+    assert_equal 400, status
+  ensure
+    JSONAPI.configuration.allow_include = true
+  end
+
+  def test_filter_parameter_not_allowed
+    JSONAPI.configuration.allow_filter = false
+    get '/api/v2/books?filter[author]=1'
+    assert_equal 400, status
+  ensure
+    JSONAPI.configuration.allow_filter = true
+  end
+
+  def test_sort_parameter_not_allowed
+    JSONAPI.configuration.allow_sort = false
+    get '/api/v2/books?sort=title'
+    assert_equal 400, status
+  ensure
+    JSONAPI.configuration.allow_sort = true
+  end
 end

@@ -1272,7 +1272,10 @@ JSONAPI.configure do |config|
   #:basic, :active_record, or custom
   config.operations_processor = :active_record
 
-  config.allowed_request_params = [:include, :fields, :format, :controller, :action, :sort, :page]
+  # optional request features
+  config.allow_include = true
+  config.allow_sort = true
+  config.allow_filter = true
 
   # :none, :offset, :paged, or a custom paginator name
   config.default_paginator = :none

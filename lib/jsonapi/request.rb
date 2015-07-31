@@ -196,6 +196,10 @@ module JSONAPI
     def parse_include_directives(include)
       return if include.nil?
 
+      unless JSONAPI.configuration.allow_include
+        fail JSONAPI::Exceptions::ParametersNotAllowed.new([:include])
+      end
+
       included_resources = CSV.parse_line(include)
       return if included_resources.nil?
 
@@ -210,6 +214,10 @@ module JSONAPI
 
     def parse_filters(filters)
       return unless filters
+
+      unless JSONAPI.configuration.allow_filter
+        fail JSONAPI::Exceptions::ParametersNotAllowed.new([:filter])
+      end
 
       unless filters.class.method_defined?(:each)
         @errors.concat(JSONAPI::Exceptions::InvalidFiltersSyntax.new(filters).errors)
@@ -235,6 +243,10 @@ module JSONAPI
 
     def parse_sort_criteria(sort_criteria)
       return unless sort_criteria.present?
+
+      unless JSONAPI.configuration.allow_sort
+        fail JSONAPI::Exceptions::ParametersNotAllowed.new([:sort])
+      end
 
       @sort_criteria = CSV.parse_line(URI.unescape(sort_criteria)).collect do |sort|
         if sort.start_with?('-')
