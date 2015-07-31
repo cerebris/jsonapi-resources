@@ -69,6 +69,14 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 1, json_response['included'].size
   end
 
+  def test_index_filter_not_allowed
+    JSONAPI.configuration.allow_filter = false
+    get :index, {filter: {id: '1'}}
+    assert_response :bad_request
+  ensure
+    JSONAPI.configuration.allow_filter = true
+  end
+
   def test_index_include_one_level_query_count
     count_queries do
       get :index, {include: 'author'}
@@ -239,6 +247,14 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /asdfg is not a valid sort criteria for post/, response.body
   end
 
+  def test_show_single_with_sort_disallowed
+    JSONAPI.configuration.allow_sort = false
+    get :index, {sort: 'title,body'}
+    assert_response :bad_request
+  ensure
+    JSONAPI.configuration.allow_sort = true
+  end
+
   def test_excluded_sort_param
     get :index, {sort: 'id'}
 
@@ -277,11 +293,11 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_show_single_with_include_disallowed
-    JSONAPI.configuration.allowed_request_params.delete(:include)
+    JSONAPI.configuration.allow_include = false
     get :show, {id: '1', include: 'comments'}
     assert_response :bad_request
   ensure
-    JSONAPI.configuration.allowed_request_params << :include
+    JSONAPI.configuration.allow_include = true
   end
 
   def test_show_single_with_fields
