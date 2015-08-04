@@ -14,7 +14,12 @@ module Jsonapi
 
     test "resource is created" do
       run_generator ["post"]
-      assert_file 'app/resources/post_resource.rb'
+      assert_file 'app/resources/post_resource.rb', /class PostResource < JSONAPI::Resource/
+    end
+
+    test "resource is created with namespace" do
+      run_generator ["api/v1/post"]
+      assert_file 'app/resources/api/v1/post_resource.rb', /class Api::V1::PostResource < JSONAPI::Resource/
     end
   end
 end
