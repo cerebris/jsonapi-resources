@@ -54,6 +54,11 @@ class ContactResource < JSONAPI::Resource
 end
 ```
 
+A jsonapi-resource generator is avaliable
+```
+rails generate jsonapi:resource contact 
+```
+
 ##### Abstract Resources
 
 Resources that are not backed by a model (purely used as base classes for other resources) should be declared as 

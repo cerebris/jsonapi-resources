@@ -1,0 +1,8 @@
+Description:
+    Generator for JSONAPI Resources
+
+Example:
+    rails generate jsonapi:resource Post
+
+    This will create:
+        app/resources/post_resource.rb
