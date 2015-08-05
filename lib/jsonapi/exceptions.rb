@@ -317,8 +317,8 @@ module JSONAPI
       def json_api_error(attr_key, message)
         JSONAPI::Error.new(code: JSONAPI::VALIDATION_ERROR,
                            status: :unprocessable_entity,
-                           title: "#{format_key(attr_key)} - #{message}",
-                           detail: message,
+                           title: message,
+                           detail: "#{format_key(attr_key)} - #{message}",
                            source: { pointer: pointer(attr_key) })
       end
 
