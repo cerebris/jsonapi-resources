@@ -420,12 +420,12 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :unprocessable_entity
 
     assert_equal "/data/relationships/author", json_response['errors'][0]['source']['pointer']
-    assert_equal "can't be blank", json_response['errors'][0]['detail']
-    assert_equal "author - can't be blank", json_response['errors'][0]['title']
+    assert_equal "can't be blank", json_response['errors'][0]['title']
+    assert_equal "author - can't be blank", json_response['errors'][0]['detail']
 
     assert_equal "/data/attributes/title", json_response['errors'][1]['source']['pointer']
-    assert_equal "is too long (maximum is 35 characters)", json_response['errors'][1]['detail']
-    assert_equal "title - is too long (maximum is 35 characters)", json_response['errors'][1]['title']
+    assert_equal "is too long (maximum is 35 characters)", json_response['errors'][1]['title']
+    assert_equal "title - is too long (maximum is 35 characters)", json_response['errors'][1]['detail']
   end
 
   def test_create_multiple
@@ -2236,12 +2236,12 @@ class FactsControllerTest < ActionController::TestCase
     assert_response :unprocessable_entity
 
     assert_equal "/data/attributes/spouse-name", json_response['errors'][0]['source']['pointer']
-    assert_equal "can't be blank", json_response['errors'][0]['detail']
-    assert_equal "spouse-name - can't be blank", json_response['errors'][0]['title']
+    assert_equal "can't be blank", json_response['errors'][0]['title']
+    assert_equal "spouse-name - can't be blank", json_response['errors'][0]['detail']
 
     assert_equal "/data/attributes/bio", json_response['errors'][1]['source']['pointer']
-    assert_equal "can't be blank", json_response['errors'][1]['detail']
-    assert_equal "bio - can't be blank", json_response['errors'][1]['title']
+    assert_equal "can't be blank", json_response['errors'][1]['title']
+    assert_equal "bio - can't be blank", json_response['errors'][1]['detail']
   end
 end
 
