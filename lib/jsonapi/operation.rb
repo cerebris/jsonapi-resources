@@ -149,15 +149,43 @@ module JSONAPI
       @transactional = false
     end
 
-    def apply
-      source_resource = @source_klass.find_by_key(@source_id, context: @context)
+    def record_count
+      @_record_count ||= records.count
+    end
 
+    def source_resource
+      @_source_resource ||= @source_klass.find_by_key(@source_id, context: @context)
+    end
+
+    def records
+      related_resource_records = source_resource.records_for(@relationship_type)
+      @resource_klass.filter_records(@filters, @options, related_resource_records)
+    end
+
+    def pagination_params
+      if @paginator && JSONAPI.configuration.top_level_links_include_pagination
+        options = {}
+        options[:record_count] = record_count if @paginator.class.requires_record_count
+        @paginator.links_page_params(options)
+      else
+        {}
+      end
+    end
+
+    def options
+      opts = {}
+      opts.merge!(pagination_params: pagination_params) if JSONAPI.configuration.top_level_links_include_pagination
+      opts.merge!(record_count: pagination_params) if JSONAPI.configuration.top_level_meta_include_record_count
+      opts
+    end
+
+    def apply
       related_resource = source_resource.public_send(@relationship_type,
                                               filters:  @filters,
                                               sort_criteria: @sort_criteria,
                                               paginator: @paginator)
 
-      return JSONAPI::ResourceOperationResult.new(:ok, related_resource)
+      return JSONAPI::RelatedResourcesOperationResult.new(:ok, source_resource, related_resource, options)
 
     rescue JSONAPI::Exceptions::Error => e
       return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)

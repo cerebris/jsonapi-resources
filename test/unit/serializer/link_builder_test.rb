@@ -169,6 +169,23 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
       builder.relationships_related_link(source, relationship)
   end
 
+  def test_relationships_related_link_with_query_params
+    config = {
+      base_url: @base_url,
+      route_formatter: @route_formatter,
+      primary_resource_klass: Api::V1::PersonResource
+    }
+
+    builder       = JSONAPI::LinkBuilder.new(config)
+    source        = Api::V1::PersonResource.new(@steve)
+    relationship  = JSONAPI::Relationship::ToMany.new("posts", {})
+    expected_link = "#{ @base_url }/api/v1/people/#{ @steve.id }/posts?page%5Blimit%5D=12&page%5Boffset%5D=0"
+    query         = { page: { offset: 0, limit: 12 } }
+
+    assert_equal expected_link,
+                 builder.relationships_related_link(source, relationship, query)
+  end
+
   def test_query_link_for_regular_app
     config = {
       base_url: @base_url,

@@ -69,23 +69,31 @@ module JSONAPI
         links.merge!(result.links)
 
         # Build pagination links
-        if result.is_a?(JSONAPI::ResourcesOperationResult)
+        if result.is_a?(JSONAPI::ResourcesOperationResult) || result.is_a?(JSONAPI::RelatedResourcesOperationResult)
           result.pagination_params.each_pair do |link_name, params|
-            query_params = {}
-            query_params[:page] = params
-
-            request = @options[:request]
-            query_params[:fields] = request.params[:fields] if request.params[:fields]
-            query_params[:include] = request.params[:include] if request.params[:include]
-            query_params[:sort] = request.params[:sort] if request.params[:sort]
-            query_params[:filter] = request.params[:filter] if request.params[:filter]
-
-            links[link_name] = serializer.find_link(query_params)
+            if result.is_a?(JSONAPI::RelatedResourcesOperationResult)
+              relationship = result.source_resource.class._relationships[result.resources.first.class._type]
+              links[link_name] = serializer.url_generator.relationships_related_link(result.source_resource, relationship, query_params(params))
+            else
+              links[link_name] = serializer.find_link(query_params(params))
+            end
           end
         end
       end
 
       links.deep_transform_keys { |key| @key_formatter.format(key) }
+    end
+
+    def query_params(params)
+      query_params = {}
+      query_params[:page] = params
+
+      request = @options[:request]
+      query_params[:fields] = request.params[:fields] if request.params[:fields]
+      query_params[:include] = request.params[:include] if request.params[:include]
+      query_params[:sort] = request.params[:sort] if request.params[:sort]
+      query_params[:filter] = request.params[:filter] if request.params[:filter]
+      query_params
     end
 
     def results_to_hash

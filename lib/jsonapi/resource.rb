@@ -472,8 +472,7 @@ module JSONAPI
         records
       end
 
-      def filter_records(filters, options)
-        records = records(options)
+      def filter_records(filters, options, records = records(options))
         records = apply_filters(records, filters, options)
         apply_includes(records, options)
       end
