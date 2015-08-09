@@ -334,6 +334,32 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /asdfg is not allowed/, response.body
   end
 
+  def test_create_extra_param_allow_extra_params
+    JSONAPI.configuration.raise_if_parameters_not_allowed = false
+
+    set_content_type_header!
+    post :create,
+         {
+           data: {
+             type: 'posts',
+             asdfg: 'aaaa',
+             title: 'JR is Great',
+             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
+             links: {
+               author: {type: 'people', id: '3'}
+             }
+           }
+         }
+
+    assert_response :created
+    assert json_response['data'].is_a?(Hash)
+    assert_equal '3', json_response['data']['links']['author']['id']
+    assert_equal 'JR is Great', json_response['data']['title']
+    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['body']
+
+    JSONAPI.configuration.raise_if_parameters_not_allowed = true
+  end
+
   def test_create_with_invalid_data
     set_content_type_header!
     post :create,
@@ -490,6 +516,32 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /subject/, json_response['errors'][0]['detail']
   end
 
+  def test_create_simple_unpermitted_attributes_allow_extra_params
+    JSONAPI.configuration.raise_if_parameters_not_allowed = false
+
+    set_content_type_header!
+    post :create,
+         {
+           data: {
+             type: 'posts',
+             subject: 'JR is Great',
+             title: 'JR is Great',
+             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
+             links: {
+               author: {type: 'people', id: '3'}
+             }
+           }
+         }
+
+    assert_response :created
+    assert json_response['data'].is_a?(Hash)
+    assert_equal '3', json_response['data']['links']['author']['id']
+    assert_equal 'JR is Great', json_response['data']['title']
+    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['body']
+
+    JSONAPI.configuration.raise_if_parameters_not_allowed = true
+  end
+
   def test_create_with_links_has_many_type_ids
     set_content_type_header!
     post :create,
@@ -584,6 +636,39 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 'A great new Post', json_response['data']['title']
     assert_equal 'AAAA', json_response['data']['body']
     assert matches_array?(['3', '4'], json_response['data']['links']['tags']['ids'])
+  end
+
+  def test_update_with_links_allow_extra_params
+    JSONAPI.configuration.raise_if_parameters_not_allowed = false
+
+    set_content_type_header!
+    javascript = Section.find_by(name: 'javascript')
+
+    put :update,
+        {
+          id: 3,
+          data: {
+            id: '3',
+            type: 'posts',
+            subject: 'A great new Post',
+            title: 'A great new Post',
+            links: {
+              section: {type: 'sections', id: "#{javascript.id}"},
+              tags: {type: 'tags', ids: [3, 4]}
+            }
+          },
+          include: 'tags'
+        }
+
+    assert_response :success
+    assert json_response['data'].is_a?(Hash)
+    assert_equal '3', json_response['data']['links']['author']['id']
+    assert_equal javascript.id.to_s, json_response['data']['links']['section']['id']
+    assert_equal 'A great new Post', json_response['data']['title']
+    assert_equal 'AAAA', json_response['data']['body']
+    assert matches_array?(['3', '4'], json_response['data']['links']['tags']['ids'])
+
+    JSONAPI.configuration.raise_if_parameters_not_allowed = true
   end
 
   def test_update_remove_links

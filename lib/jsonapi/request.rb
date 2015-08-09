@@ -342,13 +342,26 @@ module JSONAPI
       params.each do |key, value|
         if key == 'links' || key == :links
           value.each_key do |links_key|
-            params_not_allowed.push(links_key) unless formatted_allowed_fields.include?(links_key.to_sym)
+            unless formatted_allowed_fields.include?(links_key.to_sym)
+              params_not_allowed.push(links_key)
+              unless JSONAPI.configuration.raise_if_parameters_not_allowed
+                value.delete links_key
+              end
+            end
           end
         else
-          params_not_allowed.push(key) unless formatted_allowed_fields.include?(key.to_sym)
+          unless formatted_allowed_fields.include?(key.to_sym)
+            params_not_allowed.push(key)
+            unless JSONAPI.configuration.raise_if_parameters_not_allowed
+              params.delete key
+            end
+          end
         end
       end
-      raise JSONAPI::Exceptions::ParametersNotAllowed.new(params_not_allowed) if params_not_allowed.length > 0
+
+      if params_not_allowed.length > 0 && JSONAPI.configuration.raise_if_parameters_not_allowed
+        raise JSONAPI::Exceptions::ParametersNotAllowed.new(params_not_allowed)
+      end
     end
 
     def parse_add_association_operation(data, association_type, parent_key)

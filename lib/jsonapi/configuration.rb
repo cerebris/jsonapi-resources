@@ -7,6 +7,7 @@ module JSONAPI
                 :route_format,
                 :route_formatter,
                 :allowed_request_params,
+                :raise_if_parameters_not_allowed,
                 :default_paginator,
                 :default_page_size,
                 :maximum_page_size
@@ -19,6 +20,8 @@ module JSONAPI
       self.route_format = :dasherized_route
 
       self.allowed_request_params = [:include, :fields, :format, :controller, :action, :sort, :page]
+
+      self.raise_if_parameters_not_allowed = true
 
       # :none, :offset, :paged, or a custom paginator name
       self.default_paginator = :none
@@ -51,6 +54,10 @@ module JSONAPI
 
     def maximum_page_size=(maximum_page_size)
       @maximum_page_size = maximum_page_size
+    end
+
+    def raise_if_parameters_not_allowed=(val)
+      @raise_if_parameters_not_allowed = val
     end
   end
 
