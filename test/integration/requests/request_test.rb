@@ -398,6 +398,16 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 'http://www.example.com/api/v2/books/1/book_comments?page%5Blimit%5D=10&page%5Boffset%5D=41', json_response['links']['last']
   end
 
+  def test_pagination_related_resources_without_related
+    Api::V2::BookResource.paginator :offset
+    Api::V2::BookCommentResource.paginator :offset
+    get '/api/v2/books/10/book_comments'
+    assert_equal 200, status
+    assert_nil json_response['links']['next']
+    assert_equal 'http://www.example.com/api/v2/books/10/book_comments?page%5Blimit%5D=10&page%5Boffset%5D=0', json_response['links']['first']
+    assert_equal 'http://www.example.com/api/v2/books/10/book_comments?page%5Blimit%5D=10&page%5Boffset%5D=0', json_response['links']['last']
+  end
+
   def test_pagination_related_resources_data_includes
     Api::V2::BookResource.paginator :offset
     Api::V2::BookCommentResource.paginator :offset
@@ -405,6 +415,17 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
     assert_equal 10, json_response['data'].size
     assert_equal 'This is comment 18 on book 1.', json_response['data'][9]['attributes']['body']
+  end
+
+  def test_pagination_empty_results
+    Api::V2::BookResource.paginator :offset
+    Api::V2::BookCommentResource.paginator :offset
+    get '/api/v2/books?filter[id]=2000&page[limit]=10'
+    assert_equal 200, status
+    assert_equal 0, json_response['data'].size
+    assert_nil json_response['links']['next']
+    assert_equal 'http://www.example.com/api/v2/books?filter%5Bid%5D=2000&page%5Blimit%5D=10&page%5Boffset%5D=0', json_response['links']['first']
+    assert_equal 'http://www.example.com/api/v2/books?filter%5Bid%5D=2000&page%5Blimit%5D=10&page%5Boffset%5D=0', json_response['links']['last']
   end
 
   # def test_pagination_related_resources_data_includes
