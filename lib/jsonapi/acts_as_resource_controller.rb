@@ -123,10 +123,10 @@ module JSONAPI
     end
 
     def base_meta
-      if @request.nil?
+      if @request.nil? || @request.warnings.empty?
         base_response_meta
       else
-        @request.warnings.empty? ? base_response_meta : base_response_meta.merge(:warnings => @request.warnings)
+        base_response_meta.merge(warnings: @request.warnings)
       end
     end
 
