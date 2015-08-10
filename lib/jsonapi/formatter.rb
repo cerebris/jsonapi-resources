@@ -11,7 +11,7 @@ module JSONAPI
 
       def formatter_for(format)
         formatter_class_name = "#{format.to_s.camelize}Formatter"
-        formatter_class_name.safe_constantize if formatter_class_name
+        formatter_class_name.safe_constantize
       end
     end
   end
@@ -23,7 +23,7 @@ module JSONAPI
       end
 
       def unformat(formatted_key)
-        super.to_sym
+        super
       end
     end
   end
@@ -35,18 +35,18 @@ module JSONAPI
       end
 
       def unformat(formatted_route)
-        super.to_sym
+        super
       end
     end
   end
 
   class ValueFormatter < Formatter
     class << self
-      def format(raw_value, context)
+      def format(raw_value)
         super(raw_value)
       end
 
-      def unformat(value, context)
+      def unformat(value)
         super(value)
       end
 
@@ -68,7 +68,7 @@ class CamelizedKeyFormatter < JSONAPI::KeyFormatter
     end
 
     def unformat(formatted_key)
-      formatted_key.to_s.underscore.to_sym
+      formatted_key.to_s.underscore
     end
   end
 end
@@ -80,14 +80,14 @@ class DasherizedKeyFormatter < JSONAPI::KeyFormatter
     end
 
     def unformat(formatted_key)
-      formatted_key.to_s.underscore.to_sym
+      formatted_key.to_s.underscore
     end
   end
 end
 
 class DefaultValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value, context)
+    def format(raw_value)
       raw_value
     end
   end
@@ -95,7 +95,7 @@ end
 
 class IdValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value, context)
+    def format(raw_value)
       return if raw_value.nil?
       raw_value.to_s
     end
@@ -112,7 +112,7 @@ class CamelizedRouteFormatter < JSONAPI::RouteFormatter
     end
 
     def unformat(formatted_route)
-      formatted_route.to_s.underscore.to_sym
+      formatted_route.to_s.underscore
     end
   end
 end
@@ -124,7 +124,7 @@ class DasherizedRouteFormatter < JSONAPI::RouteFormatter
     end
 
     def unformat(formatted_route)
-      formatted_route.to_s.underscore.to_sym
+      formatted_route.to_s.underscore
     end
   end
 end

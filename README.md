@@ -1,14 +1,22 @@
-# JSONAPI::Resources [![Build Status](https://secure.travis-ci.org/cerebris/jsonapi-resources.png?branch=master)](http://travis-ci.org/cerebris/jsonapi-resources)
+# JSONAPI::Resources [![Build Status](https://secure.travis-ci.org/cerebris/jsonapi-resources.png?branch=master)](http://travis-ci.org/cerebris/jsonapi-resources) [![Code Climate](https://codeclimate.com/github/cerebris/jsonapi-resources/badges/gpa.svg)](https://codeclimate.com/github/cerebris/jsonapi-resources)
 
-`JSONAPI::Resources`, or "JR", provides a framework for developing a server that complies with the [JSON API](http://jsonapi.org/) specification.
+`JSONAPI::Resources`, or "JR", provides a framework for developing a server that complies with the
+[JSON API](http://jsonapi.org/) specification.
 
-Like JSON API itself, JR's design is focused on the resources served by an API. JR needs little more than a definition of your resources, including their attributes and relationships, to make your server compliant with JSON API.
+Like JSON API itself, JR's design is focused on the resources served by an API. JR needs little more than a definition
+of your resources, including their attributes and relationships, to make your server compliant with JSON API.
 
-JR is designed to work with Rails, and provides custom routes, controllers, and serializers. JR's resources may be backed by ActiveRecord models or by custom objects.
+JR is designed to work with Rails 4.0+, and provides custom routes, controllers, and serializers. JR's resources may be
+backed by ActiveRecord models or by custom objects.
 
 ## Demo App
 
 We have a simple demo app, called [Peeps](https://github.com/cerebris/peeps), available to show how JR is used.
+
+## Client Libraries
+
+JSON API maintains a (non-verified) listing of [client libraries](http://jsonapi.org/implementations/#client-libraries)
+which *should* be compatible with JSON API compliant server implementations such as JR.
 
 ## Installation
 
@@ -28,9 +36,12 @@ Or install it yourself as:
 
 ### Resources
 
-Resources define the public interface to your API. A resource defines which attributes are exposed, as well as relationships to other resources.
+Resources define the public interface to your API. A resource defines which attributes are exposed, as well as
+relationships to other resources.
 
-Resource definitions should by convention be placed in a directory under app named resources, `app/resources`. The class name should be the single underscored name of the model that backs the resource with `_resource.rb` appended. For example, a `Contact` model's resource should have a class named `ContactResource` defined in a file named `contact_resource.rb`.
+Resource definitions should by convention be placed in a directory under app named resources, `app/resources`. The class
+name should be the single underscored name of the model that backs the resource with `_resource.rb` appended. For example,
+a `Contact` model's resource should have a class named `ContactResource` defined in a file named `contact_resource.rb`.
 
 #### JSONAPI::Resource
 
@@ -39,39 +50,59 @@ Resources must be derived from `JSONAPI::Resource`, or a class that is itself de
 For example:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
+end
+```
+
+A jsonapi-resource generator is avaliable
+```
+rails generate jsonapi:resource contact 
+```
+
+##### Abstract Resources
+
+Resources that are not backed by a model (purely used as base classes for other resources) should be declared as 
+abstract.
+
+Because abstract resources do not expect to be backed by a model, they won't attempt to discover the model class
+or any of its relationships.
+
+```ruby
+class BaseResource < JSONAPI::Resource
+  abstract
+  
+  has_one :creator
+end
+
+class ContactResource < BaseResource
 end
 ```
 
 #### Attributes
 
-Any of a resource's attributes that are accessible must be explicitly declared. Single attributes can be declared using the `attribute` method, and multiple attributes can be declared with the `attributes` method on the resource class.
+Any of a resource's attributes that are accessible must be explicitly declared. Single attributes can be declared using
+the `attribute` method, and multiple attributes can be declared with the `attributes` method on the resource class.
 
 For example:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
-  attribute :id
   attribute :name_first
   attributes :name_last, :email, :twitter
 end
 ```
 
-This resource has 5 attributes: `:id`, `:name_first`, `:name_last`, `:email`, `:twitter`. By default these attributes must exist on the model that is handled by the resource.
+This resource has 4 defined attributes: `name_first`, `name_last`, `email`, `twitter`, as well as the automatically
+defined attributes `id` and `type`. By default these attributes must exist on the model that is handled by the resource.
 
-A resource object wraps a Ruby object, usually an `ActiveModel` record, which is available as the `@model` variable. This allows a resource's methods to access the underlying model.
+A resource object wraps a Ruby object, usually an `ActiveModel` record, which is available as the `@model` variable.
+This allows a resource's methods to access the underlying model.
 
 For example, a computed attribute for `full_name` could be defined as such:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
-  attributes :id, :name_first, :name_last, :email, :twitter
+  attributes :name_first, :name_last, :email, :twitter
   attribute :full_name
 
   def full_name
@@ -82,67 +113,70 @@ end
 
 ##### Fetchable Attributes
 
-By default all attributes are assumed to be fetchable. The list of fetchable attributes can be filtered by overriding the `fetchable_fields` method.
+By default all attributes are assumed to be fetchable. The list of fetchable attributes can be filtered by overriding
+the `fetchable_fields` method.
 
 Here's an example that prevents guest users from seeing the `email` field:
 
 ```ruby
 class AuthorResource < JSONAPI::Resource
-  attributes :id, :name, :email
+  attributes :name, :email
   model_name 'Person'
   has_many :posts
 
   def fetchable_fields
     if (context.current_user.guest)
-      super(context) - [:email]
+      super - [:email]
     else
-      super(context)
+      super
     end
   end
 end
 ```
 
-Context flows through from the controller and can be used to control the attributes based on the current user (or other value).
+Context flows through from the controller to the resource and can be used to control the attributes based on the
+current user (or other value).
 
-##### Creatable and Updateable Attributes
+##### Creatable and Updatable Attributes
 
-By default all attributes are assumed to be updateable and creatable. To prevent some attributes from being accepted by the `update` or `create` methods, override the `self.updateable_fields` and `self.createable_fields` methods on a resource.
+By default all attributes are assumed to be updatable and creatable. To prevent some attributes from being accepted by
+the `update` or `create` methods, override the `self.updatable_fields` and `self.creatable_fields` methods on a resource.
 
 This example prevents `full_name` from being set:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
-  attributes :id, :name_first, :name_last, :full_name
+  attributes :name_first, :name_last, :full_name
 
   def full_name
     "#{@model.name_first}, #{@model.name_last}"
   end
 
-  def self.updateable_fields(context)
+  def self.updatable_fields(context)
     super - [:full_name]
   end
 
-  def self.createable_fields(context)
+  def self.creatable_fields(context)
     super - [:full_name]
   end
 end
 ```
 
-The `context` is not by default used by the `ResourceController`, but may be used if you override the controller methods. By using the context you have the option to determine the createable and updateable fields based on the user.
+The `context` is not by default used by the `ResourceController`, but may be used if you override the controller methods.
+By using the context you have the option to determine the creatable and updatable fields based on the user.
 
 ##### Sortable Attributes
 
 JR supports [sorting primary resources by multiple sort criteria](http://jsonapi.org/format/#fetching-sorting).
 
-By default all attributes are assumed to be sortable. To prevent some attributes from being sortable, override the `self.sortable_fields` method on a resource.
+By default all attributes are assumed to be sortable. To prevent some attributes from being sortable, override the
+`self.sortable_fields` method on a resource.
 
 Here's an example that prevents sorting by post's `body`:
 
 ```ruby
 class PostResource < JSONAPI::Resource
-  attribute :id, :title, :body
+  attributes :title, :body
 
   def self.sortable_fields(context)
     super(context) - [:body]
@@ -152,21 +186,29 @@ end
 
 ##### Attribute Formatting
 
-Attributes can have a `Format`. By default all attributes use the default formatter. If an attribute has the `format` option set the system will attempt to find a formatter based on this name. In the following example the `last_login_time` will be returned formatted to a certain time zone:
+Attributes can have a `Format`. By default all attributes use the default formatter. If an attribute has the `format`
+option set the system will attempt to find a formatter based on this name. In the following example the `last_login_time`
+will be returned formatted to a certain time zone:
 
 ```ruby
 class PersonResource < JSONAPI::Resource
-  attributes :id, :name, :email
+  attributes :name, :email
   attribute :last_login_time, format: :date_with_timezone
 end
 ```
 
-The system will lookup a value formatter named `DateWithTimezoneValueFormatter` and will use this when serializing and updating the attribute. See the [Value Formatters](#value-formatters) section for more details.
+The system will lookup a value formatter named `DateWithTimezoneValueFormatter` and will use this when serializing and
+updating the attribute. See the [Value Formatters](#value-formatters) section for more details.
 
 #### Primary Key
 
-Resources are always represented using a key of `id`. If the underlying model does not use `id` as the primary key you can use the `primary_key` method to tell the resource which field on the model to use as the primary key. Note: this doesn't have to be the actual primary key of the model. For example you may wish to use integers internally and a different scheme publicly.
-By default only integer values are allowed for primary key. To change this behavior you can override `verify_key` class method:
+Resources are always represented using a key of `id`. The resource will interrogate the model to find the primary key.
+If the underlying model does not use `id` as the primary key _and_ does not support the `primary_key` method you
+must use the `primary_key` method to tell the resource which field on the model to use as the primary key. **Note:**
+this _must_ be the actual primary key of the model.
+
+By default only integer values are allowed for primary key. To change this behavior you can override
+`verify_key` class method:
 
 ```ruby
 class CurrencyResource < JSONAPI::Resource
@@ -183,25 +225,48 @@ end
 
 #### Model Name
 
-The name of the underlying model is inferred from the Resource name. It can be overridden by use of the `model_name` method. For example:
+The name of the underlying model is inferred from the Resource name. It can be overridden by use of the `model_name`
+method. For example:
 
 ```ruby
 class AuthorResource < JSONAPI::Resource
-  attributes :id, :name
+  attribute :name
   model_name 'Person'
   has_many :posts
 end
 ```
 
-#### Associations
+#### Relationships
 
-Related resources need to be specified in the resource. These are declared with the `has_one` and the `has_many` methods.
+Related resources need to be specified in the resource. These may be declared with the `relationship` or the `has_one`
+and the `has_many` methods.
 
-Here's a simple example where a post has a single author and an author can have many posts:
+Here's a simple example using the `relationship` method where a post has a single author and an author can have many
+posts:
 
 ```ruby
 class PostResource < JSONAPI::Resource
-  attribute :id, :title, :body
+  attribute :title, :body
+
+  relationship :author, to: :one
+end
+```
+
+And the corresponding author:
+
+```ruby
+class AuthorResource < JSONAPI::Resource
+  attribute :name
+
+  relationship :posts, to: :many
+end
+```
+
+And here's the equivalent resources using the `has_one` and `has_many` methods:
+
+```ruby
+class PostResource < JSONAPI::Resource
+  attribute :title, :body
 
   has_one :author
 end
@@ -211,7 +276,7 @@ And the corresponding author:
 
 ```ruby
 class AuthorResource < JSONAPI::Resource
-  attribute :id, :name
+  attribute :name
 
   has_many :posts
 end
@@ -219,62 +284,122 @@ end
 
 ##### Options
 
-The association methods support the following options:
- * `class_name` - a string specifying the underlying class for the related resource
+The relationship methods (`relationship`, `has_one`, and `has_many`) support the following options:
+
+ * `class_name` - a string specifying the underlying class for the related resource. Defaults to the `class_name` property on the underlying model.
  * `foreign_key` - the method on the resource used to fetch the related resource. Defaults to `<resource_name>_id` for has_one and `<resource_name>_ids` for has_many relationships.
  * `acts_as_set` - allows the entire set of related records to be replaced in one operation. Defaults to false if not set.
+ * `polymorphic` - set to true to identify relationships that are polymorphic.
+ * `relation_name` - the name of the relation to use on the model. A lambda may be provided which allows conditional selection of the relation based on the context.
+
+`to_one` relationships support the additional option:
+ * `foreign_key_on` - defaults to `:self`. To indicate that the foreign key is on the related resource specify `:related`.
 
 Examples:
 
 ```ruby
- class CommentResource < JSONAPI::Resource
-  attributes :id, :body
+class CommentResource < JSONAPI::Resource
+  attributes :body
   has_one :post
   has_one :author, class_name: 'Person'
   has_many :tags, acts_as_set: true
- end
-```
+end
 
-```ruby
 class ExpenseEntryResource < JSONAPI::Resource
-  attributes :id, :cost, :transaction_date
+  attributes :cost, :transaction_date
 
   has_one :currency, class_name: 'Currency', foreign_key: 'currency_code'
   has_one :employee
 end
+
+class TagResource < JSONAPI::Resource
+  attributes :name
+  has_one :taggable, polymorphic: true
+end
+```
+
+```ruby
+class BookResource < JSONAPI::Resource
+
+  # Only book_admins may see unapproved comments for a book. Using
+  # a lambda to select the correct relation on the model
+  has_many :book_comments, relation_name: -> (options = {}) {
+    context = options[:context]
+    current_user = context ? context[:current_user] : nil
+
+    unless current_user && current_user.book_admin
+      :approved_book_comments
+    else
+      :book_comments
+    end
+  }
+  ...
+end
+```
+
+The polymorphic relationship will require the resource and controller to exist, although routing to them will cause an
+error.
+
+```ruby
+class TaggableResource < JSONAPI::Resource; end
+class TaggablesController < JSONAPI::ResourceController; end
 ```
 
 #### Filters
 
-Filters for locating objects of the resource type are specified in the resource definition. Single filters can be declared using the `filter` method, and multiple filters can be declared with the `filters` method on the
-resource class.
+Filters for locating objects of the resource type are specified in the resource definition. Single filters can be
+declared using the `filter` method, and multiple filters can be declared with the `filters` method on the resource
+class.
 
 For example:
 
 ```ruby
-require 'jsonapi/resource'
-
 class ContactResource < JSONAPI::Resource
-  attributes :id, :name_first, :name_last, :email, :twitter
+  attributes :name_first, :name_last, :email, :twitter
 
   filter :id
   filters :name_first, :name_last
 end
 ```
 
+Then a request could pass in a filter for example `http://example.com/contacts?filter[name_last]=Smith` and the system
+will find all people where the last name exactly matches Smith.
+
+##### Default Filters
+
+A default filter may be defined for a resource using the `default` option on the `filter` method. This default is used
+unless the request overrides this value.
+
+For example:
+
+```ruby
+ class CommentResource < JSONAPI::Resource
+  attributes :body, :status
+  has_one :post
+  has_one :author
+
+  filter :status, default: 'published,pending'
+end
+```
+
+The default value is used as if it came from the request.
+
 ##### Finders
 
-Basic finding by filters is supported by resources. This is implemented in the `find` and `find_by_key` finder methods. Currently this is implemented for `ActiveRecord` based resources. The finder methods rely on the `records` method to get an `Arel` relation. It is therefore possible to override `records` to affect the three find related methods.
+Basic finding by filters is supported by resources. This is implemented in the `find` and `find_by_key` finder methods.
+Currently this is implemented for `ActiveRecord` based resources. The finder methods rely on the `records` method to get
+an `Arel` relation. It is therefore possible to override `records` to affect the three find related methods.
 
 ###### Customizing base records for finder methods
 
-If you need to change the base records on which `find` and `find_by_key` operate, you can override the `records` method on the resource class.
+If you need to change the base records on which `find` and `find_by_key` operate, you can override the `records` method
+on the resource class.
 
 For example to allow a user to only retrieve his own posts you can do the following:
 
 ```ruby
 class PostResource < JSONAPI::Resource
-  attribute :id, :title, :body
+  attribute :title, :body
 
   def self.records(options = {})
     context = options[:context]
@@ -283,14 +408,51 @@ class PostResource < JSONAPI::Resource
 end
 ```
 
+When you create a relationship, a method is created to fetch record(s) for that relationship. This method calls
+`records_for(relationship_name)` by default.
+
+```ruby
+class PostResource < JSONAPI::Resource
+  has_one :author
+  has_many :comments
+
+  # def record_for_author(options = {})
+  #   records_for("author", options)
+  # end
+
+  # def records_for_comments(options = {})
+  #   records_for("comments", options)
+  # end
+end
+
+```
+
+For example, you may want raise an error if the user is not authorized to view the related records.
+
+```ruby
+class BaseResource < JSONAPI::Resource
+  def records_for(relationship_name, options={})
+    context = options[:context]
+    records = model.public_send(relationship_name)
+
+    unless context.current_user.can_view?(records)
+      raise NotAuthorizedError
+    end
+
+    records
+  end
+end
+```
+
 ###### Applying Filters
 
-The `apply_filter` method is called to apply each filter to the `Arel` relation. You may override this method to gain control over how the filters are applied to the `Arel` relation.
+The `apply_filter` method is called to apply each filter to the `Arel` relation. You may override this method to gain
+control over how the filters are applied to the `Arel` relation.
 
 This example shows how you can implement different approaches for different filters.
 
 ```ruby
-def self.apply_filter(records, filter, value)
+def self.apply_filter(records, filter, value, options)
   case filter
     when :visibility
       records.where('users.publicly_visible = ?', value == :public)
@@ -311,13 +473,14 @@ end
 
 ###### Override finder methods
 
-Finally if you have more complex requirements for finding you can override the `find` and `find_by_key` methods on the resource class.
+Finally if you have more complex requirements for finding you can override the `find` and `find_by_key` methods on the
+resource class.
 
 Here's an example that defers the `find` operation to a `current_user` set on the `context` option:
 
 ```ruby
 class AuthorResource < JSONAPI::Resource
-  attributes :id, :name
+  attribute :name
   model_name 'Person'
   has_many :posts
 
@@ -336,23 +499,31 @@ end
 
 #### Pagination
 
-Pagination is performed using a `paginator`, which is a class responsible for parsing the `page` request parameters and applying the pagination logic to the results.
+Pagination is performed using a `paginator`, which is a class responsible for parsing the `page` request parameters and
+applying the pagination logic to the results.
 
 ##### Paginators
 
-`JSONAPI::Resource` supports several pagination methods by default, and allows you to implement a custom system if the defaults do not meet your needs.
+`JSONAPI::Resource` supports several pagination methods by default, and allows you to implement a custom system if the
+defaults do not meet your needs.
 
 ###### Paged Paginator
 
-The `paged` `paginator` returns results based on pages of a fixed size. Valid `page` parameters are `number` and `size`. If `number` is omitted the first page is returned. If `size` is omitted the `default_page_size` from the configuration settings is used.
+The `paged` `paginator` returns results based on pages of a fixed size. Valid `page` parameters are `number` and `size`.
+If `number` is omitted the first page is returned. If `size` is omitted the `default_page_size` from the configuration
+settings is used.
 
 ###### Offset Paginator
 
-The `offset` `paginator` returns results based on an offset from the beginning of the resultset. Valid `page` parameters are `offset` and `limit`. If `offset` is omitted a value of 0 will be used. If `limit` is omitted the `default_page_size` from the configuration settings is used.
+The `offset` `paginator` returns results based on an offset from the beginning of the resultset. Valid `page` parameters
+are `offset` and `limit`. If `offset` is omitted a value of 0 will be used. If `limit` is omitted the `default_page_size`
+from the configuration settings is used.
 
 ###### Custom Paginators
 
-Custom `paginators` can be used. These should derive from `Paginator`. The `apply` method takes a `relation` and is expected to return a `relation`. The `initialize` method receives the parameters from the `page` request parameters. It is up to the paginator author to parse and validate these parameters.
+Custom `paginators` can be used. These should derive from `Paginator`. The `apply` method takes a `relation` and
+`order_options` and is expected to return a `relation`. The `initialize` method receives the parameters from the `page`
+request parameters. It is up to the paginator author to parse and validate these parameters.
 
 For example, here is a very simple single record at a time paginator:
 
@@ -363,7 +534,7 @@ class SingleRecordPaginator < JSONAPI::Paginator
     @page = params.to_i
   end
 
-  def apply(relation)
+  def apply(relation, order_options)
     relation.offset(@page).limit(1)
   end
 end
@@ -371,21 +542,23 @@ end
 
 ##### Paginator Configuration
 
-The default paginator, which will be used for all resources, is set using `JSONAPI.configure`. For example:
+The default paginator, which will be used for all resources, is set using `JSONAPI.configure`. For example, in your
+`config/initializers/jsonapi_resources.rb`:
 
 ```ruby
 JSONAPI.configure do |config|
   # built in paginators are :none, :offset, :cursor, :paged
-  self.default_paginator = :offset
+  config.default_paginator = :offset
 
-  self.default_page_size = 10
-  self.maximum_page_size = 20
+  config.default_page_size = 10
+  config.maximum_page_size = 20
 end
 ```
 
 If no `default_paginator` is configured, pagination will be disabled by default.
 
-Paginators can also be set at the resource-level, which will override the default setting. This is done using the `paginator` method:
+Paginators can also be set at the resource-level, which will override the default setting. This is done using the
+`paginator` method:
 
 ```ruby
 class BookResource < JSONAPI::Resource
@@ -400,7 +573,8 @@ To disable pagination in a resource, specify `:none` for `paginator`.
 
 #### Callbacks
 
-`ActiveSupport::Callbacks` is used to provide callback functionality, so the behavior is very similar to what you may be used to from `ActiveRecord`.
+`ActiveSupport::Callbacks` is used to provide callback functionality, so the behavior is very similar to what you may be
+used to from `ActiveRecord`.
 
 For example, you might use a callback to perform authorization on your resource before an action.
 
@@ -439,11 +613,64 @@ Callbacks can be defined for the following `JSONAPI::Resource` events:
 
 Callbacks can also be defined for `JSONAPI::OperationsProcessor` events:
 - `:operations`: The set of operations.
-- `:operation`: The individual operations.
+- `:operation`: Any individual operation.
+- `:find_operation`: A `find_operation`.
+- `:show_operation`: A `show_operation`.
+- `:show_relationship_operation`: A `show_relationship_operation`.
+- `:show_related_resource_operation`: A `show_related_resource_operation`.
+- `:show_related_resources_operation`: A `show_related_resources_operation`.
+- `:create_resource_operation`: A `create_resource_operation`.
+- `:remove_resource_operation`: A `remove_resource_operation`.
+- `:replace_fields_operation`: A `replace_fields_operation`.
+- `:replace_has_one_relationship_operation`: A `replace_has_one_relationship_operation`.
+- `:create_has_many_relationship_operation`: A `create_has_many_relationship_operation`.
+- `:replace_has_many_relationship_operation`: A `replace_has_many_relationship_operation`.
+- `:remove_has_many_relationship_operation`: A `remove_has_many_relationship_operation`.
+- `:remove_has_one_relationship_operation`: A `remove_has_one_relationship_operation`.
+
+The operation callbacks have access to two meta data hashes, `@operations_meta` and `@operation_meta`, two links hashes,
+`@operations_links` and `@operation_links`, the full list of `@operations`, each individual `@operation` and the
+`@result` variables.
+
+##### Custom `OperationsProcessor` Example to Return total_count in Meta
+
+Note: this can also be accomplished with the `top_level_meta_include_record_count` option, and in most cases that will
+be the better option.
+
+To return the total record count of a find operation in the meta data of a find operation you can create a custom
+OperationsProcessor. For example:
+
+```ruby
+class CountingActiveRecordOperationsProcessor < ActiveRecordOperationsProcessor
+  after_find_operation do
+    @operation_meta[:total_records] = @operation.record_count
+  end
+end
+```
+
+Set the configuration option `operations_processor` to use the new `CountingActiveRecordOperationsProcessor` by
+specifying the snake cased name of the class (without the `OperationsProcessor`).
+
+```ruby
+JSONAPI.configure do |config|
+  config.operations_processor = :counting_active_record
+end
+```
+
+The callback code will be called after each find. It will use the same options as the find operation, without the
+pagination, to collect the record count. This is stored in the `operation_meta`, which will be returned in the top level
+meta element.
 
 ### Controllers
 
-`JSONAPI::Resources` provides a class, `ResourceController`, that can be used as the base class for your controllers. `ResourceController` supports `index`, `show`, `create`, `update`, and `destroy` methods. Just deriving your controller from `ResourceController` will give you a fully functional controller.
+There are two ways to implement a controller for your resources. Either derive from `ResourceController` or import
+the `ActsAsResourceController` module.
+
+##### ResourceController
+
+`JSONAPI::Resources` provides a class, `ResourceController`, that can be used as the base class for your controllers.
+`ResourceController` supports `index`, `show`, `create`, `update`, and `destroy` methods. Just deriving your controller
+from `ResourceController` will give you a fully functional controller.
 
 For example:
 
@@ -473,17 +700,30 @@ class PeopleController < ApplicationController
 end
 ```
 
+##### ActsAsResourceController
+
+`JSONAPI::Resources` also provides a module, `JSONAPI::ActsAsResourceController`. You can include this module to
+mix in all the features of `ResourceController` into your existing controller class.
+
+For example:
+
+```ruby
+class PostsController < ActionController::Base
+  include JSONAPI::ActsAsResourceController
+end
+```
+
 #### Namespaces
 
 JSONAPI::Resources supports namespacing of controllers and resources. With namespacing you can version your API.
 
 If you namespace your controller it will require a namespaced resource.
 
-In the following example we have a `resource` that isn't namespaced, and one the has now been namespaced. There are slight differences between the two resources, as might be seen in a new version of an API:
+In the following example we have a `resource` that isn't namespaced, and one the has now been namespaced. There are
+slight differences between the two resources, as might be seen in a new version of an API:
 
 ```ruby
 class PostResource < JSONAPI::Resource
-  attribute :id
   attribute :title
   attribute :body
   attribute :subject
@@ -507,7 +747,6 @@ module Api
     class PostResource < JSONAPI::Resource
       # V1 replaces the non-namespaced resource
       # V1 no longer supports tags and now calls author 'writer'
-      attribute :id
       attribute :title
       attribute :body
       attribute :subject
@@ -524,7 +763,7 @@ module Api
     end
 
     class WriterResource < JSONAPI::Resource
-      attributes :id, :name, :email
+      attributes :name, :email
       model_name 'Person'
       has_many :posts
 
@@ -584,17 +823,31 @@ module JSONAPI
   KEY_NOT_INCLUDED_IN_URL = 110
   INVALID_INCLUDE = 112
   RELATION_EXISTS = 113
-  INVALID_SORT_PARAM = 114
+  INVALID_SORT_CRITERIA = 114
   INVALID_LINKS_OBJECT = 115
   TYPE_MISMATCH = 116
   INVALID_PAGE_OBJECT = 117
   INVALID_PAGE_VALUE = 118
+  INVALID_FIELD_FORMAT = 119
+  INVALID_FILTERS_SYNTAX = 120
+  SAVE_FAILED = 121
+  FORBIDDEN = 403
   RECORD_NOT_FOUND = 404
+  UNSUPPORTED_MEDIA_TYPE = 415
   LOCKED = 423
 end
 ```
 
 These codes can be customized in your app by creating an initializer to override any or all of the codes.
+
+In addition textual error codes can be returned by setting the configuration option `use_text_errors = true`. For
+example:
+
+```ruby
+JSONAPI.configure do |config|
+  config.use_text_errors = :true
+end
+```
 
 ### Serializer
 
@@ -603,24 +856,55 @@ The `ResourceSerializer` can be used to serialize a resource into JSON API compl
  method that takes a resource instance or array of resource instances to serialize. For example:
 
 ```ruby
-require 'jsonapi/resource_serializer'
 post = Post.find(1)
 JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(PostResource.new(post))
 ```
 
 This returns results like this:
 
-```ruby
+```json
 {
-  posts: {
-    id: 1,
-    title: 'New post',
-    body: 'A body!!!',
-    links: {
-      section: nil,
-      author: 1,
-      tags: [1,2,3],
-      comments: [1,2]
+  "data": {
+    "type": "posts",
+    "id": "1",
+    "links": {
+      "self": "http://example.com/posts/1"
+    },
+    "attributes": {
+      "title": "New post",
+      "body": "A body!!!",
+      "subject": "New post"
+    },
+    "relationships": {
+      "section": {
+        "links": {
+          "self": "http://example.com/posts/1/relationships/section",
+          "related": "http://example.com/posts/1/section"
+        },
+        "data": null
+      },
+      "author": {
+        "links": {
+          "self": "http://example.com/posts/1/relationships/author",
+          "related": "http://example.com/posts/1/author"
+        },
+        "data": {
+          "type": "people",
+          "id": "1"
+        }
+      },
+      "tags": {
+        "links": {
+          "self": "http://example.com/posts/1/relationships/tags",
+          "related": "http://example.com/posts/1/tags"
+        }
+      },
+      "comments": {
+        "links": {
+          "self": "http://example.com/posts/1/relationships/comments",
+          "related": "http://example.com/posts/1/comments"
+        }
+      }
     }
   }
 }
@@ -642,22 +926,23 @@ An array of resources. Nested resources can be specified with dot notation.
 
 A hash of resource types and arrays of fields for each resource type.
 
-  *Purpose*: determines which fields are serialized for a resource type. This encompasses both attributes and association ids in the links section for a resource. Fields are global for a resource type.
+  *Purpose*: determines which fields are serialized for a resource type. This encompasses both attributes and
+  relationship ids in the links section for a resource. Fields are global for a resource type.
 
-  *Example*: ```fields: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}```
+  *Example*: ```fields: { people: [:email, :comments], posts: [:title, :author], comments: [:body, :post]}```
 
 ```ruby
 post = Post.find(1)
-JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(
-  PostResource.new(post),
-  include: ['comments','author','comments.tags','author.posts'],
+include_resources = ['comments','author','comments.tags','author.posts']
+
+JSONAPI::ResourceSerializer.new(PostResource, include: include_resources,
   fields: {
-    people: [:id, :email, :comments],
-    posts: [:id, :title, :author],
+    people: [:email, :comments],
+    posts: [:title, :author],
     tags: [:name],
-    comments: [:id, :body, :post]
+    comments: [:body, :post]
   }
-)
+).serialize_to_hash(PostResource.new(post))
 ```
 
 ##### `context`
@@ -670,12 +955,11 @@ JR has a couple of helper methods available to assist you with setting up routes
 
 ##### `jsonapi_resources`
 
-Like `resources` in `ActionDispatch`, `jsonapi_resources` provides resourceful routes mapping between HTTP verbs and URLs and controller actions. This will also setup mappings for relationship URLs for a resource's associations. For example:
+Like `resources` in `ActionDispatch`, `jsonapi_resources` provides resourceful routes mapping between HTTP verbs and URLs
+and controller actions. This will also setup mappings for relationship URLs for a resource's relationships. For example:
 
 ```ruby
-require 'jsonapi/routing_ext'
-
-Peeps::Application.routes.draw do
+Rails.application.routes.draw do
   jsonapi_resources :contacts
   jsonapi_resources :phone_numbers
 end
@@ -684,62 +968,166 @@ end
 gives the following routes
 
 ```
-                     Prefix Verb   URI Pattern                                               Controller#Action
-contact_links_phone_numbers GET    /contacts/:contact_id/links/phone_numbers(.:format)       contacts#show_association {:association=>"phone_numbers"}
-                            POST   /contacts/:contact_id/links/phone_numbers(.:format)       contacts#create_association {:association=>"phone_numbers"}
-                            DELETE /contacts/:contact_id/links/phone_numbers/:keys(.:format) contacts#destroy_association {:association=>"phone_numbers"}
-                   contacts GET    /contacts(.:format)                                       contacts#index
-                            POST   /contacts(.:format)                                       contacts#create
-                new_contact GET    /contacts/new(.:format)                                   contacts#new
-               edit_contact GET    /contacts/:id/edit(.:format)                              contacts#edit
-                    contact GET    /contacts/:id(.:format)                                   contacts#show
-                            PATCH  /contacts/:id(.:format)                                   contacts#update
-                            PUT    /contacts/:id(.:format)                                   contacts#update
-                            DELETE /contacts/:id(.:format)                                   contacts#destroy
- phone_number_links_contact GET    /phone_numbers/:phone_number_id/links/contact(.:format)   phone_numbers#show_association {:association=>"contact"}
-                            POST   /phone_numbers/:phone_number_id/links/contact(.:format)   phone_numbers#create_association {:association=>"contact"}
-                            DELETE /phone_numbers/:phone_number_id/links/contact(.:format)   phone_numbers#destroy_association {:association=>"contact"}
-              phone_numbers GET    /phone_numbers(.:format)                                  phone_numbers#index
-                            POST   /phone_numbers(.:format)                                  phone_numbers#create
-           new_phone_number GET    /phone_numbers/new(.:format)                              phone_numbers#new
-          edit_phone_number GET    /phone_numbers/:id/edit(.:format)                         phone_numbers#edit
-               phone_number GET    /phone_numbers/:id(.:format)                              phone_numbers#show
-                            PATCH  /phone_numbers/:id(.:format)                              phone_numbers#update
-                            PUT    /phone_numbers/:id(.:format)                              phone_numbers#update
-                            DELETE /phone_numbers/:id(.:format)                              phone_numbers#destroy
+                     Prefix Verb      URI Pattern                                               Controller#Action
+contact_relationships_phone_numbers GET       /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#show_relationship {:relationship=>"phone_numbers"}
+                            POST      /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#create_relationship {:relationship=>"phone_numbers"}
+                            DELETE    /contacts/:contact_id/relationships/phone-numbers/:keys(.:format) contacts#destroy_relationship {:relationship=>"phone_numbers"}
+      contact_phone_numbers GET       /contacts/:contact_id/phone-numbers(.:format)             phone_numbers#get_related_resources {:relationship=>"phone_numbers", :source=>"contacts"}
+                   contacts GET       /contacts(.:format)                                       contacts#index
+                            POST      /contacts(.:format)                                       contacts#create
+                    contact GET       /contacts/:id(.:format)                                   contacts#show
+                            PATCH     /contacts/:id(.:format)                                   contacts#update
+                            PUT       /contacts/:id(.:format)                                   contacts#update
+                            DELETE    /contacts/:id(.:format)                                   contacts#destroy
+ phone_number_relationships_contact GET       /phone-numbers/:phone_number_id/relationships/contact(.:format)   phone_numbers#show_relationship {:relationship=>"contact"}
+                            PUT|PATCH /phone-numbers/:phone_number_id/relationships/contact(.:format)   phone_numbers#update_relationship {:relationship=>"contact"}
+                            DELETE    /phone-numbers/:phone_number_id/relationships/contact(.:format)   phone_numbers#destroy_relationship {:relationship=>"contact"}
+       phone_number_contact GET       /phone-numbers/:phone_number_id/contact(.:format)         contacts#get_related_resource {:relationship=>"contact", :source=>"phone_numbers"}
+              phone_numbers GET       /phone-numbers(.:format)                                  phone_numbers#index
+                            POST      /phone-numbers(.:format)                                  phone_numbers#create
+               phone_number GET       /phone-numbers/:id(.:format)                              phone_numbers#show
+                            PATCH     /phone-numbers/:id(.:format)                              phone_numbers#update
+                            PUT       /phone-numbers/:id(.:format)                              phone_numbers#update
+                            DELETE    /phone-numbers/:id(.:format)                              phone_numbers#destroy
 ```
 
 ##### `jsonapi_resource`
 
 Like `jsonapi_resources`, but for resources you lookup without an id.
 
-##### `jsonapi_links`
+#### Nested Routes
 
-You can control the relationship routes by passing a block into `jsonapi_resources` or `jsonapi_resource`. An empty block
-will not create any relationship routes.
+By default nested routes are created for getting related resources and manipulating relationships. You can control the
+nested routes by passing a block into `jsonapi_resources` or `jsonapi_resource`. An empty block will not create
+any nested routes. For example:
+
+```ruby
+Rails.application.routes.draw do
+  jsonapi_resources :contacts do
+  end
+end
+```
+
+gives routes that are only related to the primary resource, and none for its relationships:
+
+```
+      Prefix Verb   URI Pattern                  Controller#Action
+    contacts GET    /contacts(.:format)          contacts#index
+             POST   /contacts(.:format)          contacts#create
+     contact GET    /contacts/:id(.:format)      contacts#show
+             PATCH  /contacts/:id(.:format)      contacts#update
+             PUT    /contacts/:id(.:format)      contacts#update
+             DELETE /contacts/:id(.:format)      contacts#destroy
+```
+
+To manually add in the nested routes you can use the `jsonapi_links`, `jsonapi_related_resources` and
+`jsonapi_related_resource` inside the block. Or, you can add the default set of nested routes using the
+`jsonapi_relationships` method. For example:
+
+```ruby
+Rails.application.routes.draw do
+  jsonapi_resources :contacts do
+    jsonapi_relationships
+  end
+end
+```
+
+###### `jsonapi_links`
 
 You can add relationship routes in with `jsonapi_links`, for example:
 
 ```ruby
 Rails.application.routes.draw do
-  jsonapi_resources :posts, except: [:destroy] do
-    jsonapi_link :author, except: [:destroy]
-    jsonapi_links :tags, only: [:show, :create]
+  jsonapi_resources :contacts do
+    jsonapi_links :phone_numbers
   end
 end
 ```
 
-This will create relationship routes for author (show and create, but not destroy) and for tags (again show and create, but not destroy).
+Gives the following routes:
+
+```
+contact_relationships_phone_numbers GET    /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#show_relationship {:relationship=>"phone_numbers"}
+                            POST   /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#create_relationship {:relationship=>"phone_numbers"}
+                            DELETE /contacts/:contact_id/relationships/phone-numbers/:keys(.:format) contacts#destroy_relationship {:relationship=>"phone_numbers"}
+                   contacts GET    /contacts(.:format)                                       contacts#index
+                            POST   /contacts(.:format)                                       contacts#create
+                    contact GET    /contacts/:id(.:format)                                   contacts#show
+                            PATCH  /contacts/:id(.:format)                                   contacts#update
+                            PUT    /contacts/:id(.:format)                                   contacts#update
+                            DELETE /contacts/:id(.:format)                                   contacts#destroy
+
+```
+
+The new routes allow you to show, create and destroy the relationships between resources.
+
+###### `jsonapi_related_resources`
+
+Creates a nested route to GET the related has_many resources. For example:
+
+```ruby
+Rails.application.routes.draw do
+  jsonapi_resources :contacts do
+    jsonapi_related_resources :phone_numbers
+  end
+end
+
+```
+
+gives the following routes:
+
+```
+               Prefix Verb   URI Pattern                                   Controller#Action
+contact_phone_numbers GET    /contacts/:contact_id/phone-numbers(.:format) phone_numbers#get_related_resources {:relationship=>"phone_numbers", :source=>"contacts"}
+             contacts GET    /contacts(.:format)                           contacts#index
+                      POST   /contacts(.:format)                           contacts#create
+              contact GET    /contacts/:id(.:format)                       contacts#show
+                      PATCH  /contacts/:id(.:format)                       contacts#update
+                      PUT    /contacts/:id(.:format)                       contacts#update
+                      DELETE /contacts/:id(.:format)                       contacts#destroy
+
+```
+
+A single additional route was created to allow you GET the phone numbers through the contact.
+
+###### `jsonapi_related_resource`
+
+Like `jsonapi_related_resources`, but for has_one related resources.
+
+```ruby
+Rails.application.routes.draw do
+  jsonapi_resources :phone_numbers do
+    jsonapi_related_resource :contact
+  end
+end
+```
+
+gives the following routes:
+
+```
+              Prefix Verb   URI Pattern                                       Controller#Action
+phone_number_contact GET    /phone-numbers/:phone_number_id/contact(.:format) contacts#get_related_resource {:relationship=>"contact", :source=>"phone_numbers"}
+       phone_numbers GET    /phone-numbers(.:format)                          phone_numbers#index
+                     POST   /phone-numbers(.:format)                          phone_numbers#create
+        phone_number GET    /phone-numbers/:id(.:format)                      phone_numbers#show
+                     PATCH  /phone-numbers/:id(.:format)                      phone_numbers#update
+                     PUT    /phone-numbers/:id(.:format)                      phone_numbers#update
+                     DELETE /phone-numbers/:id(.:format)                      phone_numbers#destroy
+
+```
 
 #### Formatting
 
-JR by default uses some simple rules to format an attribute for serialization. Strings and Integers are output to JSON as is, and all other values have `.to_s` applied to them. This outputs something in all cases, but it is certainly not correct for every situation.
+JR by default uses some simple rules to format an attribute for serialization. Strings and Integers are output to JSON
+as is, and all other values have `.to_s` applied to them. This outputs something in all cases, but it is certainly not
+correct for every situation.
 
-If you want to change the way an attribute is serialized you have a couple of ways. The simplest method is to create a getter method on the resource which overrides the attribute and apply the formatting there. For example:
+If you want to change the way an attribute is serialized you have a couple of ways. The simplest method is to create a
+getter method on the resource which overrides the attribute and apply the formatting there. For example:
 
 ```ruby
 class PersonResource < JSONAPI::Resource
-  attributes :id, :name, :email
+  attributes :name, :email
   attribute :last_login_time
 
   def last_login_time
@@ -748,30 +1136,34 @@ class PersonResource < JSONAPI::Resource
 end
 ```
 
-This is simple to implement for a one off situation, but not for example if you want to apply the same formatting rules to all DateTime fields in your system. Another issue is the attribute on the resource will always return a formatted response, whether you want it or not.
+This is simple to implement for a one off situation, but not for example if you want to apply the same formatting rules
+to all DateTime fields in your system. Another issue is the attribute on the resource will always return a formatted
+response, whether you want it or not.
 
 ##### Value Formatters
 
-To overcome the above limitations JR uses Value Formatters. Value Formatters allow you to control the way values are handled for an attribute. The `format` can be set per attribute as it is declared in the resource. For example:
+To overcome the above limitations JR uses Value Formatters. Value Formatters allow you to control the way values are
+handled for an attribute. The `format` can be set per attribute as it is declared in the resource. For example:
 
 ```ruby
 class PersonResource < JSONAPI::Resource
-  attributes :id, :name, :email
-  attribute :last_login_time, format: :date_with_timezone
+  attributes :name, :email
+  attribute :last_login_time, format: :date_with_utc_timezone
 end
 ```
 
-A Value formatter has a `format` and an `unformat` method. Here's the base ValueFormatter and DefaultValueFormatter for reference:
+A Value formatter has a `format` and an `unformat` method. Here's the base ValueFormatter and DefaultValueFormatter for
+reference:
 
 ```ruby
 module JSONAPI
   class ValueFormatter < Formatter
     class << self
-      def format(raw_value, context)
+      def format(raw_value)
         super(raw_value)
       end
 
-      def unformat(value, context)
+      def unformat(value)
         super(value)
       end
       ...
@@ -781,7 +1173,7 @@ end
 
 class DefaultValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value, context)
+    def format(raw_value)
       case raw_value
         when String, Integer
           return raw_value
@@ -793,15 +1185,22 @@ class DefaultValueFormatter < JSONAPI::ValueFormatter
 end
 ```
 
-You can also create your own Value Formatter. Value Formatters must be named with the `format` name followed by `ValueFormatter`, i.e. `DateWithTimezoneValueFormatter` and derive from `JSONAPI::ValueFormatter`. It is recommended that you create a directory for your formatters, called `formatters`.
+You can also create your own Value Formatter. Value Formatters must be named with the `format` name followed by
+`ValueFormatter`, i.e. `DateWithUTCTimezoneValueFormatter` and derive from `JSONAPI::ValueFormatter`. It is
+recommended that you create a directory for your formatters, called `formatters`.
 
-The `format` method is called by the `ResourceSerializer` as is serializing a resource. The format method takes the `raw_value`, and `context` parameters. `raw_value` is the value as read from the model, and `context` is the context of the current user/request. From this you can base the formatted version of the attribute current context.
+The `format` method is called by the `ResourceSerializer` as is serializing a resource. The format method takes the
+`raw_value` parameter. `raw_value` is the value as read from the model.
 
-The `unformat` method is called when processing the request. Each incoming attribute (except `links`) are run through the `unformat` method. The `unformat` method takes the `value`, and `context` parameters. `value` is the value as it comes in on the request, and `context` is the context of the current user/request. This allows you process the incoming value to alter its state before it is stored in the model. By default no processing is applied.
+The `unformat` method is called when processing the request. Each incoming attribute (except `links`) are run through
+the `unformat` method. The `unformat` method takes a `value`, which is the value as it comes in on the
+request. This allows you process the incoming value to alter its state before it is stored in the model.
 
 ###### Use a Different Default Value Formatter
 
-Another way to handle formatting is to set a different default value formatter. This will affect all attributes that do not have a `format` set. You can do this by overriding the `default_attribute_options` method for a resource (or a base resource for a system wide change).
+Another way to handle formatting is to set a different default value formatter. This will affect all attributes that do
+not have a `format` set. You can do this by overriding the `default_attribute_options` method for a resource (or a base
+resource for a system wide change).
 
 ```ruby
   def default_attribute_options
@@ -814,12 +1213,12 @@ and
 ```ruby
 class MyDefaultValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value, context)
+    def format(raw_value)
       case raw_value
         when String, Integer
           return raw_value
         when DateTime
-          return raw_value.in_time_zone(context[:current_user].time_zone).to_s
+          return raw_value.in_time_zone('UTC').to_s
         else
           return raw_value.to_s
       end
@@ -828,22 +1227,26 @@ class MyDefaultValueFormatter < JSONAPI::ValueFormatter
 end
 ```
 
-This way all DateTime values will be formatted to display in the specified timezone.
+This way all DateTime values will be formatted to display in the UTC timezone.
 
 #### Key Format
 
-By default JR uses dasherized keys as per the [JSON API naming recommendations](http://jsonapi.org/recommendations/#naming).  This can be changed by specifying a different key formatter.
+By default JR uses dasherized keys as per the
+[JSON API naming recommendations](http://jsonapi.org/recommendations/#naming).  This can be changed by specifying a
+different key formatter.
 
-For example, to use camel cased keys with an initial lowercase character (JSON's default) create an initializer and add the following:
+For example, to use camel cased keys with an initial lowercase character (JSON's default) create an initializer and add
+the following:
 
-```
+```ruby
 JSONAPI.configure do |config|
   # built in key format options are :underscored_key, :camelized_key and :dasherized_key
   config.json_key_format = :camelized_key
 end
 ```
 
-This will cause the serializer to use the `CamelizedKeyFormatter`. You can also create your own `KeyFormatter`, for example:
+This will cause the serializer to use the `CamelizedKeyFormatter`. You can also create your own `KeyFormatter`, for
+example:
 
 ```ruby
 class UpperCamelizedKeyFormatter < JSONAPI::KeyFormatter
@@ -856,6 +1259,59 @@ end
 ```
 
 You would specify this in `JSONAPI.configure` as `:upper_camelized`.
+
+## Configuration
+
+JR has a few configuration options. Some have already been mentioned above. To set configuration options create an
+initializer and add the options you wish to set. All options have defaults, so you only need to set the options that
+are different. The default options are shown below.
+
+```ruby
+JSONAPI.configure do |config|
+  #:underscored_key, :camelized_key, :dasherized_key, or custom
+  config.json_key_format = :dasherized_key
+
+  #:underscored_route, :camelized_route, :dasherized_route, or custom
+  config.route_format = :dasherized_route
+
+  #:basic, :active_record, or custom
+  config.operations_processor = :active_record
+
+  # optional request features
+  config.allow_include = true
+  config.allow_sort = true
+  config.allow_filter = true
+
+  # :none, :offset, :paged, or a custom paginator name
+  config.default_paginator = :none
+
+  # Output pagination links at top level
+  config.top_level_links_include_pagination = true
+
+  config.default_page_size = 10
+  config.maximum_page_size = 20
+
+  # Output the record count in top level meta data for find operations
+  config.top_level_meta_include_record_count = false
+  config.top_level_meta_record_count_key = :record_count
+
+  config.use_text_errors = false
+
+  # List of classes that should not be rescued by the operations processor.
+  # For example, if you use Pundit for authorization, you might
+  # raise a Pundit::NotAuthorizedError at some point during operations
+  # processing. If you want to use Rails' `rescue_from` macro to
+  # catch this error and render a 403 status code, you should add
+  # the `Pundit::NotAuthorizedError` to the `exception_class_whitelist`.
+  # Subclasses of the whitelisted classes will also be whitelisted.
+  config.exception_class_whitelist = []
+
+  # Resource Linkage
+  # Controls the serialization of resource linkage for non compound documents
+  # NOTE: always_include_to_many_linkage_data is not currently implemented
+  config.always_include_to_one_linkage_data = false
+end
+```
 
 ## Contributing
 

@@ -2,6 +2,21 @@ module JSONAPI
   module Exceptions
     class Error < RuntimeError; end
 
+    class InternalServerError < Error
+      attr_accessor :exception
+
+      def initialize(exception)
+        @exception = exception
+      end
+
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::INTERNAL_SERVER_ERROR,
+                            status: 500,
+                            title: 'Internal Server Error',
+                            detail: 'Internal Server Error')]
+      end
+    end
+
     class InvalidResource < Error
       attr_accessor :resource
       def initialize(resource)
@@ -10,9 +25,9 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_RESOURCE,
-                             status: :bad_request,
-                             title: 'Invalid resource',
-                             detail: "#{resource} is not a valid resource.")]
+                            status: :bad_request,
+                            title: 'Invalid resource',
+                            detail: "#{resource} is not a valid resource.")]
       end
     end
 
@@ -24,9 +39,9 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::RECORD_NOT_FOUND,
-                             status: :not_found,
-                             title: 'Record not found',
-                             detail: "The record identified by #{id} could not be found.")]
+                            status: :not_found,
+                            title: 'Record not found',
+                            detail: "The record identified by #{id} could not be found.")]
       end
     end
 
@@ -38,9 +53,9 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::UNSUPPORTED_MEDIA_TYPE,
-                             status: :unsupported_media_type,
-                             title: 'Unsupported media type',
-                             detail: "All requests that create or update resources must use the '#{JSONAPI::MEDIA_TYPE}' Content-Type. This request specified '#{media_type}.'")]
+                            status: :unsupported_media_type,
+                            title: 'Unsupported media type',
+                            detail: "All requests that create or update resources must use the '#{JSONAPI::MEDIA_TYPE}' Content-Type. This request specified '#{media_type}.'")]
       end
     end
 
@@ -58,6 +73,29 @@ module JSONAPI
       end
     end
 
+    class ToManySetReplacementForbidden < Error
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::FORBIDDEN,
+                            status: :forbidden,
+                            title: 'Complete replacement forbidden',
+                            detail: 'Complete replacement forbidden for this relationship')]
+      end
+    end
+
+    class InvalidFiltersSyntax < Error
+      attr_accessor :filters
+      def initialize(filters)
+        @filters = filters
+      end
+
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::INVALID_FILTERS_SYNTAX,
+                            status: :bad_request,
+                            title: 'Invalid filters syntax',
+                            detail: "#{filters} is not a valid syntax for filtering.")]
+      end
+    end
+
     class FilterNotAllowed < Error
       attr_accessor :filter
       def initialize(filter)
@@ -66,9 +104,9 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::FILTER_NOT_ALLOWED,
-                             status: :bad_request,
-                             title: 'Filter not allowed',
-                             detail: "#{filter} is not allowed.")]
+                            status: :bad_request,
+                            title: 'Filter not allowed',
+                            detail: "#{filter} is not allowed.")]
       end
     end
 
@@ -81,9 +119,9 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_FILTER_VALUE,
-                             status: :bad_request,
-                             title: 'Invalid filter value',
-                             detail: "#{value} is not a valid value for #{filter}.")]
+                            status: :bad_request,
+                            title: 'Invalid filter value',
+                            detail: "#{value} is not a valid value for #{filter}.")]
       end
     end
 
@@ -96,23 +134,27 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_FIELD_VALUE,
-                             status: :bad_request,
-                             title: 'Invalid field value',
-                             detail: "#{value} is not a valid value for #{field}.")]
+                            status: :bad_request,
+                            title: 'Invalid field value',
+                            detail: "#{value} is not a valid value for #{field}.")]
+      end
+    end
+
+    class InvalidFieldFormat < Error
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::INVALID_FIELD_FORMAT,
+                            status: :bad_request,
+                            title: 'Invalid field format',
+                            detail: 'Fields must specify a type.')]
       end
     end
 
     class InvalidLinksObject < Error
-      attr_accessor :value
-      def initialize(value)
-        @value = value
-      end
-
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_LINKS_OBJECT,
                             status: :bad_request,
                             title: 'Invalid Links Object',
-                            detail: "#{value} is not a valid Links Object.")]
+                            detail: 'Data is not a valid Links Object.')]
       end
     end
 
@@ -139,24 +181,24 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_FIELD,
-                             status: :bad_request,
-                             title: 'Invalid field',
-                             detail: "#{field} is not a valid field for #{type}.")]
+                            status: :bad_request,
+                            title: 'Invalid field',
+                            detail: "#{field} is not a valid field for #{type}.")]
       end
     end
 
     class InvalidInclude < Error
-      attr_accessor :association, :resource
-      def initialize(resource, association)
+      attr_accessor :relationship, :resource
+      def initialize(resource, relationship)
         @resource = resource
-        @association = association
+        @relationship = relationship
       end
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_INCLUDE,
                             status: :bad_request,
                             title: 'Invalid field',
-                            detail: "#{association} is not a valid association of #{resource}")]
+                            detail: "#{relationship} is not a valid relationship of #{resource}")]
       end
     end
 
@@ -175,21 +217,6 @@ module JSONAPI
       end
     end
 
-    class InvalidSortFormat < Error
-      attr_accessor :sort_criteria, :resource
-      def initialize(resource, sort_criteria)
-        @resource = resource
-        @sort_criteria = sort_criteria
-      end
-
-      def errors
-        [JSONAPI::Error.new(code: JSONAPI::INVALID_SORT_FORMAT,
-                            status: :bad_request,
-                            title: 'Invalid sort format',
-                            detail: "#{sort_criteria} must start with a direction (+ or -)")]
-      end
-    end
-
     class ParametersNotAllowed < Error
       attr_accessor :params
       def initialize(params)
@@ -197,13 +224,12 @@ module JSONAPI
       end
 
       def errors
-            params.collect { |param|
-              JSONAPI::Error.new(code: JSONAPI::PARAM_NOT_ALLOWED,
+        params.collect do |param|
+          JSONAPI::Error.new(code: JSONAPI::PARAM_NOT_ALLOWED,
                              status: :bad_request,
                              title: 'Param not allowed',
                              detail: "#{param} is not allowed.")
-            }
-
+        end
       end
     end
 
@@ -215,18 +241,18 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::PARAM_MISSING,
-                             status: :bad_request,
-                             title: 'Missing Parameter',
-                             detail: "The required parameter, #{param}, is missing.")]
+                            status: :bad_request,
+                            title: 'Missing Parameter',
+                            detail: "The required parameter, #{param}, is missing.")]
       end
     end
 
     class CountMismatch < Error
       def errors
         [JSONAPI::Error.new(code: JSONAPI::COUNT_MISMATCH,
-                              status: :bad_request,
-                              title: 'Count to key mismatch',
-                              detail: 'The resource collection does not contain the same number of objects as the number of keys.')]
+                            status: :bad_request,
+                            title: 'Count to key mismatch',
+                            detail: 'The resource collection does not contain the same number of objects as the number of keys.')]
       end
     end
 
@@ -238,18 +264,18 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::KEY_NOT_INCLUDED_IN_URL,
-                              status: :bad_request,
-                              title: 'Key is not included in URL',
-                              detail: "The URL does not support the key #{key}")]
+                            status: :bad_request,
+                            title: 'Key is not included in URL',
+                            detail: "The URL does not support the key #{key}")]
       end
     end
 
     class MissingKey < Error
       def errors
         [JSONAPI::Error.new(code: JSONAPI::KEY_ORDER_MISMATCH,
-                              status: :bad_request,
-                              title: 'A key is required',
-                              detail: 'The resource object does not contain a key.')]
+                            status: :bad_request,
+                            title: 'A key is required',
+                            detail: 'The resource object does not contain a key.')]
       end
     end
 
@@ -261,30 +287,57 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::LOCKED,
-                             status: :locked,
-                             title: 'Locked resource',
-                             detail: "#{message}")]
+                            status: :locked,
+                            title: 'Locked resource',
+                            detail: "#{message}")]
       end
     end
 
     class ValidationErrors < Error
-      attr_accessor :messages
-      def initialize(messages)
-        @messages = messages
+      attr_reader :error_messages, :resource_relationships
+
+      def initialize(resource)
+        @error_messages = resource.model.errors.messages
+        @resource_relationships = resource.class._relationships.keys
+        @key_formatter = JSONAPI.configuration.key_formatter
+      end
+
+      def format_key(key)
+        @key_formatter.format(key)
       end
 
       def errors
-        messages.inject([]) do |arr, element|
-          arr.concat(
-            element[1].map do |message|
-              JSONAPI::Error.new(code: JSONAPI::VALIDATION_ERROR,
-                                 status: :unprocessable_entity,
-                                 title: "#{element[0]} - #{message}",
-                                 detail: message,
-                                 path: "/#{element[0]}")
-            end
-          )
+        error_messages.flat_map do |attr_key, messages|
+          messages.map { |message| json_api_error(attr_key, message) }
         end
+      end
+
+      private
+
+      def json_api_error(attr_key, message)
+        JSONAPI::Error.new(code: JSONAPI::VALIDATION_ERROR,
+                           status: :unprocessable_entity,
+                           title: message,
+                           detail: "#{format_key(attr_key)} - #{message}",
+                           source: { pointer: pointer(attr_key) })
+      end
+
+      def pointer(attr_or_relationship_name)
+        formatted_attr_or_relationship_name = format_key(attr_or_relationship_name)
+        if resource_relationships.include?(attr_or_relationship_name)
+          "/data/relationships/#{formatted_attr_or_relationship_name}"
+        else
+          "/data/attributes/#{formatted_attr_or_relationship_name}"
+        end
+      end
+    end
+
+    class SaveFailed < Error
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::SAVE_FAILED,
+                            status: :unprocessable_entity,
+                            title: 'Save failed or was cancelled',
+                            detail: 'Save failed or was cancelled')]
       end
     end
 
@@ -297,7 +350,6 @@ module JSONAPI
       end
     end
 
-
     class PageParametersNotAllowed < Error
       attr_accessor :params
       def initialize(params)
@@ -305,13 +357,12 @@ module JSONAPI
       end
 
       def errors
-        params.collect { |param|
+        params.collect do |param|
           JSONAPI::Error.new(code: JSONAPI::PARAM_NOT_ALLOWED,
                              status: :bad_request,
                              title: 'Page parameter not allowed',
                              detail: "#{param} is not an allowed page parameter.")
-        }
-
+        end
       end
     end
 
@@ -320,7 +371,7 @@ module JSONAPI
       def initialize(page, value, msg = nil)
         @page = page
         @value = value
-        @msg = msg.nil? ? "#{value} is not a valid value for #{page} page parameter." : msg
+        @msg = msg || "#{value} is not a valid value for #{page} page parameter."
       end
 
       def errors

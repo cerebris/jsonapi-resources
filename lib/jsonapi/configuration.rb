@@ -1,4 +1,6 @@
 require 'jsonapi/formatter'
+require 'jsonapi/operations_processor'
+require 'jsonapi/active_record_operations_processor'
 
 module JSONAPI
   class Configuration
@@ -6,11 +8,21 @@ module JSONAPI
                 :key_formatter,
                 :route_format,
                 :route_formatter,
-                :allowed_request_params,
                 :raise_if_parameters_not_allowed,
+                :operations_processor,
+                :allow_include,
+                :allow_sort,
+                :allow_filter,
                 :default_paginator,
                 :default_page_size,
-                :maximum_page_size
+                :maximum_page_size,
+                :use_text_errors,
+                :top_level_links_include_pagination,
+                :top_level_meta_include_record_count,
+                :top_level_meta_record_count_key,
+                :exception_class_whitelist,
+                :always_include_to_one_linkage_data,
+                :always_include_to_many_linkage_data
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -19,15 +31,45 @@ module JSONAPI
       #:underscored_route, :camelized_route, :dasherized_route, or custom
       self.route_format = :dasherized_route
 
-      self.allowed_request_params = [:include, :fields, :format, :controller, :action, :sort, :page]
+      #:basic, :active_record, or custom
+      self.operations_processor = :active_record
+
+      # optional request features
+      self.allow_include = true
+      self.allow_sort = true
+      self.allow_filter = true
 
       self.raise_if_parameters_not_allowed = true
 
       # :none, :offset, :paged, or a custom paginator name
       self.default_paginator = :none
 
+      # Output pagination links at top level
+      self.top_level_links_include_pagination = true
+
       self.default_page_size = 10
       self.maximum_page_size = 20
+
+      # Metadata
+      # Output record count in top level meta for find operation
+      self.top_level_meta_include_record_count = false
+      self.top_level_meta_record_count_key = :record_count
+
+      self.use_text_errors = false
+
+      # List of classes that should not be rescued by the operations processor.
+      # For example, if you use Pundit for authorization, you might
+      # raise a Pundit::NotAuthorizedError at some point during operations
+      # processing. If you want to use Rails' `rescue_from` macro to
+      # catch this error and render a 403 status code, you should add
+      # the `Pundit::NotAuthorizedError` to the `exception_class_whitelist`.
+      self.exception_class_whitelist = []
+
+      # Resource Linkage
+      # Controls the serialization of resource linkage for non compound documents
+      # NOTE: always_include_to_many_linkage_data is not currently implemented
+      self.always_include_to_one_linkage_data = false
+      self.always_include_to_many_linkage_data = false
     end
 
     def json_key_format=(format)
@@ -40,25 +82,34 @@ module JSONAPI
       @route_formatter = JSONAPI::Formatter.formatter_for(format)
     end
 
-    def allowed_request_params=(allowed_request_params)
-      @allowed_request_params = allowed_request_params
+    def operations_processor=(operations_processor)
+      @operations_processor_name = operations_processor
+      @operations_processor = JSONAPI::OperationsProcessor.operations_processor_for(@operations_processor_name)
     end
 
-    def default_paginator=(default_paginator)
-      @default_paginator = default_paginator
-    end
+    attr_writer :allow_include, :allow_sort, :allow_filter
 
-    def default_page_size=(default_page_size)
-      @default_page_size = default_page_size
-    end
+    attr_writer :default_paginator
 
-    def maximum_page_size=(maximum_page_size)
-      @maximum_page_size = maximum_page_size
-    end
+    attr_writer :default_page_size
 
-    def raise_if_parameters_not_allowed=(val)
-      @raise_if_parameters_not_allowed = val
-    end
+    attr_writer :maximum_page_size
+
+    attr_writer :use_text_errors
+
+    attr_writer :top_level_links_include_pagination
+
+    attr_writer :top_level_meta_include_record_count
+
+    attr_writer :top_level_meta_record_count_key
+
+    attr_writer :exception_class_whitelist
+
+    attr_writer :always_include_to_one_linkage_data
+
+    attr_writer :always_include_to_many_linkage_data
+
+    attr_writer :raise_if_parameters_not_allowed
   end
 
   class << self

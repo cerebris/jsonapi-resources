@@ -1,15 +1,34 @@
 require File.expand_path('../../test_helper', __FILE__)
-require File.expand_path('../../fixtures/active_record', __FILE__)
 
 def set_content_type_header!
   @request.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
 end
 
 class PostsControllerTest < ActionController::TestCase
+  def setup
+    JSONAPI.configuration.raise_if_parameters_not_allowed = true
+  end
+
   def test_index
     get :index
     assert_response :success
     assert json_response['data'].is_a?(Array)
+  end
+
+  def test_exception_class_whitelist
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.operations_processor = :error_raising
+    # test that the operations processor rescues the error when it
+    # has not been added to the exception_class_whitelist
+    get :index
+    assert_response 500
+    # test that the operations processor does not rescue the error when it
+    # has been added to the exception_class_whitelist
+    JSONAPI.configuration.exception_class_whitelist << PostsController::SpecialError
+    get :index
+    assert_response 403
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_index_filter_with_empty_result
@@ -54,17 +73,41 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 1, json_response['included'].size
   end
 
+  def test_index_filter_not_allowed
+    JSONAPI.configuration.allow_filter = false
+    get :index, {filter: {id: '1'}}
+    assert_response :bad_request
+  ensure
+    JSONAPI.configuration.allow_filter = true
+  end
+
+  def test_index_include_one_level_query_count
+    count_queries do
+      get :index, {include: 'author'}
+    end
+    assert_response :success
+    assert_query_count(2)
+  end
+
+  def test_index_include_two_levels_query_count
+    count_queries do
+      get :index, {include: 'author,author.comments'}
+    end
+    assert_response :success
+    assert_query_count(3)
+  end
+
   def test_index_filter_by_ids_and_fields
-    get :index, {filter: {id: '1,2'}, 'fields' => 'id,title,author'}
+    get :index, {filter: {id: '1,2'}, fields: {posts: 'id,title,author'}}
     assert_response :success
     assert_equal 2, json_response['data'].size
 
-    # type, id, title, links
-    assert_equal 4, json_response['data'][0].size
-    assert json_response['data'][0].has_key?('type')
-    assert json_response['data'][0].has_key?('id')
-    assert json_response['data'][0].has_key?('title')
-    assert json_response['data'][0].has_key?('links')
+    # type, id, links, attributes, relationships
+    assert_equal 5, json_response['data'][0].size
+    assert json_response['data'][0].key?('type')
+    assert json_response['data'][0].key?('id')
+    assert json_response['data'][0]['attributes'].key?('title')
+    assert json_response['data'][0].key?('links')
   end
 
   def test_index_filter_by_ids_and_fields_specify_type
@@ -72,12 +115,12 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :success
     assert_equal 2, json_response['data'].size
 
-    # type, id, title, links
-    assert_equal 4, json_response['data'][0].size
-    assert json_response['data'][0].has_key?('type')
-    assert json_response['data'][0].has_key?('id')
-    assert json_response['data'][0].has_key?('title')
-    assert json_response['data'][0].has_key?('links')
+    # type, id, links, attributes, relationships
+    assert_equal 5, json_response['data'][0].size
+    assert json_response['data'][0].key?('type')
+    assert json_response['data'][0].key?('id')
+    assert json_response['data'][0]['attributes'].key?('title')
+    assert json_response['data'][0].key?('links')
   end
 
   def test_index_filter_by_ids_and_fields_specify_unrelated_type
@@ -87,19 +130,22 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_index_filter_by_ids_and_fields_2
-    get :index, {filter: {id: '1,2'}, 'fields' => 'author'}
+    get :index, {filter: {id: '1,2'}, fields: {posts: 'author'}}
     assert_response :success
     assert_equal 2, json_response['data'].size
 
-    # links, id, type
-    assert_equal 3, json_response['data'][0].size
-    assert json_response['data'][0].has_key?('type')
-    assert json_response['data'][0].has_key?('id')
-    assert json_response['data'][0]['links'].has_key?('author')
+    # type, id, links, relationships
+    assert_equal 4, json_response['data'][0].size
+    assert json_response['data'][0].key?('type')
+    assert json_response['data'][0].key?('id')
+    assert json_response['data'][0]['relationships'].key?('author')
   end
 
-  def test_filter_association_single
-    get :index, {filter: {tags: '5,1'}}
+  def test_filter_relationship_single
+    count_queries do
+      get :index, {filter: {tags: '5,1'}}
+    end
+    assert_query_count(1)
     assert_response :success
     assert_equal 3, json_response['data'].size
     assert_match /New post/, response.body
@@ -107,14 +153,17 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /JR How To/, response.body
   end
 
-  def test_filter_associations_multiple
-    get :index, {filter: {tags: '5,1', comments: '3'}}
+  def test_filter_relationships_multiple
+    count_queries do
+      get :index, {filter: {tags: '5,1', comments: '3'}}
+    end
+    assert_query_count(1)
     assert_response :success
     assert_equal 1, json_response['data'].size
     assert_match /JR Solves your serialization woes!/, response.body
   end
 
-  def test_filter_associations_multiple_not_found
+  def test_filter_relationships_multiple_not_found
     get :index, {filter: {tags: '1', comments: '3'}}
     assert_response :success
     assert_equal 0, json_response['data'].size
@@ -150,12 +199,6 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /5412333 could not be found/, json_response['errors'][0]['detail']
   end
 
-  def test_index_malformed_fields
-    get :index, {filter: {id: '1,2'}, 'fields' => 'posts'}
-    assert_response :bad_request
-    assert_match /posts is not a valid field for posts./, json_response['errors'][0]['detail']
-  end
-
   def test_field_not_supported
     get :index, {filter: {id: '1,2'}, 'fields' => {'posts' => 'id,title,rank,author'}}
     assert_response :bad_request
@@ -168,87 +211,110 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /posters is not a valid resource./, json_response['errors'][0]['detail']
   end
 
-  def test_index_filter_on_association
+  def test_index_filter_on_relationship
     get :index, {filter: {author: '1'}}
     assert_response :success
     assert_equal 3, json_response['data'].size
   end
 
-  def test_sorting_asc
-    get :index, {sort: '+title'}
+  def test_sorting_blank
+    get :index, {sort: ''}
 
     assert_response :success
-    assert_equal "Delete This Later - Multiple2-1", json_response['data'][0]['title']
+  end
+
+  def test_sorting_asc
+    get :index, {sort: 'title'}
+
+    assert_response :success
+    assert_equal "A First Post", json_response['data'][0]['attributes']['title']
   end
 
   def test_sorting_desc
     get :index, {sort: '-title'}
 
     assert_response :success
-    assert_equal "Update This Later - Multiple", json_response['data'][0]['title']
+    assert_equal "Update This Later - Multiple", json_response['data'][0]['attributes']['title']
   end
 
   def test_sorting_by_multiple_fields
-    get :index, {sort: '+title,+body'}
+    get :index, {sort: 'title,body'}
 
     assert_response :success
-    assert_equal '8', json_response['data'][0]['id']
+    assert_equal '14', json_response['data'][0]['id']
   end
 
   def test_invalid_sort_param
-    get :index, {sort: '+asdfg'}
+    get :index, {sort: 'asdfg'}
 
     assert_response :bad_request
     assert_match /asdfg is not a valid sort criteria for post/, response.body
   end
 
-  def test_invalid_sort_param_missing_direction
-    get :index, {sort: 'title'}
-
+  def test_show_single_with_sort_disallowed
+    JSONAPI.configuration.allow_sort = false
+    get :index, {sort: 'title,body'}
     assert_response :bad_request
-    assert_match /title must start with a direction/, response.body
+  ensure
+    JSONAPI.configuration.allow_sort = true
   end
 
   def test_excluded_sort_param
-    get :index, {sort: '+id'}
+    get :index, {sort: 'id'}
 
     assert_response :bad_request
     assert_match /id is not a valid sort criteria for post/, response.body
   end
 
-  # ToDo: test validating the parameter values
-  # def test_index_invalid_filter_value
-  #   get :index, {ids: [1,'asdfg1']}
-  #   assert_response :bad_request
-  # end
-
   def test_show_single
     get :show, {id: '1'}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
-    assert_equal 'New post', json_response['data']['title']
-    assert_equal 'A body!!!', json_response['data']['body']
+    assert_equal 'New post', json_response['data']['attributes']['title']
+    assert_equal 'A body!!!', json_response['data']['attributes']['body']
     assert_nil json_response['included']
+  end
+
+  def test_show_does_not_include_records_count_in_meta
+    JSONAPI.configuration.top_level_meta_include_record_count = true
+    get :show, { id: Post.first.id }
+    assert_response :success
+    assert_equal json_response['meta'], nil
+  ensure
+    JSONAPI.configuration.top_level_meta_include_record_count = false
   end
 
   def test_show_single_with_includes
     get :show, {id: '1', include: 'comments'}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
-    assert_equal 'New post', json_response['data']['title']
-    assert_equal 'A body!!!', json_response['data']['body']
-    assert_nil json_response['data']['links']['tags']['ids']
-    assert_equal ['1', '2'], json_response['data']['links']['comments']['ids']
+    assert_equal 'New post', json_response['data']['attributes']['title']
+    assert_equal 'A body!!!', json_response['data']['attributes']['body']
+    assert_nil json_response['data']['relationships']['tags']['data']
+    assert matches_array?([{'type' => 'comments', 'id' => '1'}, {'type' => 'comments', 'id' => '2'}],
+                          json_response['data']['relationships']['comments']['data'])
     assert_equal 2, json_response['included'].size
   end
 
+  def test_show_single_with_include_disallowed
+    JSONAPI.configuration.allow_include = false
+    get :show, {id: '1', include: 'comments'}
+    assert_response :bad_request
+  ensure
+    JSONAPI.configuration.allow_include = true
+  end
+
   def test_show_single_with_fields
-    get :show, {id: '1', fields: 'author'}
+    get :show, {id: '1', fields: {posts: 'author'}}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
-    assert_nil json_response['data']['title']
-    assert_nil json_response['data']['body']
-    assert_equal '1', json_response['data']['links']['author']['id']
+    assert_nil json_response['data']['attributes']
+  end
+
+  def test_show_single_with_fields_string
+    get :show, {id: '1', fields: 'author'}
+    assert_response :bad_request
+    assert_match /Fields must specify a type./, json_response['errors'][0]['detail']
   end
 
   def test_show_single_invalid_id_format
@@ -266,7 +332,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_show_malformed_fields_not_list
     get :show, {id: '1', 'fields' => ''}
     assert_response :bad_request
-    assert_match /nil is not a valid field for posts./, json_response['errors'][0]['detail']
+    assert_match /Fields must specify a type./, json_response['errors'][0]['detail']
   end
 
   def test_show_malformed_fields_type_not_list
@@ -281,19 +347,20 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
-             links: {
-               author: {type: 'people', id: '3'}
+             attributes: {
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
+             relationships: {
+               author: {data: {type: 'people', id: '3'}}
              }
            }
          }
 
     assert_response :created
     assert json_response['data'].is_a?(Hash)
-    assert_equal '3', json_response['data']['links']['author']['id']
-    assert_equal 'JR is Great', json_response['data']['title']
-    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['body']
+    assert_equal 'JR is Great', json_response['data']['attributes']['title']
+    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
   end
 
   def test_create_link_to_missing_object
@@ -302,16 +369,18 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
-             links: {
-               author: {type: 'people', id: '304567'}
+             attributes: {
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
+             relationships: {
+               author: {data: {type: 'people', id: '304567'}}
              }
            }
          }
 
     assert_response :unprocessable_entity
-    # Todo: check if this validation is working
+    # TODO: check if this validation is working
     assert_match /author - can't be blank/, response.body
   end
 
@@ -321,11 +390,13 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             asdfg: 'aaaa',
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
-             links: {
-               author: {type: 'people', id: '3'}
+             attributes: {
+               asdfg: 'aaaa',
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
+             relationships: {
+               author: {data: {type: 'people', id: '3'}}
              }
            }
          }
@@ -342,22 +413,28 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             asdfg: 'aaaa',
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
-             links: {
-               author: {type: 'people', id: '3'}
+             attributes: {
+               asdfg: 'aaaa',
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
+             relationships: {
+               author: {data: {type: 'people', id: '3'}}
              }
-           }
+           },
+           include: 'author'
          }
 
     assert_response :created
     assert json_response['data'].is_a?(Hash)
-    assert_equal '3', json_response['data']['links']['author']['id']
-    assert_equal 'JR is Great', json_response['data']['title']
-    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['body']
+    assert_equal '3', json_response['data']['relationships']['author']['data']['id']
+    assert_equal 'JR is Great', json_response['data']['attributes']['title']
+    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
 
-    JSONAPI.configuration.raise_if_parameters_not_allowed = true
+    assert_equal 1, json_response['meta']["warnings"].count
+    assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
+    assert_equal "asdfg is not allowed.", json_response['meta']["warnings"][0]["detail"]
+    assert_equal 105, json_response['meta']["warnings"][0]["code"]
   end
 
   def test_create_with_invalid_data
@@ -366,9 +443,11 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             title: 'JSONAPIResources is the greatest thing...',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
-             links: {
+             attributes: {
+               title: 'JSONAPIResources is the greatest thing...',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
+             relationships: {
                author: nil
              }
            }
@@ -376,13 +455,13 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :unprocessable_entity
 
-    assert_equal "/author", json_response['errors'][0]['path']
-    assert_equal "can't be blank", json_response['errors'][0]['detail']
-    assert_equal "author - can't be blank", json_response['errors'][0]['title']
+    assert_equal "/data/relationships/author", json_response['errors'][0]['source']['pointer']
+    assert_equal "can't be blank", json_response['errors'][0]['title']
+    assert_equal "author - can't be blank", json_response['errors'][0]['detail']
 
-    assert_equal "/title", json_response['errors'][1]['path']
-    assert_equal "is too long (maximum is 35 characters)", json_response['errors'][1]['detail']
-    assert_equal "title - is too long (maximum is 35 characters)", json_response['errors'][1]['title']
+    assert_equal "/data/attributes/title", json_response['errors'][1]['source']['pointer']
+    assert_equal "is too long (maximum is 35 characters)", json_response['errors'][1]['title']
+    assert_equal "title - is too long (maximum is 35 characters)", json_response['errors'][1]['detail']
   end
 
   def test_create_multiple
@@ -392,18 +471,22 @@ class PostsControllerTest < ActionController::TestCase
            data: [
              {
                type: 'posts',
-               title: 'JR is Great',
-               body: 'JSONAPIResources is the greatest thing since unsliced bread.',
-               links: {
-                 author: {type: 'people', id: '3'}
+               attributes: {
+                 title: 'JR is Great',
+                 body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+               },
+               relationships: {
+                 author: {data: {type: 'people', id: '3'}}
                }
              },
              {
                type: 'posts',
-               title: 'Ember is Great',
-               body: 'Ember is the greatest thing since unsliced bread.',
-               links: {
-                 author: {type: 'people', id: '3'}
+               attributes: {
+                 title: 'Ember is Great',
+                 body: 'Ember is the greatest thing since unsliced bread.'
+               },
+               relationships: {
+                 author: {data: {type: 'people', id: '3'}}
                }
              }
            ]
@@ -412,7 +495,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :created
     assert json_response['data'].is_a?(Array)
     assert_equal json_response['data'].size, 2
-    assert_equal json_response['data'][0]['links']['author']['id'], '3'
+    assert_nil json_response['data'][0]['relationships']['author']['data']
     assert_match /JR is Great/, response.body
     assert_match /Ember is Great/, response.body
   end
@@ -424,18 +507,22 @@ class PostsControllerTest < ActionController::TestCase
            data: [
              {
                type: 'posts',
-               Title: 'JR is Great',
-               body: 'JSONAPIResources is the greatest thing since unsliced bread.',
-               links: {
-                 author: {type: 'people', id: '3'}
+               attributes: {
+                 Title: 'JR is Great',
+                 body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+               },
+               relationships: {
+                 author: {data: {type: 'people', id: '3'}}
                }
              },
              {
                type: 'posts',
-               title: 'Ember is Great',
-               BODY: 'Ember is the greatest thing since unsliced bread.',
-               links: {
-                 author: {type: 'people', id: '3'}
+               attributes: {
+                 title: 'Ember is Great',
+                 BODY: 'Ember is the greatest thing since unsliced bread.'
+               },
+               relationships: {
+                 author: {data: {type: 'people', id: '3'}}
                }
              }
            ]
@@ -451,10 +538,12 @@ class PostsControllerTest < ActionController::TestCase
          {
            data_spelled_wrong: {
              type: 'posts',
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
-             links: {
-               author: {type: 'people', id: '3'}
+             attributes: {
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
+             relationships: {
+               author: {data: {type: 'people', id: '3'}}
              }
            }
          }
@@ -469,10 +558,12 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts_spelled_wrong',
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
-             links: {
-               author: {type: 'people', id: '3'}
+             attributes: {
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
+             relationships: {
+               author: {data: {type: 'people', id: '3'}}
              }
            }
          }
@@ -486,10 +577,12 @@ class PostsControllerTest < ActionController::TestCase
     post :create,
          {
            data: {
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
-             links: {
-               author: {type: 'people', id: '3'}
+             attributes: {
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
+             relationships: {
+               author: {data: {type: 'people', id: '3'}}
              }
            }
          }
@@ -504,10 +597,12 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             subject: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
-             links: {
-               author: {type: 'people', id: '3'}
+             attributes: {
+               subject: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
+             relationships: {
+               author: {data: {type: 'people', id: '3'}}
              }
            }
          }
@@ -524,66 +619,80 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             subject: 'JR is Great',
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
-             links: {
-               author: {type: 'people', id: '3'}
+             attributes: {
+               title: 'JR is Great',
+               subject: 'JR is SUPER Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
+             relationships: {
+               author: {data: {type: 'people', id: '3'}}
              }
-           }
+           },
+           include: 'author'
          }
 
     assert_response :created
     assert json_response['data'].is_a?(Hash)
-    assert_equal '3', json_response['data']['links']['author']['id']
-    assert_equal 'JR is Great', json_response['data']['title']
-    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['body']
+    assert_equal '3', json_response['data']['relationships']['author']['data']['id']
+    assert_equal 'JR is Great', json_response['data']['attributes']['title']
+    assert_equal 'JR is Great', json_response['data']['attributes']['subject']
+    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
 
-    JSONAPI.configuration.raise_if_parameters_not_allowed = true
+
+    assert_equal 1, json_response['meta']["warnings"].count
+    assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
+    assert_equal "subject is not allowed.", json_response['meta']["warnings"][0]["detail"]
+    assert_equal 105, json_response['meta']["warnings"][0]["code"]
   end
 
-  def test_create_with_links_has_many_type_ids
+  def test_create_with_links_to_many_type_ids
     set_content_type_header!
     post :create,
          {
            data: {
              type: 'posts',
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
-             links: {
-               author: {type: 'people', id: '3'},
-               tags: {type: 'tags', ids: [3, 4]}
+             attributes: {
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
+             relationships: {
+               author: {data: {type: 'people', id: '3'}},
+               tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
              }
-           }
+           },
+           include: 'author'
          }
 
     assert_response :created
     assert json_response['data'].is_a?(Hash)
-    assert_equal '3', json_response['data']['links']['author']['id']
-    assert_equal 'JR is Great', json_response['data']['title']
-    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['body']
+    assert_equal '3', json_response['data']['relationships']['author']['data']['id']
+    assert_equal 'JR is Great', json_response['data']['attributes']['title']
+    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
   end
 
-  def test_create_with_links_has_many_array
+  def test_create_with_links_to_many_array
     set_content_type_header!
     post :create,
          {
            data: {
              type: 'posts',
-             title: 'JR is Great',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread.',
-             links: {
-               author: {type: 'people', id: '3'},
-               tags: [{type: 'tags', id: '3'}, {type: 'tags', id: '4'}]
+             attributes: {
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
+             relationships: {
+               author: {data: {type: 'people', id: '3'}},
+               tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
              }
-           }
+           },
+           include: 'author'
          }
 
     assert_response :created
     assert json_response['data'].is_a?(Hash)
-    assert_equal '3', json_response['data']['links']['author']['id']
-    assert_equal 'JR is Great', json_response['data']['title']
-    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['body']
+    assert_equal '3', json_response['data']['relationships']['author']['data']['id']
+    assert_equal 'JR is Great', json_response['data']['attributes']['title']
+    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
   end
 
   def test_create_with_links_include_and_fields
@@ -592,21 +701,23 @@ class PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             title: 'JR is Great!',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread!',
-             links: {
-               author: {type: 'people', id: '3'},
-               tags: {type: 'tags', ids: [3, 4]}
+             attributes: {
+               title: 'JR is Great!',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread!'
+             },
+             relationships: {
+               author: {data: {type: 'people', id: '3'}},
+               tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
              }
            },
            include: 'author,author.posts',
-           fields: 'id,title,author'
+           fields: {posts: 'id,title,author'}
          }
 
     assert_response :created
     assert json_response['data'].is_a?(Hash)
-    assert_equal '3', json_response['data']['links']['author']['id']
-    assert_equal 'JR is Great!', json_response['data']['title']
+    assert_equal '3', json_response['data']['relationships']['author']['data']['id']
+    assert_equal 'JR is Great!', json_response['data']['attributes']['title']
     assert_not_nil json_response['included'].size
   end
 
@@ -620,22 +731,47 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             id: '3',
             type: 'posts',
-            title: 'A great new Post',
-            links: {
-              section: {type: 'sections', id: "#{javascript.id}"},
-              tags: {type: 'tags', ids: [3, 4]}
+            attributes: {
+              title: 'A great new Post'
+            },
+            relationships: {
+              section: {data: {type: 'sections', id: "#{javascript.id}"}},
+              tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
             }
           },
-          include: 'tags'
+          include: 'tags,author,section'
         }
 
     assert_response :success
     assert json_response['data'].is_a?(Hash)
-    assert_equal '3', json_response['data']['links']['author']['id']
-    assert_equal javascript.id.to_s, json_response['data']['links']['section']['id']
-    assert_equal 'A great new Post', json_response['data']['title']
-    assert_equal 'AAAA', json_response['data']['body']
-    assert matches_array?(['3', '4'], json_response['data']['links']['tags']['ids'])
+    assert_equal '3', json_response['data']['relationships']['author']['data']['id']
+    assert_equal javascript.id.to_s, json_response['data']['relationships']['section']['data']['id']
+    assert_equal 'A great new Post', json_response['data']['attributes']['title']
+    assert_equal 'AAAA', json_response['data']['attributes']['body']
+    assert matches_array?([{'type' => 'tags', 'id' => '3'}, {'type' => 'tags', 'id' => '4'}],
+                          json_response['data']['relationships']['tags']['data'])
+  end
+
+  def test_update_with_internal_server_error
+    set_content_type_header!
+    post_object = Post.find(3)
+    title = post_object.title
+
+    put :update,
+        {
+          id: 3,
+          data: {
+            id: '3',
+            type: 'posts',
+            attributes: {
+              title: 'BOOM'
+            }
+          }
+        }
+
+    assert_response 500
+    post_object = Post.find(3)
+    assert_equal title, post_object.title
   end
 
   def test_update_with_links_allow_extra_params
@@ -650,25 +786,32 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             id: '3',
             type: 'posts',
-            subject: 'A great new Post',
-            title: 'A great new Post',
-            links: {
-              section: {type: 'sections', id: "#{javascript.id}"},
-              tags: {type: 'tags', ids: [3, 4]}
+            attributes: {
+              title: 'A great new Post',
+              subject: 'A great new Post',
+            },
+            relationships: {
+              section: {data: {type: 'sections', id: "#{javascript.id}"}},
+              tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
             }
           },
-          include: 'tags'
+          include: 'tags,author,section'
         }
 
     assert_response :success
     assert json_response['data'].is_a?(Hash)
-    assert_equal '3', json_response['data']['links']['author']['id']
-    assert_equal javascript.id.to_s, json_response['data']['links']['section']['id']
-    assert_equal 'A great new Post', json_response['data']['title']
-    assert_equal 'AAAA', json_response['data']['body']
-    assert matches_array?(['3', '4'], json_response['data']['links']['tags']['ids'])
+    assert_equal '3', json_response['data']['relationships']['author']['data']['id']
+    assert_equal javascript.id.to_s, json_response['data']['relationships']['section']['data']['id']
+    assert_equal 'A great new Post', json_response['data']['attributes']['title']
+    assert_equal 'AAAA', json_response['data']['attributes']['body']
+    assert matches_array?([{'type' => 'tags', 'id' => '3'}, {'type' => 'tags', 'id' => '4'}],
+                          json_response['data']['relationships']['tags']['data'])
 
-    JSONAPI.configuration.raise_if_parameters_not_allowed = true
+
+    assert_equal 1, json_response['meta']["warnings"].count
+    assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
+    assert_equal "subject is not allowed.", json_response['meta']["warnings"][0]["detail"]
+    assert_equal 105, json_response['meta']["warnings"][0]["code"]
   end
 
   def test_update_remove_links
@@ -677,64 +820,94 @@ class PostsControllerTest < ActionController::TestCase
         {
           id: 3,
           data: {
+            id: '3',
             type: 'posts',
-            id: 3,
-            title: 'A great new Post',
-            links: {
-              section: nil,
-              tags: []
+            attributes: {
+              title: 'A great new Post'
+            },
+            relationships: {
+              section: {data: {type: 'sections', id: 1}},
+              tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
             }
           },
           include: 'tags'
         }
 
     assert_response :success
+
+    put :update,
+        {
+          id: 3,
+          data: {
+            type: 'posts',
+            id: 3,
+            attributes: {
+              title: 'A great new Post'
+            },
+            relationships: {
+              section: nil,
+              tags: []
+            }
+          },
+          include: 'tags,author,section'
+        }
+
+    assert_response :success
     assert json_response['data'].is_a?(Hash)
-    assert_equal '3', json_response['data']['links']['author']['id']
-    assert_equal nil, json_response['data']['links']['section']['id']
-    assert_equal 'A great new Post', json_response['data']['title']
-    assert_equal 'AAAA', json_response['data']['body']
-    assert matches_array?([], json_response['data']['links']['tags']['ids'])
+    assert_equal '3', json_response['data']['relationships']['author']['data']['id']
+    assert_equal nil, json_response['data']['relationships']['section']['data']
+    assert_equal 'A great new Post', json_response['data']['attributes']['title']
+    assert_equal 'AAAA', json_response['data']['attributes']['body']
+    assert matches_array?([],
+                          json_response['data']['relationships']['tags']['data'])
   end
 
-  def test_update_relationship_has_one
+  def test_update_relationship_to_one
     set_content_type_header!
     ruby = Section.find_by(name: 'ruby')
-    post_object = Post.find(3)
+    post_object = Post.find(4)
     assert_not_equal ruby.id, post_object.section_id
 
-    put :update_association, {post_id: 3, association: 'section', data: {type: 'sections', id: "#{ruby.id}"}}
+    put :update_relationship, {post_id: 4, relationship: 'section', data: {type: 'sections', id: "#{ruby.id}"}}
 
     assert_response :no_content
-    post_object = Post.find(3)
+    post_object = Post.find(4)
     assert_equal ruby.id, post_object.section_id
   end
 
-  def test_update_relationship_has_one_invalid_links_hash_keys_ids
+  def test_update_relationship_to_one_invalid_links_hash_keys_ids
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'section', data: {type: 'sections', ids: 'foo'}}
+    put :update_relationship, {post_id: 3, relationship: 'section', data: {type: 'sections', ids: 'foo'}}
 
     assert_response :bad_request
     assert_match /Invalid Links Object/, response.body
   end
 
-  def test_update_relationship_has_one_invalid_links_hash_count
+  def test_update_relationship_to_one_invalid_links_hash_count
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'section', data: {type: 'sections'}}
+    put :update_relationship, {post_id: 3, relationship: 'section', data: {type: 'sections'}}
 
     assert_response :bad_request
     assert_match /Invalid Links Object/, response.body
   end
 
-  def test_update_relationship_has_one_invalid_links_hash_keys_type_mismatch
+  def test_update_relationship_to_many_not_array
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'section', data: {type: 'comment', id: '3'}}
+    put :update_relationship, {post_id: 3, relationship: 'tags', data: {type: 'tags', id: 2}}
+
+    assert_response :bad_request
+    assert_match /Invalid Links Object/, response.body
+  end
+
+  def test_update_relationship_to_one_invalid_links_hash_keys_type_mismatch
+    set_content_type_header!
+    put :update_relationship, {post_id: 3, relationship: 'section', data: {type: 'comment', id: '3'}}
 
     assert_response :bad_request
     assert_match /Type Mismatch/, response.body
   end
 
-  def test_update_nil_has_many_links
+  def test_update_nil_to_many_links
     set_content_type_header!
     put :update,
         {
@@ -742,7 +915,7 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             type: 'posts',
             id: 3,
-            links: {
+            relationships: {
               tags: nil
             }
           }
@@ -752,7 +925,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /Invalid Links Object/, response.body
   end
 
-  def test_update_bad_hash_has_many_links
+  def test_update_bad_hash_to_many_links
     set_content_type_header!
     put :update,
         {
@@ -760,8 +933,8 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             type: 'posts',
             id: 3,
-            links: {
-              tags: {typ: 'bad link', idd: 'as'}
+            relationships: {
+              tags: {data: {typ: 'bad link', idd: 'as'}}
             }
           }
         }
@@ -770,7 +943,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /Invalid Links Object/, response.body
   end
 
-  def test_update_other_has_many_links
+  def test_update_other_to_many_links
     set_content_type_header!
     put :update,
         {
@@ -778,7 +951,7 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             type: 'posts',
             id: 3,
-            links: {
+            relationships: {
               tags: 'bad link'
             }
           }
@@ -788,75 +961,93 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /Invalid Links Object/, response.body
   end
 
-  def test_update_relationship_has_one_singular_param_id_nil
+  def test_update_other_to_many_links_data_nil
+    set_content_type_header!
+    put :update,
+        {
+          id: 3,
+          data: {
+            type: 'posts',
+            id: 3,
+            relationships: {
+              tags: {data: nil}
+            }
+          }
+        }
+
+    assert_response :bad_request
+    assert_match /Invalid Links Object/, response.body
+  end
+
+  def test_update_relationship_to_one_singular_param_id_nil
     set_content_type_header!
     ruby = Section.find_by(name: 'ruby')
     post_object = Post.find(3)
     post_object.section = ruby
     post_object.save!
 
-    put :update_association, {post_id: 3, association: 'section', data: {type: 'sections', id: nil}}
+    put :update_relationship, {post_id: 3, relationship: 'section', data: {type: 'sections', id: nil}}
 
     assert_response :no_content
     assert_equal nil, post_object.reload.section_id
   end
 
-  def test_update_relationship_has_one_data_nil
+  def test_update_relationship_to_one_data_nil
     set_content_type_header!
     ruby = Section.find_by(name: 'ruby')
     post_object = Post.find(3)
     post_object.section = ruby
     post_object.save!
 
-    put :update_association, {post_id: 3, association: 'section', data: nil}
+    put :update_relationship, {post_id: 3, relationship: 'section', data: nil}
 
     assert_response :no_content
     assert_equal nil, post_object.reload.section_id
   end
 
-  def test_remove_relationship_has_one
+  def test_remove_relationship_to_one
     set_content_type_header!
     ruby = Section.find_by(name: 'ruby')
     post_object = Post.find(3)
     post_object.section_id = ruby.id
     post_object.save!
 
-    put :destroy_association, {post_id: 3, association: 'section'}
+    put :destroy_relationship, {post_id: 3, relationship: 'section'}
 
     assert_response :no_content
     post_object = Post.find(3)
     assert_equal nil, post_object.section_id
   end
 
-  def test_update_relationship_has_one_singular_param
+  def test_update_relationship_to_one_singular_param
     set_content_type_header!
     ruby = Section.find_by(name: 'ruby')
     post_object = Post.find(3)
     post_object.section_id = nil
     post_object.save!
 
-    put :update_association, {post_id: 3, association: 'section', data: {type: 'sections', id: "#{ruby.id}"}}
+    put :update_relationship, {post_id: 3, relationship: 'section', data: {type: 'sections', id: "#{ruby.id}"}}
 
     assert_response :no_content
     post_object = Post.find(3)
     assert_equal ruby.id, post_object.section_id
   end
 
-  def test_update_relationship_has_many_join_table_single
+  def test_update_relationship_to_many_join_table_single
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: []}}
+    put :update_relationship, {post_id: 3, relationship: 'tags', data: []}
     assert_response :no_content
 
     post_object = Post.find(3)
     assert_equal 0, post_object.tags.length
 
-    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [2]}}
+    put :update_relationship, {post_id: 3, relationship: 'tags', data: [{type: 'tags', id: 2}]}
 
     assert_response :no_content
     post_object = Post.find(3)
     assert_equal 1, post_object.tags.length
 
-    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [5]}}
+    put :update_relationship, {post_id: 3, relationship: 'tags', data: [{type: 'tags', id: 5}]}
 
     assert_response :no_content
     post_object = Post.find(3)
@@ -865,9 +1056,9 @@ class PostsControllerTest < ActionController::TestCase
     assert matches_array? [5], tags
   end
 
-  def test_update_relationship_has_many_join_table_homogenous
+  def test_update_relationship_to_many
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
+    put :update_relationship, {post_id: 3, relationship: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
 
     assert_response :no_content
     post_object = Post.find(3)
@@ -875,26 +1066,16 @@ class PostsControllerTest < ActionController::TestCase
     assert matches_array? [2, 3], post_object.tags.collect { |tag| tag.id }
   end
 
-  def test_update_relationship_has_many_join_table_heterogenous
+  def test_create_relationship_to_many_join_table
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
-
-    assert_response :no_content
-    post_object = Post.find(3)
-    assert_equal 2, post_object.tags.collect { |tag| tag.id }.length
-    assert matches_array? [2, 3], post_object.tags.collect { |tag| tag.id }
-  end
-
-  def test_create_relationship_has_many_join_table
-    set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
+    put :update_relationship, {post_id: 3, relationship: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
 
     assert_response :no_content
     post_object = Post.find(3)
     assert_equal 2, post_object.tags.collect { |tag| tag.id }.length
     assert matches_array? [2, 3], post_object.tags.collect { |tag| tag.id }
 
-    post :create_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [5]}}
+    post :create_relationship, {post_id: 3, relationship: 'tags', data: [{type: 'tags', id: 5}]}
 
     assert_response :no_content
     post_object = Post.find(3)
@@ -902,95 +1083,103 @@ class PostsControllerTest < ActionController::TestCase
     assert matches_array? [2, 3, 5], post_object.tags.collect { |tag| tag.id }
   end
 
-  def test_create_relationship_has_many_mismatched_type
+  def test_create_relationship_to_many_mismatched_type
     set_content_type_header!
-    post :create_association, {post_id: 3, association: 'tags', data: {type: 'comments', ids: [5]}}
+    post :create_relationship, {post_id: 3, relationship: 'tags', data: [{type: 'comments', id: 5}]}
 
     assert_response :bad_request
     assert_match /Type Mismatch/, response.body
   end
 
-  def test_create_relationship_has_many_missing_id
+  def test_create_relationship_to_many_missing_id
     set_content_type_header!
-    post :create_association, {post_id: 3, association: 'tags', data: {type: 'tags', idds: [5]}}
+    post :create_relationship, {post_id: 3, relationship: 'tags', data: [{type: 'tags', idd: 5}]}
 
     assert_response :bad_request
-    assert_match /The required parameter, ids, is missing/, response.body
+    assert_match /Data is not a valid Links Object./, response.body
   end
 
-  def test_create_relationship_has_many_missing_data
+  def test_create_relationship_to_many_not_array
     set_content_type_header!
-    post :create_association, {post_id: 3, association: 'tags'}
+    post :create_relationship, {post_id: 3, relationship: 'tags', data: {type: 'tags', id: 5}}
+
+    assert_response :bad_request
+    assert_match /Data is not a valid Links Object./, response.body
+  end
+
+  def test_create_relationship_to_many_missing_data
+    set_content_type_header!
+    post :create_relationship, {post_id: 3, relationship: 'tags'}
 
     assert_response :bad_request
     assert_match /The required parameter, data, is missing./, response.body
   end
 
-  def test_create_relationship_has_many_join
+  def test_create_relationship_to_many_join
     set_content_type_header!
-    post :create_association, {post_id: 4, association: 'tags', data: {type: 'tags', ids: [1, 2, 3]}}
+    post :create_relationship, {post_id: 4, relationship: 'tags', data: [{type: 'tags', id: 1}, {type: 'tags', id: 2}, {type: 'tags', id: 3}]}
     assert_response :no_content
   end
 
-  def test_create_relationship_has_many_join_table_record_exists
+  def test_create_relationship_to_many_join_table_record_exists
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
+    put :update_relationship, {post_id: 3, relationship: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
 
     assert_response :no_content
     post_object = Post.find(3)
     assert_equal 2, post_object.tags.collect { |tag| tag.id }.length
     assert matches_array? [2, 3], post_object.tags.collect { |tag| tag.id }
 
-    post :create_association, {post_id: 3, association: 'tags', data: {type: 'tags', ids: [5, 2]}}
+    post :create_relationship, {post_id: 3, relationship: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 5}]}
 
     assert_response :bad_request
     assert_match /The relation to 2 already exists./, response.body
   end
 
-  def test_update_relationship_has_many_missing_tags
+  def test_update_relationship_to_many_missing_tags
     set_content_type_header!
-    put :update_association, {post_id: 3, association: 'tags'}
+    put :update_relationship, {post_id: 3, relationship: 'tags'}
 
     assert_response :bad_request
     assert_match /The required parameter, data, is missing./, response.body
   end
 
-  def test_delete_relationship_has_many
+  def test_delete_relationship_to_many
     set_content_type_header!
-    put :update_association, {post_id: 9, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
+    put :update_relationship, {post_id: 14, relationship: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
     assert_response :no_content
-    p = Post.find(9)
+    p = Post.find(14)
     assert_equal [2, 3], p.tag_ids
 
-    delete :destroy_association, {post_id: 9, association: 'tags', keys: '3'}
+    delete :destroy_relationship, {post_id: 14, relationship: 'tags', keys: '3'}
 
     p.reload
     assert_response :no_content
     assert_equal [2], p.tag_ids
   end
 
-  def test_delete_relationship_has_many_does_not_exist
+  def test_delete_relationship_to_many_does_not_exist
     set_content_type_header!
-    put :update_association, {post_id: 9, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
+    put :update_relationship, {post_id: 14, relationship: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
     assert_response :no_content
-    p = Post.find(9)
+    p = Post.find(14)
     assert_equal [2, 3], p.tag_ids
 
-    delete :destroy_association, {post_id: 9, association: 'tags', keys: '4'}
+    delete :destroy_relationship, {post_id: 14, relationship: 'tags', keys: '4'}
 
     p.reload
     assert_response :not_found
     assert_equal [2, 3], p.tag_ids
   end
 
-  def test_delete_relationship_has_many_with_empty_data
+  def test_delete_relationship_to_many_with_empty_data
     set_content_type_header!
-    put :update_association, {post_id: 9, association: 'tags', data: {type: 'tags', ids: [2, 3]}}
+    put :update_relationship, {post_id: 14, relationship: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
     assert_response :no_content
-    p = Post.find(9)
+    p = Post.find(14)
     assert_equal [2, 3], p.tag_ids
 
-    put :update_association, {post_id: 9, association: 'tags', data: [] }
+    put :update_relationship, {post_id: 14, relationship: 'tags', data: [] }
 
     p.reload
     assert_response :no_content
@@ -1007,10 +1196,12 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             type: 'posts',
             id: 2,
-            title: 'A great new Post',
-            links: {
+            attributes: {
+              title: 'A great new Post'
+            },
+            relationships: {
               section: {type: 'sections', id: "#{javascript.id}"},
-              tags: {type: 'tags', ids: [3, 4]}
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
             }
           }
         }
@@ -1029,11 +1220,13 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             type: 'posts',
             id: '3',
-            asdfg: 'aaaa',
-            title: 'A great new Post',
-            links: {
+            attributes: {
+              asdfg: 'aaaa',
+              title: 'A great new Post'
+            },
+            relationships: {
               section: {type: 'sections', id: "#{javascript.id}"},
-              tags: {type: 'tags', ids: [3, 4]}
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
             }
           }
         }
@@ -1052,17 +1245,46 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             type: 'posts',
             id: '3',
-            title: 'A great new Post',
-            links: {
+            attributes: {
+              title: 'A great new Post'
+            },
+            relationships: {
               asdfg: 'aaaa',
               section: {type: 'sections', id: "#{javascript.id}"},
-              tags: {type: 'tags', ids: [3, 4]}
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
             }
           }
         }
 
     assert_response :bad_request
     assert_match /asdfg is not allowed/, response.body
+  end
+
+  def test_update_extra_param_in_links_allow_extra_params
+    JSONAPI.configuration.raise_if_parameters_not_allowed = false
+
+    set_content_type_header!
+    javascript = Section.find_by(name: 'javascript')
+
+    put :update,
+        {
+          id: 3,
+          data: {
+            type: 'posts',
+            id: '3',
+            attributes: {
+              title: 'A great new Post'
+            },
+            relationships: {
+              asdfg: 'aaaa'
+            }
+          }
+        }
+
+    assert_response :success
+    assert_equal "A great new Post", json_response["data"]["attributes"]["title"]
+    assert_equal "Param not allowed", json_response["meta"]["warnings"][0]["title"]
+    assert_equal "asdfg is not allowed.", json_response["meta"]["warnings"][0]["detail"]
   end
 
   def test_update_missing_param
@@ -1074,10 +1296,12 @@ class PostsControllerTest < ActionController::TestCase
           id: 3,
           data_spelled_wrong: {
             type: 'posts',
-            title: 'A great new Post',
-            links: {
+            attributes: {
+              title: 'A great new Post'
+            },
+            relationships: {
               section: {type: 'sections', id: "#{javascript.id}"},
-              tags: {type: 'tags', ids: [3, 4]}
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
             }
           }
         }
@@ -1094,7 +1318,9 @@ class PostsControllerTest < ActionController::TestCase
           id: 3,
           data: {
             type: 'posts',
-            title: 'A great new Post'
+            attributes: {
+              title: 'A great new Post'
+            }
           }
         }
 
@@ -1112,10 +1338,12 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             id: '3',
             type_spelled_wrong: 'posts',
-            title: 'A great new Post',
-            links: {
+            attributes: {
+              title: 'A great new Post'
+            },
+            relationships: {
               section: {type: 'sections', id: "#{javascript.id}"},
-              tags: {type: 'tags', ids: [3, 4]}
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
             }
           }
         }
@@ -1124,30 +1352,59 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /The required parameter, type, is missing./, response.body
   end
 
+  def test_update_unknown_key
+    set_content_type_header!
+    javascript = Section.find_by(name: 'javascript')
+
+    put :update,
+        {
+          id: 3,
+          data: {
+            id: '3',
+            type: 'posts',
+            body: 'asdfg',
+            attributes: {
+              title: 'A great new Post'
+            },
+            relationships: {
+              section: {type: 'sections', id: "#{javascript.id}"},
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
+            }
+          }
+        }
+
+    assert_response :bad_request
+    assert_match /body is not allowed/, response.body
+  end
+
   def test_update_multiple
     set_content_type_header!
     javascript = Section.find_by(name: 'javascript')
 
     put :update,
         {
-          id: [3, 9],
+          id: [3, 16],
           data: [
             {
               type: 'posts',
               id: 3,
-              title: 'A great new Post QWERTY',
-              links: {
-                section: {type: 'sections', id: "#{javascript.id}"},
-                tags: {type: 'tags', ids: [3, 4]}
+              attributes: {
+                title: 'A great new Post QWERTY'
+              },
+              relationships: {
+                section: {data: {type: 'sections', id: "#{javascript.id}"}},
+                tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
               }
             },
             {
               type: 'posts',
-              id: 9,
-              title: 'A great new Post ASDFG',
-              links: {
-                section: {type: 'sections', id: "#{javascript.id}"},
-                tags: {type: 'tags', ids: [3, 4]}
+              id: 16,
+              attributes: {
+                title: 'A great new Post ASDFG'
+              },
+              relationships: {
+                section: {data: {type: 'sections', id: "#{javascript.id}"}},
+                tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
               }
             }
           ],
@@ -1156,17 +1413,15 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :success
     assert_equal json_response['data'].size, 2
-    assert_equal json_response['data'][0]['links']['author']['id'], '3'
-    assert_equal json_response['data'][0]['links']['section']['id'], javascript.id.to_s
-    assert_equal json_response['data'][0]['title'], 'A great new Post QWERTY'
-    assert_equal json_response['data'][0]['body'], 'AAAA'
-    assert_equal json_response['data'][0]['links']['tags']['ids'], ['3', '4']
+    assert_equal json_response['data'][0]['attributes']['title'], 'A great new Post QWERTY'
+    assert_equal json_response['data'][0]['attributes']['body'], 'AAAA'
+    assert matches_array?([{'type' => 'tags', 'id' => '3'}, {'type' => 'tags', 'id' => '4'}],
+                          json_response['data'][0]['relationships']['tags']['data'])
 
-    assert_equal json_response['data'][1]['links']['author']['id'], '3'
-    assert_equal json_response['data'][1]['links']['section']['id'], javascript.id.to_s
-    assert_equal json_response['data'][1]['title'], 'A great new Post ASDFG'
-    assert_equal json_response['data'][1]['body'], 'AAAA'
-    assert_equal json_response['data'][1]['links']['tags']['ids'], ['3', '4']
+    assert_equal json_response['data'][1]['attributes']['title'], 'A great new Post ASDFG'
+    assert_equal json_response['data'][1]['attributes']['body'], 'Not First!!!!'
+    assert matches_array?([{'type' => 'tags', 'id' => '3'}, {'type' => 'tags', 'id' => '4'}],
+                          json_response['data'][1]['relationships']['tags']['data'])
   end
 
   def test_update_multiple_missing_keys
@@ -1179,18 +1434,22 @@ class PostsControllerTest < ActionController::TestCase
           data: [
             {
               type: 'posts',
-              title: 'A great new Post ASDFG',
-              links: {
+              attributes: {
+                title: 'A great new Post ASDFG'
+              },
+              relationships: {
                 section: {type: 'sections', id: "#{javascript.id}"},
-                tags: {type: 'tags', ids: [3, 4]}
+                tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
               }
             },
             {
               type: 'posts',
-              title: 'A great new Post QWERTY',
-              links: {
+              attributes: {
+                title: 'A great new Post QWERTY'
+              },
+              relationships: {
                 section: {type: 'sections', id: "#{javascript.id}"},
-                tags: {type: 'tags', ids: [3, 4]}
+                tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
               }
             }
           ]}
@@ -1210,19 +1469,23 @@ class PostsControllerTest < ActionController::TestCase
             {
               type: 'posts',
               id: 3,
-              title: 'A great new Post ASDFG',
-              links: {
-                section: {type: 'sections', id: "#{javascript.id}"},
-                tags: {type: 'tags', ids: [3, 4]}
+              attributes: {
+                title: 'A great new Post ASDFG'
+              },
+              relationships: {
+                section: {data: {type: 'sections', id: "#{javascript.id}"}},
+                tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
               }
             },
             {
               type: 'posts',
               id: 8,
-              title: 'A great new Post QWERTY',
-              links: {
-                section: {type: 'sections', id: "#{javascript.id}"},
-                tags: {type: 'tags', ids: [3, 4]}
+              attributes: {
+                title: 'A great new Post QWERTY'
+              },
+              relationships: {
+                section: {data: {type: 'sections', id: "#{javascript.id}"}},
+                tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
               }
             }
           ]}
@@ -1242,19 +1505,23 @@ class PostsControllerTest < ActionController::TestCase
             {
               type: 'posts',
               id: 3,
-              title: 'A great new Post QWERTY',
-              links: {
+              attributes: {
+                title: 'A great new Post QWERTY'
+              },
+              relationships: {
                 section: {type: 'sections', id: "#{javascript.id}"},
-                tags: {type: 'tags', ids: [3, 4]}
+                tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
               }
             },
             {
               type: 'posts',
               id: 9,
-              title: 'A great new Post ASDFG',
-              links: {
+              attributes: {
+                title: 'A great new Post ASDFG'
+              },
+              relationships: {
                 section: {type: 'sections', id: "#{javascript.id}"},
-                tags: {type: 'tags', ids: [3, 4]}
+                tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
               }
             }
           ]}
@@ -1271,10 +1538,12 @@ class PostsControllerTest < ActionController::TestCase
           data: {
             type: 'posts',
             id: '3',
-            subject: 'A great new Post',
-            links: {
+            attributes: {
+              subject: 'A great new Post'
+            },
+            relationships: {
               author: {type: 'people', id: '1'},
-              tags: {type: 'tags', ids: [3, 4]}
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
             }
           }
         }
@@ -1291,10 +1560,12 @@ class PostsControllerTest < ActionController::TestCase
           id: 3,
           data: {
             type: 'posts',
-            subject: 'A great new Post',
+            attributes: {
+              subject: 'A great new Post'
+            },
             linked_objects: {
               author: {type: 'people', id: '1'},
-              tags: {type: 'tags', ids: [3, 4]}
+              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
             }
           }
         }
@@ -1323,35 +1594,51 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal initial_count, Post.count
   end
 
-  def test_delete_extra_param
-    initial_count = Post.count
-    delete :destroy, {id: '4', asdfg: 'aaaa'}
-    assert_response :bad_request
-    assert_equal initial_count, Post.count
-  end
-
-  def test_show_has_one_relationship
-    get :show_association, {post_id: '1', association: 'author'}
+  def test_show_to_one_relationship
+    get :show_relationship, {post_id: '1', relationship: 'author'}
     assert_response :success
     assert_hash_equals json_response,
                        {data: {
-                           type: 'people',
-                           id: '1',
-                           self: 'http://test.host/posts/1/links/author',
-                           related: 'http://test.host/posts/1/author'
+                          type: 'people',
+                          id: '1'
+                        },
+                        links: {
+                          self: 'http://test.host/posts/1/relationships/author',
+                          related: 'http://test.host/posts/1/author'
+                        }
+                       }
+  end
+
+  def test_show_to_many_relationship
+    get :show_relationship, {post_id: '2', relationship: 'tags'}
+    assert_response :success
+    assert_hash_equals json_response,
+                       {
+                         data: [
+                           {type: 'tags', id: '5'}
+                         ],
+                         links: {
+                           self: 'http://test.host/posts/2/relationships/tags',
+                           related: 'http://test.host/posts/2/tags'
                          }
                        }
   end
 
-  def test_show_has_many_relationship
-    get :show_association, {post_id: '1', association: 'tags'}
+  def test_show_to_many_relationship_invalid_id
+    get :show_relationship, {post_id: '2,1', relationship: 'tags'}
+    assert_response :bad_request
+    assert_match /2,1 is not a valid value for id/, response.body
+  end
+
+  def test_show_to_one_relationship_nil
+    get :show_relationship, {post_id: '17', relationship: 'author'}
     assert_response :success
     assert_hash_equals json_response,
-                       {data: {
-                           type: 'tags',
-                           ids: ['1', '2', '3'],
-                           self: 'http://test.host/posts/1/links/tags',
-                           related: 'http://test.host/posts/1/tags'
+                       {
+                         data: nil,
+                         links: {
+                           self: 'http://test.host/posts/17/relationships/author',
+                           related: 'http://test.host/posts/17/author'
                          }
                        }
   end
@@ -1359,10 +1646,10 @@ end
 
 class TagsControllerTest < ActionController::TestCase
   def test_tags_index
-    get :index, {filter: {id: '6,7,8,9'}, include: 'posts,posts.tags,posts.author.posts'}
+    get :index, {filter: {id: '6,7,8,9'}, include: 'posts.tags,posts.author.posts'}
     assert_response :success
     assert_equal 4, json_response['data'].size
-    assert_equal 2, json_response['included'].size
+    assert_equal 3, json_response['included'].size
   end
 
   def test_tags_show_multiple
@@ -1372,7 +1659,7 @@ class TagsControllerTest < ActionController::TestCase
   end
 
   def test_tags_show_multiple_with_include
-    get :show, {id: '6,7,8,9', include: 'posts,posts.tags,posts.author.posts'}
+    get :show, {id: '6,7,8,9', include: 'posts.tags,posts.author.posts'}
     assert_response :bad_request
     assert_match /6,7,8,9 is not a valid value for id/, response.body
   end
@@ -1391,8 +1678,16 @@ class TagsControllerTest < ActionController::TestCase
 end
 
 class ExpenseEntriesControllerTest < ActionController::TestCase
-  def after_teardown
+  def setup
     JSONAPI.configuration.json_key_format = :camelized_key
+  end
+
+  def test_text_error
+    JSONAPI.configuration.use_text_errors = true
+    get :index, {sort: 'not_in_record'}
+    assert_response 400
+    assert_equal 'INVALID_SORT_CRITERIA', json_response['errors'][0]['code']
+    JSONAPI.configuration.use_text_errors = false
   end
 
   def test_expense_entries_index
@@ -1415,31 +1710,24 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     assert_equal 2, json_response['included'].size
   end
 
-  def test_expense_entries_show_bad_include_missing_association
+  def test_expense_entries_show_bad_include_missing_relationship
     get :show, {id: 1, include: 'isoCurrencies,employees'}
     assert_response :bad_request
-    assert_match /isoCurrencies is not a valid association of expenseEntries/, json_response['errors'][0]['detail']
-    assert_match /employees is not a valid association of expenseEntries/, json_response['errors'][1]['detail']
+    assert_match /isoCurrencies is not a valid relationship of expenseEntries/, json_response['errors'][0]['detail']
+    assert_match /employees is not a valid relationship of expenseEntries/, json_response['errors'][1]['detail']
   end
 
-  def test_expense_entries_show_bad_include_missing_sub_association
+  def test_expense_entries_show_bad_include_missing_sub_relationship
     get :show, {id: 1, include: 'isoCurrency,employee.post'}
     assert_response :bad_request
-    assert_match /post is not a valid association of people/, json_response['errors'][0]['detail']
+    assert_match /post is not a valid relationship of people/, json_response['errors'][0]['detail']
   end
 
   def test_expense_entries_show_fields
-    get :show, {id: 1, include: 'isoCurrency,employee', 'fields' => 'transactionDate'}
-    assert_response :success
-    assert json_response['data'].is_a?(Hash)
-    assert json_response['data'].has_key?('transactionDate')
-  end
-
-  def test_expense_entries_show_fields_type
     get :show, {id: 1, include: 'isoCurrency,employee', 'fields' => {'expenseEntries' => 'transactionDate'}}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
-    assert json_response['data'].has_key?('transactionDate')
+    assert json_response['data']['attributes'].key?('transactionDate')
     assert_equal 2, json_response['included'].size
   end
 
@@ -1448,7 +1736,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
                                                                      'isoCurrencies' => 'id,name'}}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
-    assert json_response['data'].has_key?('transactionDate')
+    assert json_response['data']['attributes'].key?('transactionDate')
     assert_equal 2, json_response['included'].size
   end
 
@@ -1460,22 +1748,24 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
          {
            data: {
              type: 'expense_entries',
-             transaction_date: '2014/04/15',
-             cost: 50.58,
-             links: {
-               employee: {type: 'people', id: '3'},
-               iso_currency: {type: 'iso_currencies', id: 'USD'}
+             attributes: {
+               transaction_date: '2014/04/15',
+               cost: 50.58
+             },
+             relationships: {
+               employee: {data: {type: 'people', id: '3'}},
+               iso_currency: {data: {type: 'iso_currencies', id: 'USD'}}
              }
            },
-           include: 'iso_currency',
-           fields: 'id,transaction_date,iso_currency,cost,employee'
+           include: 'iso_currency,employee',
+           fields: {expense_entries: 'id,transaction_date,iso_currency,cost,employee'}
          }
 
     assert_response :created
     assert json_response['data'].is_a?(Hash)
-    assert_equal '3', json_response['data']['links']['employee']['id']
-    assert_equal 'USD', json_response['data']['links']['iso_currency']['id']
-    assert_equal 50.58, json_response['data']['cost']
+    assert_equal '3', json_response['data']['relationships']['employee']['data']['id']
+    assert_equal 'USD', json_response['data']['relationships']['iso_currency']['data']['id']
+    assert_equal '50.58', json_response['data']['attributes']['cost']
 
     delete :destroy, {id: json_response['data']['id']}
     assert_response :no_content
@@ -1489,22 +1779,24 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
          {
            data: {
              type: 'expense_entries',
-             transactionDate: '2014/04/15',
-             cost: 50.58,
-             links: {
-               employee: {type: 'people', id: '3'},
-               isoCurrency: {type: 'iso_currencies', id: 'USD'}
+             attributes: {
+               transactionDate: '2014/04/15',
+               cost: 50.58
+             },
+             relationships: {
+               employee: {data: {type: 'people', id: '3'}},
+               isoCurrency: {data: {type: 'iso_currencies', id: 'USD'}}
              }
            },
-           include: 'isoCurrency',
-           fields: 'id,transactionDate,isoCurrency,cost,employee'
+           include: 'isoCurrency,employee',
+           fields: {expenseEntries: 'id,transactionDate,isoCurrency,cost,employee'}
          }
 
     assert_response :created
     assert json_response['data'].is_a?(Hash)
-    assert_equal '3', json_response['data']['links']['employee']['id']
-    assert_equal 'USD', json_response['data']['links']['isoCurrency']['id']
-    assert_equal 50.58, json_response['data']['cost']
+    assert_equal '3', json_response['data']['relationships']['employee']['data']['id']
+    assert_equal 'USD', json_response['data']['relationships']['isoCurrency']['data']['id']
+    assert_equal '50.58', json_response['data']['attributes']['cost']
 
     delete :destroy, {id: json_response['data']['id']}
     assert_response :no_content
@@ -1518,22 +1810,24 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
          {
            data: {
              type: 'expense_entries',
-             'transaction-date' => '2014/04/15',
-             cost: 50.58,
-             links: {
-               employee: {type: 'people', id: '3'},
-               'iso-currency' => {type: 'iso_currencies', id: 'USD'}
+             attributes: {
+               'transaction-date' => '2014/04/15',
+               cost: 50.58
+             },
+             relationships: {
+               employee: {data: {type: 'people', id: '3'}},
+               'iso-currency' => {data: {type: 'iso_currencies', id: 'USD'}}
              }
            },
-           include: 'iso-currency',
-           fields: 'id,transaction-date,iso-currency,cost,employee'
+           include: 'iso-currency,employee',
+           fields: {'expense-entries' => 'id,transaction-date,iso-currency,cost,employee'}
          }
 
     assert_response :created
     assert json_response['data'].is_a?(Hash)
-    assert_equal '3', json_response['data']['links']['employee']['id']
-    assert_equal 'USD', json_response['data']['links']['iso-currency']['id']
-    assert_equal 50.58, json_response['data']['cost']
+    assert_equal '3', json_response['data']['relationships']['employee']['data']['id']
+    assert_equal 'USD', json_response['data']['relationships']['iso-currency']['data']['id']
+    assert_equal '50.58', json_response['data']['attributes']['cost']
 
     delete :destroy, {id: json_response['data']['id']}
     assert_response :no_content
@@ -1546,63 +1840,104 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
   end
 
   def test_currencies_show
-    get :show, {code: 'USD'}
+    get :show, {id: 'USD'}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
   end
 
-  def test_currencies_json_key_underscored_sort
-    JSONAPI.configuration.json_key_format = :underscored_key
-    get :index, {sort: '+country_name'}
+  def test_create_currencies_client_generated_id
+    set_content_type_header!
+    JSONAPI.configuration.json_key_format = :underscored_route
+
+    post :create,
+         {
+           data: {
+             type: 'iso_currencies',
+             id: 'BTC',
+             attributes: {
+               name: 'Bit Coin',
+               'country_name' => 'global',
+               'minor_unit' => 'satoshi'
+             }
+           }
+         }
+
+    assert_response :created
+    assert_equal 'BTC', json_response['data']['id']
+    assert_equal 'Bit Coin', json_response['data']['attributes']['name']
+    assert_equal 'global', json_response['data']['attributes']['country_name']
+    assert_equal 'satoshi', json_response['data']['attributes']['minor_unit']
+
+    delete :destroy, {id: json_response['data']['id']}
+    assert_response :no_content
+  end
+
+  def test_currencies_primary_key_sort
+    get :index, {sort: 'id'}
     assert_response :success
     assert_equal 3, json_response['data'].size
-    assert_equal 'Canada', json_response['data'][0]['country_name']
-    assert_equal 'Euro Member Countries', json_response['data'][1]['country_name']
-    assert_equal 'United States', json_response['data'][2]['country_name']
+    assert_equal 'CAD', json_response['data'][0]['id']
+    assert_equal 'EUR', json_response['data'][1]['id']
+    assert_equal 'USD', json_response['data'][2]['id']
+  end
+
+  def test_currencies_code_sort
+    get :index, {sort: 'code'}
+    assert_response :bad_request
+  end
+
+  def test_currencies_json_key_underscored_sort
+    JSONAPI.configuration.json_key_format = :underscored_key
+    get :index, {sort: 'country_name'}
+    assert_response :success
+    assert_equal 3, json_response['data'].size
+    assert_equal 'Canada', json_response['data'][0]['attributes']['country_name']
+    assert_equal 'Euro Member Countries', json_response['data'][1]['attributes']['country_name']
+    assert_equal 'United States', json_response['data'][2]['attributes']['country_name']
 
     # reverse sort
     get :index, {sort: '-country_name'}
     assert_response :success
     assert_equal 3, json_response['data'].size
-    assert_equal 'United States', json_response['data'][0]['country_name']
-    assert_equal 'Euro Member Countries', json_response['data'][1]['country_name']
-    assert_equal 'Canada', json_response['data'][2]['country_name']
+    assert_equal 'United States', json_response['data'][0]['attributes']['country_name']
+    assert_equal 'Euro Member Countries', json_response['data'][1]['attributes']['country_name']
+    assert_equal 'Canada', json_response['data'][2]['attributes']['country_name']
   end
 
   def test_currencies_json_key_dasherized_sort
     JSONAPI.configuration.json_key_format = :dasherized_key
-    get :index, {sort: '+country-name'}
+    get :index, {sort: 'country-name'}
     assert_response :success
     assert_equal 3, json_response['data'].size
-    assert_equal 'Canada', json_response['data'][0]['country-name']
-    assert_equal 'Euro Member Countries', json_response['data'][1]['country-name']
-    assert_equal 'United States', json_response['data'][2]['country-name']
+    assert_equal 'Canada', json_response['data'][0]['attributes']['country-name']
+    assert_equal 'Euro Member Countries', json_response['data'][1]['attributes']['country-name']
+    assert_equal 'United States', json_response['data'][2]['attributes']['country-name']
 
     # reverse sort
     get :index, {sort: '-country-name'}
     assert_response :success
     assert_equal 3, json_response['data'].size
-    assert_equal 'United States', json_response['data'][0]['country-name']
-    assert_equal 'Euro Member Countries', json_response['data'][1]['country-name']
-    assert_equal 'Canada', json_response['data'][2]['country-name']
+    assert_equal 'United States', json_response['data'][0]['attributes']['country-name']
+    assert_equal 'Euro Member Countries', json_response['data'][1]['attributes']['country-name']
+    assert_equal 'Canada', json_response['data'][2]['attributes']['country-name']
   end
 
   def test_currencies_json_key_custom_json_key_sort
     JSONAPI.configuration.json_key_format = :upper_camelized_key
-    get :index, {sort: '+CountryName'}
+    get :index, {sort: 'CountryName'}
     assert_response :success
     assert_equal 3, json_response['data'].size
-    assert_equal 'Canada', json_response['data'][0]['CountryName']
-    assert_equal 'Euro Member Countries', json_response['data'][1]['CountryName']
-    assert_equal 'United States', json_response['data'][2]['CountryName']
+    assert_equal 'Canada', json_response['data'][0]['attributes']['CountryName']
+    assert_equal 'Euro Member Countries', json_response['data'][1]['attributes']['CountryName']
+    assert_equal 'United States', json_response['data'][2]['attributes']['CountryName']
 
     # reverse sort
     get :index, {sort: '-CountryName'}
     assert_response :success
     assert_equal 3, json_response['data'].size
-    assert_equal 'United States', json_response['data'][0]['CountryName']
-    assert_equal 'Euro Member Countries', json_response['data'][1]['CountryName']
-    assert_equal 'Canada', json_response['data'][2]['CountryName']
+    assert_equal 'United States', json_response['data'][0]['attributes']['CountryName']
+    assert_equal 'Euro Member Countries', json_response['data'][1]['attributes']['CountryName']
+    assert_equal 'Canada', json_response['data'][2]['attributes']['CountryName']
   end
 
   def test_currencies_json_key_underscored_filter
@@ -1610,7 +1945,7 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
     get :index, {filter: {country_name: 'Canada'}}
     assert_response :success
     assert_equal 1, json_response['data'].size
-    assert_equal 'Canada', json_response['data'][0]['country_name']
+    assert_equal 'Canada', json_response['data'][0]['attributes']['country_name']
   end
 
   def test_currencies_json_key_camelized_key_filter
@@ -1618,7 +1953,7 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
     get :index, {filter: {'countryName' => 'Canada'}}
     assert_response :success
     assert_equal 1, json_response['data'].size
-    assert_equal 'Canada', json_response['data'][0]['countryName']
+    assert_equal 'Canada', json_response['data'][0]['attributes']['countryName']
   end
 
   def test_currencies_json_key_custom_json_key_filter
@@ -1626,23 +1961,51 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
     get :index, {filter: {'CountryName' => 'Canada'}}
     assert_response :success
     assert_equal 1, json_response['data'].size
-    assert_equal 'Canada', json_response['data'][0]['CountryName']
+    assert_equal 'Canada', json_response['data'][0]['attributes']['CountryName']
   end
 end
 
 class PeopleControllerTest < ActionController::TestCase
+  def setup
+    JSONAPI.configuration.json_key_format = :camelized_key
+  end
+
   def test_create_validations
     set_content_type_header!
     post :create,
          {
            data: {
              type: 'people',
-             name: 'Steve Jobs',
-             email: 'sj@email.zzz',
-             dateJoined: DateTime.parse('2014-1-30 4:20:00 UTC +00:00')
+             attributes: {
+               name: 'Steve Jobs',
+               email: 'sj@email.zzz',
+               dateJoined: DateTime.parse('2014-1-30 4:20:00 UTC +00:00')
+             }
            }
          }
 
+    assert_response :success
+  end
+
+  def test_update_link_with_dasherized_type
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    set_content_type_header!
+    put :update,
+        {
+          id: 3,
+          data: {
+            id: '3',
+            type: 'people',
+            relationships: {
+              'hair-cut' => {
+                data: {
+                  type: 'hair-cuts',
+                  id: '1'
+                }
+              }
+            }
+          }
+        }
     assert_response :success
   end
 
@@ -1652,7 +2015,9 @@ class PeopleControllerTest < ActionController::TestCase
          {
            data: {
              type: 'people',
-             email: 'sj@email.zzz'
+             attributes: {
+               email: 'sj@email.zzz'
+             }
            }
          }
 
@@ -1660,7 +2025,7 @@ class PeopleControllerTest < ActionController::TestCase
     assert_equal 2, json_response['errors'].size
     assert_equal JSONAPI::VALIDATION_ERROR, json_response['errors'][0]['code']
     assert_equal JSONAPI::VALIDATION_ERROR, json_response['errors'][1]['code']
-    assert_match /date_joined - can't be blank/, response.body
+    assert_match /dateJoined - can't be blank/, response.body
     assert_match /name - can't be blank/, response.body
   end
 
@@ -1672,7 +2037,9 @@ class PeopleControllerTest < ActionController::TestCase
           data: {
             id: '3',
             type: 'people',
-            name: ''
+            attributes: {
+              name: ''
+            }
           }
         }
 
@@ -1699,7 +2066,73 @@ class PeopleControllerTest < ActionController::TestCase
     assert_response :success
     assert_equal json_response['data'].size, 1
     assert_equal json_response['data'][0]['id'], '1'
-    assert_equal json_response['data'][0]['name'], 'Joe Author'
+    assert_equal json_response['data'][0]['attributes']['name'], 'Joe Author'
+  end
+
+  def test_get_related_resource
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    JSONAPI.configuration.route_format = :underscored_key
+    get :get_related_resource, {post_id: '2', relationship: 'author', source:'posts'}
+    assert_response :success
+    assert_hash_equals(
+      {
+        data: {
+         id: '1',
+         type: 'people',
+         attributes: {
+           name: 'Joe Author',
+           email: 'joe@xyz.fake',
+           "date-joined" => '2013-08-07 16:25:00 -0400'
+         },
+         links: {
+           self: 'http://test.host/people/1'
+         },
+         relationships: {
+           comments: {
+             links: {
+               self: 'http://test.host/people/1/relationships/comments',
+               related: 'http://test.host/people/1/comments'
+             }
+           },
+           posts: {
+             links: {
+               self: 'http://test.host/people/1/relationships/posts',
+               related: 'http://test.host/people/1/posts'
+             }
+           },
+           preferences: {
+             links: {
+               self: 'http://test.host/people/1/relationships/preferences',
+               related: 'http://test.host/people/1/preferences'
+             }
+           },
+           "hair-cut" => {
+             "links" => {
+               "self" => "http://test.host/people/1/relationships/hair_cut",
+               "related" => "http://test.host/people/1/hair_cut"
+             }
+           },
+           vehicles: {
+             links: {
+               self: "http://test.host/people/1/relationships/vehicles",
+               related: "http://test.host/people/1/vehicles"
+             }
+           }
+         }
+        }
+      },
+      json_response
+    )
+  end
+
+  def test_get_related_resource_nil
+    get :get_related_resource, {post_id: '17', relationship: 'author', source:'posts'}
+    assert_response :success
+    assert_hash_equals json_response,
+                       {
+                         data: nil
+                       }
+
   end
 end
 
@@ -1710,8 +2143,8 @@ class Api::V5::AuthorsControllerTest < ActionController::TestCase
     assert_equal 1, json_response['data'].size
     assert_equal '1', json_response['data'][0]['id']
     assert_equal 'authors', json_response['data'][0]['type']
-    assert_equal 'Joe Author', json_response['data'][0]['name']
-    assert_equal nil, json_response['data'][0]['email']
+    assert_equal 'Joe Author', json_response['data'][0]['attributes']['name']
+    assert_equal nil, json_response['data'][0]['attributes']['email']
   end
 
   def test_get_person_as_author_by_name_filter
@@ -1719,7 +2152,7 @@ class Api::V5::AuthorsControllerTest < ActionController::TestCase
     assert_response :success
     assert_equal 3, json_response['data'].size
     assert_equal '1', json_response['data'][0]['id']
-    assert_equal 'Joe Author', json_response['data'][0]['name']
+    assert_equal 'Joe Author', json_response['data'][0]['attributes']['name']
   end
 end
 
@@ -1730,7 +2163,7 @@ class BreedsControllerTest < ActionController::TestCase
     get :index
     assert_response :success
     assert_equal '0', json_response['data'][0]['id']
-    assert_equal 'Persian', json_response['data'][0]['name']
+    assert_equal 'Persian', json_response['data'][0]['attributes']['name']
   end
 
   def test_poro_show
@@ -1738,7 +2171,7 @@ class BreedsControllerTest < ActionController::TestCase
     assert_response :success
     assert json_response['data'].is_a?(Hash)
     assert_equal '0', json_response['data']['id']
-    assert_equal 'Persian', json_response['data']['name']
+    assert_equal 'Persian', json_response['data']['attributes']['name']
   end
 
   def test_poro_show_multiple
@@ -1754,13 +2187,32 @@ class BreedsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'breeds',
-             name: 'tabby'
+             attributes: {
+               name: 'tabby'
+             }
            }
          }
 
-    assert_response :created
+    assert_response :accepted
     assert json_response['data'].is_a?(Hash)
-    assert_equal 'Tabby', json_response['data']['name']
+    assert_equal 'Tabby', json_response['data']['attributes']['name']
+  end
+
+  def test_poro_create_validation_error
+    set_content_type_header!
+    post :create,
+         {
+           data: {
+             type: 'breeds',
+             attributes: {
+               name: ''
+             }
+           }
+         }
+
+    assert_equal 1, json_response['errors'].size
+    assert_equal JSONAPI::VALIDATION_ERROR, json_response['errors'][0]['code']
+    assert_match /name - can't be blank/, response.body
   end
 
   def test_poro_create_update
@@ -1769,13 +2221,15 @@ class BreedsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'breeds',
-             name: 'CALIC'
+             attributes: {
+               name: 'CALIC'
+             }
            }
          }
 
-    assert_response :created
+    assert_response :accepted
     assert json_response['data'].is_a?(Hash)
-    assert_equal 'Calic', json_response['data']['name']
+    assert_equal 'Calic', json_response['data']['attributes']['name']
 
     put :update,
         {
@@ -1783,12 +2237,14 @@ class BreedsControllerTest < ActionController::TestCase
           data: {
             id: json_response['data']['id'],
             type: 'breeds',
-            name: 'calico'
+            attributes: {
+              name: 'calico'
+            }
           }
         }
     assert_response :success
     assert json_response['data'].is_a?(Hash)
-    assert_equal 'Calico', json_response['data']['name']
+    assert_equal 'Calico', json_response['data']['attributes']['name']
   end
 
   def test_poro_delete
@@ -1805,26 +2261,38 @@ class Api::V2::PreferencesControllerTest < ActionController::TestCase
     get :show
     assert_response :success
   end
+
+  def test_update_singleton_resource_without_id
+    set_content_type_header!
+    patch :update,
+      data: {
+        id: "1",
+        type: "preferences",
+        attributes: {
+        }
+      }
+    assert_response :success
+  end
 end
 
 class Api::V1::PostsControllerTest < ActionController::TestCase
   def test_show_post_namespaced
     get :show, {id: '1'}
     assert_response :success
-    assert_equal 'http://test.host/api/v1/posts/1/links/writer', json_response['data']['links']['writer']['self']
+    assert_equal 'http://test.host/api/v1/posts/1/relationships/writer', json_response['data']['relationships']['writer']['links']['self']
   end
 
   def test_show_post_namespaced_include
     get :show, {id: '1', include: 'writer'}
     assert_response :success
-    assert_equal '1', json_response['data']['links']['writer']['id']
-    assert_nil json_response['data']['links']['tags']
+    assert_equal '1', json_response['data']['relationships']['writer']['data']['id']
+    assert_nil json_response['data']['relationships']['tags']
     assert_equal '1', json_response['included'][0]['id']
     assert_equal 'writers', json_response['included'][0]['type']
-    assert_equal 'joe@xyz.fake', json_response['included'][0]['email']
+    assert_equal 'joe@xyz.fake', json_response['included'][0]['attributes']['email']
   end
 
-  def test_index_filter_on_association_namespaced
+  def test_index_filter_on_relationship_namespaced
     get :index, {filter: {writer: '1'}}
     assert_response :success
     assert_equal 3, json_response['data'].size
@@ -1834,7 +2302,7 @@ class Api::V1::PostsControllerTest < ActionController::TestCase
     get :index, {sort: '-title'}
 
     assert_response :success
-    assert_equal "Update This Later - Multiple", json_response['data'][0]['title']
+    assert_equal "Update This Later - Multiple", json_response['data'][0]['attributes']['title']
   end
 
   def test_create_simple_namespaced
@@ -1843,42 +2311,83 @@ class Api::V1::PostsControllerTest < ActionController::TestCase
          {
            data: {
              type: 'posts',
-             title: 'JR - now with Namespacing',
-             body: 'JSONAPIResources is the greatest thing since unsliced bread now that it has namespaced resources.',
-             links: {
-               writer: {type: 'writers', id: '3'}
+             attributes: {
+               title: 'JR - now with Namespacing',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread now that it has namespaced resources.'
+             },
+             relationships: {
+               writer: { data: {type: 'writers', id: '3'}}
              }
            }
          }
 
     assert_response :created
     assert json_response['data'].is_a?(Hash)
-    assert_equal '3', json_response['data']['links']['writer']['id']
-    assert_equal 'JR - now with Namespacing', json_response['data']['title']
+    assert_equal 'JR - now with Namespacing', json_response['data']['attributes']['title']
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread now that it has namespaced resources.',
-                 json_response['data']['body']
+                 json_response['data']['attributes']['body']
   end
 
 end
 
 class FactsControllerTest < ActionController::TestCase
   def test_type_formatting
+    JSONAPI.configuration.json_key_format = :camelized_key
     get :show, {id: '1'}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
-    assert_equal 'Jane Author', json_response['data']['spouseName']
-    assert_equal 'First man to run across Antartica.', json_response['data']['bio']
-    assert_equal 23.89/45.6, json_response['data']['qualityRating']
-    assert_equal 47000.56, json_response['data']['salary']
-    assert_equal '2013-08-07T20:25:00.000Z', json_response['data']['dateTimeJoined']
-    assert_equal '1965-06-30', json_response['data']['birthday']
-    assert_equal '2000-01-01T20:00:00Z', json_response['data']['bedtime']
-    assert_equal 'abc', json_response['data']['photo']
-    assert_equal false, json_response['data']['cool']
+    assert_equal 'Jane Author', json_response['data']['attributes']['spouseName']
+    assert_equal 'First man to run across Antartica.', json_response['data']['attributes']['bio']
+    assert_equal 23.89/45.6, json_response['data']['attributes']['qualityRating']
+    assert_equal '47000.56', json_response['data']['attributes']['salary']
+    assert_equal '2013-08-07T20:25:00Z', json_response['data']['attributes']['dateTimeJoined']
+    assert_equal '1965-06-30', json_response['data']['attributes']['birthday']
+    assert_equal '2000-01-01T20:00:00Z', json_response['data']['attributes']['bedtime']
+    assert_equal 'abc', json_response['data']['attributes']['photo']
+    assert_equal false, json_response['data']['attributes']['cool']
+  end
+
+  def test_create_with_invalid_data
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    set_content_type_header!
+    post :create,
+         {
+           data: {
+             type: 'facts',
+             attributes: {
+               bio: '',
+               :"quality-rating" => '',
+               :"spouse-name" => '',
+               salary: 100000,
+               :"date-time-joined" => '',
+               birthday: '',
+               bedtime: '',
+               photo: 'abc',
+               cool: false
+             },
+             relationships: {
+             }
+           }
+         }
+
+    assert_response :unprocessable_entity
+
+    assert_equal "/data/attributes/spouse-name", json_response['errors'][0]['source']['pointer']
+    assert_equal "can't be blank", json_response['errors'][0]['title']
+    assert_equal "spouse-name - can't be blank", json_response['errors'][0]['detail']
+
+    assert_equal "/data/attributes/bio", json_response['errors'][1]['source']['pointer']
+    assert_equal "can't be blank", json_response['errors'][1]['title']
+    assert_equal "bio - can't be blank", json_response['errors'][1]['detail']
   end
 end
 
 class Api::V2::BooksControllerTest < ActionController::TestCase
+  def setup
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    $test_user = Person.find(1)
+  end
+
   def after_teardown
     Api::V2::BookResource.paginator :offset
   end
@@ -1889,7 +2398,58 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     get :index
     assert_response :success
     assert_equal 10, json_response['data'].size
-    assert_equal 'Book 0', json_response['data'][0]['title']
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+  end
+
+  def test_books_record_count_in_meta
+    Api::V2::BookResource.paginator :offset
+    JSONAPI.configuration.top_level_meta_include_record_count = true
+    get :index, {include: 'book-comments'}
+    JSONAPI.configuration.top_level_meta_include_record_count = false
+
+    assert_response :success
+    assert_equal 901, json_response['meta']['record-count']
+    assert_equal 10, json_response['data'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+  end
+
+  def test_books_record_count_in_meta_custom_name
+    Api::V2::BookResource.paginator :offset
+    JSONAPI.configuration.top_level_meta_include_record_count = true
+    JSONAPI.configuration.top_level_meta_record_count_key = 'total_records'
+
+    get :index, {include: 'book-comments'}
+    JSONAPI.configuration.top_level_meta_include_record_count = false
+    JSONAPI.configuration.top_level_meta_record_count_key = :record_count
+
+    assert_response :success
+    assert_equal 901, json_response['meta']['total-records']
+    assert_equal 10, json_response['data'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+  end
+
+  def test_books_offset_pagination_no_params_includes_query_count_one_level
+    Api::V2::BookResource.paginator :offset
+
+    count_queries do
+      get :index, {include: 'book-comments'}
+    end
+    assert_response :success
+    assert_equal 10, json_response['data'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+    assert_query_count(3)
+  end
+
+  def test_books_offset_pagination_no_params_includes_query_count_two_levels
+    Api::V2::BookResource.paginator :offset
+
+    count_queries do
+      get :index, {include: 'book-comments,book-comments.author'}
+    end
+    assert_response :success
+    assert_equal 10, json_response['data'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+    assert_query_count(4)
   end
 
   def test_books_offset_pagination
@@ -1898,7 +2458,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     get :index, {page: {offset: 50, limit: 12}}
     assert_response :success
     assert_equal 12, json_response['data'].size
-    assert_equal 'Book 50', json_response['data'][0]['title']
+    assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
   end
 
   def test_books_offset_pagination_bad_page_param
@@ -1925,6 +2485,14 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_match /-1 is not a valid value for limit page parameter./, json_response['errors'][0]['detail']
   end
 
+  def test_books_offset_pagination_bad_param_offset_less_than_zero
+    Api::V2::BookResource.paginator :offset
+
+    get :index, {page: {offset: -1, limit: 20}}
+    assert_response :bad_request
+    assert_match /-1 is not a valid value for offset page parameter./, json_response['errors'][0]['detail']
+  end
+
   def test_books_offset_pagination_invalid_page_format
     Api::V2::BookResource.paginator :offset
 
@@ -1939,7 +2507,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     get :index
     assert_response :success
     assert_equal 10, json_response['data'].size
-    assert_equal 'Book 0', json_response['data'][0]['title']
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
   end
 
   def test_books_paged_pagination_no_page
@@ -1948,7 +2516,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     get :index, {page: {size: 12}}
     assert_response :success
     assert_equal 12, json_response['data'].size
-    assert_equal 'Book 0', json_response['data'][0]['title']
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
   end
 
   def test_books_paged_pagination
@@ -1957,7 +2525,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     get :index, {page: {number: 3, size: 12}}
     assert_response :success
     assert_equal 12, json_response['data'].size
-    assert_equal 'Book 24', json_response['data'][0]['title']
+    assert_equal 'Book 24', json_response['data'][0]['attributes']['title']
   end
 
   def test_books_paged_pagination_bad_page_param
@@ -1984,13 +2552,12 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_match /-1 is not a valid value for size page parameter./, json_response['errors'][0]['detail']
   end
 
-  def test_books_paged_pagination_invalid_page_format_interpret_int_text
+  def test_books_paged_pagination_invalid_page_format_incorrect
     Api::V2::BookResource.paginator :paged
 
     get :index, {page: 'qwerty'}
-    assert_response :success
-    assert_equal 10, json_response['data'].size
-    assert_equal 'Book 0', json_response['data'][0]['title']
+    assert_response :bad_request
+    assert_match /0 is not a valid value for number page parameter./, json_response['errors'][0]['detail']
   end
 
   def test_books_paged_pagination_invalid_page_format_interpret_int
@@ -1999,6 +2566,335 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     get :index, {page: 3}
     assert_response :success
     assert_equal 10, json_response['data'].size
-    assert_equal 'Book 20', json_response['data'][0]['title']
+    assert_equal 'Book 20', json_response['data'][0]['attributes']['title']
+  end
+
+  def test_books_included_paged
+    Api::V2::BookResource.paginator :offset
+
+    count_queries do
+      get :index, {filter: {id: '0'}, include: 'book-comments'}
+    end
+    assert_response :success
+    assert_equal 1, json_response['data'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+    assert_query_count(3)
+  end
+
+  def test_books_banned_non_book_admin
+    $test_user = Person.find(1)
+    Api::V2::BookResource.paginator :offset
+    count_queries do
+      JSONAPI.configuration.top_level_meta_include_record_count = true
+      get :index, {page: {offset: 50, limit: 12}}
+      JSONAPI.configuration.top_level_meta_include_record_count = false
+    end
+    assert_response :success
+    assert_equal 12, json_response['data'].size
+    assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
+    assert_equal 901, json_response['meta']['record-count']
+    assert_query_count(2)
+  end
+
+  def test_books_banned_non_book_admin_includes_switched
+    $test_user = Person.find(1)
+    Api::V2::BookResource.paginator :offset
+    count_queries do
+      JSONAPI.configuration.top_level_meta_include_record_count = true
+      get :index, {page: {offset: 0, limit: 12}, include: 'book-comments'}
+      JSONAPI.configuration.top_level_meta_include_record_count = false
+    end
+
+    assert_response :success
+    assert_equal 12, json_response['data'].size
+    assert_equal 130, json_response['included'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+    assert_equal 26, json_response['data'][0]['relationships']['book-comments']['data'].size
+    assert_equal 'book-comments', json_response['included'][0]['type']
+    assert_equal 901, json_response['meta']['record-count']
+    assert_query_count(3)
+  end
+
+  def test_books_banned_non_book_admin_includes_nested_includes
+    $test_user = Person.find(1)
+    Api::V2::BookResource.paginator :offset
+    count_queries do
+      JSONAPI.configuration.top_level_meta_include_record_count = true
+      get :index, {page: {offset: 0, limit: 12}, include: 'book-comments.author'}
+      JSONAPI.configuration.top_level_meta_include_record_count = false
+    end
+    assert_response :success
+    assert_equal 12, json_response['data'].size
+    assert_equal 131, json_response['included'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+    assert_equal 901, json_response['meta']['record-count']
+    assert_query_count(4)
+  end
+
+  def test_books_banned_admin
+    $test_user = Person.find(5)
+    Api::V2::BookResource.paginator :offset
+    query_count = count_queries do
+      JSONAPI.configuration.top_level_meta_include_record_count = true
+      get :index, {page: {offset: 50, limit: 12}, filter: {banned: 'true'}}
+      JSONAPI.configuration.top_level_meta_include_record_count = false
+    end
+    assert_response :success
+    assert_equal 12, json_response['data'].size
+    assert_equal 'Book 651', json_response['data'][0]['attributes']['title']
+    assert_equal 99, json_response['meta']['record-count']
+    assert_query_count(2)
+  end
+
+  def test_books_not_banned_admin
+    $test_user = Person.find(5)
+    Api::V2::BookResource.paginator :offset
+    count_queries do
+      JSONAPI.configuration.top_level_meta_include_record_count = true
+      get :index, {page: {offset: 50, limit: 12}, filter: {banned: 'false'}}
+      JSONAPI.configuration.top_level_meta_include_record_count = false
+    end
+    assert_response :success
+    assert_equal 12, json_response['data'].size
+    assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
+    assert_equal 901, json_response['meta']['record-count']
+    assert_query_count(2)
+  end
+
+  def test_books_banned_non_book_admin_overlapped
+    $test_user = Person.find(1)
+    Api::V2::BookResource.paginator :offset
+    count_queries do
+      JSONAPI.configuration.top_level_meta_include_record_count = true
+      get :index, {page: {offset: 590, limit: 20}}
+      JSONAPI.configuration.top_level_meta_include_record_count = false
+    end
+    assert_response :success
+    assert_equal 20, json_response['data'].size
+    assert_equal 'Book 590', json_response['data'][0]['attributes']['title']
+    assert_equal 901, json_response['meta']['record-count']
+    assert_query_count(2)
+  end
+
+  def test_books_included_exclude_unapproved
+    $test_user = Person.find(1)
+    Api::V2::BookResource.paginator :none
+
+    count_queries do
+      get :index, {filter: {id: '0,1,2,3,4'}, include: 'book-comments'}
+    end
+    assert_response :success
+    assert_equal 5, json_response['data'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+    assert_equal 130, json_response['included'].size
+    assert_equal 26, json_response['data'][0]['relationships']['book-comments']['data'].size
+    assert_query_count(2)
+  end
+
+  def test_books_included_all_comments_for_admin
+    $test_user = Person.find(5)
+    Api::V2::BookResource.paginator :none
+
+    get :index, {filter: {id: '0,1,2,3,4'}, include: 'book-comments'}
+    assert_response :success
+    assert_equal 5, json_response['data'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+    assert_equal 255, json_response['included'].size
+    assert_equal 51, json_response['data'][0]['relationships']['book-comments']['data'].size
+  end
+
+  def test_books_filter_by_book_comment_id_limited_user
+    $test_user = Person.find(1)
+    get :index, {filter: {book_comments: '0,52' }}
+    assert_response :success
+    assert_equal 1, json_response['data'].size
+  end
+
+  def test_books_filter_by_book_comment_id_admin_user
+    $test_user = Person.find(5)
+    get :index, {filter: {book_comments: '0,52' }}
+    assert_response :success
+    assert_equal 2, json_response['data'].size
+  end
+end
+
+class Api::V2::BookCommentsControllerTest < ActionController::TestCase
+  def setup
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    Api::V2::BookCommentResource.paginator :none
+    $test_user = Person.find(1)
+  end
+
+  def test_book_comments_all_for_admin
+    $test_user = Person.find(5)
+    count_queries do
+      get :index
+    end
+    assert_response :success
+    assert_equal 255, json_response['data'].size
+    assert_query_count(1)
+  end
+
+  def test_book_comments_unapproved_context_based
+    $test_user = Person.find(5)
+    count_queries do
+      get :index, {filter: {approved: 'false'}}
+    end
+    assert_response :success
+    assert_equal 125, json_response['data'].size
+    assert_query_count(1)
+  end
+
+  def test_book_comments_exclude_unapproved_context_based
+    $test_user = Person.find(1)
+    count_queries do
+      get :index
+    end
+    assert_response :success
+    assert_equal 130, json_response['data'].size
+    assert_query_count(1)
+  end
+end
+
+class Api::V4::BooksControllerTest < ActionController::TestCase
+  def setup
+    JSONAPI.configuration.json_key_format = :camelized_key
+  end
+
+  def test_books_offset_pagination_meta
+    JSONAPI.configuration.operations_processor = :counting_active_record
+    Api::V4::BookResource.paginator :offset
+    get :index, {page: {offset: 50, limit: 12}}
+    assert_response :success
+    assert_equal 12, json_response['data'].size
+    assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
+    assert_equal 901, json_response['meta']['totalRecords']
+    JSONAPI.configuration.operations_processor = :active_record
+  end
+
+  def test_books_operation_links
+    JSONAPI.configuration.operations_processor = :counting_active_record
+    Api::V4::BookResource.paginator :offset
+    get :index, {page: {offset: 50, limit: 12}}
+    assert_response :success
+    assert_equal 12, json_response['data'].size
+    assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
+    assert_equal 5, json_response['links'].size
+    assert_equal 'https://test_corp.com', json_response['links']['spec']
+    JSONAPI.configuration.operations_processor = :active_record
+  end
+end
+
+class CategoriesControllerTest < ActionController::TestCase
+  def test_index_default_filter
+    get :index
+    assert_response :success
+    assert json_response['data'].is_a?(Array)
+    assert_equal 3, json_response['data'].size
+  end
+
+  def test_index_default_filter_override
+    get :index, { filter: { status: 'inactive' } }
+    assert_response :success
+    assert json_response['data'].is_a?(Array)
+    assert_equal 4, json_response['data'].size
+  end
+end
+
+class Api::V1::PlanetsControllerTest < ActionController::TestCase
+  def test_save_model_callbacks
+    set_content_type_header!
+    post :create,
+         {
+           data: {
+             type: 'planets',
+             attributes: {
+               name: 'Zeus',
+               description: 'The largest planet in the solar system. Discovered in 2015.'
+             }
+           }
+         }
+
+    assert_response :created
+    assert json_response['data'].is_a?(Hash)
+    assert_equal 'Zeus', json_response['data']['attributes']['name']
+  end
+
+  def test_save_model_callbacks_fail
+    set_content_type_header!
+    post :create,
+         {
+           data: {
+             type: 'planets',
+             attributes: {
+               name: 'Pluto',
+               description: 'Yes, it is a planet.'
+             }
+           }
+         }
+
+    assert_response :unprocessable_entity
+    assert_match /Save failed or was cancelled/, json_response['errors'][0]['detail']
+  end
+end
+
+class Api::V1::MoonsControllerTest < ActionController::TestCase
+   def test_get_related_resource
+      get :get_related_resource, {crater_id: 'S56D', relationship: 'moon', source: "api/v1/craters"}
+      assert_response :success
+      assert_hash_equals json_response,
+                              {
+                                data: {
+                                  id: "1",
+                                  type: "moons",
+                                  links: {self: "http://test.host/moons/1"},
+                                  attributes: {name: "Titan", description: "Best known of the Saturn moons."},
+                                  relationships: {
+                                    planet: {links: {self: "http://test.host/moons/1/relationships/planet", related: "http://test.host/moons/1/planet"}},
+                                    craters: {links: {self: "http://test.host/moons/1/relationships/craters", related: "http://test.host/moons/1/craters"}}}
+                                  }
+                                }
+
+   end
+end
+
+class Api::V1::CratersControllerTest < ActionController::TestCase
+  def test_show_single
+    get :show, {id: 'S56D'}
+    assert_response :success
+    assert json_response['data'].is_a?(Hash)
+    assert_equal 'S56D', json_response['data']['attributes']['code']
+    assert_equal 'Very large crater', json_response['data']['attributes']['description']
+    assert_nil json_response['included']
+  end
+
+  def test_get_related_resources
+    get :get_related_resources, {moon_id: '1', relationship: 'craters', source: "api/v1/moons"}
+    assert_response :success
+    assert_hash_equals json_response,
+                      {
+                        data: [
+                          {id:"A4D3",
+                           type:"craters",
+                           links:{self: "http://test.host/craters/A4D3"},
+                           attributes:{code: "A4D3", description: "Small crater"},
+                           relationships:{moon: {links: {self: "http://test.host/craters/A4D3/relationships/moon", related: "http://test.host/craters/A4D3/moon"}}}
+                          },
+                          {id: "S56D",
+                           type: "craters",
+                           links:{self: "http://test.host/craters/S56D"},
+                           attributes:{code: "S56D", description: "Very large crater"},
+                           relationships:{moon: {links: {self: "http://test.host/craters/S56D/relationships/moon", related: "http://test.host/craters/S56D/moon"}}}
+                          }
+                        ]
+                      }
+  end
+
+  def test_show_relationship
+    get :show_relationship, {crater_id: 'S56D', relationship: 'moon'}
+
+    assert_response :success
+    assert_equal "moons", json_response['data']['type']
+    assert_equal "1", json_response['data']['id']
   end
 end
