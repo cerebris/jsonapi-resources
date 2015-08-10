@@ -185,7 +185,7 @@ module JSONAPI
                                               sort_criteria: @sort_criteria,
                                               paginator: @paginator)
 
-      return JSONAPI::RelatedResourcesOperationResult.new(:ok, source_resource, related_resource, options)
+      return JSONAPI::RelatedResourcesOperationResult.new(:ok, source_resource, @relationship_type, related_resource, options)
 
     rescue JSONAPI::Exceptions::Error => e
       return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)

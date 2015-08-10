@@ -43,10 +43,11 @@ module JSONAPI
   end
 
   class RelatedResourcesOperationResult < ResourcesOperationResult
-    attr_accessor :source_resource
+    attr_accessor :source_resource, :_type
 
-    def initialize(code, source_resource, resources, options = {})
+    def initialize(code, source_resource, type, resources, options = {})
       @source_resource = source_resource
+      @_type = type
       super(code, resources, options)
     end
   end

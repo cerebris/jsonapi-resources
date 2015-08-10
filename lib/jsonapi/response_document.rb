@@ -70,16 +70,14 @@ module JSONAPI
 
         # Build pagination links
         if result.is_a?(JSONAPI::ResourcesOperationResult) || result.is_a?(JSONAPI::RelatedResourcesOperationResult)
-          if result.resources.size > 0
             result.pagination_params.each_pair do |link_name, params|
               if result.is_a?(JSONAPI::RelatedResourcesOperationResult)
-                relationship = result.source_resource.class._relationships[result.resources.first.class._type]
+                relationship = result.source_resource.class._relationships[result._type.to_sym]
                 links[link_name] = serializer.url_generator.relationships_related_link(result.source_resource, relationship, query_params(params))
               else
                 links[link_name] = serializer.find_link(query_params(params))
               end
             end
-          end
         end
       end
 
