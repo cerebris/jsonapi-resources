@@ -685,7 +685,7 @@ module JSONAPI
           check_reserved_relationship_name(attr)
 
           # Initialize from an ActiveRecord model's properties
-          if _model_class && _model_class < ActiveRecord::Base
+          if _model_class && _model_class.ancestors.collect{|ancestor| ancestor.name}.include?('ActiveRecord::Base')
             model_association = _model_class.reflect_on_association(attr)
             if model_association
               options[:class_name] ||= model_association.class_name
