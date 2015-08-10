@@ -398,6 +398,13 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 'http://www.example.com/api/v2/books/1/book_comments?page%5Blimit%5D=10&page%5Boffset%5D=41', json_response['links']['last']
   end
 
+  def test_pagination_related_resources_without_related
+    Api::V2::BookResource.paginator :offset
+    Api::V2::BookCommentResource.paginator :offset
+    get '/api/v2/books/10/book_comments'
+    assert_equal 200, status
+  end
+
   def test_pagination_related_resources_data_includes
     Api::V2::BookResource.paginator :offset
     Api::V2::BookCommentResource.paginator :offset
