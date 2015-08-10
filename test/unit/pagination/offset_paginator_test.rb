@@ -82,6 +82,45 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
     assert_equal 0, paginator.offset
   end
 
+  def test_offset_links_page_params_empty_results
+    params = ActionController::Parameters.new(
+      {
+        limit: 5,
+        offset: 0
+      }
+    )
+
+    paginator = OffsetPaginator.new(params)
+    links_params = paginator.links_page_params(record_count: 0)
+
+    assert_equal 2, links_params.size
+
+    assert_equal 5, links_params['first']['limit']
+    assert_equal 0, links_params['first']['offset']
+
+    assert_equal 5, links_params['last']['limit']
+    assert_equal 0, links_params['last']['offset']
+  end
+
+  def test_offset_links_page_params_small_resultsets
+    params = ActionController::Parameters.new(
+      {
+        limit: 5,
+        offset: 0
+      }
+    )
+
+    paginator = OffsetPaginator.new(params)
+    links_params = paginator.links_page_params(record_count: 3)
+
+    assert_equal 2, links_params.size
+
+    assert_equal 5, links_params['first']['limit']
+    assert_equal 0, links_params['first']['offset']
+
+    assert_equal 5, links_params['last']['limit']
+    assert_equal 0, links_params['last']['offset']
+  end
 
   def test_offset_links_page_params_large_data_set_start
     params = ActionController::Parameters.new(

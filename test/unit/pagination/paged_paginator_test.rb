@@ -82,6 +82,45 @@ class PagedPaginatorTest < ActiveSupport::TestCase
     assert_equal 1, paginator.number
   end
 
+  def test_paged_links_page_params_empty_results
+    params = ActionController::Parameters.new(
+      {
+        size: 5,
+        number: 1
+      }
+    )
+
+    paginator = PagedPaginator.new(params)
+    links_params = paginator.links_page_params(record_count: 0)
+
+    assert_equal 2, links_params.size
+
+    assert_equal 5, links_params['first']['size']
+    assert_equal 1, links_params['first']['number']
+
+    assert_equal 5, links_params['last']['size']
+    assert_equal 1, links_params['last']['number']
+  end
+
+  def test_paged_links_page_params_small_resultsets
+    params = ActionController::Parameters.new(
+      {
+        size: 5,
+        number: 1
+      }
+    )
+
+    paginator = PagedPaginator.new(params)
+    links_params = paginator.links_page_params(record_count: 3)
+
+    assert_equal 2, links_params.size
+
+    assert_equal 5, links_params['first']['size']
+    assert_equal 1, links_params['first']['number']
+
+    assert_equal 5, links_params['last']['size']
+    assert_equal 1, links_params['last']['number']
+  end
 
   def test_paged_links_page_params_large_data_set_start_full_pages
     params = ActionController::Parameters.new(

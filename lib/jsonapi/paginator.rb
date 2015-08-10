@@ -74,8 +74,12 @@ class OffsetPaginator < JSONAPI::Paginator
     end
 
     if record_count
+      last_offset = record_count - @limit
+
+      last_offset = 0 if last_offset < 0
+
       links_page_params['last'] = {
-        'offset' => record_count - @limit,
+        'offset' => last_offset,
         'limit' => @limit
       }
     end
@@ -159,7 +163,7 @@ class PagedPaginator < JSONAPI::Paginator
 
     if record_count
       links_page_params['last'] = {
-        'number' => page_count,
+        'number' => page_count == 0 ? 1 : page_count,
         'size' => @size
       }
     end
