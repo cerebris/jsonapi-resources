@@ -175,7 +175,7 @@ module JSONAPI
     def options
       opts = {}
       opts.merge!(pagination_params: pagination_params) if JSONAPI.configuration.top_level_links_include_pagination
-      opts.merge!(record_count: pagination_params) if JSONAPI.configuration.top_level_meta_include_record_count
+      opts.merge!(record_count: record_count) if JSONAPI.configuration.top_level_meta_include_record_count
       opts
     end
 
