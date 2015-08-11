@@ -435,6 +435,8 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
     assert_equal "asdfg is not allowed.", json_response['meta']["warnings"][0]["detail"]
     assert_equal 105, json_response['meta']["warnings"][0]["code"]
+  ensure
+    JSONAPI.configuration.raise_if_parameters_not_allowed = true
   end
 
   def test_create_with_invalid_data
@@ -643,6 +645,8 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
     assert_equal "subject is not allowed.", json_response['meta']["warnings"][0]["detail"]
     assert_equal 105, json_response['meta']["warnings"][0]["code"]
+  ensure
+    JSONAPI.configuration.raise_if_parameters_not_allowed = true
   end
 
   def test_create_with_links_to_many_type_ids
@@ -812,6 +816,8 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
     assert_equal "subject is not allowed.", json_response['meta']["warnings"][0]["detail"]
     assert_equal 105, json_response['meta']["warnings"][0]["code"]
+  ensure
+    JSONAPI.configuration.raise_if_parameters_not_allowed = true
   end
 
   def test_update_remove_links
@@ -1262,6 +1268,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_extra_param_in_links_allow_extra_params
     JSONAPI.configuration.raise_if_parameters_not_allowed = false
+    JSONAPI.configuration.use_text_errors = true
 
     set_content_type_header!
     javascript = Section.find_by(name: 'javascript')
@@ -1285,6 +1292,10 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "A great new Post", json_response["data"]["attributes"]["title"]
     assert_equal "Param not allowed", json_response["meta"]["warnings"][0]["title"]
     assert_equal "asdfg is not allowed.", json_response["meta"]["warnings"][0]["detail"]
+    assert_equal "PARAM_NOT_ALLOWED", json_response["meta"]["warnings"][0]["code"]
+  ensure
+    JSONAPI.configuration.raise_if_parameters_not_allowed = true
+    JSONAPI.configuration.use_text_errors = false
   end
 
   def test_update_missing_param
@@ -1687,6 +1698,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     get :index, {sort: 'not_in_record'}
     assert_response 400
     assert_equal 'INVALID_SORT_CRITERIA', json_response['errors'][0]['code']
+  ensure
     JSONAPI.configuration.use_text_errors = false
   end
 
@@ -1742,6 +1754,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
 
   def test_create_expense_entries_underscored
     set_content_type_header!
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :underscored_key
 
     post :create,
@@ -1769,10 +1782,13 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
 
     delete :destroy, {id: json_response['data']['id']}
     assert_response :no_content
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_create_expense_entries_camelized_key
     set_content_type_header!
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :camelized_key
 
     post :create,
@@ -1800,10 +1816,13 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
 
     delete :destroy, {id: json_response['data']['id']}
     assert_response :no_content
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_create_expense_entries_dasherized_key
     set_content_type_header!
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :dasherized_key
 
     post :create,
@@ -1831,6 +1850,8 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
 
     delete :destroy, {id: json_response['data']['id']}
     assert_response :no_content
+  ensure
+    JSONAPI.configuration = original_config
   end
 end
 
@@ -1847,6 +1868,7 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
 
   def test_create_currencies_client_generated_id
     set_content_type_header!
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :underscored_route
 
     post :create,
@@ -1870,6 +1892,8 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
 
     delete :destroy, {id: json_response['data']['id']}
     assert_response :no_content
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_currencies_primary_key_sort
@@ -1887,6 +1911,7 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
   end
 
   def test_currencies_json_key_underscored_sort
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :underscored_key
     get :index, {sort: 'country_name'}
     assert_response :success
@@ -1902,9 +1927,12 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
     assert_equal 'United States', json_response['data'][0]['attributes']['country_name']
     assert_equal 'Euro Member Countries', json_response['data'][1]['attributes']['country_name']
     assert_equal 'Canada', json_response['data'][2]['attributes']['country_name']
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_currencies_json_key_dasherized_sort
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :dasherized_key
     get :index, {sort: 'country-name'}
     assert_response :success
@@ -1920,9 +1948,12 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
     assert_equal 'United States', json_response['data'][0]['attributes']['country-name']
     assert_equal 'Euro Member Countries', json_response['data'][1]['attributes']['country-name']
     assert_equal 'Canada', json_response['data'][2]['attributes']['country-name']
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_currencies_json_key_custom_json_key_sort
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :upper_camelized_key
     get :index, {sort: 'CountryName'}
     assert_response :success
@@ -1938,30 +1969,41 @@ class IsoCurrenciesControllerTest < ActionController::TestCase
     assert_equal 'United States', json_response['data'][0]['attributes']['CountryName']
     assert_equal 'Euro Member Countries', json_response['data'][1]['attributes']['CountryName']
     assert_equal 'Canada', json_response['data'][2]['attributes']['CountryName']
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_currencies_json_key_underscored_filter
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :underscored_key
     get :index, {filter: {country_name: 'Canada'}}
     assert_response :success
     assert_equal 1, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['attributes']['country_name']
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_currencies_json_key_camelized_key_filter
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :camelized_key
     get :index, {filter: {'countryName' => 'Canada'}}
     assert_response :success
     assert_equal 1, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['attributes']['countryName']
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_currencies_json_key_custom_json_key_filter
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :upper_camelized_key
     get :index, {filter: {'CountryName' => 'Canada'}}
     assert_response :success
     assert_equal 1, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['attributes']['CountryName']
+  ensure
+    JSONAPI.configuration = original_config
   end
 end
 
@@ -1988,6 +2030,7 @@ class PeopleControllerTest < ActionController::TestCase
   end
 
   def test_update_link_with_dasherized_type
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :dasherized_key
     set_content_type_header!
     put :update,
@@ -2007,6 +2050,8 @@ class PeopleControllerTest < ActionController::TestCase
           }
         }
     assert_response :success
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_create_validations_missing_attribute
@@ -2070,6 +2115,7 @@ class PeopleControllerTest < ActionController::TestCase
   end
 
   def test_get_related_resource
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :dasherized_key
     JSONAPI.configuration.route_format = :underscored_key
     get :get_related_resource, {post_id: '2', relationship: 'author', source:'posts'}
@@ -2123,6 +2169,8 @@ class PeopleControllerTest < ActionController::TestCase
       },
       json_response
     )
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_get_related_resource_nil
@@ -2332,6 +2380,7 @@ end
 
 class FactsControllerTest < ActionController::TestCase
   def test_type_formatting
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :camelized_key
     get :show, {id: '1'}
     assert_response :success
@@ -2345,9 +2394,12 @@ class FactsControllerTest < ActionController::TestCase
     assert_equal '2000-01-01T20:00:00Z', json_response['data']['attributes']['bedtime']
     assert_equal 'abc', json_response['data']['attributes']['photo']
     assert_equal false, json_response['data']['attributes']['cool']
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_create_with_invalid_data
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :dasherized_key
     set_content_type_header!
     post :create,
@@ -2379,6 +2431,8 @@ class FactsControllerTest < ActionController::TestCase
     assert_equal "/data/attributes/bio", json_response['errors'][1]['source']['pointer']
     assert_equal "can't be blank", json_response['errors'][1]['title']
     assert_equal "bio - can't be blank", json_response['errors'][1]['detail']
+  ensure
+    JSONAPI.configuration = original_config
   end
 end
 
@@ -2584,25 +2638,25 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   def test_books_banned_non_book_admin
     $test_user = Person.find(1)
     Api::V2::BookResource.paginator :offset
+    JSONAPI.configuration.top_level_meta_include_record_count = true
     count_queries do
-      JSONAPI.configuration.top_level_meta_include_record_count = true
       get :index, {page: {offset: 50, limit: 12}}
-      JSONAPI.configuration.top_level_meta_include_record_count = false
     end
     assert_response :success
     assert_equal 12, json_response['data'].size
     assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
     assert_equal 901, json_response['meta']['record-count']
     assert_query_count(2)
+  ensure
+    JSONAPI.configuration.top_level_meta_include_record_count = false
   end
 
   def test_books_banned_non_book_admin_includes_switched
     $test_user = Person.find(1)
     Api::V2::BookResource.paginator :offset
+    JSONAPI.configuration.top_level_meta_include_record_count = true
     count_queries do
-      JSONAPI.configuration.top_level_meta_include_record_count = true
       get :index, {page: {offset: 0, limit: 12}, include: 'book-comments'}
-      JSONAPI.configuration.top_level_meta_include_record_count = false
     end
 
     assert_response :success
@@ -2613,15 +2667,16 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_equal 'book-comments', json_response['included'][0]['type']
     assert_equal 901, json_response['meta']['record-count']
     assert_query_count(3)
+  ensure
+    JSONAPI.configuration.top_level_meta_include_record_count = false
   end
 
   def test_books_banned_non_book_admin_includes_nested_includes
     $test_user = Person.find(1)
+    JSONAPI.configuration.top_level_meta_include_record_count = true
     Api::V2::BookResource.paginator :offset
     count_queries do
-      JSONAPI.configuration.top_level_meta_include_record_count = true
       get :index, {page: {offset: 0, limit: 12}, include: 'book-comments.author'}
-      JSONAPI.configuration.top_level_meta_include_record_count = false
     end
     assert_response :success
     assert_equal 12, json_response['data'].size
@@ -2629,51 +2684,56 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
     assert_equal 901, json_response['meta']['record-count']
     assert_query_count(4)
+  ensure
+    JSONAPI.configuration.top_level_meta_include_record_count = false
   end
 
   def test_books_banned_admin
     $test_user = Person.find(5)
     Api::V2::BookResource.paginator :offset
-    query_count = count_queries do
-      JSONAPI.configuration.top_level_meta_include_record_count = true
+    JSONAPI.configuration.top_level_meta_include_record_count = true
+    count_queries do
       get :index, {page: {offset: 50, limit: 12}, filter: {banned: 'true'}}
-      JSONAPI.configuration.top_level_meta_include_record_count = false
     end
     assert_response :success
     assert_equal 12, json_response['data'].size
     assert_equal 'Book 651', json_response['data'][0]['attributes']['title']
     assert_equal 99, json_response['meta']['record-count']
     assert_query_count(2)
+  ensure
+    JSONAPI.configuration.top_level_meta_include_record_count = false
   end
 
   def test_books_not_banned_admin
     $test_user = Person.find(5)
     Api::V2::BookResource.paginator :offset
+    JSONAPI.configuration.top_level_meta_include_record_count = true
     count_queries do
-      JSONAPI.configuration.top_level_meta_include_record_count = true
       get :index, {page: {offset: 50, limit: 12}, filter: {banned: 'false'}}
-      JSONAPI.configuration.top_level_meta_include_record_count = false
     end
     assert_response :success
     assert_equal 12, json_response['data'].size
     assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
     assert_equal 901, json_response['meta']['record-count']
     assert_query_count(2)
+  ensure
+    JSONAPI.configuration.top_level_meta_include_record_count = false
   end
 
   def test_books_banned_non_book_admin_overlapped
     $test_user = Person.find(1)
     Api::V2::BookResource.paginator :offset
+    JSONAPI.configuration.top_level_meta_include_record_count = true
     count_queries do
-      JSONAPI.configuration.top_level_meta_include_record_count = true
       get :index, {page: {offset: 590, limit: 20}}
-      JSONAPI.configuration.top_level_meta_include_record_count = false
     end
     assert_response :success
     assert_equal 20, json_response['data'].size
     assert_equal 'Book 590', json_response['data'][0]['attributes']['title']
     assert_equal 901, json_response['meta']['record-count']
     assert_query_count(2)
+  ensure
+    JSONAPI.configuration.top_level_meta_include_record_count = false
   end
 
   def test_books_included_exclude_unapproved
@@ -2762,6 +2822,7 @@ class Api::V4::BooksControllerTest < ActionController::TestCase
   end
 
   def test_books_offset_pagination_meta
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.operations_processor = :counting_active_record
     Api::V4::BookResource.paginator :offset
     get :index, {page: {offset: 50, limit: 12}}
@@ -2769,10 +2830,12 @@ class Api::V4::BooksControllerTest < ActionController::TestCase
     assert_equal 12, json_response['data'].size
     assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
     assert_equal 901, json_response['meta']['totalRecords']
-    JSONAPI.configuration.operations_processor = :active_record
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_books_operation_links
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.operations_processor = :counting_active_record
     Api::V4::BookResource.paginator :offset
     get :index, {page: {offset: 50, limit: 12}}
@@ -2781,7 +2844,8 @@ class Api::V4::BooksControllerTest < ActionController::TestCase
     assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
     assert_equal 5, json_response['links'].size
     assert_equal 'https://test_corp.com', json_response['links']['spec']
-    JSONAPI.configuration.operations_processor = :active_record
+  ensure
+    JSONAPI.configuration = original_config
   end
 end
 
