@@ -1282,6 +1282,12 @@ JSONAPI.configure do |config|
   config.allow_sort = true
   config.allow_filter = true
 
+  # How to handle unsupported attributes and relationships which are provided in the request
+  # true => raises an error
+  # false => allows the request to continue. A warning is included in the response meta data indicating
+  # the fields which were ignored. This is useful for client libraries which send extra parameters.
+  config.raise_if_parameters_not_allowed = true
+
   # :none, :offset, :paged, or a custom paginator name
   config.default_paginator = :none
 
