@@ -38,37 +38,50 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_get_underscored_key
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :underscored_key
     get '/iso_currencies'
     assert_equal 200, status
     assert_equal 3, json_response['data'].size
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_get_underscored_key_filtered
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :underscored_key
     get '/iso_currencies?filter[country_name]=Canada'
     assert_equal 200, status
     assert_equal 1, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['attributes']['country_name']
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_get_camelized_key_filtered
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :camelized_key
     get '/iso_currencies?filter[countryName]=Canada'
     assert_equal 200, status
     assert_equal 1, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['attributes']['countryName']
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_get_camelized_route_and_key_filtered
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :camelized_key
     get '/api/v4/isoCurrencies?filter[countryName]=Canada'
     assert_equal 200, status
     assert_equal 1, json_response['data'].size
     assert_equal 'Canada', json_response['data'][0]['attributes']['countryName']
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_get_camelized_route_and_links
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :camelized_key
     JSONAPI.configuration.route_format = :camelized_route
     get '/api/v4/expenseEntries/1/relationships/isoCurrency'
@@ -82,6 +95,8 @@ class RequestTest < ActionDispatch::IntegrationTest
                           'id' => 'USD'
                          }
                        }, json_response)
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_put_single_without_content_type
@@ -524,6 +539,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_flow_self_formatted_route_1
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     get '/api/v6/purchase-orders'
@@ -534,9 +550,12 @@ class RequestTest < ActionDispatch::IntegrationTest
     get po_1['links']['self']
     assert_equal 200, status
     assert_hash_equals po_1, json_response['data']
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_flow_self_formatted_route_2
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :underscored_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     get '/api/v7/purchase_orders'
@@ -548,9 +567,12 @@ class RequestTest < ActionDispatch::IntegrationTest
     get po_1['links']['self']
     assert_equal 200, status
     assert_hash_equals po_1, json_response['data']
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_flow_self_formatted_route_3
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :underscored_route
     JSONAPI.configuration.json_key_format = :underscored_key
     get '/api/v7/purchase_orders'
@@ -562,9 +584,12 @@ class RequestTest < ActionDispatch::IntegrationTest
     get po_1['links']['self']
     assert_equal 200, status
     assert_hash_equals po_1, json_response['data']
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_post_formatted_keys
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     post '/api/v6/purchase-orders',
@@ -578,9 +603,12 @@ class RequestTest < ActionDispatch::IntegrationTest
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 201, status
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_post_formatted_keys_different_route_key_1
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :underscored_key
     post '/api/v6/purchase-orders',
@@ -594,9 +622,12 @@ class RequestTest < ActionDispatch::IntegrationTest
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 201, status
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_post_formatted_keys_different_route_key_2
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :underscored_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     post '/api/v7/purchase_orders',
@@ -610,9 +641,12 @@ class RequestTest < ActionDispatch::IntegrationTest
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 201, status
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_post_formatted_keys_wrong_format
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     post '/api/v6/purchase-orders',
@@ -626,9 +660,12 @@ class RequestTest < ActionDispatch::IntegrationTest
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 400, status
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_patch_formatted_dasherized
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     patch '/api/v6/purchase-orders/1',
@@ -646,6 +683,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_patch_formatted_dasherized_links
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     patch '/api/v6/line-items/1',
@@ -665,9 +703,12 @@ class RequestTest < ActionDispatch::IntegrationTest
           }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 200, status
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_patch_formatted_dasherized_replace_to_many
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     patch '/api/v6/purchase-orders/2?include=line-items,order-flags',
@@ -693,9 +734,12 @@ class RequestTest < ActionDispatch::IntegrationTest
           }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 200, status
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_post_to_many_link
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     post '/api/v6/purchase-orders/3/relationships/line-items',
@@ -707,9 +751,12 @@ class RequestTest < ActionDispatch::IntegrationTest
           }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_patch_to_many_link
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     patch '/api/v6/purchase-orders/3/relationships/order-flags',
@@ -721,9 +768,12 @@ class RequestTest < ActionDispatch::IntegrationTest
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_patch_to_one
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     patch '/api/v6/line-items/5/relationships/purchase-order',
@@ -732,6 +782,8 @@ class RequestTest < ActionDispatch::IntegrationTest
          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
 
     assert_equal 204, status
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_include_parameter_allowed

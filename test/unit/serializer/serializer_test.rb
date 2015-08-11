@@ -964,6 +964,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
       JSONAPI::ResourceSerializer.new(PostResource,
                                       include: ['comments', 'comments.tags']).serialize_to_hash(posts)
     )
+  ensure
     JSONAPI.configuration.always_include_to_one_linkage_data = false
   end
 
@@ -1410,9 +1411,6 @@ class SerializerTest < ActionDispatch::IntegrationTest
   end
 
   def test_serializer_camelized_with_value_formatters
-    # JSONAPI.configuration.json_key_format = :camelized_key
-    # JSONAPI.configuration.route_format = :camelized_route
-
     assert_hash_equals(
       {
         data: {
@@ -1618,6 +1616,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
   end
 
   def test_serializer_booleans
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :underscored_key
 
     preferences = PreferencesResource.new(Preferences.find(1))
@@ -1651,9 +1650,12 @@ class SerializerTest < ActionDispatch::IntegrationTest
       },
       JSONAPI::ResourceSerializer.new(PreferencesResource).serialize_to_hash(preferences)
     )
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_serializer_data_types
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :underscored_key
 
     facts = FactResource.new(Fact.find(1))
@@ -1681,6 +1683,8 @@ class SerializerTest < ActionDispatch::IntegrationTest
       },
       JSONAPI::ResourceSerializer.new(FactResource).serialize_to_hash(facts)
     )
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_serializer_to_one
