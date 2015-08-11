@@ -8,6 +8,7 @@ module JSONAPI
                 :key_formatter,
                 :route_format,
                 :route_formatter,
+                :raise_if_parameters_not_allowed,
                 :operations_processor,
                 :allow_include,
                 :allow_sort,
@@ -37,6 +38,8 @@ module JSONAPI
       self.allow_include = true
       self.allow_sort = true
       self.allow_filter = true
+
+      self.raise_if_parameters_not_allowed = true
 
       # :none, :offset, :paged, or a custom paginator name
       self.default_paginator = :none
@@ -105,6 +108,8 @@ module JSONAPI
     attr_writer :always_include_to_one_linkage_data
 
     attr_writer :always_include_to_many_linkage_data
+
+    attr_writer :raise_if_parameters_not_allowed
   end
 
   class << self

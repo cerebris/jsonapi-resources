@@ -17,4 +17,17 @@ module JSONAPI
       @status         = options[:status]
     end
   end
+
+  class Warning
+    attr_accessor :title, :detail, :code
+    def initialize(options = {})
+      @title          = options[:title]
+      @detail         = options[:detail]
+      @code           = if JSONAPI.configuration.use_text_errors
+                          TEXT_ERRORS[options[:code]]
+                        else
+                          options[:code]
+                        end
+    end
+  end
 end

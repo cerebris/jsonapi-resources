@@ -5,13 +5,14 @@ module JSONAPI
   class Request
     attr_accessor :fields, :include, :filters, :sort_criteria, :errors, :operations,
                   :resource_klass, :context, :paginator, :source_klass, :source_id,
-                  :include_directives, :params
+                  :include_directives, :params, :warnings
 
     def initialize(params = nil, options = {})
       @params = params
       @context = options[:context]
       @key_formatter = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
       @errors = []
+      @warnings = []
       @operations = []
       @fields = {}
       @filters = {}
@@ -487,11 +488,21 @@ module JSONAPI
         case key.to_s
         when 'relationships'
           value.each_key do |links_key|
-            params_not_allowed.push(links_key) unless formatted_allowed_fields.include?(links_key.to_sym)
+            unless formatted_allowed_fields.include?(links_key.to_sym)
+              params_not_allowed.push(links_key)
+              unless JSONAPI.configuration.raise_if_parameters_not_allowed
+                value.delete links_key
+              end
+            end
           end
         when 'attributes'
-          value.each do |attr_key, _attr_value|
-            params_not_allowed.push(attr_key) unless formatted_allowed_fields.include?(attr_key.to_sym)
+          value.each do |attr_key, attr_value|
+            unless formatted_allowed_fields.include?(attr_key.to_sym)
+              params_not_allowed.push(attr_key)
+              unless JSONAPI.configuration.raise_if_parameters_not_allowed
+                value.delete attr_key
+              end
+            end
           end
         when 'type', 'id'
         else
@@ -499,7 +510,18 @@ module JSONAPI
         end
       end
 
-      fail JSONAPI::Exceptions::ParametersNotAllowed.new(params_not_allowed) if params_not_allowed.length > 0
+      if params_not_allowed.length > 0
+        if JSONAPI.configuration.raise_if_parameters_not_allowed
+          fail JSONAPI::Exceptions::ParametersNotAllowed.new(params_not_allowed)
+        else
+          params_not_allowed_warnings = params_not_allowed.map do |key|
+            JSONAPI::Warning.new(code: JSONAPI::PARAM_NOT_ALLOWED,
+                                 title: 'Param not allowed',
+                                 detail: "#{key} is not allowed.")
+          end
+          self.warnings.concat(params_not_allowed_warnings)
+        end
+      end
     end
 
     # TODO: Please remove after `updateable_fields` is removed

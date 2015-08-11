@@ -87,6 +87,7 @@ module JSONAPI
 
     def setup_request
       @request = JSONAPI::Request.new(params, context: context, key_formatter: key_formatter)
+
       render_errors(@request.errors) unless @request.errors.empty?
     rescue => e
       handle_exceptions(e)
@@ -121,6 +122,14 @@ module JSONAPI
       {}
     end
 
+    def base_meta
+      if @request.nil? || @request.warnings.empty?
+        base_response_meta
+      else
+        base_response_meta.merge(warnings: @request.warnings)
+      end
+    end
+
     def base_response_links
       {}
     end
@@ -147,7 +156,7 @@ module JSONAPI
         base_url: base_url,
         key_formatter: key_formatter,
         route_formatter: route_formatter,
-        base_meta: base_response_meta,
+        base_meta: base_meta,
         base_links: base_response_links,
         resource_serializer_klass: resource_serializer_klass,
         request: @request

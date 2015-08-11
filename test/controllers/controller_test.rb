@@ -5,6 +5,10 @@ def set_content_type_header!
 end
 
 class PostsControllerTest < ActionController::TestCase
+  def setup
+    JSONAPI.configuration.raise_if_parameters_not_allowed = true
+  end
+
   def test_index
     get :index
     assert_response :success
@@ -401,6 +405,38 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /asdfg is not allowed/, response.body
   end
 
+  def test_create_extra_param_allow_extra_params
+    JSONAPI.configuration.raise_if_parameters_not_allowed = false
+
+    set_content_type_header!
+    post :create,
+         {
+           data: {
+             type: 'posts',
+             attributes: {
+               asdfg: 'aaaa',
+               title: 'JR is Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
+             relationships: {
+               author: {data: {type: 'people', id: '3'}}
+             }
+           },
+           include: 'author'
+         }
+
+    assert_response :created
+    assert json_response['data'].is_a?(Hash)
+    assert_equal '3', json_response['data']['relationships']['author']['data']['id']
+    assert_equal 'JR is Great', json_response['data']['attributes']['title']
+    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
+
+    assert_equal 1, json_response['meta']["warnings"].count
+    assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
+    assert_equal "asdfg is not allowed.", json_response['meta']["warnings"][0]["detail"]
+    assert_equal 105, json_response['meta']["warnings"][0]["code"]
+  end
+
   def test_create_with_invalid_data
     set_content_type_header!
     post :create,
@@ -575,6 +611,40 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /subject/, json_response['errors'][0]['detail']
   end
 
+  def test_create_simple_unpermitted_attributes_allow_extra_params
+    JSONAPI.configuration.raise_if_parameters_not_allowed = false
+
+    set_content_type_header!
+    post :create,
+         {
+           data: {
+             type: 'posts',
+             attributes: {
+               title: 'JR is Great',
+               subject: 'JR is SUPER Great',
+               body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+             },
+             relationships: {
+               author: {data: {type: 'people', id: '3'}}
+             }
+           },
+           include: 'author'
+         }
+
+    assert_response :created
+    assert json_response['data'].is_a?(Hash)
+    assert_equal '3', json_response['data']['relationships']['author']['data']['id']
+    assert_equal 'JR is Great', json_response['data']['attributes']['title']
+    assert_equal 'JR is Great', json_response['data']['attributes']['subject']
+    assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
+
+
+    assert_equal 1, json_response['meta']["warnings"].count
+    assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
+    assert_equal "subject is not allowed.", json_response['meta']["warnings"][0]["detail"]
+    assert_equal 105, json_response['meta']["warnings"][0]["code"]
+  end
+
   def test_create_with_links_to_many_type_ids
     set_content_type_header!
     post :create,
@@ -702,6 +772,46 @@ class PostsControllerTest < ActionController::TestCase
     assert_response 500
     post_object = Post.find(3)
     assert_equal title, post_object.title
+  end
+
+  def test_update_with_links_allow_extra_params
+    JSONAPI.configuration.raise_if_parameters_not_allowed = false
+
+    set_content_type_header!
+    javascript = Section.find_by(name: 'javascript')
+
+    put :update,
+        {
+          id: 3,
+          data: {
+            id: '3',
+            type: 'posts',
+            attributes: {
+              title: 'A great new Post',
+              subject: 'A great new Post',
+            },
+            relationships: {
+              section: {data: {type: 'sections', id: "#{javascript.id}"}},
+              tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
+            }
+          },
+          include: 'tags,author,section'
+        }
+
+    assert_response :success
+    assert json_response['data'].is_a?(Hash)
+    assert_equal '3', json_response['data']['relationships']['author']['data']['id']
+    assert_equal javascript.id.to_s, json_response['data']['relationships']['section']['data']['id']
+    assert_equal 'A great new Post', json_response['data']['attributes']['title']
+    assert_equal 'AAAA', json_response['data']['attributes']['body']
+    assert matches_array?([{'type' => 'tags', 'id' => '3'}, {'type' => 'tags', 'id' => '4'}],
+                          json_response['data']['relationships']['tags']['data'])
+
+
+    assert_equal 1, json_response['meta']["warnings"].count
+    assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
+    assert_equal "subject is not allowed.", json_response['meta']["warnings"][0]["detail"]
+    assert_equal 105, json_response['meta']["warnings"][0]["code"]
   end
 
   def test_update_remove_links
@@ -1148,6 +1258,33 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /asdfg is not allowed/, response.body
+  end
+
+  def test_update_extra_param_in_links_allow_extra_params
+    JSONAPI.configuration.raise_if_parameters_not_allowed = false
+
+    set_content_type_header!
+    javascript = Section.find_by(name: 'javascript')
+
+    put :update,
+        {
+          id: 3,
+          data: {
+            type: 'posts',
+            id: '3',
+            attributes: {
+              title: 'A great new Post'
+            },
+            relationships: {
+              asdfg: 'aaaa'
+            }
+          }
+        }
+
+    assert_response :success
+    assert_equal "A great new Post", json_response["data"]["attributes"]["title"]
+    assert_equal "Param not allowed", json_response["meta"]["warnings"][0]["title"]
+    assert_equal "asdfg is not allowed.", json_response["meta"]["warnings"][0]["detail"]
   end
 
   def test_update_missing_param
