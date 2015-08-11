@@ -1262,6 +1262,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_extra_param_in_links_allow_extra_params
     JSONAPI.configuration.raise_if_parameters_not_allowed = false
+    JSONAPI.configuration.use_text_errors = true
 
     set_content_type_header!
     javascript = Section.find_by(name: 'javascript')
@@ -1285,6 +1286,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "A great new Post", json_response["data"]["attributes"]["title"]
     assert_equal "Param not allowed", json_response["meta"]["warnings"][0]["title"]
     assert_equal "asdfg is not allowed.", json_response["meta"]["warnings"][0]["detail"]
+    assert_equal "PARAM_NOT_ALLOWED", json_response["meta"]["warnings"][0]["code"]
   end
 
   def test_update_missing_param
