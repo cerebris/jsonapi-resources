@@ -1026,6 +1026,8 @@ module Api
         end
       }
 
+      has_many :aliased_comments, class_name: 'BookComments', relation_name: :approved_book_comments
+
       filters :banned, :book_comments
 
       class << self

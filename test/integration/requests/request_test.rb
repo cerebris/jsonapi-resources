@@ -436,6 +436,18 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 'http://www.example.com/api/v2/books/10/book_comments?page%5Blimit%5D=10&page%5Boffset%5D=0', json_response['links']['last']
   end
 
+  def test_related_resource_alternate_relation_name_record_count
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.default_paginator = :paged
+    JSONAPI.configuration.top_level_meta_include_record_count = true
+
+    get '/api/v2/books/1/aliased_comments'
+    assert_equal 200, status
+    assert_equal 26, json_response['meta']['record_count']
+  ensure
+    JSONAPI.configuration = original_config
+  end
+
   def test_pagination_related_resources_data_includes
     Api::V2::BookResource.paginator :offset
     Api::V2::BookCommentResource.paginator :offset
