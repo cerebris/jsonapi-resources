@@ -158,7 +158,7 @@ module JSONAPI
     end
 
     def records
-      related_resource_records = source_resource.records_for(@relationship_type)
+      related_resource_records = source_resource.public_send(@relationship_type)
       @resource_klass.filter_records(@filters, @options, related_resource_records)
     end
 

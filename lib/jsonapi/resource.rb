@@ -111,8 +111,8 @@ module JSONAPI
 
     # Override this on a resource to customize how the associated records
     # are fetched for a model. Particularly helpful for authorization.
-    def records_for(relationship_name, _options = {})
-      model.public_send relationship_name
+    def records_for(relation_name, _options = {})
+      model.public_send relation_name
     end
 
     private
