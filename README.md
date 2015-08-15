@@ -571,6 +571,12 @@ end
 
 To disable pagination in a resource, specify `:none` for `paginator`.
 
+#### Included relationships (side-loading resources)
+
+JR supports [request include params](http://jsonapi.org/format/#fetching-includes) out of the box, for side loading related resources.
+
+You can also pass an `include` option to [Serializer#serialize_to_hash](#include) if you want to define this inline.
+
 #### Callbacks
 
 `ActiveSupport::Callbacks` is used to provide callback functionality, so the behavior is very similar to what you may be
