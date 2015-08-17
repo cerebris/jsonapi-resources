@@ -166,9 +166,9 @@ module JSONAPI
         related_resource = relationship.resource_klass.find_by_key(relationship_key_value, context: @context)
 
         # TODO: Add option to skip relations that already exist instead of returning an error?
-        relation = @model.public_send(relationship.type).where(relationship.primary_key => relationship_key_value).first
+        relation = @model.public_send(relationship_type).where(relationship.primary_key => relationship_key_value).first
         if relation.nil?
-          @model.public_send(relationship.type) << related_resource.model
+          @model.public_send(relationship_type) << related_resource.model
         else
           fail JSONAPI::Exceptions::HasManyRelationExists.new(relationship_key_value)
         end
