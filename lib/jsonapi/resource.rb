@@ -499,7 +499,7 @@ module JSONAPI
 
         resources = []
         records.each do |model|
-          resources.push resource_for(module_path + model.class.to_s.underscore).new(model, context)
+          resources.push resource_for(resource_type_for(model)).new(model, context)
         end
 
         resources
@@ -511,9 +511,12 @@ module JSONAPI
         records = apply_includes(records, options)
         model = records.where({_primary_key => key}).first
         fail JSONAPI::Exceptions::RecordNotFound.new(key) if model.nil?
-        new(model, context)
+        resource_for(resource_type_for(model)).new(model, context)
       end
 
+      def resource_type_for(model)
+        self.module_path + model.class.to_s.underscore
+      end
       # Override this method if you want to customize the relation for
       # finder methods (find, find_by_key)
       def records(_options = {})
@@ -720,7 +723,7 @@ module JSONAPI
               define_method attr do |options = {}|
                 if relationship.polymorphic?
                   associated_model = public_send(associated_records_method_name)
-                  resource_klass = Resource.resource_for(self.class.module_path + associated_model.class.to_s.underscore) if associated_model
+                  resource_klass = Resource.resource_for(self.class.resource_type_for(associated_model)) if associated_model
                   return resource_klass.new(associated_model, @context) if resource_klass
                 else
                   resource_klass = relationship.resource_klass
@@ -774,7 +777,7 @@ module JSONAPI
 
               return records.collect do |record|
                 if relationship.polymorphic?
-                  resource_klass = Resource.resource_for(self.class.module_path + record.class.to_s.underscore)
+                  resource_klass = Resource.resource_for(self.class.resource_type_for(record))
                 end
                 resource_klass.new(record, @context)
               end
