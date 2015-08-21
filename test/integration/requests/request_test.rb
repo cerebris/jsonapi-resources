@@ -917,4 +917,10 @@ class RequestTest < ActionDispatch::IntegrationTest
     types = json_response['data'].map{|r| r['type']}.sort
     assert_equal ['boats', 'cars'], types
   end
+
+  def test_getting_resource_with_correct_type_when_sti
+    get '/vehicles/1'
+    assert_equal 200, status
+    assert_equal 'cars', json_response['data']['type']
+  end
 end
