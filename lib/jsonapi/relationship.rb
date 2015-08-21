@@ -24,7 +24,7 @@ module JSONAPI
       @resource_klass ||= Resource.resource_for(@module_path + @class_name)
     end
 
-    def relation_name(options = {})
+    def relation_name(options)
       case @relation_name
         when Symbol
           # :nocov:
