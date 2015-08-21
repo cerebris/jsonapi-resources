@@ -502,7 +502,7 @@ module JSONAPI
 
         resources = []
         records.each do |model|
-          resources.push new(model, context)
+          resources.push resource_for(module_path + model.class.to_s.underscore).new(model, context)
         end
 
         resources
@@ -681,7 +681,7 @@ module JSONAPI
       end
 
       def module_path
-        @module_path ||= name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').underscore : ''
+        name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').underscore : ''
       end
 
       def construct_order_options(sort_params)

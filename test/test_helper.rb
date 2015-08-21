@@ -138,6 +138,7 @@ TestApp.routes.draw do
   jsonapi_resources :pictures
   jsonapi_resources :documents
   jsonapi_resources :products
+  jsonapi_resources :vehicles
 
 
   namespace :api do
