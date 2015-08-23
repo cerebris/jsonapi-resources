@@ -29,3 +29,9 @@ li_5:
   part_number: 5WERT
   quantity: 1
   item_cost: 299.98
+
+li_6:
+  id: 6
+  part_number: 25washer
+  quantity: 10
+  item_cost: 0.98

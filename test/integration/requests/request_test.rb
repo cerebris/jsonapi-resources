@@ -750,6 +750,40 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration = original_config
   end
 
+  def test_patch_formatted_dasherized_replace_to_many_computed_relation
+    $original_test_user = $test_user
+    $test_user = Person.find(5)
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/purchase-orders/2?include=line-items,order-flags',
+          {
+            'data' => {
+              'id' => '2',
+              'type' => 'purchase-orders',
+              'relationships' => {
+                'line-items' => {
+                  'data' => [
+                    {'type' => 'line-items', 'id' => '3'},
+                    {'type' => 'line-items', 'id' => '4'}
+                  ]
+                },
+                'order-flags' => {
+                  'data' => [
+                    {'type' => 'order-flags', 'id' => '1'},
+                    {'type' => 'order-flags', 'id' => '2'}
+                  ]
+                }
+              }
+            }
+          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 200, status
+  ensure
+    JSONAPI.configuration = original_config
+    $test_user = $original_test_user
+  end
+
   def test_post_to_many_link
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
@@ -767,6 +801,26 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration = original_config
   end
 
+  def test_post_computed_relation_to_many
+    $original_test_user = $test_user
+    $test_user = Person.find(5)
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    post '/api/v6/purchase-orders/4/relationships/line-items',
+         {
+           'data' => [
+             {'type' => 'line-items', 'id' => '5'},
+             {'type' => 'line-items', 'id' => '6'}
+           ]
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 204, status
+  ensure
+    JSONAPI.configuration = original_config
+    $test_user = $original_test_user
+  end
+
   def test_patch_to_many_link
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
@@ -782,6 +836,26 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 204, status
   ensure
     JSONAPI.configuration = original_config
+  end
+
+  def test_patch_to_many_link_computed_relation
+    $original_test_user = $test_user
+    $test_user = Person.find(5)
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/purchase-orders/4/relationships/order-flags',
+          {
+            'data' => [
+              {'type' => 'order-flags', 'id' => '1'},
+              {'type' => 'order-flags', 'id' => '2'}
+            ]
+          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 204, status
+  ensure
+    JSONAPI.configuration = original_config
+    $test_user = $original_test_user
   end
 
   def test_patch_to_one
