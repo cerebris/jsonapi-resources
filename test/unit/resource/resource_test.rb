@@ -46,6 +46,11 @@ class PersonWithCustomRecordsForErrorResource < PersonResource
   end
 end
 
+module MyModule
+  class MyNamespacedResource < JSONAPI::Resource
+  end
+end
+
 class ResourceTest < ActiveSupport::TestCase
   def setup
     @post = Post.first
@@ -57,6 +62,10 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_model
     assert_equal(PostResource._model_class, Post)
+  end
+
+  def test_module_path
+    assert_equal(MyModule::MyNamespacedResource.module_path, 'my_module/')
   end
 
   def test_base_resource_abstract
