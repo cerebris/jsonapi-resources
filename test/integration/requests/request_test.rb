@@ -426,6 +426,18 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.top_level_meta_include_record_count = false
   end
 
+  def test_filtering_of_related_resources
+    $test_user = Person.find(5)
+    Api::V2::BookResource.paginator :offset
+    Api::V2::BookCommentResource.paginator :offset
+    get '/api/v2/books/1/book_comments?filter[approved]=false'
+    assert_equal 200, status
+    assert_equal 'http://www.example.com/api/v2/books/1/book_comments?filter%5Bapproved%5D=false&page%5Blimit%5D=10&page%5Boffset%5D=0', json_response['links']['first']
+    assert_equal 'http://www.example.com/api/v2/books/1/book_comments?filter%5Bapproved%5D=false&page%5Blimit%5D=10&page%5Boffset%5D=10', json_response['links']['next']
+    assert_equal 'http://www.example.com/api/v2/books/1/book_comments?filter%5Bapproved%5D=false&page%5Blimit%5D=10&page%5Boffset%5D=15', json_response['links']['last']
+    $test_user = Person.find(1)
+  end
+
   def test_pagination_related_resources_without_related
     Api::V2::BookResource.paginator :offset
     Api::V2::BookCommentResource.paginator :offset
