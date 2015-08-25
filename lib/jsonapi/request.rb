@@ -606,7 +606,7 @@ module JSONAPI
       end
 
       key = data[:id]
-      if id_key_presence_check_required && !keys.include?(key)
+      if id_key_presence_check_required && !keys.include?(key.to_s)
         fail JSONAPI::Exceptions::KeyNotIncludedInURL.new(key)
       end
 
