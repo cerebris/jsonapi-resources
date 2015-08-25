@@ -906,7 +906,7 @@ example:
 
 ```ruby
 JSONAPI.configure do |config|
-  config.use_text_errors = :true
+  config.use_text_errors = true
 end
 ```
 
