@@ -15,3 +15,9 @@ po_3:
   requested_delivery_date:
   delivery_date: nil
   customer_id: 1
+
+po_4:
+  id: 4
+  requested_delivery_date:
+  delivery_date: nil
+  customer_id: 3
