@@ -48,6 +48,8 @@ module JSONAPI
                                               sort_criteria: @sort_criteria,
                                               paginator: @paginator)
 
+      @_record_count = resource_records.record_count if resource_records.respond_to?(:record_count)
+
       options = {}
       if JSONAPI.configuration.top_level_links_include_pagination
         options[:pagination_params] = pagination_params
