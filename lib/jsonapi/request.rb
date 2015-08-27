@@ -406,57 +406,15 @@ module JSONAPI
           value.each do |link_key, link_value|
             param = unformat_key(link_key)
             relationship = @resource_klass._relationship(param)
+
             if relationship.is_a?(JSONAPI::Relationship::ToOne)
-              if link_value.nil?
-                linkage = nil
-              else
-                linkage = link_value[:data]
-              end
-
-              links_object = parse_to_one_links_object(linkage)
-              if !relationship.polymorphic? && links_object[:type] && (links_object[:type].to_s != relationship.type.to_s)
-                fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
-              end
-
-              unless links_object[:id].nil?
-                relationship_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(links_object[:type]).to_s)
-                relationship_id = relationship_resource.verify_key(links_object[:id], @context)
-                if relationship.polymorphic?
-                  checked_to_one_relationships[param] = { id: relationship_id, type: unformat_key(links_object[:type].to_s) }
-                else
-                  checked_to_one_relationships[param] = relationship_id
-                end
-              else
-                checked_to_one_relationships[param] = nil
-              end
+              checked_to_one_relationships[param] = parse_to_one_relationship(link_value, relationship)
             elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
-              if link_value.is_a?(Array) && link_value.length == 0
-                linkage = []
-              elsif link_value.is_a?(Hash)
-                linkage = link_value[:data]
-              else
-                fail JSONAPI::Exceptions::InvalidLinksObject.new
-              end
-
-              links_object = parse_to_many_links_object(linkage)
-
-              # Since we do not yet support polymorphic relationships we will raise an error if the type does not match the
-              # relationship's type.
-              # ToDo: Support Polymorphic relationships
-
-              if links_object.length == 0
-                checked_to_many_relationships[param] = []
-              else
-                if links_object.length > 1 || !links_object.has_key?(unformat_key(relationship.type).to_s)
-                  fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
-                end
-
-                links_object.each_pair do |type, keys|
-                  relationship_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(type).to_s)
-                  checked_to_many_relationships[param] = relationship_resource.verify_keys(keys, @context)
-                end
+              parse_to_many_relationship(link_value, relationship) do |result_val|
+                checked_to_many_relationships[param] = result_val
               end
             end
+
           end
         when 'id'
           checked_attributes['id'] = unformat_value(:id, value)
@@ -473,6 +431,60 @@ module JSONAPI
         'to_one' => checked_to_one_relationships,
         'to_many' => checked_to_many_relationships
       }.deep_transform_keys { |key| unformat_key(key) }
+    end
+
+    def parse_to_one_relationship(link_value, relationship)
+      if link_value.nil?
+        linkage = nil
+      else
+        linkage = link_value[:data]
+      end
+
+      links_object = parse_to_one_links_object(linkage)
+      if !relationship.polymorphic? && links_object[:type] && (links_object[:type].to_s != relationship.type.to_s)
+        fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
+      end
+
+      unless links_object[:id].nil?
+        relationship_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(links_object[:type]).to_s)
+        relationship_id = relationship_resource.verify_key(links_object[:id], @context)
+        if relationship.polymorphic?
+          { id: relationship_id, type: unformat_key(links_object[:type].to_s) }
+        else
+          relationship_id
+        end
+      else
+        nil
+      end
+    end
+
+    def parse_to_many_relationship(link_value, relationship, &add_result)
+      if link_value.is_a?(Array) && link_value.length == 0
+        linkage = []
+      elsif link_value.is_a?(Hash)
+        linkage = link_value[:data]
+      else
+        fail JSONAPI::Exceptions::InvalidLinksObject.new
+      end
+
+      links_object = parse_to_many_links_object(linkage)
+
+      # Since we do not yet support polymorphic relationships we will raise an error if the type does not match the
+      # relationship's type.
+      # ToDo: Support Polymorphic relationships
+
+      if links_object.length == 0
+        add_result.call([])
+      else
+        if links_object.length > 1 || !links_object.has_key?(unformat_key(relationship.type).to_s)
+          fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
+        end
+
+        links_object.each_pair do |type, keys|
+          relationship_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(type).to_s)
+          add_result.call relationship_resource.verify_keys(keys, @context)
+        end
+      end
     end
 
     def unformat_value(attribute, value)
