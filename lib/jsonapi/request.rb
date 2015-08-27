@@ -414,7 +414,6 @@ module JSONAPI
                 checked_to_many_relationships[param] = result_val
               end
             end
-
           end
         when 'id'
           checked_attributes['id'] = unformat_value(:id, value)
@@ -446,7 +445,8 @@ module JSONAPI
       end
 
       unless links_object[:id].nil?
-        relationship_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(links_object[:type]).to_s)
+        resource = self.resource_klass || Resource
+        relationship_resource = resource.resource_for(@resource_klass.module_path + unformat_key(links_object[:type]).to_s)
         relationship_id = relationship_resource.verify_key(links_object[:id], @context)
         if relationship.polymorphic?
           { id: relationship_id, type: unformat_key(links_object[:type].to_s) }
@@ -469,7 +469,7 @@ module JSONAPI
 
       links_object = parse_to_many_links_object(linkage)
 
-      # Since we do not yet support polymorphic relationships we will raise an error if the type does not match the
+      # Since we do not yet support polymorphic to_many relationships we will raise an error if the type does not match the
       # relationship's type.
       # ToDo: Support Polymorphic relationships
 
