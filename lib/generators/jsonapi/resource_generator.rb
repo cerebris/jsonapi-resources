@@ -6,7 +6,7 @@ module Jsonapi
       template_file = File.join(
         'app/resources',
         class_path,
-        "#{file_name}_resource.rb"
+        "#{file_name.singularize}_resource.rb"
       )
       template 'jsonapi_resource.rb', template_file
     end
