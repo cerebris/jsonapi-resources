@@ -427,7 +427,8 @@ end
 
 ```
 
-For example, you may want raise an error if the user is not authorized to view the related records.
+For example, you may want raise an error if the user is not authorized to view the related records. See the next
+section for addtional details on raising errors.
 
 ```ruby
 class BaseResource < JSONAPI::Resource
@@ -443,6 +444,42 @@ class BaseResource < JSONAPI::Resource
   end
 end
 ```
+
+
+###### Raising Errors
+
+Inside the finder methods (like `records_for`) or inside of resource callbacks
+(like `before_save`) you can `raise` an error to halt processing. JSONAPI::Resources
+has some built in errors that will return appropriate error codes. By
+default an other error that you raise will return a `500` status code
+for a general internal server error.
+
+To return useful error codes that represent application errors you
+should set the `exception_class_whitelist` config varible, and then you
+should use the Rails `rescue_from` macro to render a status code.
+
+For example, this config setting allows the `NotAuthorizedError` to bubble up out of
+JSONAPI::Resources and into your application.
+
+```ruby
+# config/initializer/jsonapi-resources.rb
+JSONAPI.configure do |config|
+  config.exception_class_whitelist = [NotAuthorizedError]
+end
+```
+
+Handling the error and rendering the appropriate code is now the resonsiblity of the
+appliation and could be handled like this:
+
+```ruby
+class ApiController < ApplicationController
+  rescue_from NotAuthorizedError, with: :reject_forbidden_request
+  def reject_forbidden_request
+    render json: {error: 'Forbidden'}, :status => 403
+  end
+end
+```
+
 
 ###### Applying Filters
 
