@@ -9,6 +9,29 @@ of your resources, including their attributes and relationships, to make your se
 JR is designed to work with Rails 4.0+, and provides custom routes, controllers, and serializers. JR's resources may be
 backed by ActiveRecord models or by custom objects.
 
+## Table of Contents
+
+* [Demo App] (#demo-app)
+* [Client Libraries] (#client-libraries)
+* [Installation] (#installation)
+* [Usage] (#usage)
+  * [Resources] (#resources)
+    * [JSONAPI::Resource] (#jsonapiresource)
+    * [Attributes] (#attributes)
+    * [Primary Key] (#primary-key)
+    * [Model Name] (#model-name)
+    * [Relationships] (#relationships)
+    * [Filters] (#filters)
+    * [Pagination] (#pagination)
+    * [Included relationships (side-loading resources)] (#included-relationships-side-loading-resources)
+    * [Callbacks] (#callbacks)
+  * [Controllers] (#controllers)
+    * [Namespaces] (#namespaces)
+    * [Error Codes] (#error-codes)
+  * [Serializer] (#serializer)
+* [Contributing] (#contributing)
+* [License] (#license)
+
 ## Demo App
 
 We have a simple demo app, called [Peeps](https://github.com/cerebris/peeps), available to show how JR is used.
