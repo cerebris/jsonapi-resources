@@ -56,12 +56,12 @@ end
 
 A jsonapi-resource generator is avaliable
 ```
-rails generate jsonapi:resource contact 
+rails generate jsonapi:resource contact
 ```
 
 ##### Abstract Resources
 
-Resources that are not backed by a model (purely used as base classes for other resources) should be declared as 
+Resources that are not backed by a model (purely used as base classes for other resources) should be declared as
 abstract.
 
 Because abstract resources do not expect to be backed by a model, they won't attempt to discover the model class
@@ -70,7 +70,7 @@ or any of its relationships.
 ```ruby
 class BaseResource < JSONAPI::Resource
   abstract
-  
+
   has_one :creator
 end
 
@@ -469,7 +469,7 @@ end
 ```
 
 Handling the error and rendering the appropriate code is now the resonsiblity of the
-appliation and could be handled like this:
+application and could be handled like this:
 
 ```ruby
 class ApiController < ApplicationController
@@ -610,7 +610,7 @@ To disable pagination in a resource, specify `:none` for `paginator`.
 
 #### Included relationships (side-loading resources)
 
-JR supports [request include params](http://jsonapi.org/format/#fetching-includes) out of the box, for side loading related resources. 
+JR supports [request include params](http://jsonapi.org/format/#fetching-includes) out of the box, for side loading related resources.
 
 Here's an example from the spec:
 
