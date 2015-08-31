@@ -98,11 +98,23 @@ module JSONAPI
       if JSONAPI.configuration.exception_class_whitelist.any? { |k| e.class.ancestors.include?(k) }
         raise e
       else
+        @request.server_error_callbacks.each { |callback| safe_run_callback(callback, e) }
+
         internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
         Rails.logger.error { "Internal Server Error: #{e.message} #{e.backtrace.join("\n")}" }
         return JSONAPI::ErrorsOperationResult.new(internal_server_error.errors[0].code, internal_server_error.errors)
       end
       # :nocov:
+    end
+
+    def safe_run_callback(callback, error)
+      begin 
+        callback.call(error)
+      rescue => e
+        Rails.logger.error { "Error in error handling callback: #{e.message} #{e.backtrace.join("\n")}" }
+        internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
+        return JSONAPI::ErrorsOperationResult.new(internal_server_error.errors[0].code, internal_server_error.errors)
+      end
     end
 
   end

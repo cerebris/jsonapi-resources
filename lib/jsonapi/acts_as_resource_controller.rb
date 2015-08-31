@@ -182,5 +182,37 @@ module JSONAPI
         # :nocov:
       end
     end
+
+    def add_error_callbacks(callbacks)
+      @request.server_error_callbacks = callbacks || []
+    end
+
+    # Pass in a methods or a block to be run when an exception is 
+    # caught that is not a JSONAPI::Exceptions::Error
+    # Useful for additional logging or notification configuration that 
+    # would normally depend on rails catching and rendering an exception.
+    # Ignores whitelist exceptions from config
+
+    class_methods do 
+      def on_server_error(*args, &callback_block)
+        callbacks = []
+
+        if callback_block 
+          callbacks << callback_block
+        end
+
+        method_callbacks = args.map do |method|
+          ->(error) do 
+            if self.respond_to? method
+              send(method, error)
+            else
+              Rails.log.warn("#{method} not defined on #{self}, skipping error callback")
+            end
+          end
+        end.compact
+        callbacks += method_callbacks
+        append_before_filter { add_error_callbacks(callbacks) }
+      end
+    end
   end
 end
