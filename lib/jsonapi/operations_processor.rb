@@ -77,9 +77,17 @@ module JSONAPI
     def rollback
     end
 
+    # If overriding in child operation processors, call operation.apply and 
+    # catch errors that should be handled before JSONAPI::Exceptions::Error
+    # and other unprocessed exceptions
     def process_operation(operation)
-      operation.apply
+      with_default_handling do 
+        operation.apply
+      end        
+    end
 
+    def with_default_handling(&block)
+      yield
     rescue JSONAPI::Exceptions::Error => e
       # :nocov:
       raise e
@@ -87,7 +95,7 @@ module JSONAPI
 
     rescue => e
       # :nocov:
-      if JSONAPI.configuration.exception_class_whitelist.include?(e.class)
+      if JSONAPI.configuration.exception_class_whitelist.any? { |k| e.class.ancestors.include?(k) }
         raise e
       else
         internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
@@ -96,6 +104,7 @@ module JSONAPI
       end
       # :nocov:
     end
+
   end
 end
 
