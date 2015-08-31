@@ -428,7 +428,7 @@ end
 ```
 
 For example, you may want raise an error if the user is not authorized to view the related records. See the next
-section for addtional details on raising errors.
+section for additional details on raising errors.
 
 ```ruby
 class BaseResource < JSONAPI::Resource
@@ -451,7 +451,7 @@ end
 Inside the finder methods (like `records_for`) or inside of resource callbacks
 (like `before_save`) you can `raise` an error to halt processing. JSONAPI::Resources
 has some built in errors that will return appropriate error codes. By
-default an other error that you raise will return a `500` status code
+default any other error that you raise will return a `500` status code
 for a general internal server error.
 
 To return useful error codes that represent application errors you
