@@ -461,6 +461,16 @@ class ErrorRaisingOperationsProcessor < ActiveRecordOperationsProcessor
   end
 end
 
+class CallbackCounter
+  def self.count
+    @count
+  end
+
+  def self.increment
+    @count += 1
+  end
+end
+
 ### CONTROLLERS
 class AuthorsController < JSONAPI::ResourceController
 end
@@ -477,6 +487,11 @@ class PostsController < ActionController::Base
   # the operations processor.
   rescue_from PostsController::SpecialError do
     head :forbidden
+  end
+
+  #called by test_on_server_error
+  def self.set_callback_message(error)
+    @callback_message = "Sent from method"
   end
 end
 

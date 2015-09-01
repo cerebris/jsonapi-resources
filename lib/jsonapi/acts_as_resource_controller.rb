@@ -206,7 +206,7 @@ module JSONAPI
             if self.respond_to? method
               send(method, error)
             else
-              Rails.log.warn("#{method} not defined on #{self}, skipping error callback")
+              Rails.logger.warn("#{method} not defined on #{self}, skipping error callback")
             end
           end
         end.compact
