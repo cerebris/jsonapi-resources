@@ -28,6 +28,7 @@ backed by ActiveRecord models or by custom objects.
   * [Controllers] (#controllers)
     * [Namespaces] (#namespaces)
     * [Error Codes] (#error-codes)
+    * [Handling Exceptions] (#handling-exceptions)
   * [Serializer] (#serializer)
 * [Configuration] (#configuration)
 * [Contributing] (#contributing)
