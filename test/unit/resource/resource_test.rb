@@ -195,6 +195,7 @@ class ResourceTest < ActiveSupport::TestCase
     filtered_comments = post_resource.comments({ filters: { body: 'i liked it' } })
     assert_equal(1, filtered_comments.size)
 
+  ensure
     # reset method to original implementation
     PostResource.instance_eval do
       def apply_filters(records, filters, options)
@@ -222,6 +223,7 @@ class ResourceTest < ActiveSupport::TestCase
     sorted_comment_ids = post_resource.comments(sort_criteria: [{ field: 'id', direction: 'desc'}]).map{|c| c.model.id }
     assert_equal [2,1], sorted_comment_ids
 
+  ensure
     # reset method to original implementation
     PostResource.instance_eval do
       def apply_sort(records, criteria)
@@ -260,6 +262,7 @@ class ResourceTest < ActiveSupport::TestCase
     paged_comments = post_resource.comments(paginator: paginator_class.new(1))
     assert_equal 1, paged_comments.size
 
+  ensure
     # reset method to original implementation
     PostResource.instance_eval do
       def apply_pagination(records, criteria, order_options)
