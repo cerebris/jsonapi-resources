@@ -29,14 +29,14 @@ module JSONAPI
       #:underscored_key, :camelized_key, :dasherized_key, or custom
       self.json_key_format = :dasherized_key
 
-      #:integer, :uuid, :string, or custom
-      self.resource_key_type = :integer
-
       #:underscored_route, :camelized_route, :dasherized_route, or custom
       self.route_format = :dasherized_route
 
       #:basic, :active_record, or custom
       self.operations_processor = :active_record
+
+      #:integer, :uuid, :string, or custom (provide a proc)
+      self.resource_key_type = :integer
 
       # optional request features
       self.allow_include = true
