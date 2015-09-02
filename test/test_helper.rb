@@ -95,6 +95,22 @@ TestApp.initialize!
 
 require File.expand_path('../fixtures/active_record', __FILE__)
 
+module Pets
+  module V1
+    class CatsController < JSONAPI::ResourceController
+
+    end
+
+    class CatResource < JSONAPI::Resource
+      attribute :id
+      attribute :name
+      attribute :breed
+
+      key_type :uuid
+    end
+  end
+end
+
 JSONAPI.configuration.route_format = :underscored_route
 TestApp.routes.draw do
   jsonapi_resources :people
@@ -211,6 +227,12 @@ TestApp.routes.draw do
   namespace :admin_api do
     namespace :v1 do
       jsonapi_resources :people
+    end
+  end
+
+  namespace :pets do
+    namespace :v1 do
+      jsonapi_resources :cats
     end
   end
 
