@@ -800,14 +800,6 @@ class PostResource < JSONAPI::Resource
     return filter, values
   end
 
-  def self.is_num?(str)
-    begin
-      !!Integer(str)
-    rescue ArgumentError, TypeError
-      false
-    end
-  end
-
   def self.verify_key(key, context = nil)
     super(key)
     raise JSONAPI::Exceptions::RecordNotFound.new(key) unless find_by_key(key, context: context)
