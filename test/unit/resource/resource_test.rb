@@ -272,4 +272,81 @@ class ResourceTest < ActiveSupport::TestCase
       end
     end
   end
+
+  def test_key_type_integer
+    CatResource.instance_eval do
+      key_type :integer
+    end
+
+    assert CatResource.verify_key('45')
+    assert CatResource.verify_key(45)
+
+    assert_raises JSONAPI::Exceptions::InvalidFieldValue do
+      CatResource.verify_key('45,345')
+    end
+
+  ensure
+    CatResource.instance_eval do
+      key_type nil
+    end
+  end
+
+  def test_key_type_string
+    CatResource.instance_eval do
+      key_type :string
+    end
+
+    assert CatResource.verify_key('45')
+    assert CatResource.verify_key(45)
+
+    assert_raises JSONAPI::Exceptions::InvalidFieldValue do
+      CatResource.verify_key('45,345')
+    end
+
+  ensure
+    CatResource.instance_eval do
+      key_type nil
+    end
+  end
+
+  def test_key_type_uuid
+    CatResource.instance_eval do
+      key_type :uuid
+    end
+
+    assert CatResource.verify_key('f1a4d5f2-e77a-4d0a-acbb-ee0b98b3f6b5')
+
+    assert_raises JSONAPI::Exceptions::InvalidFieldValue do
+      CatResource.verify_key('f1a-e77a-4d0a-acbb-ee0b98b3f6b5')
+    end
+
+  ensure
+    CatResource.instance_eval do
+      key_type nil
+    end
+  end
+
+  def test_key_type_proc
+    CatResource.instance_eval do
+      key_type -> (key, context) {
+        return key if key.nil?
+        if key.to_s.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
+          key
+        else
+          raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
+        end
+      }
+    end
+
+    assert CatResource.verify_key('f1a4d5f2-e77a-4d0a-acbb-ee0b98b3f6b5')
+
+    assert_raises JSONAPI::Exceptions::InvalidFieldValue do
+      CatResource.verify_key('f1a-e77a-4d0a-acbb-ee0b98b3f6b5')
+    end
+
+  ensure
+    CatResource.instance_eval do
+      key_type nil
+    end
+  end
 end
