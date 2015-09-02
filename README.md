@@ -1416,6 +1416,9 @@ JSONAPI.configure do |config|
   #:basic, :active_record, or custom
   config.operations_processor = :active_record
 
+  #:integer, :uuid, :string, or custom (provide a proc)
+  config.resource_key_type = :integer
+
   # optional request features
   config.allow_include = true
   config.allow_sort = true
