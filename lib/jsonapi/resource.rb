@@ -549,8 +549,12 @@ module JSONAPI
         @_resource_key_type = key_type
       end
 
+      def resource_key_type
+        @_resource_key_type || JSONAPI.configuration.resource_key_type
+      end
+
       def verify_key(key, context = nil)
-        key_type = @_resource_key_type || JSONAPI.configuration.resource_key_type
+        key_type = resource_key_type
         verification_proc = case key_type
 
         when :integer
