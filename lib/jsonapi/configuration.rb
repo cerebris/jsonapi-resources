@@ -5,6 +5,7 @@ require 'jsonapi/active_record_operations_processor'
 module JSONAPI
   class Configuration
     attr_reader :json_key_format,
+                :resource_key_type,
                 :key_formatter,
                 :route_format,
                 :route_formatter,
@@ -33,6 +34,9 @@ module JSONAPI
 
       #:basic, :active_record, or custom
       self.operations_processor = :active_record
+
+      #:integer, :uuid, :string, or custom (provide a proc)
+      self.resource_key_type = :integer
 
       # optional request features
       self.allow_include = true
@@ -75,6 +79,10 @@ module JSONAPI
     def json_key_format=(format)
       @json_key_format = format
       @key_formatter = JSONAPI::Formatter.formatter_for(format)
+    end
+
+    def resource_key_type=(key_type)
+      @resource_key_type = key_type
     end
 
     def route_format=(format)

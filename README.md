@@ -29,6 +29,7 @@ backed by ActiveRecord models or by custom objects.
     * [Namespaces] (#namespaces)
     * [Error Codes] (#error-codes)
   * [Serializer] (#serializer)
+* [Configuration] (#configuration)
 * [Contributing] (#contributing)
 * [License] (#license)
 
@@ -230,19 +231,36 @@ If the underlying model does not use `id` as the primary key _and_ does not supp
 must use the `primary_key` method to tell the resource which field on the model to use as the primary key. **Note:**
 this _must_ be the actual primary key of the model.
 
-By default only integer values are allowed for primary key. To change this behavior you can override
-`verify_key` class method:
+By default only integer values are allowed for primary key. To change this behavior you can set the `resource_key_type`
+configuration option:
 
 ```ruby
-class CurrencyResource < JSONAPI::Resource
-  primary_key :code
-  attributes :code, :name
+JSONAPI.configure do |config|
+  # Allowed values are :integer(default), :uuid, :string, or a proc
+  config.resource_key_type = :uuid
+end
+```
 
-  has_many :expense_entries
+##### Override key type on a resource
 
-  def self.verify_key(key, context = nil)
-    key && String(key)
-  end
+You can override the default resource key type on a per-resource basis by calling `key_type` in the resource class,
+with the same allowed values as the `resource_key_type` configuration option.
+
+```ruby
+class ContactResource < JSONAPI::Resource
+  attribute :id
+  attributes :name_first, :name_last, :email, :twitter
+  key_type :uuid
+end
+```
+
+##### Custom resource key validators
+
+If you need more control over the key, you can override the #verify_key method on your resource, or set a lambda that accepts key and context arguments in `config/initializers/jsonapi_resources.rb`:
+
+```ruby
+JSONAPI.configure do |config|
+  config.resource_key_type = -> (key, context) { key && String(key) }
 end
 ```
 
@@ -1397,6 +1415,9 @@ JSONAPI.configure do |config|
 
   #:basic, :active_record, or custom
   config.operations_processor = :active_record
+
+  #:integer, :uuid, :string, or custom (provide a proc)
+  config.resource_key_type = :integer
 
   # optional request features
   config.allow_include = true

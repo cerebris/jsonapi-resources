@@ -195,6 +195,7 @@ class ResourceTest < ActiveSupport::TestCase
     filtered_comments = post_resource.comments({ filters: { body: 'i liked it' } })
     assert_equal(1, filtered_comments.size)
 
+  ensure
     # reset method to original implementation
     PostResource.instance_eval do
       def apply_filters(records, filters, options)
@@ -222,6 +223,7 @@ class ResourceTest < ActiveSupport::TestCase
     sorted_comment_ids = post_resource.comments(sort_criteria: [{ field: 'id', direction: 'desc'}]).map{|c| c.model.id }
     assert_equal [2,1], sorted_comment_ids
 
+  ensure
     # reset method to original implementation
     PostResource.instance_eval do
       def apply_sort(records, criteria)
@@ -260,6 +262,7 @@ class ResourceTest < ActiveSupport::TestCase
     paged_comments = post_resource.comments(paginator: paginator_class.new(1))
     assert_equal 1, paged_comments.size
 
+  ensure
     # reset method to original implementation
     PostResource.instance_eval do
       def apply_pagination(records, criteria, order_options)
@@ -267,6 +270,83 @@ class ResourceTest < ActiveSupport::TestCase
         super
         # :nocov:
       end
+    end
+  end
+
+  def test_key_type_integer
+    CatResource.instance_eval do
+      key_type :integer
+    end
+
+    assert CatResource.verify_key('45')
+    assert CatResource.verify_key(45)
+
+    assert_raises JSONAPI::Exceptions::InvalidFieldValue do
+      CatResource.verify_key('45,345')
+    end
+
+  ensure
+    CatResource.instance_eval do
+      key_type nil
+    end
+  end
+
+  def test_key_type_string
+    CatResource.instance_eval do
+      key_type :string
+    end
+
+    assert CatResource.verify_key('45')
+    assert CatResource.verify_key(45)
+
+    assert_raises JSONAPI::Exceptions::InvalidFieldValue do
+      CatResource.verify_key('45,345')
+    end
+
+  ensure
+    CatResource.instance_eval do
+      key_type nil
+    end
+  end
+
+  def test_key_type_uuid
+    CatResource.instance_eval do
+      key_type :uuid
+    end
+
+    assert CatResource.verify_key('f1a4d5f2-e77a-4d0a-acbb-ee0b98b3f6b5')
+
+    assert_raises JSONAPI::Exceptions::InvalidFieldValue do
+      CatResource.verify_key('f1a-e77a-4d0a-acbb-ee0b98b3f6b5')
+    end
+
+  ensure
+    CatResource.instance_eval do
+      key_type nil
+    end
+  end
+
+  def test_key_type_proc
+    CatResource.instance_eval do
+      key_type -> (key, context) {
+        return key if key.nil?
+        if key.to_s.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
+          key
+        else
+          raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
+        end
+      }
+    end
+
+    assert CatResource.verify_key('f1a4d5f2-e77a-4d0a-acbb-ee0b98b3f6b5')
+
+    assert_raises JSONAPI::Exceptions::InvalidFieldValue do
+      CatResource.verify_key('f1a-e77a-4d0a-acbb-ee0b98b3f6b5')
+    end
+
+  ensure
+    CatResource.instance_eval do
+      key_type nil
     end
   end
 end
