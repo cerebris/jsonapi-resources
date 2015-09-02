@@ -554,12 +554,32 @@ module JSONAPI
         verification_proc = case key_type
 
         when :integer
-          -> (key, context) { key && Integer(key) }
+          -> (key, context) {
+            begin
+              return key if key.nil?
+              Integer(key)
+            rescue
+              raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
+            end
+          }
         when :string
-          -> (key, context) { key && String(key) }
+          -> (key, context) {
+            return key if key.nil?
+            if key.to_s.include?(',')
+              raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
+            else
+              key
+            end
+          }
         when :uuid
-          -> (key, context) { key.match(
-            /[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}/) }
+          -> (key, context) {
+            return key if key.nil?
+            if key.to_s.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
+              key
+            else
+              raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
+            end
+          }
         else
           key_type
         end
