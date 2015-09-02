@@ -29,6 +29,7 @@ backed by ActiveRecord models or by custom objects.
     * [Namespaces] (#namespaces)
     * [Error Codes] (#error-codes)
   * [Serializer] (#serializer)
+* [Configuration] (#configuration)
 * [Contributing] (#contributing)
 * [License] (#license)
 
