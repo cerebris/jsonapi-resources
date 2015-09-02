@@ -231,8 +231,8 @@ If the underlying model does not use `id` as the primary key _and_ does not supp
 must use the `primary_key` method to tell the resource which field on the model to use as the primary key. **Note:**
 this _must_ be the actual primary key of the model.
 
-By default only integer values are allowed for primary key. To change this behavior you can override
-`verify_key` class method:
+By default only integer values are allowed for primary key. To change this behavior you can set the `resource_key_type`
+configuration option:
 
 ```ruby
 JSONAPI.configure do |config|
@@ -243,7 +243,8 @@ end
 
 ##### Override key type on a resource
 
-You can override the default resource key type on a per-resource basis by calling `key_type` in the resource class.
+You can override the default resource key type on a per-resource basis by calling `key_type` in the resource class,
+with the same allowed values as the `resource_key_type` configuration option.
 
 ```ruby
 class ContactResource < JSONAPI::Resource
