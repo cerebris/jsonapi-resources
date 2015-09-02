@@ -546,7 +546,7 @@ module JSONAPI
       end
 
       def key_type(key_type)
-        @_resource_key_type = key_type.to_sym
+        @_resource_key_type = key_type
       end
 
       def verify_key(key, context = nil)
