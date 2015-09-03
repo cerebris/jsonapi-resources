@@ -521,6 +521,9 @@ end
 class ImageablesController < JSONAPI::ResourceController
 end
 
+class VehiclesController < JSONAPI::ResourceController
+end
+
 ### CONTROLLERS
 module Api
   module V1
