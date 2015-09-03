@@ -1215,6 +1215,24 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal [2], p.tag_ids
   end
 
+  def test_delete_relationship_to_many_with_relationship_url_not_matching_type
+    set_content_type_header!
+    PostResource.has_many :special_tags, relation_name: :special_tags, class_name: "Tag"
+    post :create_relationship, {post_id: 14, relationship: 'special_tags', data: [{type: 'tags', id: 2}]}
+
+    #check the relationship was created successfully
+    assert_equal 1, Post.find(14).special_tags.count
+    before_tags = Post.find(14).tags.count 
+
+    delete :destroy_relationship, {post_id: 14, relationship: 'special_tags', keys: '2'}
+    assert_equal 0, Post.find(14).special_tags.count, "Relationship that matches URL relationship not destroyed"
+
+    #check that the tag association is not affected
+    assert_equal Post.find(14).tags.count, before_tags
+  ensure
+    PostResource.instance_variable_get(:@_relationships).delete(:special_tags)
+  end
+
   def test_delete_relationship_to_many_does_not_exist
     set_content_type_header!
     put :update_relationship, {post_id: 14, relationship: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}

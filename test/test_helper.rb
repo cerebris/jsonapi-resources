@@ -118,6 +118,7 @@ TestApp.routes.draw do
   jsonapi_resources :tags
   jsonapi_resources :posts do
     jsonapi_relationships
+    jsonapi_links :special_tags
   end
   jsonapi_resources :sections
   jsonapi_resources :iso_currencies
@@ -133,6 +134,8 @@ TestApp.routes.draw do
   jsonapi_resources :pictures
   jsonapi_resources :documents
   jsonapi_resources :products
+
+  
 
   namespace :api do
     namespace :v1 do

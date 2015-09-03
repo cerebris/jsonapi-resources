@@ -51,6 +51,11 @@ ActiveRecord::Schema.define do
   end
   add_index :posts_tags, [:post_id, :tag_id], unique: true
 
+  create_table :special_post_tags, force: true do |t|
+    t.references :post, :tag, index: true
+  end
+  add_index :special_post_tags, [:post_id, :tag_id], unique: true
+
   create_table :comments_tags, force: true do |t|
     t.references :comment, :tag, index: true
   end
@@ -234,10 +239,19 @@ class Post < ActiveRecord::Base
   belongs_to :writer, class_name: 'Person', foreign_key: 'author_id'
   has_many :comments
   has_and_belongs_to_many :tags, join_table: :posts_tags
+  has_many :special_post_tags, source: :tag
+  has_many :special_tags, through: :special_post_tags, source: :tag
+  # has_and_belongs_to_many :special_tags, join_table: :special_post_tags, source: :tag
+  # has_and_belongs_to_many :special_tags, join_table: :special_post_tags, source: :tag
   belongs_to :section
 
   validates :author, presence: true
   validates :title, length: { maximum: 35 }
+end
+
+class SpecialPostTag < ActiveRecord::Base
+  belongs_to :tag
+  belongs_to :post
 end
 
 class Comment < ActiveRecord::Base
@@ -719,6 +733,12 @@ class TagResource < JSONAPI::Resource
   #has_many :planets
 end
 
+class SpecialTagResource < JSONAPI::Resource
+  attributes :name
+
+  has_many :posts
+end
+
 class SectionResource < JSONAPI::Resource
   attributes 'name'
 end
@@ -732,6 +752,7 @@ class PostResource < JSONAPI::Resource
   has_one :section
   has_many :tags, acts_as_set: true
   has_many :comments, acts_as_set: false
+
 
   # Not needed - just for testing
   primary_key :id
@@ -972,6 +993,7 @@ module Api
       # V1 no longer supports tags and now calls author 'writer'
       attribute :title
       attribute :body
+      attribute :body
       attribute :subject
 
       has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
@@ -1013,6 +1035,7 @@ module Api
     PostResource = PostResource.dup
 
     class BookResource < JSONAPI::Resource
+      attribute :title
       attribute :title
       attributes :isbn, :banned
 
@@ -1132,6 +1155,7 @@ module Api
     ExpenseEntryResource = ExpenseEntryResource.dup
     IsoCurrencyResource = IsoCurrencyResource.dup
 
+
     class BookResource < Api::V2::BookResource
       paginator :paged
     end
@@ -1176,6 +1200,7 @@ module Api
     PostResource = PostResource.dup
     ExpenseEntryResource = ExpenseEntryResource.dup
     IsoCurrencyResource = IsoCurrencyResource.dup
+    EmployeeResource = EmployeeResource.dup
     EmployeeResource = EmployeeResource.dup
   end
 end
