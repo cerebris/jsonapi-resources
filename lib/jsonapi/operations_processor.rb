@@ -89,12 +89,9 @@ module JSONAPI
     def with_default_handling(&block)
       yield
     rescue JSONAPI::Exceptions::Error => e
-      # :nocov:
       raise e
-      # :nocov:
 
     rescue => e
-      # :nocov:
       if JSONAPI.configuration.exception_class_whitelist.any? { |k| e.class.ancestors.include?(k) }
         raise e
       else
@@ -104,7 +101,6 @@ module JSONAPI
         Rails.logger.error { "Internal Server Error: #{e.message} #{e.backtrace.join("\n")}" }
         return JSONAPI::ErrorsOperationResult.new(internal_server_error.errors[0].code, internal_server_error.errors)
       end
-      # :nocov:
     end
 
     def safe_run_callback(callback, error)
