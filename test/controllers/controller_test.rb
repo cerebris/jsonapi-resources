@@ -56,7 +56,8 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration.operations_processor = :error_raising
     JSONAPI.configuration.exception_class_whitelist = [] 
 
-    @controller.class.on_server_error :set_callback_message   
+    #ignores methods that don't exist
+    @controller.class.on_server_error :set_callback_message, :a_bogus_method
     @controller.class.instance_variable_set(:@callback_message, "none")
 
     get :index
@@ -70,9 +71,8 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_on_server_error_callback_without_exception
     
-    @controller.class.on_server_error do
-      @controller.class.instance_variable_set(:@callback_message, "Sent from block")
-    end
+    callback = Proc.new { @controller.class.instance_variable_set(:@callback_message, "Sent from block") }
+    @controller.class.on_server_error callback
     @controller.class.instance_variable_set(:@callback_message, "none")
 
     get :index

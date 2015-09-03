@@ -461,16 +461,6 @@ class ErrorRaisingOperationsProcessor < ActiveRecordOperationsProcessor
   end
 end
 
-class CallbackCounter
-  def self.count
-    @count
-  end
-
-  def self.increment
-    @count += 1
-  end
-end
-
 ### CONTROLLERS
 class AuthorsController < JSONAPI::ResourceController
 end
