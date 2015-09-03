@@ -241,8 +241,6 @@ class Post < ActiveRecord::Base
   has_and_belongs_to_many :tags, join_table: :posts_tags
   has_many :special_post_tags, source: :tag
   has_many :special_tags, through: :special_post_tags, source: :tag
-  # has_and_belongs_to_many :special_tags, join_table: :special_post_tags, source: :tag
-  # has_and_belongs_to_many :special_tags, join_table: :special_post_tags, source: :tag
   belongs_to :section
 
   validates :author, presence: true
@@ -993,7 +991,6 @@ module Api
       # V1 no longer supports tags and now calls author 'writer'
       attribute :title
       attribute :body
-      attribute :body
       attribute :subject
 
       has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
@@ -1200,7 +1197,6 @@ module Api
     PostResource = PostResource.dup
     ExpenseEntryResource = ExpenseEntryResource.dup
     IsoCurrencyResource = IsoCurrencyResource.dup
-    EmployeeResource = EmployeeResource.dup
     EmployeeResource = EmployeeResource.dup
   end
 end

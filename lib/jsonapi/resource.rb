@@ -167,7 +167,6 @@ module JSONAPI
 
         relation_name = relationship.relation_name(context: @context)
         # TODO: Add option to skip relations that already exist instead of returning an error?
-        # binding.pry if relation_name == :special_tags
         relation = @model.public_send(relation_name).where(relationship.primary_key => relationship_key_value).first
         if relation.nil?
           @model.public_send(relation_name) << related_resource.model
