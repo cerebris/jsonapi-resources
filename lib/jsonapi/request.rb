@@ -5,7 +5,7 @@ module JSONAPI
   class Request
     attr_accessor :fields, :include, :filters, :sort_criteria, :errors, :operations,
                   :resource_klass, :context, :paginator, :source_klass, :source_id,
-                  :include_directives, :params, :warnings
+                  :include_directives, :params, :warnings, :server_error_callbacks
 
     def initialize(params = nil, options = {})
       @params = params
@@ -22,6 +22,7 @@ module JSONAPI
       @include_directives = nil
       @paginator = nil
       @id = nil
+      @server_error_callbacks = []
 
       setup_action(@params)
     end

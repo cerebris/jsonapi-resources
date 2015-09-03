@@ -478,6 +478,11 @@ class PostsController < ActionController::Base
   rescue_from PostsController::SpecialError do
     head :forbidden
   end
+
+  #called by test_on_server_error
+  def self.set_callback_message(error)
+    @callback_message = "Sent from method"
+  end
 end
 
 class CommentsController < JSONAPI::ResourceController

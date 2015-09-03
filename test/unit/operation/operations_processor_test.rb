@@ -503,4 +503,26 @@ class OperationsProcessorTest < Minitest::Test
     assert_equal(operation_results.results.size, 1)
     assert operation_results.has_errors?
   end
+
+  def test_safe_run_callback_pass
+    op = JSONAPI::OperationsProcessor.new
+    error = StandardError.new
+
+    check = false
+    callback = ->(error) { check = true}
+
+    op.send(:safe_run_callback, callback, error)
+    assert check
+  end
+
+  def test_safe_run_callback_catch_fail
+    op = JSONAPI::OperationsProcessor.new
+    error = StandardError.new
+
+    callback = ->(error) { nil.explosions}
+    result = op.send(:safe_run_callback, callback, error) 
+
+    assert_instance_of(JSONAPI::ErrorsOperationResult, result)
+    assert_equal(result.code, 500)
+  end
 end

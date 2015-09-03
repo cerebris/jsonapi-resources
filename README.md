@@ -28,6 +28,7 @@ backed by ActiveRecord models or by custom objects.
   * [Controllers] (#controllers)
     * [Namespaces] (#namespaces)
     * [Error Codes] (#error-codes)
+    * [Handling Exceptions] (#handling-exceptions)
   * [Serializer] (#serializer)
 * [Configuration] (#configuration)
 * [Contributing] (#contributing)
@@ -986,6 +987,31 @@ example:
 JSONAPI.configure do |config|
   config.use_text_errors = true
 end
+```
+
+
+#### Handling Exceptions
+
+By default, all exceptions raised downstream from a resource controller will be caught, logged, and a ```500 Internal Server Error``` will be rendered. Exceptions can be whitelisted in the config to pass through the handler and be caught manually, or you can pass a callback from a resource controller to insert logic into the rescue block without interrupting the control flow. This can be particularly useful for additional logging or monitoring without the added work of rendering responses.
+
+Pass a block, refer to controller class methods, or both. Note that methods must be defined as class methods on a controller and accept one parameter, which is passed the exception object that was rescued. 
+
+```ruby
+  class ApplicationController < JSONAPI::ResourceController
+
+    on_server_error :first_callback 
+
+    #or
+
+    # on_server_error do |error|
+      #do things
+    #end
+
+    def self.first_callback(error)
+      #env["airbrake.error_id"] = notify_airbrake(error)
+    end
+  end
+
 ```
 
 ### Serializer
