@@ -150,7 +150,7 @@ class AuthorResource < JSONAPI::Resource
   has_many :posts
 
   def fetchable_fields
-    if (context.current_user.guest)
+    if (context[:current_user].guest)
       super - [:email]
     else
       super
@@ -445,7 +445,7 @@ class PostResource < JSONAPI::Resource
 
   def self.records(options = {})
     context = options[:context]
-    context.current_user.posts
+    context[:current_user].posts
   end
 end
 ```
@@ -478,7 +478,7 @@ class BaseResource < JSONAPI::Resource
     context = options[:context]
     records = model.public_send(relationship_name)
 
-    unless context.current_user.can_view?(records)
+    unless context[:current_user].can_view?(records)
       raise NotAuthorizedError
     end
 
@@ -567,7 +567,7 @@ class AuthorResource < JSONAPI::Resource
 
   def self.find(filters, options = {})
     context = options[:context]
-    authors = context.current_user.find_authors(filters)
+    authors = context[:current_user].find_authors(filters)
 
     return authors.map do |author|
       self.new(author)
