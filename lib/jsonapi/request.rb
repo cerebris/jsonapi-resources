@@ -92,15 +92,11 @@ module JSONAPI
     end
 
     def setup_create_relationship_action(params)
-      parse_add_relationship_operation(params.require(:data),
-                                      params.require(:relationship),
-                                      params.require(@resource_klass._as_parent_key))
+      setup_modify_relationship_action(params, :add)
     end
 
     def setup_update_relationship_action(params)
-      parse_update_relationship_operation(params.fetch(:data),
-                                         params.require(:relationship),
-                                         params.require(@resource_klass._as_parent_key))
+      setup_modify_relationship_action(params, :update)
     end
 
     def setup_update_action(params)
@@ -114,7 +110,28 @@ module JSONAPI
     end
 
     def setup_destroy_relationship_action(params)
-      parse_remove_relationship_operation(params)
+      setup_modify_relationship_action(params, :remove)
+    end
+
+    def setup_modify_relationship_action(params, modification_type)
+      relationship_type = params.require(:relationship)
+      parent_key = params.require(@resource_klass._as_parent_key)
+
+      relationship = @resource_klass._relationship(relationship_type)
+
+      unless modification_type == :remove
+        data_required = [:add, :remove].include?(modification_type)
+        data = data_required ? params.require(:data) : params.fetch(:data)
+        object_params = { relationships: { format_key(relationship.name) => { data: data } } }
+        verified_params = parse_params(object_params, updatable_fields)
+
+        parse_arguments = [verified_params, relationship, parent_key]
+      else
+
+        parse_arguments = [params, relationship, parent_key]
+      end
+
+      send(:"parse_#{modification_type}_relationship_operation", *parse_arguments)
     end
 
     def initialize_source(params)
@@ -548,66 +565,47 @@ module JSONAPI
     end
     # :nocov:
 
-    def parse_add_relationship_operation(data, relationship_type, parent_key)
-      relationship = resource_klass._relationship(relationship_type)
-
+    def parse_add_relationship_operation(verified_params, relationship, parent_key)
       if relationship.is_a?(JSONAPI::Relationship::ToMany)
-        object_params = { relationships: { format_key(relationship.name) => { data: data } } }
-        verified_param_set = parse_params(object_params, updatable_fields)
-
         @operations.push JSONAPI::CreateToManyRelationshipOperation.new(
           resource_klass,
           context: @context,
           resource_id: parent_key,
-          relationship_type: relationship_type,
-          data: verified_param_set[:to_many].values[0]
+          relationship_type: relationship.name,
+          data: verified_params[:to_many].values[0]
         )
       end
     end
 
-    def parse_update_relationship_operation(data, relationship_type, parent_key)
-      relationship = resource_klass._relationship(relationship_type)
+    def parse_update_relationship_operation(verified_params, relationship, parent_key)
+      operation_args = [resource_klass].push(
+        context: @context,
+        resource_id: parent_key,
+        relationship_type: relationship.name
+      )
+
       if relationship.is_a?(JSONAPI::Relationship::ToOne)
         if relationship.polymorphic?
-          object_params = { relationships: { format_key(relationship.name) => { data: data } } }
-          verified_param_set = parse_params(object_params, updatable_fields)
+          operation_args[1].merge!(
+            key_value: verified_params[:to_one].values[0][:id],
+            key_type: verified_params[:to_one].values[0][:type]
+          )
 
-          @operations.push JSONAPI::ReplacePolymorphicToOneRelationshipOperation.new(
-                             resource_klass,
-                             context: @context,
-                             resource_id: parent_key,
-                             relationship_type: relationship_type,
-                             key_value: verified_param_set[:to_one].values[0][:id],
-                             key_type: verified_param_set[:to_one].values[0][:type]
-                           )
+          operation_klass = JSONAPI::ReplacePolymorphicToOneRelationshipOperation
         else
-          object_params = { relationships: { format_key(relationship.name) => { data: data } } }
-          verified_param_set = parse_params(object_params, updatable_fields)
-
-          @operations.push JSONAPI::ReplaceToOneRelationshipOperation.new(
-                             resource_klass,
-                             context: @context,
-                             resource_id: parent_key,
-                             relationship_type: relationship_type,
-                             key_value: verified_param_set[:to_one].values[0]
-                           )
+          operation_args[1].merge!(key_value: verified_params[:to_one].values[0])
+          operation_klass = JSONAPI::ReplaceToOneRelationshipOperation
         end
       elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
         unless relationship.acts_as_set
           fail JSONAPI::Exceptions::ToManySetReplacementForbidden.new
         end
 
-        object_params = { relationships: { format_key(relationship.name) => { data: data } } }
-        verified_param_set = parse_params(object_params, updatable_fields)
-
-        @operations.push JSONAPI::ReplaceToManyRelationshipOperation.new(
-                           resource_klass,
-                           context: @context,
-                           resource_id: parent_key,
-                           relationship_type: relationship_type,
-                           data: verified_param_set[:to_many].values[0]
-                         )
+        operation_args[1].merge!(data: verified_params[:to_many].values[0])
+        operation_klass = JSONAPI::ReplaceToManyRelationshipOperation
       end
+
+      @operations.push(operation_klass.send(:new, *operation_args))
     end
 
     def parse_single_replace_operation(data, keys, id_key_presence_check_required: true)
@@ -665,29 +663,25 @@ module JSONAPI
       @errors.concat(e.errors)
     end
 
-    def parse_remove_relationship_operation(params)
-      relationship_type = params[:relationship]
+    def parse_remove_relationship_operation(params, relationship, parent_key)
+      operation_base_args = [resource_klass].push(
+        context: @context,
+        resource_id: parent_key,
+        relationship_type: relationship.name
+      )
 
-      parent_key = params[resource_klass._as_parent_key]
-
-      relationship = resource_klass._relationship(relationship_type)
       if relationship.is_a?(JSONAPI::Relationship::ToMany)
         keys = parse_key_array(params[:keys])
         keys.each do |key|
+          operation_args = operation_base_args.dup
+          operation_args[1] = operation_args[1].merge(associated_key: key)
           @operations.push JSONAPI::RemoveToManyRelationshipOperation.new(
-            resource_klass,
-            context: @context,
-            resource_id: parent_key,
-            relationship_type: relationship_type,
-            associated_key: key
+            *operation_args
           )
         end
       else
         @operations.push JSONAPI::RemoveToOneRelationshipOperation.new(
-          resource_klass,
-          context: @context,
-          resource_id: parent_key,
-          relationship_type: relationship_type
+          *operation_base_args
         )
       end
     end
