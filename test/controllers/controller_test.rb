@@ -1208,7 +1208,7 @@ class PostsControllerTest < ActionController::TestCase
     p = Post.find(14)
     assert_equal [2, 3], p.tag_ids
 
-    delete :destroy_relationship, {post_id: 14, relationship: 'tags', keys: '3'}
+    delete :destroy_relationship, {post_id: 14, relationship: 'tags', data: [{type: 'tags', id: 3}]}
 
     p.reload
     assert_response :no_content
@@ -1224,7 +1224,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 1, Post.find(14).special_tags.count
     before_tags = Post.find(14).tags.count 
 
-    delete :destroy_relationship, {post_id: 14, relationship: 'special_tags', keys: '2'}
+    delete :destroy_relationship, {post_id: 14, relationship: 'special_tags', data: [{type: 'tags', id: 2}]}
     assert_equal 0, Post.find(14).special_tags.count, "Relationship that matches URL relationship not destroyed"
 
     #check that the tag association is not affected
@@ -1240,7 +1240,7 @@ class PostsControllerTest < ActionController::TestCase
     p = Post.find(14)
     assert_equal [2, 3], p.tag_ids
 
-    delete :destroy_relationship, {post_id: 14, relationship: 'tags', keys: '4'}
+    delete :destroy_relationship, {post_id: 14, relationship: 'tags', data: [{type: 'tags', id: 4}]}
 
     p.reload
     assert_response :not_found

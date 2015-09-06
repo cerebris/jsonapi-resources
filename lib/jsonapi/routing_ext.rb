@@ -154,7 +154,7 @@ module ActionDispatch
           end
 
           if methods.include?(:destroy)
-            match "relationships/#{formatted_relationship_name}/:keys", controller: options[:controller],
+            match "relationships/#{formatted_relationship_name}", controller: options[:controller],
                                                                         action: 'destroy_relationship', relationship: link_type.to_s, via: [:delete]
           end
         end

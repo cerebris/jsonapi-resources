@@ -92,11 +92,11 @@ module JSONAPI
     end
 
     def setup_create_relationship_action(params)
-      setup_modify_relationship_action(params, :add)
+      parse_modify_relationship_action(params, :add)
     end
 
     def setup_update_relationship_action(params)
-      setup_modify_relationship_action(params, :update)
+      parse_modify_relationship_action(params, :update)
     end
 
     def setup_update_action(params)
@@ -110,24 +110,24 @@ module JSONAPI
     end
 
     def setup_destroy_relationship_action(params)
-      setup_modify_relationship_action(params, :remove)
+      parse_modify_relationship_action(params, :remove)
     end
 
-    def setup_modify_relationship_action(params, modification_type)
+    def parse_modify_relationship_action(params, modification_type)
       relationship_type = params.require(:relationship)
       parent_key = params.require(@resource_klass._as_parent_key)
-
       relationship = @resource_klass._relationship(relationship_type)
 
-      unless modification_type == :remove
-        data_required = [:add, :remove].include?(modification_type)
-        data = data_required ? params.require(:data) : params.fetch(:data)
+      # Removals of to-one relationships are done implicitly and require no specification of data
+      data_required = !(modification_type == :remove && relationship.is_a?(JSONAPI::Relationship::ToOne))
+
+      if data_required
+        data = params.fetch(:data)
         object_params = { relationships: { format_key(relationship.name) => { data: data } } }
         verified_params = parse_params(object_params, updatable_fields)
 
         parse_arguments = [verified_params, relationship, parent_key]
       else
-
         parse_arguments = [params, relationship, parent_key]
       end
 
@@ -671,7 +671,7 @@ module JSONAPI
       )
 
       if relationship.is_a?(JSONAPI::Relationship::ToMany)
-        keys = parse_key_array(params[:keys])
+        keys = params[:to_many].values[0]
         keys.each do |key|
           operation_args = operation_base_args.dup
           operation_args[1] = operation_args[1].merge(associated_key: key)

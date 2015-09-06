@@ -38,8 +38,8 @@ class RoutesTest < ActionDispatch::IntegrationTest
   end
 
   def test_routing_posts_links_tags_destroy
-    assert_routing({path: '/posts/1/relationships/tags/1,2', method: :delete},
-                   {controller: 'posts', action: 'destroy_relationship', post_id: '1', keys: '1,2', relationship: 'tags'})
+    assert_routing({path: '/posts/1/relationships/tags', method: :delete},
+                   {controller: 'posts', action: 'destroy_relationship', post_id: '1', relationship: 'tags'})
   end
 
   def test_routing_posts_links_tags_create
