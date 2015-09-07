@@ -229,7 +229,7 @@ class ResourceTest < ActiveSupport::TestCase
       end
     end
 
-    sorted_comment_ids = post_resource.comments(sort_criteria: [{ field: 'id', direction: 'desc'}]).map{|c| c.model.id }
+    sorted_comment_ids = post_resource.comments(sort_criteria: [{ field: 'id', direction: :desc}]).map{|c| c.model.id }
     assert_equal [2,1], sorted_comment_ids
 
   ensure
