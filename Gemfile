@@ -11,12 +11,13 @@ platforms :jruby do
 end
 
 version = ENV['RAILS_VERSION'] || 'default'
-rails = case version
-        when 'master'
-          {:github => 'rails/rails'}
-        when 'default'
-            '>= 4.2'
-        else
-          "~> #{version}"
-        end
-gem 'rails', rails
+
+case version
+when 'master'
+  gem 'rails', { git: 'https://github.com/rails/rails.git' }
+  gem 'arel', { git: 'https://github.com/rails/arel.git' }
+when 'default'
+  gem 'rails', '>= 4.2'
+else
+  gem 'rails', "~> #{version}"
+end

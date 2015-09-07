@@ -15,3 +15,7 @@ post_2_thanks_man:
   post_id: 2
   body: Thanks man. Great post. But what is JR?
   author_id: 2
+
+rogue_comment:
+  body: Rogue Comment Here
+  author_id: 3
