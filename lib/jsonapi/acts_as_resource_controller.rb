@@ -193,7 +193,7 @@ module JSONAPI
     # would normally depend on rails catching and rendering an exception.
     # Ignores whitelist exceptions from config
 
-    class_methods do 
+    module ClassMethods
       def on_server_error(*args, &callback_block)
         callbacks = []
 
