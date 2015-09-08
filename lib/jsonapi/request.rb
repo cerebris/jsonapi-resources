@@ -159,8 +159,7 @@ module JSONAPI
           @errors.concat(e.errors)
         end
 
-        if type_resource.nil? || !(@resource_klass._type == underscored_type ||
-          @resource_klass._has_relationship?(underscored_type))
+        if type_resource.nil?
           @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
         else
           unless values.nil?
