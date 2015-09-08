@@ -40,7 +40,7 @@ class PostsControllerTest < ActionController::TestCase
     @controller.class.on_server_error do
       @controller.class.instance_variable_set(:@callback_message, "Sent from block")
     end
-    
+
     get :index
     assert_equal @controller.class.instance_variable_get(:@callback_message), "Sent from block"
 
@@ -54,7 +54,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_on_server_error_method_callback_with_exception
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.operations_processor = :error_raising
-    JSONAPI.configuration.exception_class_whitelist = [] 
+    JSONAPI.configuration.exception_class_whitelist = []
 
     #ignores methods that don't exist
     @controller.class.on_server_error :set_callback_message, :a_bogus_method
@@ -70,7 +70,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_on_server_error_callback_without_exception
-    
+
     callback = Proc.new { @controller.class.instance_variable_set(:@callback_message, "Sent from block") }
     @controller.class.on_server_error callback
     @controller.class.instance_variable_set(:@callback_message, "none")
@@ -190,6 +190,14 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['data'][0].key?('type')
     assert json_response['data'][0].key?('id')
     assert json_response['data'][0]['relationships'].key?('author')
+  end
+
+  def test_index_fields_when_resource_does_not_match_relationship
+    get :index, { filter: { id: '1,2' }, include: 'author', fields: { posts: 'author', people: 'email' } }
+    assert_response :success
+    assert_equal 2, json_response['data'].size
+    assert json_response['data'][0]['relationships'].key?('author')
+    assert json_response['included'][0]['attributes'].keys == ['email']
   end
 
   def test_filter_relationship_single
