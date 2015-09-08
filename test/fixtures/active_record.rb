@@ -38,6 +38,13 @@ ActiveRecord::Schema.define do
     t.timestamps null: false
   end
 
+  create_table :companies, force: true do |t|
+    t.string     :type
+    t.string     :name
+    t.string     :address
+    t.timestamps null: false
+  end
+
   create_table :tags, force: true do |t|
     t.string :name
   end
@@ -244,6 +251,12 @@ class Comment < ActiveRecord::Base
   belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
   belongs_to :post
   has_and_belongs_to_many :tags, join_table: :comments_tags
+end
+
+class Company < ActiveRecord::Base
+end
+
+class Firm < Company
 end
 
 class Tag < ActiveRecord::Base
@@ -488,6 +501,9 @@ end
 class CommentsController < JSONAPI::ResourceController
 end
 
+class FirmsController < JSONAPI::ResourceController
+end
+
 class SectionsController < JSONAPI::ResourceController
 end
 
@@ -709,6 +725,13 @@ class CommentResource < JSONAPI::Resource
   has_many :tags
 
   filters :body
+end
+
+class CompanyResource < JSONAPI::Resource
+  attributes :name, :address
+end
+
+class FirmResource < CompanyResource
 end
 
 class TagResource < JSONAPI::Resource

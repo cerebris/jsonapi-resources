@@ -115,6 +115,7 @@ JSONAPI.configuration.route_format = :underscored_route
 TestApp.routes.draw do
   jsonapi_resources :people
   jsonapi_resources :comments
+  jsonapi_resources :firms
   jsonapi_resources :tags
   jsonapi_resources :posts do
     jsonapi_relationships
