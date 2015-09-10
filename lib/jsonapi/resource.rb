@@ -619,11 +619,6 @@ module JSONAPI
         @_relationships.map { |key, _relationship| key }
       end
 
-      def _has_relationship?(type)
-        type = type.to_s
-        @_relationships.key?(type.singularize.to_sym) || @_relationships.key?(type.pluralize.to_sym)
-      end
-
       def _relationship(type)
         type = type.to_sym
         @_relationships[type]
