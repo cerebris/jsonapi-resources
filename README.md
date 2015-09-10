@@ -709,8 +709,6 @@ Will get you the following payload by default:
 }
 ```
 
-You can also pass an `include` option to [Serializer#serialize_to_hash](#include) if you want to define this inline.
-
 #### Callbacks
 
 `ActiveSupport::Callbacks` is used to provide callback functionality, so the behavior is very similar to what you may be
@@ -1075,9 +1073,9 @@ This returns results like this:
 }
 ```
 
-#### serialize_to_hash method options
+#### Serializer options
 
-The `serialize_to_hash` method also takes some optional parameters:
+The `ResourceSerializer` can be initialized with some optional parameters:
 
 ##### `include`
 
