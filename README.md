@@ -1108,10 +1108,6 @@ JSONAPI::ResourceSerializer.new(PostResource, include: include_resources,
 ).serialize_to_hash(PostResource.new(post))
 ```
 
-##### `context`
-
-Context data can be provided to the serializer, which passes it to each resource as it is inspected.
-
 #### Routing
 
 JR has a couple of helper methods available to assist you with setting up routes.
