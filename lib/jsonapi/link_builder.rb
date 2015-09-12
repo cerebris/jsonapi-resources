@@ -81,7 +81,7 @@ module JSONAPI
       scopes         = module_scopes_from_class(source.class)[1..-1]
       base_path_name = scopes.map { |scope| scope.underscore }.join("_")
       end_path_name  = source.class._type.to_s.singularize
-      "#{ base_path_name }_#{ end_path_name }_path"
+      [base_path_name, end_path_name, "path"].join("_")
     end
 
     def engine_resource_url(source)
