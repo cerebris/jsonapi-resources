@@ -11,7 +11,7 @@ module JSONAPI
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INTERNAL_SERVER_ERROR,
-                            status: 500,
+                            status: :internal_server_error,
                             title: 'Internal Server Error',
                             detail: 'Internal Server Error')]
       end

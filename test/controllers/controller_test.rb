@@ -31,6 +31,57 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration = original_config
   end
 
+  def test_on_server_error_block_callback_with_exception
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.operations_processor = :error_raising
+    JSONAPI.configuration.exception_class_whitelist = []
+
+    @controller.class.instance_variable_set(:@callback_message, "none")
+    @controller.class.on_server_error do
+      @controller.class.instance_variable_set(:@callback_message, "Sent from block")
+    end
+    
+    get :index
+    assert_equal @controller.class.instance_variable_get(:@callback_message), "Sent from block"
+
+    # test that it renders the default server error response
+    assert_equal "Internal Server Error", json_response['errors'][0]['title']
+    assert_equal "Internal Server Error", json_response['errors'][0]['detail']
+  ensure
+    JSONAPI.configuration = original_config
+  end
+
+  def test_on_server_error_method_callback_with_exception
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.operations_processor = :error_raising
+    JSONAPI.configuration.exception_class_whitelist = [] 
+
+    #ignores methods that don't exist
+    @controller.class.on_server_error :set_callback_message, :a_bogus_method
+    @controller.class.instance_variable_set(:@callback_message, "none")
+
+    get :index
+    assert_equal @controller.class.instance_variable_get(:@callback_message), "Sent from method"
+
+    # test that it renders the default server error response
+    assert_equal "Internal Server Error", json_response['errors'][0]['title']
+  ensure
+    JSONAPI.configuration = original_config
+  end
+
+  def test_on_server_error_callback_without_exception
+    
+    callback = Proc.new { @controller.class.instance_variable_set(:@callback_message, "Sent from block") }
+    @controller.class.on_server_error callback
+    @controller.class.instance_variable_set(:@callback_message, "none")
+
+    get :index
+    assert_equal @controller.class.instance_variable_get(:@callback_message), "none"
+
+    # test that it does not render error
+    assert json_response.key?('data')
+  end
+
   def test_index_filter_with_empty_result
     get :index, {filter: {title: 'post that does not exist'}}
     assert_response :success

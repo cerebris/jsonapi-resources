@@ -9,6 +9,31 @@ of your resources, including their attributes and relationships, to make your se
 JR is designed to work with Rails 4.0+, and provides custom routes, controllers, and serializers. JR's resources may be
 backed by ActiveRecord models or by custom objects.
 
+## Table of Contents
+
+* [Demo App] (#demo-app)
+* [Client Libraries] (#client-libraries)
+* [Installation] (#installation)
+* [Usage] (#usage)
+  * [Resources] (#resources)
+    * [JSONAPI::Resource] (#jsonapiresource)
+    * [Attributes] (#attributes)
+    * [Primary Key] (#primary-key)
+    * [Model Name] (#model-name)
+    * [Relationships] (#relationships)
+    * [Filters] (#filters)
+    * [Pagination] (#pagination)
+    * [Included relationships (side-loading resources)] (#included-relationships-side-loading-resources)
+    * [Callbacks] (#callbacks)
+  * [Controllers] (#controllers)
+    * [Namespaces] (#namespaces)
+    * [Error Codes] (#error-codes)
+    * [Handling Exceptions] (#handling-exceptions)
+  * [Serializer] (#serializer)
+* [Configuration] (#configuration)
+* [Contributing] (#contributing)
+* [License] (#license)
+
 ## Demo App
 
 We have a simple demo app, called [Peeps](https://github.com/cerebris/peeps), available to show how JR is used.
@@ -56,12 +81,12 @@ end
 
 A jsonapi-resource generator is avaliable
 ```
-rails generate jsonapi:resource contact 
+rails generate jsonapi:resource contact
 ```
 
 ##### Abstract Resources
 
-Resources that are not backed by a model (purely used as base classes for other resources) should be declared as 
+Resources that are not backed by a model (purely used as base classes for other resources) should be declared as
 abstract.
 
 Because abstract resources do not expect to be backed by a model, they won't attempt to discover the model class
@@ -70,7 +95,7 @@ or any of its relationships.
 ```ruby
 class BaseResource < JSONAPI::Resource
   abstract
-  
+
   has_one :creator
 end
 
@@ -125,7 +150,7 @@ class AuthorResource < JSONAPI::Resource
   has_many :posts
 
   def fetchable_fields
-    if (context.current_user.guest)
+    if (context[:current_user].guest)
       super - [:email]
     else
       super
@@ -207,19 +232,36 @@ If the underlying model does not use `id` as the primary key _and_ does not supp
 must use the `primary_key` method to tell the resource which field on the model to use as the primary key. **Note:**
 this _must_ be the actual primary key of the model.
 
-By default only integer values are allowed for primary key. To change this behavior you can override
-`verify_key` class method:
+By default only integer values are allowed for primary key. To change this behavior you can set the `resource_key_type`
+configuration option:
 
 ```ruby
-class CurrencyResource < JSONAPI::Resource
-  primary_key :code
-  attributes :code, :name
+JSONAPI.configure do |config|
+  # Allowed values are :integer(default), :uuid, :string, or a proc
+  config.resource_key_type = :uuid
+end
+```
 
-  has_many :expense_entries
+##### Override key type on a resource
 
-  def self.verify_key(key, context = nil)
-    key && String(key)
-  end
+You can override the default resource key type on a per-resource basis by calling `key_type` in the resource class,
+with the same allowed values as the `resource_key_type` configuration option.
+
+```ruby
+class ContactResource < JSONAPI::Resource
+  attribute :id
+  attributes :name_first, :name_last, :email, :twitter
+  key_type :uuid
+end
+```
+
+##### Custom resource key validators
+
+If you need more control over the key, you can override the #verify_key method on your resource, or set a lambda that accepts key and context arguments in `config/initializers/jsonapi_resources.rb`:
+
+```ruby
+JSONAPI.configure do |config|
+  config.resource_key_type = -> (key, context) { key && String(key) }
 end
 ```
 
@@ -403,7 +445,7 @@ class PostResource < JSONAPI::Resource
 
   def self.records(options = {})
     context = options[:context]
-    context.current_user.posts
+    context[:current_user].posts
   end
 end
 ```
@@ -427,7 +469,8 @@ end
 
 ```
 
-For example, you may want raise an error if the user is not authorized to view the related records.
+For example, you may want raise an error if the user is not authorized to view the related records. See the next
+section for additional details on raising errors.
 
 ```ruby
 class BaseResource < JSONAPI::Resource
@@ -435,7 +478,7 @@ class BaseResource < JSONAPI::Resource
     context = options[:context]
     records = model.public_send(relationship_name)
 
-    unless context.current_user.can_view?(records)
+    unless context[:current_user].can_view?(records)
       raise NotAuthorizedError
     end
 
@@ -443,6 +486,42 @@ class BaseResource < JSONAPI::Resource
   end
 end
 ```
+
+
+###### Raising Errors
+
+Inside the finder methods (like `records_for`) or inside of resource callbacks
+(like `before_save`) you can `raise` an error to halt processing. JSONAPI::Resources
+has some built in errors that will return appropriate error codes. By
+default any other error that you raise will return a `500` status code
+for a general internal server error.
+
+To return useful error codes that represent application errors you
+should set the `exception_class_whitelist` config varible, and then you
+should use the Rails `rescue_from` macro to render a status code.
+
+For example, this config setting allows the `NotAuthorizedError` to bubble up out of
+JSONAPI::Resources and into your application.
+
+```ruby
+# config/initializer/jsonapi-resources.rb
+JSONAPI.configure do |config|
+  config.exception_class_whitelist = [NotAuthorizedError]
+end
+```
+
+Handling the error and rendering the appropriate code is now the resonsiblity of the
+application and could be handled like this:
+
+```ruby
+class ApiController < ApplicationController
+  rescue_from NotAuthorizedError, with: :reject_forbidden_request
+  def reject_forbidden_request
+    render json: {error: 'Forbidden'}, :status => 403
+  end
+end
+```
+
 
 ###### Applying Filters
 
@@ -488,7 +567,7 @@ class AuthorResource < JSONAPI::Resource
 
   def self.find(filters, options = {})
     context = options[:context]
-    authors = context.current_user.find_authors(filters)
+    authors = context[:current_user].find_authors(filters)
 
     return authors.map do |author|
       self.new(author)
@@ -573,7 +652,7 @@ To disable pagination in a resource, specify `:none` for `paginator`.
 
 #### Included relationships (side-loading resources)
 
-JR supports [request include params](http://jsonapi.org/format/#fetching-includes) out of the box, for side loading related resources. 
+JR supports [request include params](http://jsonapi.org/format/#fetching-includes) out of the box, for side loading related resources.
 
 Here's an example from the spec:
 
@@ -908,6 +987,31 @@ example:
 JSONAPI.configure do |config|
   config.use_text_errors = true
 end
+```
+
+
+#### Handling Exceptions
+
+By default, all exceptions raised downstream from a resource controller will be caught, logged, and a ```500 Internal Server Error``` will be rendered. Exceptions can be whitelisted in the config to pass through the handler and be caught manually, or you can pass a callback from a resource controller to insert logic into the rescue block without interrupting the control flow. This can be particularly useful for additional logging or monitoring without the added work of rendering responses.
+
+Pass a block, refer to controller class methods, or both. Note that methods must be defined as class methods on a controller and accept one parameter, which is passed the exception object that was rescued. 
+
+```ruby
+  class ApplicationController < JSONAPI::ResourceController
+
+    on_server_error :first_callback 
+
+    #or
+
+    # on_server_error do |error|
+      #do things
+    #end
+
+    def self.first_callback(error)
+      #env["airbrake.error_id"] = notify_airbrake(error)
+    end
+  end
+
 ```
 
 ### Serializer
@@ -1337,6 +1441,9 @@ JSONAPI.configure do |config|
 
   #:basic, :active_record, or custom
   config.operations_processor = :active_record
+
+  #:integer, :uuid, :string, or custom (provide a proc)
+  config.resource_key_type = :integer
 
   # optional request features
   config.allow_include = true

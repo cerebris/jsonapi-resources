@@ -122,12 +122,17 @@ module JSONAPI
       obj_hash
     end
 
-    def requested_fields(model)
-      @fields[model] if @fields
+    def requested_fields(klass)
+      return if @fields.nil? || @fields.empty?
+      if @fields[klass._type]
+        @fields[klass._type]
+      elsif klass.superclass != JSONAPI::Resource
+        requested_fields(klass.superclass)
+      end
     end
 
     def attribute_hash(source)
-      requested = requested_fields(source.class._type)
+      requested = requested_fields(source.class)
       fields = source.fetchable_fields & source.class._attributes.keys.to_a
       fields = requested & fields unless requested.nil?
 
@@ -141,7 +146,7 @@ module JSONAPI
 
     def relationship_data(source, include_directives)
       relationships = source.class._relationships
-      requested = requested_fields(source.class._type)
+      requested = requested_fields(source.class)
       fields = relationships.keys
       fields = requested & fields unless requested.nil?
 

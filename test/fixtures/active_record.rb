@@ -38,6 +38,13 @@ ActiveRecord::Schema.define do
     t.timestamps null: false
   end
 
+  create_table :companies, force: true do |t|
+    t.string     :type
+    t.string     :name
+    t.string     :address
+    t.timestamps null: false
+  end
+
   create_table :tags, force: true do |t|
     t.string :name
   end
@@ -244,6 +251,12 @@ class Comment < ActiveRecord::Base
   belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
   belongs_to :post
   has_and_belongs_to_many :tags, join_table: :comments_tags
+end
+
+class Company < ActiveRecord::Base
+end
+
+class Firm < Company
 end
 
 class Tag < ActiveRecord::Base
@@ -478,9 +491,17 @@ class PostsController < ActionController::Base
   rescue_from PostsController::SpecialError do
     head :forbidden
   end
+
+  #called by test_on_server_error
+  def self.set_callback_message(error)
+    @callback_message = "Sent from method"
+  end
 end
 
 class CommentsController < JSONAPI::ResourceController
+end
+
+class FirmsController < JSONAPI::ResourceController
 end
 
 class SectionsController < JSONAPI::ResourceController
@@ -706,6 +727,13 @@ class CommentResource < JSONAPI::Resource
   filters :body
 end
 
+class CompanyResource < JSONAPI::Resource
+  attributes :name, :address
+end
+
+class FirmResource < CompanyResource
+end
+
 class TagResource < JSONAPI::Resource
   attributes :name
 
@@ -800,16 +828,8 @@ class PostResource < JSONAPI::Resource
     return filter, values
   end
 
-  def self.is_num?(str)
-    begin
-      !!Integer(str)
-    rescue ArgumentError, TypeError
-      false
-    end
-  end
-
   def self.verify_key(key, context = nil)
-    raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key) unless is_num?(key)
+    super(key)
     raise JSONAPI::Exceptions::RecordNotFound.new(key) unless find_by_key(key, context: context)
     return key
   end
@@ -825,9 +845,7 @@ class IsoCurrencyResource < JSONAPI::Resource
 
   filter :country_name
 
-  def self.verify_key(key, context = nil)
-    key && String(key)
-  end
+  key_type :string
 end
 
 class ExpenseEntryResource < JSONAPI::Resource

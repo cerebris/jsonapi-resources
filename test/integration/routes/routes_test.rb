@@ -52,6 +52,17 @@ class RoutesTest < ActionDispatch::IntegrationTest
                    {controller: 'posts', action: 'update_relationship', post_id: '1', relationship: 'tags'})
   end
 
+  def test_routing_uuid
+    assert_routing({path: '/pets/v1/cats/f1a4d5f2-e77a-4d0a-acbb-ee0b98b3f6b5', method: :get},
+                   {action: 'show', controller: 'pets/v1/cats', id: 'f1a4d5f2-e77a-4d0a-acbb-ee0b98b3f6b5'})
+  end
+
+  # ToDo: refute this routing
+  # def test_routing_uuid_bad_format
+  #   assert_routing({path: '/pets/v1/cats/f1a4d5f2-e77a-4d0a-acbb-ee0b9', method: :get},
+  #                  {action: 'show', controller: 'pets/v1/cats', id: 'f1a4d5f2-e77a-4d0a-acbb-ee0b98'})
+  # end
+
   # Polymorphic
   def test_routing_polymorphic_get_related_resource
     assert_routing(

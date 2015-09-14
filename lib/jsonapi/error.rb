@@ -14,7 +14,8 @@ module JSONAPI
                         end
       @source         = options[:source]
       @links          = options[:links]
-      @status         = options[:status]
+
+      @status         = Rack::Utils::SYMBOL_TO_STATUS_CODE[options[:status]].to_s
     end
   end
 
