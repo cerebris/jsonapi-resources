@@ -1033,7 +1033,6 @@ module Api
 
     class BookResource < JSONAPI::Resource
       attribute :title
-      attribute :title
       attributes :isbn, :banned
 
       has_many :book_comments, relation_name: -> (options = {}) {
