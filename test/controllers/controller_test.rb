@@ -2845,6 +2845,28 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_response :success
     assert_equal 2, json_response['data'].size
   end
+
+  def test_books_delete_unapproved_comment_limited_user_using_relation_name
+    $test_user = Person.find(1)
+
+    book_comment = BookComment.create(book_id: 1, body: 'Not Approved dummy comment', approved: false)
+    delete :destroy_relationship, {book_id: 1, relationship: 'book_comments', data: [{type: 'book_comments', id: book_comment.id}]}
+    assert_response :not_found
+
+  ensure
+    book_comment.delete
+  end
+
+  def test_books_delete_approved_comment_limited_user_using_relation_name
+    $test_user = Person.find(1)
+
+    book_comment = BookComment.create(book_id: 1, body: 'Approved dummy comment', approved: true)
+    delete :destroy_relationship, {book_id: 1, relationship: 'book_comments', data: [{type: 'book_comments', id: book_comment.id}]}
+    assert_response :no_content
+
+  ensure
+    book_comment.delete
+  end
 end
 
 class Api::V2::BookCommentsControllerTest < ActionController::TestCase
