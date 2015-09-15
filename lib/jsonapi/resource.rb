@@ -180,7 +180,6 @@ module JSONAPI
 
     def _replace_to_many_links(relationship_type, relationship_key_values)
       relationship = self.class._relationships[relationship_type]
-
       send("#{relationship.foreign_key}=", relationship_key_values)
       @save_needed = true
 
@@ -208,9 +207,7 @@ module JSONAPI
     end
 
     def _remove_to_many_link(relationship_type, key)
-      relationship = self.class._relationships[relationship_type]
-
-      @model.public_send(relationship.type).delete(key)
+      @model.public_send(relationship_type).delete(key)
 
       :completed
     end
