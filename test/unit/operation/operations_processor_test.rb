@@ -99,6 +99,36 @@ class OperationsProcessorTest < Minitest::Test
     assert_equal(Planet.count, count + 3)
   end
 
+  def test_create_single_resource_with_nested_attributes
+    op = TestOperationsProcessor.new()
+
+    child_count = Child.count
+    parent_count = Parent.count
+
+    operations = [
+      JSONAPI::CreateResourceOperation.new(ParentResource,
+        data: {
+          attributes: {
+            'name' => 'earth',
+            'child_attributes' => {
+              'name' => 'earth jr.'
+            }
+          }
+        })
+    ]
+
+    request = JSONAPI::Request.new
+    request.operations = operations
+
+    operation_results = op.process(request)
+
+    assert_kind_of(JSONAPI::OperationResults, operation_results)
+    assert_equal(:created, operation_results.results[0].code)
+    assert_equal(operation_results.results.size, 1)
+    assert_equal(Child.count, child_count + 1)
+    assert_equal(Parent.count, parent_count + 1)
+  end
+
   def test_replace_to_one_relationship
     op = JSONAPI::OperationsProcessor.new()
 

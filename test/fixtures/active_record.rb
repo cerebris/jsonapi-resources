@@ -220,6 +220,15 @@ ActiveRecord::Schema.define do
     t.string :serial_number
     t.integer :person_id
   end
+
+  create_table :parents, force: true do |t|
+    t.string :name
+  end
+
+  create_table :children, force: true do |t|
+    t.string :name
+    t.integer :parent_id
+  end
 end
 
 ### MODELS
@@ -463,6 +472,16 @@ end
 
 class Product < ActiveRecord::Base
   has_one :picture, as: :imageable
+end
+
+class Parent < ActiveRecord::Base
+  has_one :child
+
+  accepts_nested_attributes_for :child
+end
+
+class Child < ActiveRecord::Base
+  belongs_to :parent
 end
 
 ### OperationsProcessor
@@ -906,6 +925,28 @@ class BreedResource < JSONAPI::Resource
     super
     return :accepted
   end
+end
+
+class ParentResource < JSONAPI::Resource
+  attribute :name
+
+  has_one :child
+
+  private
+
+  def child_attributes=(attributes)
+    @model.child_attributes = attributes
+  end
+
+  def self.creatable_fields(context)
+    super + [:child_attributes]
+  end
+end
+
+class ChildResource < JSONAPI::Resource
+  attribute :name
+
+  has_one :parent
 end
 
 class PlanetResource < JSONAPI::Resource
