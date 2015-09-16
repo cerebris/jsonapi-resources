@@ -910,4 +910,10 @@ class RequestTest < ActionDispatch::IntegrationTest
   ensure
     JSONAPI.configuration.allow_sort = true
   end
+
+  def test_scoped_resources
+    get '/api/v1/123/people'
+    assert_equal 200, status
+    assert_hash_equals('http://www.example.com/api/v1/123/people/1', json_response['data'].first['links']['self'])
+  end
 end

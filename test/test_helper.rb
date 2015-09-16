@@ -1,4 +1,5 @@
 require 'simplecov'
+require 'minitest/mock'
 
 # To run tests with coverage:
 # COVERAGE=true rake test
@@ -141,6 +142,10 @@ TestApp.routes.draw do
 
   namespace :api do
     namespace :v1 do
+      scope ":section_id" do
+        jsonapi_resources :people
+      end
+
       jsonapi_resources :people
       jsonapi_resources :comments
       jsonapi_resources :tags
