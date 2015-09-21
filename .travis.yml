@@ -1,7 +1,6 @@
 language: ruby
 sudo: false
 env:
-  - "RAILS_VERSION=4.0.0"
   - "RAILS_VERSION=4.1.0"
   - "RAILS_VERSION=4.2.0"
 rvm:
