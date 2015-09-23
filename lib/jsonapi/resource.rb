@@ -739,10 +739,9 @@ module JSONAPI
             @model.method("#{foreign_key}=").call(value)
           end unless method_defined?("#{foreign_key}=")
 
-          define_method associated_records_method_name do |options = {}|
-            options = options.merge({context: @context})
-            relation_name = relationship.relation_name(options)
-            records_for(relation_name, options)
+          define_method associated_records_method_name do
+            relation_name = relationship.relation_name(context: @context)
+            records_for(relation_name, context: @context)
           end unless method_defined?(associated_records_method_name)
 
           if relationship.is_a?(JSONAPI::Relationship::ToOne)
