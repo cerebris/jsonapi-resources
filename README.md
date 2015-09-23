@@ -452,20 +452,22 @@ class PostResource < JSONAPI::Resource
 end
 ```
 
-When you create a relationship, a method is created to fetch record(s) for that relationship. This method calls
-`records_for(relationship_name)` by default.
+When you create a relationship, a method is created to fetch record(s) for that relationship, using the relation name
+for the relationship.
 
 ```ruby
 class PostResource < JSONAPI::Resource
   has_one :author
   has_many :comments
 
-  # def record_for_author(options = {})
-  #   records_for("author", options)
+  # def record_for_author
+  #   relation_name = relationship.relation_name(context: @context)
+  #   records_for(relation_name, context: @context)
   # end
 
-  # def records_for_comments(options = {})
-  #   records_for("comments", options)
+  # def records_for_comments
+  #   relation_name = relationship.relation_name(context: @context)
+  #   records_for(relation_name, context: @context)
   # end
 end
 
@@ -476,9 +478,9 @@ section for additional details on raising errors.
 
 ```ruby
 class BaseResource < JSONAPI::Resource
-  def records_for(relationship_name, options={})
+  def records_for(relation_name, options={})
     context = options[:context]
-    records = model.public_send(relationship_name)
+    records = model.public_send(relation_name)
 
     unless context[:current_user].can_view?(records)
       raise NotAuthorizedError
