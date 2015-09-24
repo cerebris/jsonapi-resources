@@ -13,8 +13,11 @@ end
 require 'rails/all'
 require 'rails/test_help'
 require 'minitest/mock'
+require 'minitest/reporters'
+require 'minitest/focus'
 require 'jsonapi-resources'
 require 'pry'
+require 'awesome_print'
 
 require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/assertions', __FILE__)
@@ -255,6 +258,8 @@ end
 
 # Ensure backward compatibility with Minitest 4
 Minitest::Test = MiniTest::Unit::TestCase unless defined?(Minitest::Test)
+
+Minitest::Reporters.use! [Minitest::Reporters::DefaultReporter.new(color: true)]
 
 class Minitest::Test
   include Helpers::Assertions

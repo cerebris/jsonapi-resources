@@ -550,7 +550,7 @@ class OperationsProcessorTest < Minitest::Test
     error = StandardError.new
 
     callback = ->(error) { nil.explosions}
-    result = op.send(:safe_run_callback, callback, error) 
+    result = op.send(:safe_run_callback, callback, error)
 
     assert_instance_of(JSONAPI::ErrorsOperationResult, result)
     assert_equal(result.code, 500)

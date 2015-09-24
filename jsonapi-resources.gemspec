@@ -23,8 +23,12 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rake'
   spec.add_development_dependency 'minitest'
   spec.add_development_dependency 'minitest-spec-rails'
+  spec.add_development_dependency 'minitest-focus'
   spec.add_development_dependency 'minitest-reporters'
+  spec.add_development_dependency 'awesome_print'
   spec.add_development_dependency 'simplecov'
   spec.add_development_dependency 'pry'
+  spec.add_development_dependency 'guard'
+  spec.add_development_dependency 'guard-minitest'
   spec.add_dependency 'rails', '>= 4.0'
 end
