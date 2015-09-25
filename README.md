@@ -462,12 +462,12 @@ class PostResource < JSONAPI::Resource
 
   # def record_for_author
   #   relation_name = relationship.relation_name(context: @context)
-  #   records_for(relation_name, context: @context)
+  #   records_for(relation_name)
   # end
 
   # def records_for_comments
   #   relation_name = relationship.relation_name(context: @context)
-  #   records_for(relation_name, context: @context)
+  #   records_for(relation_name)
   # end
 end
 
@@ -478,7 +478,7 @@ section for additional details on raising errors.
 
 ```ruby
 class BaseResource < JSONAPI::Resource
-  def records_for(relation_name, options={})
+  def records_for(relation_name)
     context = options[:context]
     records = model.public_send(relation_name)
 
