@@ -111,7 +111,7 @@ module JSONAPI
 
     # Override this on a resource to customize how the associated records
     # are fetched for a model. Particularly helpful for authorization.
-    def records_for(relation_name, _options = {})
+    def records_for(relation_name)
       model.public_send relation_name
     end
 
@@ -741,7 +741,7 @@ module JSONAPI
 
           define_method associated_records_method_name do
             relation_name = relationship.relation_name(context: @context)
-            records_for(relation_name, context: @context)
+            records_for(relation_name)
           end unless method_defined?(associated_records_method_name)
 
           if relationship.is_a?(JSONAPI::Relationship::ToOne)
