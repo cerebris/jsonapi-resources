@@ -844,6 +844,8 @@ class PeopleController < ApplicationController
 end
 ```
 
+> __Note__: This gem [uses the filter chain to set up the request](https://github.com/cerebris/jsonapi-resources/issues/458#issuecomment-143297055). In some instances, variables that are set in the filter chain (such as `current_user`) may not be set at the right time. If this happens (i.e. `current_user` is `nil` in `context` but it's set properly everywhere else), you may want to have your authentication occur earlier in the filter chain, using `prepend_before_action` instead of `before_action`.
+
 ##### ActsAsResourceController
 
 `JSONAPI::Resources` also provides a module, `JSONAPI::ActsAsResourceController`. You can include this module to
