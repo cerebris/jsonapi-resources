@@ -22,7 +22,7 @@ module JSONAPI
                                        :remove_to_one_link,
                                        :replace_fields
 
-    def initialize(model, context = nil)
+    def initialize(model, context)
       @model = model
       @context = context
     end
