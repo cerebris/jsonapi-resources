@@ -574,7 +574,7 @@ class AuthorResource < JSONAPI::Resource
     authors = context[:current_user].find_authors(filters)
 
     return authors.map do |author|
-      self.new(author)
+      self.new(author, context)
     end
   end
 end
@@ -1026,7 +1026,7 @@ The `ResourceSerializer` can be used to serialize a resource into JSON API compl
 
 ```ruby
 post = Post.find(1)
-JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(PostResource.new(post))
+JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(PostResource.new(post, nil))
 ```
 
 This returns results like this:
@@ -1111,7 +1111,7 @@ JSONAPI::ResourceSerializer.new(PostResource, include: include_resources,
     tags: [:name],
     comments: [:body, :post]
   }
-).serialize_to_hash(PostResource.new(post))
+).serialize_to_hash(PostResource.new(post, nil))
 ```
 
 ##### `context`
