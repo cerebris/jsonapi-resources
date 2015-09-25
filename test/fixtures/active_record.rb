@@ -955,7 +955,7 @@ class PreferencesResource < JSONAPI::Resource
   has_many :friends
 
   def self.find_by_key(key, options = {})
-    new(Preferences.first)
+    new(Preferences.first, nil)
   end
 end
 
