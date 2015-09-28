@@ -5,9 +5,9 @@ module JSONAPI
     extend ActiveSupport::Concern
 
     included do
-      before_filter :ensure_correct_media_type, only: [:create, :update, :create_relationship, :update_relationship]
-      append_before_filter :setup_request
-      after_filter :setup_response
+      before_action :ensure_correct_media_type, only: [:create, :update, :create_relationship, :update_relationship]
+      append_before_action :setup_request
+      after_action :setup_response
     end
 
     def index
@@ -187,9 +187,9 @@ module JSONAPI
       @request.server_error_callbacks = callbacks || []
     end
 
-    # Pass in a methods or a block to be run when an exception is 
+    # Pass in a methods or a block to be run when an exception is
     # caught that is not a JSONAPI::Exceptions::Error
-    # Useful for additional logging or notification configuration that 
+    # Useful for additional logging or notification configuration that
     # would normally depend on rails catching and rendering an exception.
     # Ignores whitelist exceptions from config
 
@@ -197,12 +197,12 @@ module JSONAPI
       def on_server_error(*args, &callback_block)
         callbacks = []
 
-        if callback_block 
+        if callback_block
           callbacks << callback_block
         end
 
         method_callbacks = args.map do |method|
-          ->(error) do 
+          ->(error) do
             if self.respond_to? method
               send(method, error)
             else
@@ -211,7 +211,7 @@ module JSONAPI
           end
         end.compact
         callbacks += method_callbacks
-        append_before_filter { add_error_callbacks(callbacks) }
+        append_before_action { add_error_callbacks(callbacks) }
       end
     end
   end
