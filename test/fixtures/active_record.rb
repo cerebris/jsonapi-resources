@@ -1142,6 +1142,24 @@ class CustomLinkResource < JSONAPI::Resource
   custom_link :raw, :self
 end
 
+class CustomLinkWithRelativePathOptionResource < JSONAPI::Resource
+  model_name 'Post'
+  attributes :title, :body, :subject
+
+  def subject
+    @model.title
+  end
+
+  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+  has_one :section
+  has_many :comments, acts_as_set: false
+
+  filters :writer
+
+  custom_link :raw, :self, relative_path: "super/duper/path", ext: :xml
+end
+
+
 module Api
   module V1
     class WriterResource < JSONAPI::Resource
