@@ -1125,6 +1125,23 @@ class AuthorDetailResource < JSONAPI::Resource
   attributes :author_stuff
 end
 
+class CustomLinkResource < JSONAPI::Resource
+  model_name 'Post'
+  attributes :title, :body, :subject
+
+  def subject
+    @model.title
+  end
+
+  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+  has_one :section
+  has_many :comments, acts_as_set: false
+
+  filters :writer
+
+  custom_link :raw, :self
+end
+
 module Api
   module V1
     class WriterResource < JSONAPI::Resource

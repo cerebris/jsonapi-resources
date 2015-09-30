@@ -49,7 +49,29 @@ module JSONAPI
       end
     end
 
+    def build_custom_links(source)
+      link_instructions = source.custom_links
+      custom_links = {}
+
+      link_instructions.each do |link|
+        key = link.first
+        type = link.last[:type]
+        ext = link.last[:ext]
+
+        custom_links[key] = send("build_custom_#{type}_link", key, source, ext)
+      end
+
+      custom_links
+    end
+
     private
+
+    def build_custom_self_link(key, source, ext=nil)
+      url = "#{ self_link(source) }/#{ key }"
+      url += ".#{ext}" if ext
+
+      url
+    end
 
     def build_engine_name
       scopes = module_scopes_from_class(primary_resource_klass)
