@@ -1913,4 +1913,49 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
   end
+
+  def test_custom_links_with_custom_relative_paths
+    serialized_custom_link_resource = JSONAPI::ResourceSerializer
+      .new(CustomLinkWithRelativePathOptionResource, base_url: 'http://example.com')
+      .serialize_to_hash(CustomLinkWithRelativePathOptionResource.new(Post.first))
+
+    custom_link_spec = {
+        data: {
+          type: 'customLinkWithRelativePathOptions',
+          id: '1',
+          attributes: {
+            title: "New post",
+            body: "A body!!!",
+            subject: "New post"
+          },
+        links: {
+          self: "http://example.com/customLinkWithRelativePathOptions/1",
+          raw: "http://example.com/customLinkWithRelativePathOptions/1/super/duper/path.xml"
+        },
+        relationships: {
+          writer: {
+            links: {
+              self: "http://example.com/customLinkWithRelativePathOptions/1/relationships/writer",
+              related: "http://example.com/customLinkWithRelativePathOptions/1/writer"
+            }
+          },
+          section: {
+            links: {
+              self: "http://example.com/customLinkWithRelativePathOptions/1/relationships/section",
+              related: "http://example.com/customLinkWithRelativePathOptions/1/section"
+            }
+          },
+          comments: {
+            links: {
+              self: "http://example.com/customLinkWithRelativePathOptions/1/relationships/comments",
+              related: "http://example.com/customLinkWithRelativePathOptions/1/comments"
+            }
+          }
+        }
+      }
+    }
+
+    assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
+  end
+
 end

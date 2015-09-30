@@ -63,6 +63,13 @@ class CustomLinkTestWithExtensionResource < JSONAPI::Resource
   custom_link :raw, :self, ext: :xml
 end
 
+class CustomLinkTestWithCustomPathResource < JSONAPI::Resource
+  model_name 'Post'
+
+  custom_link :raw, :self, relative_path: "super/duper/custom/path", ext: :xml
+end
+
+
 class ResourceTest < ActiveSupport::TestCase
   def setup
     @post = Post.first
@@ -80,6 +87,11 @@ class ResourceTest < ActiveSupport::TestCase
   def test_custom_links_with_extension
     registered_custom_link = { raw: { type: :self, ext: :xml } }
     assert_equal(CustomLinkTestWithExtensionResource.new(Post.first, {}).custom_links, registered_custom_link)
+  end
+
+  def test_custom_links_with_relative_path_and_extension
+    registered_custom_link = { raw: { type: :self, ext: :xml, relative_path: "super/duper/custom/path" } }
+    assert_equal(CustomLinkTestWithCustomPathResource.new(Post.first, {}).custom_links, registered_custom_link)
   end
 
   def test_model_name
