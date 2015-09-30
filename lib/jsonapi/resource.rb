@@ -118,6 +118,14 @@ module JSONAPI
       _model.public_send relation_name
     end
 
+    def custom_links?
+      self.class.custom_links.size > 0
+    end
+
+    def custom_links
+      @custom_links ||= self.class.custom_links
+    end
+
     private
 
     def save
@@ -265,6 +273,7 @@ module JSONAPI
         base._attributes = (_attributes || {}).dup
         base._relationships = (_relationships || {}).dup
         base._allowed_filters = (_allowed_filters || Set.new).dup
+        base._custom_links = (_custom_links || {}).dup
 
         type = base.name.demodulize.sub(/Resource$/, '').underscore
         base._type = type.pluralize.to_sym
@@ -283,7 +292,19 @@ module JSONAPI
         resource
       end
 
-      attr_accessor :_attributes, :_relationships, :_allowed_filters, :_type, :_paginator
+      attr_accessor :_attributes, :_relationships, :_allowed_filters, :_type, :_paginator, :_custom_links
+
+      def custom_links
+        @_custom_links ||= {}
+      end
+
+      def custom_link(name, type, options={})
+        link_manifest = { type: type.to_sym }
+        extension = options[:ext] || options[:extension]
+        link_manifest.merge!(ext: extension) if extension
+
+        @_custom_links[name.to_sym] = link_manifest
+      end
 
       def create(context)
         new(create_model, context)

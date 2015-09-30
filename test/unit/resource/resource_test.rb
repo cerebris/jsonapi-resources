@@ -51,9 +51,35 @@ module MyModule
   end
 end
 
+class CustomLinkTestResource < JSONAPI::Resource
+  model_name 'Post'
+
+  custom_link :raw, :self
+end
+
+class CustomLinkTestWithExtensionResource < JSONAPI::Resource
+  model_name 'Post'
+
+  custom_link :raw, :self, ext: :xml
+end
+
 class ResourceTest < ActiveSupport::TestCase
   def setup
     @post = Post.first
+  end
+
+  def test_custom_links?
+    assert_equal(CustomLinkTestResource.new(Post.first, {}).custom_links?, true)
+  end
+
+  def test_custom_links
+    registered_custom_link = { raw: { :type => :self } }
+    assert_equal(CustomLinkTestResource.new(Post.first, {}).custom_links, registered_custom_link)
+  end
+
+  def test_custom_links_with_extension
+    registered_custom_link = { raw: { type: :self, ext: :xml } }
+    assert_equal(CustomLinkTestWithExtensionResource.new(Post.first, {}).custom_links, registered_custom_link)
   end
 
   def test_model_name

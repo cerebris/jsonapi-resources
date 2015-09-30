@@ -1871,4 +1871,46 @@ class SerializerTest < ActionDispatch::IntegrationTest
       out.strip
     )
   end
+
+  def test_custom_links
+    serialized_custom_link_resource = JSONAPI::ResourceSerializer.new(CustomLinkResource, base_url: 'http://example.com').serialize_to_hash(CustomLinkResource.new(Post.first, {}))
+
+    custom_link_spec = {
+        data: {
+          type: 'customLinks',
+          id: '1',
+          attributes: {
+            title: "New post",
+            body: "A body!!!",
+            subject: "New post"
+          },
+        links: {
+          self: "http://example.com/customLinks/1",
+          raw: "http://example.com/customLinks/1/raw"
+        },
+        relationships: {
+          writer: {
+            links: {
+              self: "http://example.com/customLinks/1/relationships/writer",
+              related: "http://example.com/customLinks/1/writer"
+            }
+          },
+          section: {
+            links: {
+              self: "http://example.com/customLinks/1/relationships/section",
+              related: "http://example.com/customLinks/1/section"
+            }
+          },
+          comments: {
+            links: {
+              self: "http://example.com/customLinks/1/relationships/comments",
+              related: "http://example.com/customLinks/1/comments"
+            }
+          }
+        }
+      }
+    }
+
+    assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
+  end
 end

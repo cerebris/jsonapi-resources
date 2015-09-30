@@ -206,6 +206,11 @@ module JSONAPI
       links = {}
       links[:self] = url_generator.self_link(source)
 
+      if source.custom_links?
+        customized_links = url_generator.build_custom_links(source)
+        links.merge!(customized_links)
+      end
+
       links
     end
 
