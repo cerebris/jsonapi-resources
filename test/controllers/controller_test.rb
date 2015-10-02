@@ -2940,15 +2940,15 @@ class Api::V1::CratersControllerTest < ActionController::TestCase
                         data: [
                           {id:"A4D3",
                            type:"craters",
-                           links:{self: "http://test.host/craters/A4D3"},
+                           links:{self: "http://test.host/api/v1/craters/A4D3"},
                            attributes:{code: "A4D3", description: "Small crater"},
-                           relationships:{moon: {links: {self: "http://test.host/craters/A4D3/relationships/moon", related: "http://test.host/craters/A4D3/moon"}}}
+                           relationships:{moon: {links: {self: "http://test.host/api/v1/craters/A4D3/relationships/moon", related: "http://test.host/api/v1/craters/A4D3/moon"}}}
                           },
                           {id: "S56D",
                            type: "craters",
-                           links:{self: "http://test.host/craters/S56D"},
+                           links:{self: "http://test.host/api/v1/craters/S56D"},
                            attributes:{code: "S56D", description: "Very large crater"},
-                           relationships:{moon: {links: {self: "http://test.host/craters/S56D/relationships/moon", related: "http://test.host/craters/S56D/moon"}}}
+                           relationships:{moon: {links: {self: "http://test.host/api/v1/craters/S56D/relationships/moon", related: "http://test.host/api/v1/craters/S56D/moon"}}}
                           }
                         ]
                       }

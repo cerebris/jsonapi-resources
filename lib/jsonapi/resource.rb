@@ -776,9 +776,7 @@ module JSONAPI
               end
 
               return records.collect do |record|
-                if relationship.polymorphic?
-                  resource_klass = Resource.resource_for(self.class.resource_type_for(record))
-                end
+                resource_klass = Resource.resource_for(self.class.resource_type_for(record))
                 resource_klass.new(record, @context)
               end
             end unless method_defined?(attr)
