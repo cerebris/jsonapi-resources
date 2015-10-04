@@ -227,6 +227,41 @@ end
 The system will lookup a value formatter named `DateWithTimezoneValueFormatter` and will use this when serializing and
 updating the attribute. See the [Value Formatters](#value-formatters) section for more details.
 
+##### Flattening a Rails relationship
+
+It is possible to flatten Rails relationships into attributes by using getters and setters. This can become handy if a relation needs to be created alongside the creation of the main object which can be the case if there is a bi-directional presence validation. For example:
+
+```ruby
+# Given Models
+class Person < ActiveRecord::Base
+  has_many :spoken_languages
+  validates :name, :email, :spoken_languages, presence: true
+end
+
+class SpokenLanguage < ActiveRecord::Base
+  belongs_to :person, inverse_of: :spoken_languages
+  validates :person, :language_code, presence: true
+end
+
+# Resource with getters and setter
+class PersonResource < JSONAPI::Resource
+  attributes :name, :email, :spoken_languages
+
+  # Getter
+  def spoken_languages
+    @model.spoken_languages.pluck(:language_code)
+  end
+
+  # Setter (because spoken_languages needed for creation)
+  def spoken_languages=(new_spoken_language_codes)
+    @model.spoken_languages.destroy_all
+    new_spoken_language_codes.each do |new_lang_code|
+      @model.spoken_languages.build(language_code: new_lang_code)
+    end
+  end
+end
+```
+
 #### Primary Key
 
 Resources are always represented using a key of `id`. The resource will interrogate the model to find the primary key.
