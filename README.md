@@ -1332,36 +1332,15 @@ If you want to change the way an attribute is (de-)serialized you have a couple 
 getter (and setter) method on the resource which overrides the attribute and apply the (un-)formatting there. For example:
 
 ```ruby
-# Given Models
-class Person < ActiveRecord::Base
-  has_many :spoken_languages
-  validates :name, :email, :spoken_languages, presence: true
-end
-
-class SpokenLanguage < ActiveRecord::Base
-  belongs_to :person, inverse_of: :spoken_languages
-  validates :person, :language_code, presence: true
-end
-
-# Resource with getters and setter
 class PersonResource < JSONAPI::Resource
-  attributes :name, :email, :spoken_languages
-  attribute :last_login_time
+  attributes :name, :email, :last_login_time
 
-  # Getter
-  def spoken_languages
-    @model.spoken_languages.pluck(:language_code)
+  # Setter example
+  def email=(new_email)
+    @model.email = new_email.downcase
   end
 
-  # Setter (because spoken_languages needed for creation)
-  def spoken_languages=(new_spoken_language_codes)
-    @model.spoken_languages.destroy_all
-    new_spoken_language_codes.each do |new_lang_code|
-      @model.spoken_languages.build(language_code: new_lang_code)
-    end
-  end
-
-  # Getter
+  # Getter example
   def last_login_time
     @model.last_login_time.in_time_zone(@context[:current_user].time_zone).to_s
   end
