@@ -227,6 +227,41 @@ end
 The system will lookup a value formatter named `DateWithTimezoneValueFormatter` and will use this when serializing and
 updating the attribute. See the [Value Formatters](#value-formatters) section for more details.
 
+##### Flattening a Rails relationship
+
+It is possible to flatten Rails relationships into attributes by using getters and setters. This can become handy if a relation needs to be created alongside the creation of the main object which can be the case if there is a bi-directional presence validation. For example:
+
+```ruby
+# Given Models
+class Person < ActiveRecord::Base
+  has_many :spoken_languages
+  validates :name, :email, :spoken_languages, presence: true
+end
+
+class SpokenLanguage < ActiveRecord::Base
+  belongs_to :person, inverse_of: :spoken_languages
+  validates :person, :language_code, presence: true
+end
+
+# Resource with getters and setter
+class PersonResource < JSONAPI::Resource
+  attributes :name, :email, :spoken_languages
+
+  # Getter
+  def spoken_languages
+    @model.spoken_languages.pluck(:language_code)
+  end
+
+  # Setter (because spoken_languages needed for creation)
+  def spoken_languages=(new_spoken_language_codes)
+    @model.spoken_languages.destroy_all
+    new_spoken_language_codes.each do |new_lang_code|
+      @model.spoken_languages.build(language_code: new_lang_code)
+    end
+  end
+end
+```
+
 #### Primary Key
 
 Resources are always represented using a key of `id`. The resource will interrogate the model to find the primary key.
@@ -1000,12 +1035,12 @@ end
 
 By default, all exceptions raised downstream from a resource controller will be caught, logged, and a ```500 Internal Server Error``` will be rendered. Exceptions can be whitelisted in the config to pass through the handler and be caught manually, or you can pass a callback from a resource controller to insert logic into the rescue block without interrupting the control flow. This can be particularly useful for additional logging or monitoring without the added work of rendering responses.
 
-Pass a block, refer to controller class methods, or both. Note that methods must be defined as class methods on a controller and accept one parameter, which is passed the exception object that was rescued. 
+Pass a block, refer to controller class methods, or both. Note that methods must be defined as class methods on a controller and accept one parameter, which is passed the exception object that was rescued.
 
 ```ruby
   class ApplicationController < JSONAPI::ResourceController
 
-    on_server_error :first_callback 
+    on_server_error :first_callback
 
     #or
 
@@ -1289,18 +1324,23 @@ phone_number_contact GET    /phone-numbers/:phone_number_id/contact(.:format) co
 
 #### Formatting
 
-JR by default uses some simple rules to format an attribute for serialization. Strings and Integers are output to JSON
+JR by default uses some simple rules to format (and unformat) an attribute for (de-)serialization. Strings and Integers are output to JSON
 as is, and all other values have `.to_s` applied to them. This outputs something in all cases, but it is certainly not
 correct for every situation.
 
-If you want to change the way an attribute is serialized you have a couple of ways. The simplest method is to create a
-getter method on the resource which overrides the attribute and apply the formatting there. For example:
+If you want to change the way an attribute is (de-)serialized you have a couple of ways. The simplest method is to create a
+getter (and setter) method on the resource which overrides the attribute and apply the (un-)formatting there. For example:
 
 ```ruby
 class PersonResource < JSONAPI::Resource
-  attributes :name, :email
-  attribute :last_login_time
+  attributes :name, :email, :last_login_time
 
+  # Setter example
+  def email=(new_email)
+    @model.email = new_email.downcase
+  end
+
+  # Getter example
   def last_login_time
     @model.last_login_time.in_time_zone(@context[:current_user].time_zone).to_s
   end
@@ -1318,8 +1358,10 @@ handled for an attribute. The `format` can be set per attribute as it is declare
 
 ```ruby
 class PersonResource < JSONAPI::Resource
-  attributes :name, :email
+  attributes :name, :email, :spoken_languages
   attribute :last_login_time, format: :date_with_utc_timezone
+
+  # Getter/Setter for spoken_languages ...
 end
 ```
 
