@@ -665,7 +665,7 @@ The default paginator, which will be used for all resources, is set using `JSONA
 
 ```ruby
 JSONAPI.configure do |config|
-  # built in paginators are :none, :offset, :cursor, :paged
+  # built in paginators are :none, :offset, :paged
   config.default_paginator = :offset
 
   config.default_page_size = 10
