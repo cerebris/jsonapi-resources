@@ -31,6 +31,7 @@ backed by ActiveRecord models or by custom objects.
     * [Namespaces] (#namespaces)
     * [Error Codes] (#error-codes)
     * [Handling Exceptions] (#handling-exceptions)
+    * [Action Callbacks] (#action-callbacks)
   * [Serializer] (#serializer)
 * [Configuration] (#configuration)
 * [Contributing] (#contributing)
@@ -1053,6 +1054,26 @@ Pass a block, refer to controller class methods, or both. Note that methods must
     end
   end
 
+```
+
+#### Action Callbacks
+
+##### ensure_correct_media_type
+
+By default, when controllers extend functionalities from `jsonapi-resources`, the `ActsAsResourceController#ensure_correct_media_type`
+method will be triggered before `create`, `update`, `create_relationship` and `update_relationship` actions. This method is reponsible
+for checking if client's request corresponds to the correct media type required by [JSON API](http://jsonapi.org/format/#content-negotiation-clients): `application/vnd.api+json`.
+
+In case you need to check the media type for custom actions, just make sure to call the method in your controller's `before_action`:
+
+```ruby
+class UsersController < JSONAPI::ResourceController
+  before_action :ensure_correct_media_type, only: [:auth]
+
+  def auth
+    # some crazy auth code goes here
+  end
+end
 ```
 
 ### Serializer
