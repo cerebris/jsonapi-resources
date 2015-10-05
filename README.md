@@ -821,6 +821,7 @@ To return the total record count of a find operation in the meta data of a find 
 OperationsProcessor. For example:
 
 ```ruby
+# lib/jsonapi/counting_active_record_operations_processor.rb
 class CountingActiveRecordOperationsProcessor < ActiveRecordOperationsProcessor
   after_find_operation do
     @operation_meta[:total_records] = @operation.record_count
@@ -832,6 +833,8 @@ Set the configuration option `operations_processor` to use the new `CountingActi
 specifying the snake cased name of the class (without the `OperationsProcessor`).
 
 ```ruby
+require 'jsonapi/counting_active_record_operations_processor'
+
 JSONAPI.configure do |config|
   config.operations_processor = :counting_active_record
 end
@@ -1499,6 +1502,9 @@ You would specify this in `JSONAPI.configure` as `:upper_camelized`.
 JR has a few configuration options. Some have already been mentioned above. To set configuration options create an
 initializer and add the options you wish to set. All options have defaults, so you only need to set the options that
 are different. The default options are shown below.
+
+If using custom classes (such as the CountingActiveRecordOperationsProcessor, or a CustomPaginator),
+be sure to require them at the top of the initializer before usage.
 
 ```ruby
 JSONAPI.configure do |config|
