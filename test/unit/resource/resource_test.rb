@@ -25,23 +25,24 @@ class CatResource < JSONAPI::Resource
 end
 
 class PersonWithCustomRecordsForResource < PersonResource
-  def records_for(relationship_name, context)
+  def records_for(relationship_name)
     :records_for
   end
 end
 
 class PersonWithCustomRecordsForRelationshipsResource < PersonResource
-  def records_for_posts(options = {})
+  def records_for_posts
     :records_for_posts
   end
-  def record_for_preferences(options = {})
+
+  def record_for_preferences
     :record_for_preferences
   end
 end
 
 class PersonWithCustomRecordsForErrorResource < PersonResource
   class AuthorizationError < StandardError; end
-  def records_for(relationship_name, context)
+  def records_for(relationship_name)
     raise AuthorizationError
   end
 end
@@ -121,13 +122,13 @@ class ResourceTest < ActiveSupport::TestCase
     preferences = Preferences.first
     refute(preferences == nil)
     author.update! preferences: preferences
-    author_resource = PersonResource.new(author)
+    author_resource = PersonResource.new(author, nil)
     assert_equal(author_resource.preferences.model, preferences)
 
-    author_resource = PersonWithCustomRecordsForResource.new(author)
+    author_resource = PersonWithCustomRecordsForResource.new(author, nil)
     assert_equal(author_resource.preferences.model, :records_for)
 
-    author_resource = PersonWithCustomRecordsForErrorResource.new(author)
+    author_resource = PersonWithCustomRecordsForErrorResource.new(author, nil)
     assert_raises PersonWithCustomRecordsForErrorResource::AuthorizationError do
       author_resource.posts
     end
@@ -136,28 +137,28 @@ class ResourceTest < ActiveSupport::TestCase
   def test_records_for_meta_method_for_to_one
     author = Person.find(1)
     author.update! preferences: Preferences.first
-    author_resource = PersonWithCustomRecordsForRelationshipsResource.new(author)
+    author_resource = PersonWithCustomRecordsForRelationshipsResource.new(author, nil)
     assert_equal(author_resource.record_for_preferences, :record_for_preferences)
   end
 
   def test_records_for_meta_method_for_to_one_calling_records_for
     author = Person.find(1)
     author.update! preferences: Preferences.first
-    author_resource = PersonWithCustomRecordsForResource.new(author)
+    author_resource = PersonWithCustomRecordsForResource.new(author, nil)
     assert_equal(author_resource.record_for_preferences, :records_for)
   end
 
   def test_associated_records_meta_method_for_to_many
     author = Person.find(1)
     author.posts << Post.find(1)
-    author_resource = PersonWithCustomRecordsForRelationshipsResource.new(author)
+    author_resource = PersonWithCustomRecordsForRelationshipsResource.new(author, nil)
     assert_equal(author_resource.records_for_posts, :records_for_posts)
   end
 
   def test_associated_records_meta_method_for_to_many_calling_records_for
     author = Person.find(1)
     author.posts << Post.find(1)
-    author_resource = PersonWithCustomRecordsForResource.new(author)
+    author_resource = PersonWithCustomRecordsForResource.new(author, nil)
     assert_equal(author_resource.records_for_posts, :records_for)
   end
 
@@ -191,7 +192,7 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_to_many_relationship_filters
-    post_resource = PostResource.new(Post.find(1))
+    post_resource = PostResource.new(Post.find(1), nil)
     comments = post_resource.comments
     assert_equal(2, comments.size)
 
@@ -219,7 +220,7 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_to_many_relationship_sorts
-    post_resource = PostResource.new(Post.find(1))
+    post_resource = PostResource.new(Post.find(1), nil)
     comment_ids = post_resource.comments.map{|c| c.model.id }
     assert_equal [1,2], comment_ids
 
@@ -247,7 +248,7 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_to_many_relationship_pagination
-    post_resource = PostResource.new(Post.find(1))
+    post_resource = PostResource.new(Post.find(1), nil)
     comments = post_resource.comments
     assert_equal 2, comments.size
 

@@ -23,7 +23,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     serialized = JSONAPI::ResourceSerializer.new(
       PostResource,
-      base_url: 'http://example.com').serialize_to_hash(PostResource.new(@post)
+      base_url: 'http://example.com').serialize_to_hash(PostResource.new(@post, nil)
     )
 
     assert_hash_equals(
@@ -118,7 +118,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
       },
       JSONAPI::ResourceSerializer.new(Api::V1::PostResource,
                                       base_url: 'http://example.com').serialize_to_hash(
-        Api::V1::PostResource.new(@post))
+        Api::V1::PostResource.new(@post, nil))
     )
   end
 
@@ -146,7 +146,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
         }
       },
       JSONAPI::ResourceSerializer.new(PostResource,
-                                      fields: {posts: [:id, :title, :author]}).serialize_to_hash(PostResource.new(@post))
+                                      fields: {posts: [:id, :title, :author]}).serialize_to_hash(PostResource.new(@post, nil))
     )
   end
 
@@ -154,7 +154,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
     serialized = JSONAPI::ResourceSerializer.new(
       PostResource,
       include: ['author']
-    ).serialize_to_hash(PostResource.new(@post))
+    ).serialize_to_hash(PostResource.new(@post, nil))
 
     assert_hash_equals(
       {
@@ -256,7 +256,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
       PostResource,
       include: ['author'],
       key_formatter: UnderscoredKeyFormatter
-    ).serialize_to_hash(PostResource.new(@post))
+    ).serialize_to_hash(PostResource.new(@post, nil))
 
     assert_hash_equals(
       {
@@ -525,7 +525,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
           ]
       },
       JSONAPI::ResourceSerializer.new(PostResource,
-                                      include: ['comments', 'comments.tags']).serialize_to_hash(PostResource.new(@post))
+                                      include: ['comments', 'comments.tags']).serialize_to_hash(PostResource.new(@post, nil))
     )
   end
 
@@ -533,7 +533,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
     serialized = JSONAPI::ResourceSerializer.new(
       PersonResource,
       include: ['comments']
-    ).serialize_to_hash(PersonResource.new(@fred))
+    ).serialize_to_hash(PersonResource.new(@fred, nil))
 
     assert_hash_equals(
       {
@@ -656,7 +656,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     posts = []
     Post.find(1, 2).each do |post|
-      posts.push PostResource.new(post)
+      posts.push PostResource.new(post, nil)
     end
 
     JSONAPI.configuration.always_include_to_one_linkage_data = true
@@ -972,7 +972,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     posts = []
     Post.find(1, 2).each do |post|
-      posts.push PostResource.new(post)
+      posts.push PostResource.new(post, nil)
     end
 
     assert_hash_equals(
@@ -1247,7 +1247,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     posts = []
     Post.find(1, 2).each do |post|
-      posts.push PostResource.new(post)
+      posts.push PostResource.new(post, nil)
     end
 
     assert_hash_equals(
@@ -1476,13 +1476,13 @@ class SerializerTest < ActionDispatch::IntegrationTest
       JSONAPI::ResourceSerializer.new(ExpenseEntryResource,
                                       include: ['iso_currency', 'employee'],
                                       fields: {people: [:id, :name, :email, :date_joined]}).serialize_to_hash(
-        ExpenseEntryResource.new(@expense_entry))
+        ExpenseEntryResource.new(@expense_entry, nil))
     )
   end
 
   def test_serializer_empty_links_null_and_array
     planet_hash = JSONAPI::ResourceSerializer.new(PlanetResource).serialize_to_hash(
-      PlanetResource.new(Planet.find(8)))
+      PlanetResource.new(Planet.find(8), nil))
 
     assert_hash_equals(
       {
@@ -1523,7 +1523,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
   def test_serializer_include_with_empty_links_null_and_array
     planets = []
     Planet.find(7, 8).each do |planet|
-      planets.push PlanetResource.new(planet)
+      planets.push PlanetResource.new(planet, nil)
     end
 
     planet_hash = JSONAPI::ResourceSerializer.new(PlanetResource,
@@ -1619,7 +1619,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :underscored_key
 
-    preferences = PreferencesResource.new(Preferences.find(1))
+    preferences = PreferencesResource.new(Preferences.find(1), nil)
 
     assert_hash_equals(
       {
@@ -1658,7 +1658,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :underscored_key
 
-    facts = FactResource.new(Fact.find(1))
+    facts = FactResource.new(Fact.find(1), nil)
 
     assert_hash_equals(
       {
@@ -1691,7 +1691,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
     serialized = JSONAPI::ResourceSerializer.new(
       Api::V5::AuthorResource,
       include: ['author_detail']
-    ).serialize_to_hash(Api::V5::AuthorResource.new(Person.find(1)))
+    ).serialize_to_hash(Api::V5::AuthorResource.new(Person.find(1), nil))
 
     assert_hash_equals(
       {
