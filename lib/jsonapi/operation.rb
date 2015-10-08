@@ -150,7 +150,7 @@ module JSONAPI
     end
 
     def record_count
-      @_record_count ||= records.count
+      @_record_count ||= records.count(:all)
     end
 
     def source_resource

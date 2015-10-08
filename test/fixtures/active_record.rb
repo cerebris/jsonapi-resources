@@ -916,6 +916,10 @@ class PlanetResource < JSONAPI::Resource
   has_one :planet_type
 
   has_many :tags, acts_as_set: true
+
+  def records_for_moons
+    Moon.joins(:craters).select('moons.*, craters.code').distinct
+  end
 end
 
 class PropertyResource < JSONAPI::Resource

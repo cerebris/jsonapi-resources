@@ -2989,6 +2989,18 @@ class Api::V1::MoonsControllerTest < ActionController::TestCase
                                 }
 
    end
+
+   def test_get_related_resources_with_select_some_db_columns
+     PlanetResource.paginator :paged
+     original_config = JSONAPI.configuration.dup
+     JSONAPI.configuration.top_level_meta_include_record_count = true
+     JSONAPI.configuration.json_key_format = :dasherized_key
+     get :get_related_resources, {planet_id: '1', relationship: 'moons', source: 'api/v1/planets'}
+     assert_response :success
+     assert_equal 1, json_response['meta']['record-count']
+   ensure
+     JSONAPI.configuration = original_config
+   end
 end
 
 class Api::V1::CratersControllerTest < ActionController::TestCase
