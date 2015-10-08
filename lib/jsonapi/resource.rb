@@ -207,7 +207,9 @@ module JSONAPI
     end
 
     def _remove_to_many_link(relationship_type, key)
-      @model.public_send(relationship_type).delete(key)
+      relation_name = self.class._relationships[relationship_type].relation_name(context: @context)
+
+      @model.public_send(relation_name).delete(key)
 
       :completed
     end

@@ -2845,6 +2845,54 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_response :success
     assert_equal 2, json_response['data'].size
   end
+
+  def test_books_create_unapproved_comment_limited_user_using_relation_name
+    set_content_type_header!
+    $test_user = Person.find(1)
+
+    book_comment = BookComment.create(body: 'Not Approved dummy comment', approved: false)
+    post :create_relationship, {book_id: 1, relationship: 'book_comments', data: [{type: 'book_comments', id: book_comment.id}]}
+
+    # Note the not_found response is coming from the BookComment's overridden records method, not the relation
+    assert_response :not_found
+
+  ensure
+    book_comment.delete
+  end
+
+  def test_books_create_approved_comment_limited_user_using_relation_name
+    set_content_type_header!
+    $test_user = Person.find(1)
+
+    book_comment = BookComment.create(body: 'Approved dummy comment', approved: true)
+    post :create_relationship, {book_id: 1, relationship: 'book_comments', data: [{type: 'book_comments', id: book_comment.id}]}
+    assert_response :success
+
+  ensure
+    book_comment.delete
+  end
+
+  def test_books_delete_unapproved_comment_limited_user_using_relation_name
+    $test_user = Person.find(1)
+
+    book_comment = BookComment.create(book_id: 1, body: 'Not Approved dummy comment', approved: false)
+    delete :destroy_relationship, {book_id: 1, relationship: 'book_comments', data: [{type: 'book_comments', id: book_comment.id}]}
+    assert_response :not_found
+
+  ensure
+    book_comment.delete
+  end
+
+  def test_books_delete_approved_comment_limited_user_using_relation_name
+    $test_user = Person.find(1)
+
+    book_comment = BookComment.create(book_id: 1, body: 'Approved dummy comment', approved: true)
+    delete :destroy_relationship, {book_id: 1, relationship: 'book_comments', data: [{type: 'book_comments', id: book_comment.id}]}
+    assert_response :no_content
+
+  ensure
+    book_comment.delete
+  end
 end
 
 class Api::V2::BookCommentsControllerTest < ActionController::TestCase
