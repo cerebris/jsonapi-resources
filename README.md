@@ -749,8 +749,6 @@ Will get you the following payload by default:
 }
 ```
 
-You can also pass an `include` option to [Serializer#serialize_to_hash](#include) if you want to define this inline.
-
 #### Callbacks
 
 `ActiveSupport::Callbacks` is used to provide callback functionality, so the behavior is very similar to what you may be
@@ -1140,9 +1138,9 @@ This returns results like this:
 }
 ```
 
-#### serialize_to_hash method options
+#### Serializer options
 
-The `serialize_to_hash` method also takes some optional parameters:
+The `ResourceSerializer` can be initialized with some optional parameters:
 
 ##### `include`
 
@@ -1174,10 +1172,6 @@ JSONAPI::ResourceSerializer.new(PostResource, include: include_resources,
   }
 ).serialize_to_hash(PostResource.new(post))
 ```
-
-##### `context`
-
-Context data can be provided to the serializer, which passes it to each resource as it is inspected.
 
 #### Routing
 
