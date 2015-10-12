@@ -54,12 +54,21 @@ module JSONAPI
       custom_links = {}
 
       link_instructions.each do |link|
-        key = link.first
         link_info = link.last
-        type = link_info[:type]
-        ext = link.last[:ext]
 
-        custom_links[key] = send("build_custom_#{type}_link", key, source, link_info)
+        key  = link_info[:name]
+        type = link_info[:type]
+        ext  = link_info[:ext]
+        if_condition = link_info[:if]
+        next if if_condition && if_condition.call(source) == false
+
+        case type.to_sym
+        when :self
+          custom_links[key] = self_link_extension(key, source, link_info)
+        when :custom
+          custom_links[key] = build_custom_link(key, source, link_info)
+        end
+
       end
 
       custom_links
@@ -67,9 +76,9 @@ module JSONAPI
 
     private
 
-    def build_custom_self_link(key, source, link_info={})
+    def self_link_extension(key, source, link_info={})
       extension = link_info[:ext]
-      path = link_info[:relative_path] || key
+      path = link_info[:path] || key
 
       url = "#{ self_link(source) }/#{ path }"
       url += ".#{extension}" if extension
@@ -77,8 +86,12 @@ module JSONAPI
       url
     end
 
-    # method for building custom links from relationships
-    def build_custom_relationship_link(key, source, link_info={})
+    def build_custom_link(key, source, link_info)
+      extension = link_info[:ext]
+      url = link_info[:with].call(source)
+      url += ".#{ extension }" if extension
+
+      url
     end
 
     def build_engine_name

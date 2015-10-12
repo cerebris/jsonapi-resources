@@ -1159,6 +1159,41 @@ class CustomLinkWithRelativePathOptionResource < JSONAPI::Resource
   custom_link :raw, :self, relative_path: "super/duper/path", ext: :xml
 end
 
+class CustomLinkWithIfCondition < JSONAPI::Resource
+  model_name 'Post'
+  attributes :title, :body, :subject
+
+  def subject
+    @model.title
+  end
+
+  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+  has_one :section
+  has_many :comments, acts_as_set: false
+
+  filters :writer
+
+  custom_link :conditional_custom_link, :self, ext: :json, path: 'conditional/link', if: ->(instance) { instance.title == "JR Solves your serialization woes!" }
+end
+
+class CustomLinkWithLambda < JSONAPI::Resource
+  model_name 'Post'
+  attributes :title, :body, :subject, :created_at
+
+  def subject
+    @model.title
+  end
+
+  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+  has_one :section
+  has_many :comments, acts_as_set: false
+
+  filters :writer
+
+  custom_link :link_to_external_api, :custom,
+    with: ->(instance) { "http://external-api.com/posts/#{ instance.created_at.year }/#{ instance.created_at.month }/#{ instance.created_at.day }-#{ instance.subject.gsub(' ', '-') }"}
+end
+
 
 module Api
   module V1
