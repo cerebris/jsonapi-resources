@@ -66,9 +66,14 @@ end
 class CustomLinkTestWithCustomPathResource < JSONAPI::Resource
   model_name 'Post'
 
-  custom_link :raw, :self, relative_path: "super/duper/custom/path", ext: :xml
+  custom_link :raw, :self, path: "super/duper/custom/path", ext: :xml
 end
 
+class CustomLinkLambda< JSONAPI::Resource
+  model_name 'Post'
+
+  custom_link :raw, :custom, with: ->(instance) { "http://external-api/posts/" + "#{ instance.created_at.year }/#{ instance.created_at.month}/#{ instance.created_at.day }" }
+end
 
 class ResourceTest < ActiveSupport::TestCase
   def setup
@@ -80,18 +85,25 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_custom_links
-    registered_custom_link = { raw: { :type => :self } }
+    registered_custom_link = { raw: { name: :raw, type: :self } }
     assert_equal(CustomLinkTestResource.new(Post.first, {}).custom_links, registered_custom_link)
   end
 
   def test_custom_links_with_extension
-    registered_custom_link = { raw: { type: :self, ext: :xml } }
+    registered_custom_link = { raw: { name: :raw, type: :self, ext: :xml } }
     assert_equal(CustomLinkTestWithExtensionResource.new(Post.first, {}).custom_links, registered_custom_link)
   end
 
   def test_custom_links_with_relative_path_and_extension
-    registered_custom_link = { raw: { type: :self, ext: :xml, relative_path: "super/duper/custom/path" } }
+    registered_custom_link = { raw: { name: :raw, type: :self, ext: :xml, path: "super/duper/custom/path" } }
     assert_equal(CustomLinkTestWithCustomPathResource.new(Post.first, {}).custom_links, registered_custom_link)
+  end
+
+  def test_custom_link_built_with_lambda
+    created_at = Post.first.created_at
+    custom_exteranl_url = CustomLinkLambda.new(Post.first, {}).custom_links[:raw][:with].call(Post.first)
+
+    assert_equal(custom_exteranl_url, "http://external-api/posts/#{created_at.year}/#{created_at.month}/#{created_at.day}")
   end
 
   def test_model_name

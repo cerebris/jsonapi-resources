@@ -1917,7 +1917,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
   def test_custom_links_with_custom_relative_paths
     serialized_custom_link_resource = JSONAPI::ResourceSerializer
       .new(CustomLinkWithRelativePathOptionResource, base_url: 'http://example.com')
-      .serialize_to_hash(CustomLinkWithRelativePathOptionResource.new(Post.first))
+      .serialize_to_hash(CustomLinkWithRelativePathOptionResource.new(Post.first, {}))
 
     custom_link_spec = {
         data: {
@@ -1957,5 +1957,141 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
   end
+
+  def test_custom_links_with_if_condition_equals_false
+    serialized_custom_link_resource = JSONAPI::ResourceSerializer
+      .new(CustomLinkWithIfCondition, base_url: 'http://example.com')
+      .serialize_to_hash(CustomLinkWithIfCondition.new(Post.first, {}))
+
+    custom_link_spec = {
+        data: {
+          type: 'customLinkWithIfConditions',
+          id: '1',
+          attributes: {
+            title: "New post",
+            body: "A body!!!",
+            subject: "New post"
+          },
+        links: {
+          self: "http://example.com/customLinkWithIfConditions/1"
+        },
+        relationships: {
+          writer: {
+            links: {
+              self: "http://example.com/customLinkWithIfConditions/1/relationships/writer",
+              related: "http://example.com/customLinkWithIfConditions/1/writer"
+            }
+          },
+          section: {
+            links: {
+              self: "http://example.com/customLinkWithIfConditions/1/relationships/section",
+              related: "http://example.com/customLinkWithIfConditions/1/section"
+            }
+          },
+          comments: {
+            links: {
+              self: "http://example.com/customLinkWithIfConditions/1/relationships/comments",
+              related: "http://example.com/customLinkWithIfConditions/1/comments"
+            }
+          }
+        }
+      }
+    }
+
+    assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
+  end
+
+  def test_custom_links_with_if_condition_equals_true
+    serialized_custom_link_resource = JSONAPI::ResourceSerializer
+      .new(CustomLinkWithIfCondition, base_url: 'http://example.com')
+      .serialize_to_hash(CustomLinkWithIfCondition.new(Post.find_by(title: "JR Solves your serialization woes!"), {}))
+
+    custom_link_spec = {
+        data: {
+          type: 'customLinkWithIfConditions',
+          id: '2',
+          attributes: {
+            title: "JR Solves your serialization woes!",
+            body: "Use JR",
+            subject: "JR Solves your serialization woes!"
+          },
+        links: {
+          self: "http://example.com/customLinkWithIfConditions/2",
+          conditional_custom_link: "http://example.com/customLinkWithIfConditions/2/conditional/link.json"
+        },
+        relationships: {
+          writer: {
+            links: {
+              self: "http://example.com/customLinkWithIfConditions/2/relationships/writer",
+              related: "http://example.com/customLinkWithIfConditions/2/writer"
+            }
+          },
+          section: {
+            links: {
+              self: "http://example.com/customLinkWithIfConditions/2/relationships/section",
+              related: "http://example.com/customLinkWithIfConditions/2/section"
+            }
+          },
+          comments: {
+            links: {
+              self: "http://example.com/customLinkWithIfConditions/2/relationships/comments",
+              related: "http://example.com/customLinkWithIfConditions/2/comments"
+            }
+          }
+        }
+      }
+    }
+
+    assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
+  end
+
+
+  def test_custom_links_with_lambda
+    # custom link is based on created_at timestamp of Post
+    post_created_at = Post.first.created_at
+    serialized_custom_link_resource = JSONAPI::ResourceSerializer
+      .new(CustomLinkWithLambda, base_url: 'http://example.com')
+      .serialize_to_hash(CustomLinkWithLambda.new(Post.first, {}))
+
+    custom_link_spec = {
+        data: {
+          type: 'customLinkWithLambdas',
+          id: '1',
+          attributes: {
+            title: "New post",
+            body: "A body!!!",
+            subject: "New post",
+            createdAt: post_created_at
+          },
+        links: {
+          self: "http://example.com/customLinkWithLambdas/1",
+          link_to_external_api: "http://external-api.com/posts/#{post_created_at.year}/#{post_created_at.month}/#{post_created_at.day}-New-post"
+        },
+        relationships: {
+          writer: {
+            links: {
+              self: "http://example.com/customLinkWithLambdas/1/relationships/writer",
+              related: "http://example.com/customLinkWithLambdas/1/writer"
+            }
+          },
+          section: {
+            links: {
+              self: "http://example.com/customLinkWithLambdas/1/relationships/section",
+              related: "http://example.com/customLinkWithLambdas/1/section"
+            }
+          },
+          comments: {
+            links: {
+              self: "http://example.com/customLinkWithLambdas/1/relationships/comments",
+              related: "http://example.com/customLinkWithLambdas/1/comments"
+            }
+          }
+        }
+      }
+    }
+
+    assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
+  end
+
 
 end
