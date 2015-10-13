@@ -148,7 +148,7 @@ class PagedPaginator < JSONAPI::Paginator
     }
 
     if @number > 1
-      links_page_params['previous'] = {
+      links_page_params['prev'] = {
         'number' => @number - 1,
         'size' => @size
       }
