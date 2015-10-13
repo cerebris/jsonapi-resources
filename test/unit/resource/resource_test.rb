@@ -50,6 +50,12 @@ end
 module MyModule
   class MyNamespacedResource < JSONAPI::Resource
   end
+
+  class Project
+    class PersonResource < JSONAPI::Resource
+      model_name 'Project::Person'
+    end
+  end
 end
 
 class ResourceTest < ActiveSupport::TestCase
@@ -65,8 +71,16 @@ class ResourceTest < ActiveSupport::TestCase
     assert_equal(PostResource._model_class, Post)
   end
 
+  def test_model_name_for_nested_model
+    assert_equal(MyModule::Project::PersonResource._model_name, :'Project::Person')
+  end
+
   def test_module_path
     assert_equal(MyModule::MyNamespacedResource.module_path, 'my_module/')
+  end
+
+  def test_module_path_for_nested_model
+    assert_equal(MyModule::Project::PersonResource.module_path, 'my_module/')
   end
 
   def test_base_resource_abstract
