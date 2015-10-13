@@ -184,8 +184,8 @@ class PagedPaginatorTest < ActiveSupport::TestCase
     assert_equal 5, links_params['first']['size']
     assert_equal 1, links_params['first']['number']
 
-    assert_equal 5, links_params['previous']['size']
-    assert_equal 3, links_params['previous']['number']
+    assert_equal 5, links_params['prev']['size']
+    assert_equal 3, links_params['prev']['number']
 
     assert_equal 5, links_params['next']['size']
     assert_equal 5, links_params['next']['number']
@@ -210,8 +210,8 @@ class PagedPaginatorTest < ActiveSupport::TestCase
     assert_equal 5, links_params['first']['size']
     assert_equal 1, links_params['first']['number']
 
-    assert_equal 5, links_params['previous']['size']
-    assert_equal 9, links_params['previous']['number']
+    assert_equal 5, links_params['prev']['size']
+    assert_equal 9, links_params['prev']['number']
 
     assert_equal 5, links_params['last']['size']
     assert_equal 10, links_params['last']['number']
@@ -233,8 +233,8 @@ class PagedPaginatorTest < ActiveSupport::TestCase
     assert_equal 5, links_params['first']['size']
     assert_equal 1, links_params['first']['number']
 
-    assert_equal 5, links_params['previous']['size']
-    assert_equal 10, links_params['previous']['number']
+    assert_equal 5, links_params['prev']['size']
+    assert_equal 10, links_params['prev']['number']
 
     assert_equal 5, links_params['last']['size']
     assert_equal 10, links_params['last']['number']
