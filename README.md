@@ -779,12 +779,12 @@ Callbacks can be defined for the following `JSONAPI::Resource` events:
 - `:update`
 - `:remove`
 - `:save`
-- `:create_has_many_link`
-- `:replace_has_many_links`
-- `:create_has_one_link`
-- `:replace_has_one_link`
-- `:remove_has_many_link`
-- `:remove_has_one_link`
+- `:create_to_many_link`
+- `:replace_to_many_links`
+- `:create_to_one_link`
+- `:replace_to_one_link`
+- `:remove_to_many_link`
+- `:remove_to_one_link`
 - `:replace_fields`
 
 ##### `JSONAPI::OperationsProcessor` Callbacks
@@ -800,11 +800,11 @@ Callbacks can also be defined for `JSONAPI::OperationsProcessor` events:
 - `:create_resource_operation`: A `create_resource_operation`.
 - `:remove_resource_operation`: A `remove_resource_operation`.
 - `:replace_fields_operation`: A `replace_fields_operation`.
-- `:replace_has_one_relationship_operation`: A `replace_has_one_relationship_operation`.
-- `:create_has_many_relationship_operation`: A `create_has_many_relationship_operation`.
-- `:replace_has_many_relationship_operation`: A `replace_has_many_relationship_operation`.
-- `:remove_has_many_relationship_operation`: A `remove_has_many_relationship_operation`.
-- `:remove_has_one_relationship_operation`: A `remove_has_one_relationship_operation`.
+- `:replace_to_one_relationship_operation`: A `replace_to_one_relationship_operation`.
+- `:create_to_many_relationship_operation`: A `create_to_many_relationship_operation`.
+- `:replace_to_many_relationship_operation`: A `replace_to_many_relationship_operation`.
+- `:remove_to_many_relationship_operation`: A `remove_to_many_relationship_operation`.
+- `:remove_to_one_relationship_operation`: A `remove_to_one_relationship_operation`.
 
 The operation callbacks have access to two meta data hashes, `@operations_meta` and `@operation_meta`, two links hashes,
 `@operations_links` and `@operation_links`, the full list of `@operations`, each individual `@operation` and the
