@@ -354,6 +354,10 @@ module JSONAPI
         @_model_name = model.to_sym
       end
 
+      def model_type(type)
+        @_type = type.to_sym
+      end
+
       def filters(*attrs)
         @_allowed_filters.merge!(attrs.inject({}) { |h, attr| h[attr] = {}; h })
       end
