@@ -111,7 +111,7 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_find_with_customized_base_records
     author = Person.find(1)
-    posts = ArticleResource.find([], context: author).map(&:model)
+    posts = ArticleResource.find([], context: author).map(&:_model)
 
     assert(posts.include?(Post.find(1)))
     refute(posts.include?(Post.find(3)))
@@ -123,10 +123,10 @@ class ResourceTest < ActiveSupport::TestCase
     refute(preferences == nil)
     author.update! preferences: preferences
     author_resource = PersonResource.new(author, nil)
-    assert_equal(author_resource.preferences.model, preferences)
+    assert_equal(author_resource.preferences._model, preferences)
 
     author_resource = PersonWithCustomRecordsForResource.new(author, nil)
-    assert_equal(author_resource.preferences.model, :records_for)
+    assert_equal(author_resource.preferences._model, :records_for)
 
     author_resource = PersonWithCustomRecordsForErrorResource.new(author, nil)
     assert_raises PersonWithCustomRecordsForErrorResource::AuthorizationError do
@@ -165,11 +165,11 @@ class ResourceTest < ActiveSupport::TestCase
   def test_find_by_key_with_customized_base_records
     author = Person.find(1)
 
-    post = ArticleResource.find_by_key(1, context: author).model
+    post = ArticleResource.find_by_key(1, context: author)._model
     assert_equal(post, Post.find(1))
 
     assert_raises JSONAPI::Exceptions::RecordNotFound do
-      ArticleResource.find_by_key(3, context: author).model
+      ArticleResource.find_by_key(3, context: author)._model
     end
   end
 
@@ -221,7 +221,7 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_to_many_relationship_sorts
     post_resource = PostResource.new(Post.find(1), nil)
-    comment_ids = post_resource.comments.map{|c| c.model.id }
+    comment_ids = post_resource.comments.map{|c| c._model.id }
     assert_equal [1,2], comment_ids
 
     # define apply_filters method on post resource to not respect filters
@@ -233,7 +233,7 @@ class ResourceTest < ActiveSupport::TestCase
       end
     end
 
-    sorted_comment_ids = post_resource.comments(sort_criteria: [{ field: 'id', direction: :desc}]).map{|c| c.model.id }
+    sorted_comment_ids = post_resource.comments(sort_criteria: [{ field: 'id', direction: :desc}]).map{|c| c._model.id }
     assert_equal [2,1], sorted_comment_ids
 
   ensure

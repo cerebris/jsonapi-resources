@@ -516,7 +516,7 @@ section for additional details on raising errors.
 class BaseResource < JSONAPI::Resource
   def records_for(relation_name)
     context = options[:context]
-    records = model.public_send(relation_name)
+    records = _model.public_send(relation_name)
 
     unless context[:current_user].can_view?(records)
       raise NotAuthorizedError

@@ -220,6 +220,10 @@ ActiveRecord::Schema.define do
     t.string :serial_number
     t.integer :person_id
   end
+
+  create_table :makes, force: true do |t|
+    t.string :model
+  end
 end
 
 ### MODELS
@@ -472,6 +476,9 @@ end
 
 class Product < ActiveRecord::Base
   has_one :picture, as: :imageable
+end
+
+class Make < ActiveRecord::Base
 end
 
 ### OperationsProcessor
@@ -1003,11 +1010,15 @@ class ProductResource < JSONAPI::Resource
   has_one :picture, always_include_linkage_data: true
 
   def picture_id
-    model.picture.id
+    _model.picture.id
   end
 end
 
 class ImageableResource < JSONAPI::Resource
+end
+
+class MakeResource < JSONAPI::Resource
+  attribute :model
 end
 
 module Api

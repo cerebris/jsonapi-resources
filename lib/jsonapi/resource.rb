@@ -7,7 +7,6 @@ module JSONAPI
     @@resource_types = {}
 
     attr_reader :context
-    attr_reader :model
 
     define_jsonapi_resources_callbacks :create,
                                        :update,
@@ -27,8 +26,12 @@ module JSONAPI
       @context = context
     end
 
+    def _model
+      @model
+    end
+
     def id
-      model.public_send(self.class._primary_key)
+      _model.public_send(self.class._primary_key)
     end
 
     def is_new?
@@ -112,7 +115,7 @@ module JSONAPI
     # Override this on a resource to customize how the associated records
     # are fetched for a model. Particularly helpful for authorization.
     def records_for(relation_name)
-      model.public_send relation_name
+      _model.public_send relation_name
     end
 
     private
@@ -169,7 +172,7 @@ module JSONAPI
         # TODO: Add option to skip relations that already exist instead of returning an error?
         relation = @model.public_send(relation_name).where(relationship.primary_key => relationship_key_value).first
         if relation.nil?
-          @model.public_send(relation_name) << related_resource.model
+          @model.public_send(relation_name) << related_resource._model
         else
           fail JSONAPI::Exceptions::HasManyRelationExists.new(relationship_key_value)
         end
@@ -198,8 +201,8 @@ module JSONAPI
     def _replace_polymorphic_to_one_link(relationship_type, key_value, key_type)
       relationship = self.class._relationships[relationship_type.to_sym]
 
-      model.public_send("#{relationship.foreign_key}=", key_value)
-      model.public_send("#{relationship.polymorphic_type}=", key_type.to_s.classify)
+      _model.public_send("#{relationship.foreign_key}=", key_value)
+      _model.public_send("#{relationship.polymorphic_type}=", key_type.to_s.classify)
 
       @save_needed = true
 
@@ -702,7 +705,7 @@ module JSONAPI
       def check_reserved_attribute_name(name)
         # Allow :id since it can be used to specify the format. Since it is a method on the base Resource
         # an attribute method won't be created for it.
-        if [:type, :href, :links, :model].include?(name.to_sym)
+        if [:type, :href, :links].include?(name.to_sym)
           warn "[NAME COLLISION] `#{name}` is a reserved key in #{@@resource_types[_type]}."
         end
       end
