@@ -297,7 +297,7 @@ module JSONAPI
       attr_reader :error_messages, :resource_relationships
 
       def initialize(resource)
-        @error_messages = resource.model.errors.messages
+        @error_messages = resource._model.errors.messages
         @resource_relationships = resource.class._relationships.keys
         @key_formatter = JSONAPI.configuration.key_formatter
       end

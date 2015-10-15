@@ -1736,4 +1736,18 @@ class SerializerTest < ActionDispatch::IntegrationTest
       serialized
     )
   end
+
+  def test_serialize_model_attr
+    @make = Make.first
+    serialized = JSONAPI::ResourceSerializer.new(
+      MakeResource,
+    ).serialize_to_hash(MakeResource.new(@make, nil))
+
+    assert_hash_equals(
+      {
+        "model" => "A model attribute"
+      },
+      serialized[:data]["attributes"]
+    )
+  end
 end
