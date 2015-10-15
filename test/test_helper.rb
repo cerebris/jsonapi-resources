@@ -39,6 +39,7 @@ class TestApp < Rails::Application
   #Raise errors on unsupported parameters
   config.action_controller.action_on_unpermitted_parameters = :raise
 
+  ActiveRecord::Schema.verbose = false
   config.active_record.schema_format = :none
   config.active_support.test_order = :random
 
@@ -138,7 +139,6 @@ TestApp.routes.draw do
   jsonapi_resources :documents
   jsonapi_resources :products
 
-  
 
   namespace :api do
     namespace :v1 do
