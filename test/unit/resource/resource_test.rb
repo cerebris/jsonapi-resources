@@ -362,4 +362,45 @@ class ResourceTest < ActiveSupport::TestCase
       key_type nil
     end
   end
+
+  def test_links_resource_warning
+    _out, err = capture_io do
+      eval "class LinksResource < JSONAPI::Resource; end"
+    end
+    assert_match /LinksResource` is a reserved resource name/, err
+  end
+
+  def test_reserved_key_warnings
+    _out, err = capture_io do
+      eval <<-CODE
+        class BadlyNamedAttributesResource < JSONAPI::Resource
+          attributes :type
+        end
+      CODE
+    end
+    assert_match /`type` is a reserved key in ./, err
+  end
+
+  def test_reserved_relationship_warnings
+    %w(id type).each do |key|
+      _out, err = capture_io do
+        eval <<-CODE
+          class BadlyNamedAttributesResource < JSONAPI::Resource
+            has_one :#{key}
+          end
+        CODE
+      end
+      assert_match /`#{key}` is a reserved relationship name in ./, err
+    end
+    %w(types ids).each do |key|
+      _out, err = capture_io do
+        eval <<-CODE
+          class BadlyNamedAttributesResource < JSONAPI::Resource
+            has_many :#{key}
+          end
+        CODE
+      end
+      assert_match /`#{key}` is a reserved relationship name in ./, err
+    end
+  end
 end
