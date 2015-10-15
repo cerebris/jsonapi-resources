@@ -113,6 +113,14 @@ module Pets
   end
 end
 
+class PostResource < JSONAPI::Resource
+  attribute :id
+
+  def self.sortable_fields(context)
+    (super(context) << :"person.name") - [:id]
+  end
+end
+
 JSONAPI.configuration.route_format = :underscored_route
 TestApp.routes.draw do
   jsonapi_resources :people

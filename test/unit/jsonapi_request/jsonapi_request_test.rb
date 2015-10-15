@@ -9,6 +9,10 @@ class CatResource < JSONAPI::Resource
   has_one :father, class_name: 'Cat'
 
   filters :name
+
+  def self.sortable_fields(context)
+    super(context) << :"mother.name"
+  end
 end
 
 class JSONAPIRequestTest < ActiveSupport::TestCase
@@ -189,6 +193,22 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
     assert_equal(@request.filters, {})
     assert_equal(@request.errors.count, 1)
     assert_equal(@request.errors.first.title, "Invalid filters syntax")
+  end
+
+  def test_parse_sort_with_valid_sorts
+    setup_request
+    @request.parse_sort_criteria("-name")
+    assert_equal(@request.filters, {})
+    assert_equal(@request.errors, [])
+    assert_equal(@request.sort_criteria, [{:field=>"name", :direction=>:desc}])
+  end
+
+  def test_parse_sort_with_relationships
+    setup_request
+    @request.parse_sort_criteria("-mother.name")
+    assert_equal(@request.filters, {})
+    assert_equal(@request.errors, [])
+    assert_equal(@request.sort_criteria, [{:field=>"mother.name", :direction=>:desc}])
   end
 
   private

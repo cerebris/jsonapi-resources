@@ -437,10 +437,17 @@ module JSONAPI
 
       def apply_sort(records, order_options)
         if order_options.any?
-          records.order(order_options)
-        else
-          records
+           order_options.each_pair do |field, direction|
+            if field.to_s.include?(".")
+              model_name, field = field.split(".")
+              records = records.order("#{model_name.pluralize}.#{field} #{direction}")
+            else
+              records = records.order(field => direction)
+            end
+          end
         end
+
+        records
       end
 
       def apply_filter(records, filter, value, _options = {})
