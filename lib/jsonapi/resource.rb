@@ -554,40 +554,28 @@ module JSONAPI
 
       def verify_key(key, context = nil)
         key_type = resource_key_type
-        verification_proc = case key_type
 
+        case key_type
         when :integer
-          -> (key, context) {
-            begin
-              return key if key.nil?
-              Integer(key)
-            rescue
-              raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
-            end
-          }
+          return if key.nil?
+          Integer(key)
         when :string
-          -> (key, context) {
-            return key if key.nil?
-            if key.to_s.include?(',')
-              raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
-            else
-              key
-            end
-          }
+          return if key.nil?
+          if key.to_s.include?(',')
+            raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
+          else
+            key
+          end
         when :uuid
-          -> (key, context) {
-            return key if key.nil?
-            if key.to_s.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-              key
-            else
-              raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
-            end
-          }
+          return if key.nil?
+          if key.to_s.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
+            key
+          else
+            raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
+          end
         else
-          key_type
+          key_type.call(key, context)
         end
-
-        verification_proc.call(key, context)
       rescue
         raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
       end
