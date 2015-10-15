@@ -105,7 +105,6 @@ module Pets
     end
 
     class CatResource < JSONAPI::Resource
-      attribute :id
       attribute :name
       attribute :breed
 
