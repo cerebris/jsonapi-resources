@@ -1750,4 +1750,125 @@ class SerializerTest < ActionDispatch::IntegrationTest
       serialized[:data]["attributes"]
     )
   end
+
+  def test_confusingly_named_attrs
+    @wp = WebPage.first
+    serialized = JSONAPI::ResourceSerializer.new(
+      WebPageResource,
+    ).serialize_to_hash(WebPageResource.new(@wp, nil))
+
+    assert_hash_equals(
+      {
+        :data=>{
+          "id"=>"#{@wp.id}",
+          "type"=>"webPages",
+          "links"=>{
+            :self=>"/webPages/#{@wp.id}"
+          },
+          "attributes"=>{
+            "href"=>"http://example.com",
+            "link"=>"http://link.example.com"
+          }
+        }
+      },
+      serialized
+    )
+  end
+
+  def test_questionable_has_one
+    # has_one
+    out, err = capture_io do
+      eval <<-CODE
+          class ::Questionable < ActiveRecord::Base
+            has_one :link
+            has_one :href
+          end
+          class ::QuestionableResource < JSONAPI::Resource
+            model_name '::Questionable'
+            has_one :link
+            has_one :href
+          end
+          cn = ::Questionable.new id: 1
+          puts JSONAPI::ResourceSerializer.new(
+            ::QuestionableResource,
+          ).serialize_to_hash(::QuestionableResource.new(cn, nil))
+      CODE
+    end
+    assert err.blank?
+    assert_equal(
+      {
+        :data=>{
+          "id"=>"1",
+          "type"=>"questionables",
+          "links"=>{
+            :self=>"/questionables/1"
+          },
+          "relationships"=>{
+            "link"=>{
+              :links=>{
+                :self=>"/questionables/1/relationships/link",
+                :related=>"/questionables/1/link"
+              }
+            },
+            "href"=>{
+              :links=>{
+                :self=>"/questionables/1/relationships/href",
+                :related=>"/questionables/1/href"
+              }
+            }
+          }
+        }
+      }.to_s,
+      out.strip
+    )
+  end
+
+  def test_questionable_has_many
+    # has_one
+    out, err = capture_io do
+      eval <<-CODE
+          class ::Questionable2 < ActiveRecord::Base
+            self.table_name = 'questionables'
+            has_many :links
+            has_many :hrefs
+          end
+          class ::Questionable2Resource < JSONAPI::Resource
+            model_name '::Questionable2'
+            has_many :links
+            has_many :hrefs
+          end
+          cn = ::Questionable2.new id: 1
+          puts JSONAPI::ResourceSerializer.new(
+            ::Questionable2Resource,
+          ).serialize_to_hash(::Questionable2Resource.new(cn, nil))
+      CODE
+    end
+    assert err.blank?
+    assert_equal(
+      {
+        :data=>{
+          "id"=>"1",
+          "type"=>"questionable2s",
+          "links"=>{
+            :self=>"/questionable2s/1"
+          },
+          "relationships"=>{
+            "links"=>{
+              :links=>{
+                :self=>"/questionable2s/1/relationships/links",
+                :related=>"/questionable2s/1/links"
+              }
+            },
+            "hrefs"=>{
+              :links=>{
+                :self=>"/questionable2s/1/relationships/hrefs",
+                :related=>"/questionable2s/1/hrefs"
+              }
+            }
+          }
+        }
+      }.to_s,
+      out.strip
+    )
+  end
 end

@@ -224,6 +224,24 @@ ActiveRecord::Schema.define do
   create_table :makes, force: true do |t|
     t.string :model
   end
+
+  # special cases - fields that look like they should be reserved names
+  create_table :hrefs, force: true do |t|
+    t.string :name
+  end
+
+  create_table :links, force: true do |t|
+    t.string :name
+  end
+
+  create_table :web_pages, force: true do |t|
+    t.string :href
+    t.string :link
+  end
+
+  create_table :questionables, force: true do |t|
+  end
+  # special cases
 end
 
 ### MODELS
@@ -479,6 +497,9 @@ class Product < ActiveRecord::Base
 end
 
 class Make < ActiveRecord::Base
+end
+
+class WebPage < ActiveRecord::Base
 end
 
 ### OperationsProcessor
@@ -1021,6 +1042,11 @@ class MakeResource < JSONAPI::Resource
   attribute :model
 end
 
+class WebPageResource < JSONAPI::Resource
+  attribute :href
+  attribute :link
+end
+
 module Api
   module V1
     class WriterResource < JSONAPI::Resource
@@ -1338,22 +1364,6 @@ module MyEngine
     end
   end
 end
-
-warn 'start testing Name Collisions'
-# The name collisions only emmit warnings. Exceptions would change the flow of the tests
-
-class LinksResource < JSONAPI::Resource
-end
-
-class BadlyNamedAttributesResource < JSONAPI::Resource
-  attributes :type, :href, :links
-
-  has_many :links
-  has_one :href
-  has_one :id
-  has_many :types
-end
-warn 'end testing Name Collisions'
 
 ### PORO Data - don't do this in a production app
 $breed_data = BreedData.new
