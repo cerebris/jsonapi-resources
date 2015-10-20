@@ -220,6 +220,10 @@ ActiveRecord::Schema.define do
     t.string :serial_number
     t.integer :person_id
   end
+
+  create_table :makes, force: true do |t|
+    t.string :model
+    end
 end
 
 ### MODELS
