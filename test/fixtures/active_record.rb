@@ -214,15 +214,11 @@ ActiveRecord::Schema.define do
   create_table :vehicles, force: true do |t|
     t.string :type
     t.string :make
-    t.string :vehicle_model
+    t.string :model
     t.string :length_at_water_line
     t.string :drive_layout
     t.string :serial_number
     t.integer :person_id
-  end
-
-  create_table :makes, force: true do |t|
-    t.string :model
   end
 end
 
@@ -738,7 +734,7 @@ end
 
 class VehicleResource < JSONAPI::Resource
   has_one :person
-  attributes :make, :vehicle_model, :serial_number
+  attributes :make, :model, :serial_number
 end
 
 class CarResource < VehicleResource
