@@ -261,6 +261,7 @@ module JSONAPI
     class << self
       def inherited(base)
         base.abstract(false)
+        base.immutable(false)
         base._attributes = (_attributes || {}).dup
         base._relationships = (_relationships || {}).dup
         base._allowed_filters = (_allowed_filters || Set.new).dup
@@ -520,6 +521,7 @@ module JSONAPI
       def resource_type_for(model)
         self.module_path + model.class.to_s.underscore
       end
+
       # Override this method if you want to customize the relation for
       # finder methods (find, find_by_key)
       def records(_options = {})
@@ -668,6 +670,18 @@ module JSONAPI
 
       def _abstract
         @abstract
+      end
+
+      def immutable(val = true)
+        @immutable = val
+      end
+
+      def _immutable
+        @immutable
+      end
+
+      def mutable?
+        !@immutable
       end
 
       def _model_class

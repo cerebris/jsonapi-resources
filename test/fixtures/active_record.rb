@@ -564,6 +564,12 @@ end
 class VehiclesController < JSONAPI::ResourceController
 end
 
+class CarsController < JSONAPI::ResourceController
+end
+
+class BoatsController < JSONAPI::ResourceController
+end
+
 ### CONTROLLERS
 module Api
   module V1
@@ -733,6 +739,8 @@ class PersonResource < BaseResource
 end
 
 class VehicleResource < JSONAPI::Resource
+  immutable
+
   has_one :person
   attributes :make, :model, :serial_number
 end

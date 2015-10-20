@@ -3091,3 +3091,71 @@ class Api::V1::CratersControllerTest < ActionController::TestCase
     assert_equal "1", json_response['data']['id']
   end
 end
+
+class CarsControllerTest < ActionController::TestCase
+  def setup
+    JSONAPI.configuration.json_key_format = :camelized_key
+  end
+
+  def test_create_sti
+    set_content_type_header!
+    post :create,
+         {
+           data: {
+             type: 'cars',
+             attributes: {
+               make: 'Toyota',
+               model: 'Tercel',
+               serialNumber: 'asasdsdadsa13544235',
+               driveLayout: 'FWD'
+             }
+           }
+         }
+
+    assert_response :created
+    assert json_response['data'].is_a?(Hash)
+    assert_equal 'cars', json_response['data']['type']
+    assert_equal 'Toyota', json_response['data']['attributes']['make']
+    assert_equal 'FWD', json_response['data']['attributes']['driveLayout']
+  end
+end
+
+class VehiclesControllerTest < ActionController::TestCase
+  def setup
+    JSONAPI.configuration.json_key_format = :camelized_key
+  end
+
+  def test_immutable_create_not_supported
+    set_content_type_header!
+
+    assert_raises ActionController::UrlGenerationError do
+      post :create,
+           {
+             data: {
+               type: 'cars',
+               attributes: {
+                 make: 'Toyota',
+                 model: 'Corrola',
+                 serialNumber: 'dsvffsfv',
+                 driveLayout: 'FWD'
+               }
+             }
+           }
+    end
+  end
+
+  def test_immutable_update_not_supported
+    set_content_type_header!
+
+    assert_raises ActionController::UrlGenerationError do
+      patch :update,
+            data: {
+              id: '1',
+              type: 'cars',
+              attributes: {
+                make: 'Toyota',
+              }
+            }
+    end
+  end
+end
