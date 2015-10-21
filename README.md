@@ -108,7 +108,7 @@ end
 
 ##### Immutable Resources
 
-Resources that are immutable should be declared as such with the `immutable method`. Immutable resources will only
+Resources that are immutable should be declared as such with the `immutable` method. Immutable resources will only
 generate routes for `index`, `show` and `show_relationship`.
 
 ###### Immutable for Readonly
