@@ -108,19 +108,18 @@ end
 
 ##### Immutable Resources
 
-Resources that are immutable should be declared as immutable. Immutable resources will only generate routes for 
-`index`, `show` and `show_relationship`.
+Resources that are immutable should be declared as such with the immutable method. Immutable resources will only
+generate routes for `index`, `show` and `show_relationship`.
 
 ###### Immutable for Readonly
 
-Some resources are readonly and are not to be modified through the API. Declaring a resource as immutable prevents
-the routes that allow modification of the resource from being created.
+Some resources are read-only and are not to be modified through the API. Declaring a resource as immutable prevents 
+creation of routes that allow modification of the resource.
 
-###### Immutable for Heterogeneous Collections
+###### Immutable Heterogeneous Collections
 
-Immutable resources can be used to create a common resource that can be used for fetching heterogeneous collections
-of resources. Manipulation of these resources will still follow the rules setup by the specific resource types.
-
+Immutable resources can be used as the basis for a heterogeneous collection. Resources in heterogeneous collections can
+still be mutated through their own type-specific endpoints.
 
 ```ruby
 class VehicleResource < JSONAPI::Resource
@@ -148,8 +147,8 @@ end
 ```
 
 In the above example vehicles are immutable. A call to `/vehicles` or `/vehicles/1` will return vehicles with types
-of either `car` or `boat`. But calls to put a new `car` must be made to `/cars`. The rails models backing the above code
-use Single Table Inheritance.
+of either `car` or `boat`. But calls to PUT or POST a `car` must be made to `/cars`. The rails models backing the above
+code use Single Table Inheritance.
 
 #### Attributes
 
