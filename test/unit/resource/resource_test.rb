@@ -383,4 +383,68 @@ class ResourceTest < ActiveSupport::TestCase
     end
     assert_equal "", err
   end
+
+  def test_links_resource_warning
+    _out, err = capture_io do
+      eval "class LinksResource < JSONAPI::Resource; end"
+    end
+    assert_match /LinksResource` is a reserved resource name/, err
+  end
+
+  def test_reserved_key_warnings
+    _out, err = capture_io do
+      eval <<-CODE
+        class BadlyNamedAttributesResource < JSONAPI::Resource
+          attributes :type
+        end
+      CODE
+    end
+    assert_match /`type` is a reserved key in ./, err
+  end
+
+  def test_reserved_relationship_warnings
+    %w(id type).each do |key|
+      _out, err = capture_io do
+        eval <<-CODE
+          class BadlyNamedAttributesResource < JSONAPI::Resource
+            has_one :#{key}
+          end
+        CODE
+      end
+      assert_match /`#{key}` is a reserved relationship name in ./, err
+    end
+    %w(types ids).each do |key|
+      _out, err = capture_io do
+        eval <<-CODE
+          class BadlyNamedAttributesResource < JSONAPI::Resource
+            has_many :#{key}
+          end
+        CODE
+      end
+      assert_match /`#{key}` is a reserved relationship name in ./, err
+    end
+  end
+
+  def test_abstract_warning
+    _out, err = capture_io do
+      eval <<-CODE
+        class NoModelResource < JSONAPI::Resource
+        end
+        NoModelResource._model_class
+      CODE
+    end
+    assert_match "[MODEL NOT FOUND] Model could not be found for ResourceTest::NoModelResource. If this a base Resource declare it as abstract.\n", err
+  end
+
+  def test_no_warning_when_abstract
+    _out, err = capture_io do
+      eval <<-CODE
+        class NoModelAbstractResource < JSONAPI::Resource
+          abstract
+        end
+        NoModelAbstractResource._model_class
+      CODE
+    end
+    assert_match "", err
+  end
 end
