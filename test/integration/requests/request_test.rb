@@ -910,4 +910,17 @@ class RequestTest < ActionDispatch::IntegrationTest
   ensure
     JSONAPI.configuration.allow_sort = true
   end
+
+  def test_getting_different_resources_when_sti
+    get '/vehicles'
+    assert_equal 200, status
+    types = json_response['data'].map{|r| r['type']}.sort
+    assert_array_equals ['boats', 'cars'], types
+  end
+
+  def test_getting_resource_with_correct_type_when_sti
+    get '/vehicles/1'
+    assert_equal 200, status
+    assert_equal 'cars', json_response['data']['type']
+  end
 end

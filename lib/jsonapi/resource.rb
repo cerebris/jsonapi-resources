@@ -261,6 +261,7 @@ module JSONAPI
     class << self
       def inherited(base)
         base.abstract(false)
+        base.immutable(false)
         base._attributes = (_attributes || {}).dup
         base._relationships = (_relationships || {}).dup
         base._allowed_filters = (_allowed_filters || Set.new).dup
@@ -502,7 +503,7 @@ module JSONAPI
 
         resources = []
         records.each do |model|
-          resources.push new(model, context)
+          resources.push resource_for(resource_type_for(model)).new(model, context)
         end
 
         resources
@@ -514,7 +515,11 @@ module JSONAPI
         records = apply_includes(records, options)
         model = records.where({_primary_key => key}).first
         fail JSONAPI::Exceptions::RecordNotFound.new(key) if model.nil?
-        new(model, context)
+        resource_for(resource_type_for(model)).new(model, context)
+      end
+
+      def resource_type_for(model)
+        self.module_path + model.class.to_s.underscore
       end
 
       # Override this method if you want to customize the relation for
@@ -667,6 +672,18 @@ module JSONAPI
         @abstract
       end
 
+      def immutable(val = true)
+        @immutable = val
+      end
+
+      def _immutable
+        @immutable
+      end
+
+      def mutable?
+        !@immutable
+      end
+
       def _model_class
         return nil if _abstract
 
@@ -681,7 +698,7 @@ module JSONAPI
       end
 
       def module_path
-        @module_path ||= name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').underscore : ''
+        name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').underscore : ''
       end
 
       def construct_order_options(sort_params)
@@ -758,7 +775,7 @@ module JSONAPI
               define_method attr do |options = {}|
                 if relationship.polymorphic?
                   associated_model = public_send(associated_records_method_name)
-                  resource_klass = Resource.resource_for(self.class.module_path + associated_model.class.to_s.underscore) if associated_model
+                  resource_klass = Resource.resource_for(self.class.resource_type_for(associated_model)) if associated_model
                   return resource_klass.new(associated_model, @context) if resource_klass
                 else
                   resource_klass = relationship.resource_klass
@@ -811,9 +828,7 @@ module JSONAPI
               end
 
               return records.collect do |record|
-                if relationship.polymorphic?
-                  resource_klass = Resource.resource_for(self.class.module_path + record.class.to_s.underscore)
-                end
+                resource_klass = Resource.resource_for(self.class.resource_type_for(record))
                 resource_klass.new(record, @context)
               end
             end unless method_defined?(attr)

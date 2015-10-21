@@ -214,7 +214,7 @@ ActiveRecord::Schema.define do
   create_table :vehicles, force: true do |t|
     t.string :type
     t.string :make
-    t.string :vehicle_model
+    t.string :model
     t.string :length_at_water_line
     t.string :drive_layout
     t.string :serial_number
@@ -223,7 +223,7 @@ ActiveRecord::Schema.define do
 
   create_table :makes, force: true do |t|
     t.string :model
-  end
+    end
 end
 
 ### MODELS
@@ -565,6 +565,15 @@ end
 class ImageablesController < JSONAPI::ResourceController
 end
 
+class VehiclesController < JSONAPI::ResourceController
+end
+
+class CarsController < JSONAPI::ResourceController
+end
+
+class BoatsController < JSONAPI::ResourceController
+end
+
 ### CONTROLLERS
 module Api
   module V1
@@ -734,8 +743,10 @@ class PersonResource < BaseResource
 end
 
 class VehicleResource < JSONAPI::Resource
+  immutable
+
   has_one :person
-  attributes :make, :vehicle_model, :serial_number
+  attributes :make, :model, :serial_number
 end
 
 class CarResource < VehicleResource
