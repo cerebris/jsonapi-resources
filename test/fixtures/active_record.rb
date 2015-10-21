@@ -717,7 +717,7 @@ class BaseResource < JSONAPI::Resource
 end
 
 class PersonResource < BaseResource
-  attributes :id, :name, :email
+  attributes :name, :email
   attribute :date_joined, format: :date_with_timezone
 
   has_many :comments
@@ -911,7 +911,6 @@ class FriendResource < JSONAPI::Resource
 end
 
 class BreedResource < JSONAPI::Resource
-  attribute :id, format_misspelled: :does_not_exist
   attribute :name, format: :title
 
   # This is unneeded, just here for testing

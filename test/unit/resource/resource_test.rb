@@ -16,7 +16,6 @@ class NoMatchAbstractResource < JSONAPI::Resource
 end
 
 class CatResource < JSONAPI::Resource
-  attribute :id
   attribute :name
   attribute :breed
 
@@ -361,5 +360,27 @@ class ResourceTest < ActiveSupport::TestCase
     CatResource.instance_eval do
       key_type nil
     end
+  end
+
+  def test_id_attr_deprecation
+    _out, err = capture_io do
+      eval <<-CODE
+        class ProblemResource < JSONAPI::Resource
+          attribute :id
+        end
+      CODE
+    end
+    assert_match /DEPRECATION WARNING: Id without format is no longer supported. Please remove ids from attributes, or specify a format./, err
+  end
+
+  def test_id_attr_with_format
+    _out, err = capture_io do
+      eval <<-CODE
+        class NotProblemResource < JSONAPI::Resource
+          attribute :id, format: :string
+        end
+      CODE
+    end
+    assert_equal "", err
   end
 end
