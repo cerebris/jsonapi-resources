@@ -802,12 +802,6 @@ class TagResource < JSONAPI::Resource
   #has_many :planets
 end
 
-class SpecialTagResource < JSONAPI::Resource
-  attributes :name
-
-  has_many :posts
-end
-
 class SectionResource < JSONAPI::Resource
   attributes 'name'
 end

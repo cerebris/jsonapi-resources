@@ -424,4 +424,27 @@ class ResourceTest < ActiveSupport::TestCase
       assert_match /`#{key}` is a reserved relationship name in ./, err
     end
   end
+
+  def test_abstract_warning
+    _out, err = capture_io do
+      eval <<-CODE
+        class NoModelResource < JSONAPI::Resource
+        end
+        NoModelResource._model_class
+      CODE
+    end
+    assert_match "[MODEL NOT FOUND] Model could not be found for ResourceTest::NoModelResource. If this a base Resource declare it as abstract.\n", err
+  end
+
+  def test_no_warning_when_abstract
+    _out, err = capture_io do
+      eval <<-CODE
+        class NoModelAbstractResource < JSONAPI::Resource
+          abstract
+        end
+        NoModelAbstractResource._model_class
+      CODE
+    end
+    assert_match "", err
+  end
 end
