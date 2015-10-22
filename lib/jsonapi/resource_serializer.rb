@@ -1,7 +1,7 @@
 module JSONAPI
   class ResourceSerializer
 
-    attr_reader :url_generator, :key_formatter, :serializer_options, :primary_class_name
+    attr_reader :url_generator, :key_formatter, :serialization_options, :primary_class_name
 
     # initialize
     # Options can include
