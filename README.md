@@ -274,7 +274,9 @@ updating the attribute. See the [Value Formatters](#value-formatters) section fo
 
 ##### Flattening a Rails relationship
 
-It is possible to flatten Rails relationships into attributes by using getters and setters. This can become handy if a relation needs to be created alongside the creation of the main object which can be the case if there is a bi-directional presence validation. For example:
+It is possible to flatten Rails relationships into attributes by using getters and setters. This can become handy if a 
+relation needs to be created alongside the creation of the main object which can be the case if there is a 
+bi-directional presence validation. For example:
 
 ```ruby
 # Given Models
@@ -339,7 +341,8 @@ end
 
 ##### Custom resource key validators
 
-If you need more control over the key, you can override the #verify_key method on your resource, or set a lambda that accepts key and context arguments in `config/initializers/jsonapi_resources.rb`:
+If you need more control over the key, you can override the #verify_key method on your resource, or set a lambda that 
+accepts key and context arguments in `config/initializers/jsonapi_resources.rb`:
 
 ```ruby
 JSONAPI.configure do |config|
@@ -793,6 +796,31 @@ Will get you the following payload by default:
 }
 ```
 
+#### Resource Meta
+
+Meta information can be included for each resource. The `meta` information to include with each resource as it is 
+serialized is set using the `meta` method in the resource declaration. For example:
+
+```ruby
+class BookResource < JSONAPI::Resource
+  attribute :title
+  attribute :isbn
+
+  meta :copyright, 'Copyright 2015'
+  meta :computed_copyright, -> (options) {options[:serialization_options][:copyright]}
+  meta :last_updated_at, -> (options) {options[:source][:updated_at]}
+end
+
+```
+
+The `meta` function takes a `key` name, which will be formatted and used as the `key` in the serialized `meta` section
+for the resource. It also takes a value which can either be a fixed value or a lambda which takes a single options hash.
+The lambda will be called as the resource is being serialized. The `options` hash will contain the following:
+
+* `:source` -> the resource instance being serialized
+* `:serializer` -> the serializer class
+* `:serialization_options` -> the contents of the `serialization_options` method on the controller.
+
 #### Callbacks
 
 `ActiveSupport::Callbacks` is used to provide callback functionality, so the behavior is very similar to what you may be
@@ -925,7 +953,24 @@ class PeopleController < ApplicationController
 end
 ```
 
-> __Note__: This gem [uses the filter chain to set up the request](https://github.com/cerebris/jsonapi-resources/issues/458#issuecomment-143297055). In some instances, variables that are set in the filter chain (such as `current_user`) may not be set at the right time. If this happens (i.e. `current_user` is `nil` in `context` but it's set properly everywhere else), you may want to have your authentication occur earlier in the filter chain, using `prepend_before_action` instead of `before_action`.
+Additional options can be passed to the serializer using the `serialization_options` method.
+
+For example:
+
+```ruby
+class ApplicationController < JSONAPI::ResourceController
+  def serialization_options
+    {copyright: 'Copyright 2015'}
+  end
+end
+```
+
+These `serialization_options` are passed to the lambda used to generate resource `meta` values.
+
+> __Note__: This gem [uses the filter chain to set up the request](https://github.com/cerebris/jsonapi-resources/issues/458#issuecomment-143297055). 
+In some instances, variables that are set in the filter chain (such as `current_user`) may not be set at the right time.
+If this happens (i.e. `current_user` is `nil` in `context` but it's set properly everywhere else), you may want to have 
+your authentication occur earlier in the filter chain, using `prepend_before_action` instead of `before_action`.
 
 ##### ActsAsResourceController
 
