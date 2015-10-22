@@ -2282,6 +2282,8 @@ class Api::V5::AuthorsControllerTest < ActionController::TestCase
   end
 
   def test_computed_meta_serializer_options
+    JSONAPI.configuration.json_key_format = :camelized_key
+
     Api::V5::AuthorResource.meta :fixed, 'Hardcoded value'
     Api::V5::AuthorResource.meta :computed,
                                  -> (options) {"#{options[:resource].class._type.to_s}: #{options[:serializer].url_generator.self_link(options[:resource])}"}
@@ -2298,6 +2300,8 @@ class Api::V5::AuthorsControllerTest < ActionController::TestCase
     assert_equal 'bar', json_response['data']['meta']['computedFoo']
 
   ensure
+    JSONAPI.configuration.json_key_format = :dasherized_key
+
     Api::V5::AuthorResource.meta :fixed, nil
     Api::V5::AuthorResource.meta :computed, nil
     Api::V5::AuthorResource.meta :computed_foo, nil
