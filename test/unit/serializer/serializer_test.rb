@@ -1737,6 +1737,67 @@ class SerializerTest < ActionDispatch::IntegrationTest
     )
   end
 
+  def test_serializer_resource_meta_fixed_value
+    Api::V5::AuthorResource.meta :fixed, 'Hardcoded value'
+    Api::V5::AuthorResource.meta :computed,
+      -> (options) {"#{options[:resource].class._type.to_s}: #{options[:serializer].url_generator.self_link(options[:resource])}"}
+
+    serialized = JSONAPI::ResourceSerializer.new(
+      Api::V5::AuthorResource,
+      include: ['author_detail']
+    ).serialize_to_hash(Api::V5::AuthorResource.new(Person.find(1), nil))
+
+    assert_hash_equals(
+      {
+        data: {
+          type: 'authors',
+          id: '1',
+          attributes: {
+            name: 'Joe Author',
+          },
+          links: {
+            self: '/api/v5/authors/1'
+          },
+          relationships: {
+            posts: {
+              links: {
+                self: '/api/v5/authors/1/relationships/posts',
+                related: '/api/v5/authors/1/posts'
+              }
+            },
+            authorDetail: {
+              links: {
+                self: '/api/v5/authors/1/relationships/authorDetail',
+                related: '/api/v5/authors/1/authorDetail'
+              },
+              data: {type: 'authorDetails', id: '1'}
+            }
+          },
+          meta: {
+            fixed: 'Hardcoded value',
+            computed: 'authors: /api/v5/authors/1'
+          }
+        },
+        included: [
+          {
+            type: 'authorDetails',
+            id: '1',
+            attributes: {
+              authorStuff: 'blah blah'
+            },
+            links: {
+              self: '/api/v5/authorDetails/1'
+            }
+          }
+        ]
+      },
+      serialized
+    )
+  ensure
+    Api::V5::AuthorResource.meta :fixed, nil
+    Api::V5::AuthorResource.meta :computed, nil
+  end
+
   def test_serialize_model_attr
     @make = Make.first
     serialized = JSONAPI::ResourceSerializer.new(

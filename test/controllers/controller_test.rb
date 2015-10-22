@@ -2264,6 +2264,15 @@ class Api::V5::AuthorsControllerTest < ActionController::TestCase
     assert_equal nil, json_response['data'][0]['attributes']['email']
   end
 
+  def test_show_person_as_author
+    get :show, {id: '1'}
+    assert_response :success
+    assert_equal '1', json_response['data']['id']
+    assert_equal 'authors', json_response['data']['type']
+    assert_equal 'Joe Author', json_response['data']['attributes']['name']
+    assert_equal nil, json_response['data']['attributes']['email']
+  end
+
   def test_get_person_as_author_by_name_filter
     get :index, {filter: {name: 'thor'}}
     assert_response :success
@@ -2271,6 +2280,29 @@ class Api::V5::AuthorsControllerTest < ActionController::TestCase
     assert_equal '1', json_response['data'][0]['id']
     assert_equal 'Joe Author', json_response['data'][0]['attributes']['name']
   end
+
+  def test_computed_meta_serializer_options
+    Api::V5::AuthorResource.meta :fixed, 'Hardcoded value'
+    Api::V5::AuthorResource.meta :computed,
+                                 -> (options) {"#{options[:resource].class._type.to_s}: #{options[:serializer].url_generator.self_link(options[:resource])}"}
+    Api::V5::AuthorResource.meta :computed_foo,
+                                 -> (options) {options[:serialization_options][:foo]}
+
+    get :show, {id: '1'}
+    assert_response :success
+    assert_equal '1', json_response['data']['id']
+    assert_equal 'authors', json_response['data']['type']
+    assert_equal 'Joe Author', json_response['data']['attributes']['name']
+    assert_equal 'Hardcoded value', json_response['data']['meta']['fixed']
+    assert_equal 'authors: http://test.host/api/v5/authors/1', json_response['data']['meta']['computed']
+    assert_equal 'bar', json_response['data']['meta']['computedFoo']
+
+  ensure
+    Api::V5::AuthorResource.meta :fixed, nil
+    Api::V5::AuthorResource.meta :computed, nil
+    Api::V5::AuthorResource.meta :computed_foo, nil
+  end
+
 end
 
 class BreedsControllerTest < ActionController::TestCase
