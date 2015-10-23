@@ -1,6 +1,9 @@
 module JSONAPI
   class ResourceSerializer
 
+    attr_reader :url_generator, :key_formatter, :serialization_options, :primary_class_name
+
+    # initialize
     # Options can include
     # include:
     #     Purpose: determines which objects will be side loaded with the source objects in a linked section
@@ -10,9 +13,7 @@ module JSONAPI
     #              relationship ids in the links section for a resource. Fields are global for a resource type.
     #     Example: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}
     # key_formatter: KeyFormatter class to override the default configuration
-    # base_url: a string to prepend to generated resource links
-
-    attr_reader :url_generator
+    # serializer_options: additional options that will be passed to resource meta and links lambdas
 
     def initialize(primary_resource_klass, options = {})
       @primary_class_name = primary_resource_klass._type
@@ -25,6 +26,7 @@ module JSONAPI
                                                           JSONAPI.configuration.always_include_to_one_linkage_data)
       @always_include_to_many_linkage_data = options.fetch(:always_include_to_many_linkage_data,
                                                            JSONAPI.configuration.always_include_to_many_linkage_data)
+      @serialization_options = options.fetch(:serialization_options, {})
     end
 
     # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
@@ -119,7 +121,30 @@ module JSONAPI
       relationships = relationship_data(source, include_directives)
       obj_hash['relationships'] = relationships unless relationships.nil? || relationships.empty?
 
+      meta = resource_meta(source)
+      obj_hash['meta'] = meta unless meta.nil? || meta.empty?
+
       obj_hash
+    end
+
+    def custom_generation_options(source)
+      {
+        resource: source,
+        serializer: self,
+        serialization_options: @serialization_options
+      }
+    end
+
+    def resource_meta(source)
+      return nil if source.class._meta.empty?
+
+      meta = {}
+      source.class._meta.each_pair do |k, v|
+        value = v.respond_to?(:call) ? v.call(custom_generation_options(source)) : v
+        meta[format_key(k)] = value unless value.nil?
+      end
+
+      meta
     end
 
     def requested_fields(klass)

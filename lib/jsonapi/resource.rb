@@ -263,6 +263,7 @@ module JSONAPI
         base.abstract(false)
         base.immutable(false)
         base._attributes = (_attributes || {}).dup
+        base._meta = (_meta || {}).dup
         base._relationships = (_relationships || {}).dup
         base._allowed_filters = (_allowed_filters || Set.new).dup
 
@@ -283,7 +284,7 @@ module JSONAPI
         resource
       end
 
-      attr_accessor :_attributes, :_relationships, :_allowed_filters, :_type, :_paginator
+      attr_accessor :_attributes, :_relationships, :_allowed_filters, :_type, :_paginator, :_meta
 
       def create(context)
         new(create_model, context)
@@ -368,6 +369,11 @@ module JSONAPI
 
       def primary_key(key)
         @_primary_key = key.to_sym
+      end
+
+      def meta(name, value)
+        @_meta ||= {}
+        @_meta[name] = value
       end
 
       # TODO: remove this after the createable_fields and updateable_fields are phased out

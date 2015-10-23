@@ -36,7 +36,8 @@ module JSONAPI
         fields: @options[:fields],
         base_url: @options.fetch(:base_url, ''),
         key_formatter: @key_formatter,
-        route_formatter: @options.fetch(:route_formatter, JSONAPI.configuration.route_formatter)
+        route_formatter: @options.fetch(:route_formatter, JSONAPI.configuration.route_formatter),
+        serialization_options: @options.fetch(:serialization_options, {})
       )
     end
 
