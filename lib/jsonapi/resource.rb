@@ -145,7 +145,7 @@ module JSONAPI
       end
 
       if defined? @model.save
-        saved = @model.save
+        saved = @model.save(validate: false)
         fail JSONAPI::Exceptions::SaveFailed.new unless saved
       else
         saved = true
