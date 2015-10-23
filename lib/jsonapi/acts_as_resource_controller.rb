@@ -104,6 +104,10 @@ module JSONAPI
       {}
     end
 
+    def serialization_options
+      {}
+    end
+
     # Control by setting in an initializer:
     #     JSONAPI.configuration.json_key_format = :camelized_key
     #     JSONAPI.configuration.route = :camelized_route
@@ -159,7 +163,8 @@ module JSONAPI
         base_meta: base_meta,
         base_links: base_response_links,
         resource_serializer_klass: resource_serializer_klass,
-        request: @request
+        request: @request,
+        serialization_options: serialization_options
       )
     end
 
