@@ -1051,7 +1051,7 @@ class WebPageResource < JSONAPI::Resource
   attribute :link
 end
 
-class CustomLinkResource < JSONAPI::Resource
+class SimpleCustomLinkResource < JSONAPI::Resource
   model_name 'Post'
   attributes :title, :body, :subject
 
@@ -1065,7 +1065,7 @@ class CustomLinkResource < JSONAPI::Resource
 
   filters :writer
 
-  custom_link :raw, :self
+  custom_link :raw, ->(source, link_builder) { link_builder.self_link(source) + "/raw" }
 end
 
 class CustomLinkWithRelativePathOptionResource < JSONAPI::Resource
@@ -1082,7 +1082,9 @@ class CustomLinkWithRelativePathOptionResource < JSONAPI::Resource
 
   filters :writer
 
-  custom_link :raw, :self, relative_path: "super/duper/path", ext: :xml
+  custom_link :raw, ->(source, link_builder) do
+    link_builder.self_link(source) + "/super/duper/path.xml"
+  end
 end
 
 class CustomLinkWithIfCondition < JSONAPI::Resource
@@ -1099,7 +1101,11 @@ class CustomLinkWithIfCondition < JSONAPI::Resource
 
   filters :writer
 
-  custom_link :conditional_custom_link, :self, ext: :json, path: 'conditional/link', if: ->(instance) { instance.title == "JR Solves your serialization woes!" }
+  custom_link :conditional_custom_link, ->(source, link_builder) do
+    if source.title == "JR Solves your serialization woes!"
+      link_builder.self_link(source) + "/conditional/link.json"
+    end
+  end
 end
 
 class CustomLinkWithLambda < JSONAPI::Resource
@@ -1116,8 +1122,9 @@ class CustomLinkWithLambda < JSONAPI::Resource
 
   filters :writer
 
-  custom_link :link_to_external_api, :custom, 
-    with: ->(instance) { "http://external-api.com/posts/#{ instance.created_at.year }/#{ instance.created_at.month }/#{ instance.created_at.day }-#{ instance.subject.gsub(' ', '-') }"}
+  custom_link :link_to_external_api, ->(source, link_builder) do 
+    "http://external-api.com/posts/#{ source.created_at.year }/#{ source.created_at.month }/#{ source.created_at.day }-#{ source.subject.gsub(' ', '-') }"
+  end
 end
 
 

@@ -118,14 +118,6 @@ module JSONAPI
       _model.public_send relation_name
     end
 
-    def custom_links?
-      custom_links.size > 0
-    end
-
-    def custom_links
-      @custom_links ||= self.class.custom_links
-    end
-
     private
 
     def save
@@ -298,26 +290,8 @@ module JSONAPI
         @_custom_links ||= {}
       end
 
-      def custom_link(name, type, options={})
-        link_manifest = { name: name.to_sym, type: type.to_sym }
-
-        ext  = options[:ext]  || options[:extension]
-        path = options[:path] || options[:relative_path]
-        url  = options[:url] 
-        with = options[:with]
-        if_condition   = options[:if] 
-
-        if type == :custom && with.nil?
-          warn "#{ self.class.name }'s custom link #{name} needs a a lambda passed-in as the 'if' option, like `if: ->(instance) { # do stuff here }`"
-        end
-
-        link_manifest.merge!(ext: ext) if ext
-        link_manifest.merge!(path: path) if path && !url
-        link_manifest.merge!(url: url) if url
-        link_manifest.merge!(with: with) if with
-        link_manifest.merge!(if: if_condition) if if_condition
-
-        @_custom_links[name.to_sym] = link_manifest
+      def custom_link(name, func)
+        @_custom_links[name.to_sym] = func
       end
 
       def create(context)
