@@ -395,6 +395,74 @@ Model hints inherit from parent resources, but are not global in scope. The `mod
 `resource` named parameters. `model` takes an ActiveRecord class or class name (defaults to the model name), and
 `resource` takes a resource type or a resource class (defaults to the current resource's type).
 
+#### Custom Links
+
+You can define custom links for Resource classes with the #custom_link method which takes a symbolized key and a lambda that accepts a source (Resource instance) and a link builder. For example:
+
+````ruby
+class CityCouncilMeeting < JSONAPI::Resource
+  attribute :title, :location, :approved
+
+  has_one :organizer
+
+  custom_link :minutes, ->(source, link_builder) { link_builder.self_link(source) + "/minutes" }
+end
+````
+
+This will create a custom link with the key `minutes` that is generated using the lambda. Here's an example JSON output
+
+````
+{
+  "data": [
+    {
+      "id": "1",
+      "type": "cityCouncilMeetings",
+      "links": {
+        "self": "http://city.gov/api/city-council-meetings/1",
+        "minutes": "http://city.gov/api/city-council-meetings/1/minutes"
+      },
+      "attributes": {...}
+    },
+    //...
+  ]
+}
+````
+
+If you set an if condition in the lambda that is not met the custom link will simply be set to null. Here's an example using the same class as above with a slight modification to the lambda.
+
+````ruby
+class CityCouncilMeeting < JSONAPI::Resource
+  attribute :title, :location, :approved
+
+  delegate :approved?, to: :model
+
+  has_one :organizer
+
+  custom_link :minutes, ->(source, link_builder) do
+    if source.approved?
+      link_builder.self_link(source) + "/minutes"
+    end
+  end
+end
+````
+
+````
+{
+  "data": [
+    {
+      "id": "2",
+      "type": "cityCouncilMeetings",
+      "links": {
+        "self": "http://city.gov/api/city-council-meetings/2",
+        "minutes": null
+      },
+      "attribute": {...}
+    },
+    //...
+  ]
+}
+````
+
 #### Relationships
 
 Related resources need to be specified in the resource. These may be declared with the `relationship` or the `has_one`
