@@ -1937,12 +1937,12 @@ class SerializerTest < ActionDispatch::IntegrationTest
     )
   end
 
-  def test_custom_links
-    serialized_custom_link_resource = JSONAPI::ResourceSerializer.new(CustomLinkResource, base_url: 'http://example.com').serialize_to_hash(CustomLinkResource.new(Post.first, {}))
+  def test_simple_custom_links
+    serialized_custom_link_resource = JSONAPI::ResourceSerializer.new(SimpleCustomLinkResource, base_url: 'http://example.com').serialize_to_hash(SimpleCustomLinkResource.new(Post.first, {}))
 
     custom_link_spec = {
         data: {
-          type: 'customLinks',
+          type: 'simpleCustomLinks',
           id: '1',
           attributes: {
             title: "New post",
@@ -1950,26 +1950,26 @@ class SerializerTest < ActionDispatch::IntegrationTest
             subject: "New post"
           },
         links: {
-          self: "http://example.com/customLinks/1",
-          raw: "http://example.com/customLinks/1/raw"
+          self: "http://example.com/simpleCustomLinks/1",
+          raw: "http://example.com/simpleCustomLinks/1/raw"
         },
         relationships: {
           writer: {
             links: {
-              self: "http://example.com/customLinks/1/relationships/writer",
-              related: "http://example.com/customLinks/1/writer"
+              self: "http://example.com/simpleCustomLinks/1/relationships/writer",
+              related: "http://example.com/simpleCustomLinks/1/writer"
             }
           },
           section: {
             links: {
-              self: "http://example.com/customLinks/1/relationships/section",
-              related: "http://example.com/customLinks/1/section"
+              self: "http://example.com/simpleCustomLinks/1/relationships/section",
+              related: "http://example.com/simpleCustomLinks/1/section"
             }
           },
           comments: {
             links: {
-              self: "http://example.com/customLinks/1/relationships/comments",
-              related: "http://example.com/customLinks/1/comments"
+              self: "http://example.com/simpleCustomLinks/1/relationships/comments",
+              related: "http://example.com/simpleCustomLinks/1/comments"
             }
           }
         }
@@ -2038,7 +2038,8 @@ class SerializerTest < ActionDispatch::IntegrationTest
             subject: "New post"
           },
         links: {
-          self: "http://example.com/customLinkWithIfConditions/1"
+          self: "http://example.com/customLinkWithIfConditions/1",
+          conditional_custom_link: nil
         },
         relationships: {
           writer: {

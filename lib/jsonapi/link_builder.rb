@@ -50,25 +50,11 @@ module JSONAPI
     end
 
     def build_custom_links(source)
-      link_instructions = source.custom_links
+      link_instructions = source.class.custom_links
       custom_links = {}
 
-      link_instructions.each do |link|
-        link_info = link.last
-
-        key  = link_info[:name]
-        type = link_info[:type]
-        ext  = link_info[:ext]
-        if_condition = link_info[:if]
-        next if if_condition && if_condition.call(source) == false
-
-        case type.to_sym
-        when :self
-          custom_links[key] = self_link_extension(key, source, link_info)
-        when :custom
-          custom_links[key] = build_custom_link(key, source, link_info)
-        end
-
+      link_instructions.each do |key, custom_link_lambda|
+        custom_links[key] = custom_link_lambda.call(source, self)
       end
 
       custom_links

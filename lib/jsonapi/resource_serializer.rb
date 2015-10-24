@@ -221,7 +221,7 @@ module JSONAPI
       links = {}
       links[:self] = link_builder.self_link(source)
 
-      if source.custom_links?
+      if source.class.custom_links
         customized_links = link_builder.build_custom_links(source)
         links.merge!(customized_links)
       end

@@ -83,56 +83,35 @@ end
 class CustomLinkTestResource < JSONAPI::Resource
   model_name 'Post'
 
-  custom_link :raw, :self
+  custom_link :raw, ->(source, link_builder) { link_builder.self_link(source) + "/raw" }
 end
 
 class CustomLinkTestWithExtensionResource < JSONAPI::Resource
   model_name 'Post'
 
-  custom_link :raw, :self, ext: :xml
+  custom_link :raw, ->(source, link_builder) { link_builder.self_link(source) + "/raw.xml" }
 end
 
 class CustomLinkTestWithCustomPathResource < JSONAPI::Resource
   model_name 'Post'
 
-  custom_link :raw, :self, path: "super/duper/custom/path", ext: :xml
+  custom_link :raw, ->(source, link_builder) do
+    link_builder.self_link(source) + "/super/duper/path.xml"
+  end
 end
 
 class CustomLinkLambda< JSONAPI::Resource
   model_name 'Post'
 
-  custom_link :raw, :custom, with: ->(instance) { "http://external-api/posts/" + "#{ instance.created_at.year }/#{ instance.created_at.month}/#{ instance.created_at.day }" }
+  custom_link :raw, ->(source, link_builder) do
+    "http://external-api/posts/" +
+      "#{ instance.created_at.year }/#{ instance.created_at.month}/#{ instance.created_at.day }"
+  end
 end
 
 class ResourceTest < ActiveSupport::TestCase
   def setup
     @post = Post.first
-  end
-
-  def test_custom_links?
-    assert_equal(CustomLinkTestResource.new(Post.first, {}).custom_links?, true)
-  end
-
-  def test_custom_links
-    registered_custom_link = { raw: { name: :raw, type: :self } }
-    assert_equal(CustomLinkTestResource.new(Post.first, {}).custom_links, registered_custom_link)
-  end
-
-  def test_custom_links_with_extension
-    registered_custom_link = { raw: { name: :raw, type: :self, ext: :xml } }
-    assert_equal(CustomLinkTestWithExtensionResource.new(Post.first, {}).custom_links, registered_custom_link)
-  end
-
-  def test_custom_links_with_relative_path_and_extension
-    registered_custom_link = { raw: { name: :raw, type: :self, ext: :xml, path: "super/duper/custom/path" } }
-    assert_equal(CustomLinkTestWithCustomPathResource.new(Post.first, {}).custom_links, registered_custom_link)
-  end
-
-  def test_custom_link_built_with_lambda
-    created_at = Post.first.created_at
-    custom_exteranl_url = CustomLinkLambda.new(Post.first, {}).custom_links[:raw][:with].call(Post.first)
-
-    assert_equal(custom_exteranl_url, "http://external-api/posts/#{created_at.year}/#{created_at.month}/#{created_at.day}")
   end
 
   def test_model_name
