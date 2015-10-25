@@ -118,6 +118,10 @@ module JSONAPI
       _model.public_send relation_name
     end
 
+    def model_error_messages
+      _model.errors.messages
+    end
+
     private
 
     def save
