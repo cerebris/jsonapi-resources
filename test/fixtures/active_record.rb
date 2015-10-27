@@ -282,6 +282,15 @@ class Post < ActiveRecord::Base
 
   validates :author, presence: true
   validates :title, length: { maximum: 35 }
+
+  before_destroy :destroy_callback
+
+  def destroy_callback
+    if title == "can't destroy me"
+      errors.add(:title, "can't destroy me")
+      return false
+    end
+  end
 end
 
 class SpecialPostTag < ActiveRecord::Base
