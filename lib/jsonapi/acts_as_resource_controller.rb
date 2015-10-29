@@ -6,52 +6,69 @@ module JSONAPI
 
     included do
       before_action :ensure_correct_media_type, only: [:create, :update, :create_relationship, :update_relationship]
-      append_before_action :setup_request
-      after_action :setup_response
     end
 
     def index
-      process_request_operations
+      setup_and_process_request
     end
 
     def show
-      process_request_operations
+      setup_and_process_request
     end
 
     def show_relationship
-      process_request_operations
+      setup_and_process_request
     end
 
     def create
-      process_request_operations
+      setup_and_process_request
     end
 
     def create_relationship
-      process_request_operations
+      setup_and_process_request
     end
 
     def update_relationship
-      process_request_operations
+      setup_and_process_request
     end
 
     def update
-      process_request_operations
+      setup_and_process_request
     end
 
     def destroy
-      process_request_operations
+      setup_and_process_request
     end
 
     def destroy_relationship
-      process_request_operations
+      setup_and_process_request
     end
 
     def get_related_resource
-      process_request_operations
+      setup_and_process_request
     end
 
     def get_related_resources
-      process_request_operations
+      setup_and_process_request
+    end
+
+    def setup_and_process_request
+      @request = JSONAPI::Request.new(params, context: context,
+                                      key_formatter: key_formatter,
+                                      server_error_callbacks: (self.class.server_error_callbacks || []))
+      unless @request.errors.empty?
+        render_errors(@request.errors)
+      else
+        operation_results = create_operations_processor.process(@request)
+        render_results(operation_results)
+      end
+
+      if response.body.size > 0
+        response.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
+      end
+
+    rescue => e
+      handle_exceptions(e)
     end
 
     # set the operations processor in the configuration or override this to use another operations processor
@@ -83,20 +100,6 @@ module JSONAPI
       end
     rescue => e
       handle_exceptions(e)
-    end
-
-    def setup_request
-      @request = JSONAPI::Request.new(params, context: context, key_formatter: key_formatter)
-
-      render_errors(@request.errors) unless @request.errors.empty?
-    rescue => e
-      handle_exceptions(e)
-    end
-
-    def setup_response
-      if response.body.size > 0
-        response.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
-      end
     end
 
     # override to set context
@@ -168,13 +171,6 @@ module JSONAPI
       )
     end
 
-    def process_request_operations
-      operation_results = create_operations_processor.process(@request)
-      render_results(operation_results)
-    rescue => e
-      handle_exceptions(e)
-    end
-
     # override this to process other exceptions
     # Note: Be sure to either call super(e) or handle JSONAPI::Exceptions::Error and raise unhandled exceptions
     def handle_exceptions(e)
@@ -188,10 +184,6 @@ module JSONAPI
       end
     end
 
-    def add_error_callbacks(callbacks)
-      @request.server_error_callbacks = callbacks || []
-    end
-
     # Pass in a methods or a block to be run when an exception is
     # caught that is not a JSONAPI::Exceptions::Error
     # Useful for additional logging or notification configuration that
@@ -199,11 +191,13 @@ module JSONAPI
     # Ignores whitelist exceptions from config
 
     module ClassMethods
+      attr_reader :server_error_callbacks
+
       def on_server_error(*args, &callback_block)
-        callbacks = []
+        @server_error_callbacks ||= []
 
         if callback_block
-          callbacks << callback_block
+          @server_error_callbacks << callback_block
         end
 
         method_callbacks = args.map do |method|
@@ -215,8 +209,7 @@ module JSONAPI
             end
           end
         end.compact
-        callbacks += method_callbacks
-        append_before_action { add_error_callbacks(callbacks) }
+        @server_error_callbacks += method_callbacks
       end
     end
   end
