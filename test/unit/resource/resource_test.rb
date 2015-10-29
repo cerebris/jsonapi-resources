@@ -8,6 +8,21 @@ class ArticleResource < JSONAPI::Resource
   end
 end
 
+class PostWithBadAfterSave < ActiveRecord::Base
+  self.table_name = 'posts'
+  after_save :do_some_after_save_stuff
+
+  def do_some_after_save_stuff
+    errors[:base] << 'Boom! Error added in after_save callback.'
+    raise ActiveRecord::RecordInvalid.new(self)
+  end
+end
+
+class ArticleWithBadAfterSaveResource < JSONAPI::Resource
+  model_name 'PostWithBadAfterSave'
+  attribute :title
+end
+
 class NoMatchResource < JSONAPI::Resource
 end
 
@@ -446,5 +461,14 @@ class ResourceTest < ActiveSupport::TestCase
       CODE
     end
     assert_match "", err
+  end
+
+  def test_correct_error_surfaced_if_validation_errors_in_after_save_callback
+    post = PostWithBadAfterSave.find(1)
+    post_resource = ArticleWithBadAfterSaveResource.new(post, nil)
+    err = assert_raises JSONAPI::Exceptions::ValidationErrors do
+      post_resource.replace_fields({:attributes => {:title => 'Some title'}})
+    end
+    assert_equal(err.error_messages[:base], ['Boom! Error added in after_save callback.'])
   end
 end

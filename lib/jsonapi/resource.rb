@@ -155,7 +155,13 @@ module JSONAPI
 
       if defined? @model.save
         saved = @model.save(validate: false)
-        fail JSONAPI::Exceptions::SaveFailed.new unless saved
+        unless saved
+          if @model.errors.present?
+            fail JSONAPI::Exceptions::ValidationErrors.new(self)
+          else
+            fail JSONAPI::Exceptions::SaveFailed.new
+          end
+        end
       else
         saved = true
       end
