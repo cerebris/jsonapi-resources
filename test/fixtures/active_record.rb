@@ -683,6 +683,9 @@ module Api
 
   module V5
     class AuthorsController < JSONAPI::ResourceController
+      def serialization_options
+        {foo: 'bar'}
+      end
     end
 
     class PostsController < JSONAPI::ResourceController
@@ -1241,6 +1244,15 @@ module Api
       relationship :author_detail, to: :one, foreign_key_on: :related
 
       filter :name
+
+      def self.find_by_key(key, options = {})
+        context = options[:context]
+        records = records(options)
+        records = apply_includes(records, options)
+        model = records.where({_primary_key => key}).first
+        fail JSONAPI::Exceptions::RecordNotFound.new(key) if model.nil?
+        self.new(model, context)
+      end
 
       def self.find(filters, options = {})
         resources = []

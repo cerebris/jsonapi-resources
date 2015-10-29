@@ -26,6 +26,7 @@ backed by ActiveRecord models or by custom objects.
     * [Filters] (#filters)
     * [Pagination] (#pagination)
     * [Included relationships (side-loading resources)] (#included-relationships-side-loading-resources)
+    * [Resource meta] (#resource-meta)
     * [Callbacks] (#callbacks)
   * [Controllers] (#controllers)
     * [Namespaces] (#namespaces)
@@ -793,6 +794,33 @@ Will get you the following payload by default:
 }
 ```
 
+#### Resource Meta
+
+Meta information can be included for each resource using the meta method in the resource declaration. For example:
+
+```ruby
+class BookResource < JSONAPI::Resource
+  attribute :title
+  attribute :isbn
+
+  def meta(options)
+    {
+      copyright: 'API Copyright 2015 - XYZ Corp.',
+      computed_copyright: options[:serialization_options][:copyright]
+      last_updated_at: _model.updated_at
+    }
+   end
+end
+
+```
+
+The `meta` method will be called for each resource instance. Override the `meta` method on a resource class to control
+the meta information for the resource. If a non empty hash is returned from `meta` this will be serialized. The `meta` 
+method is called with an `options` has. The `options` hash will contain the following:
+
+ * `:serializer` -> the serializer instance
+ * `:serialization_options` -> the contents of the `serialization_options` method on the controller.
+
 #### Callbacks
 
 `ActiveSupport::Callbacks` is used to provide callback functionality, so the behavior is very similar to what you may be
@@ -907,6 +935,9 @@ end
 
 Of course you are free to extend this as needed and override action handlers or other methods.
 
+
+###### Context
+
 The context that's used for serialization and resource configuration is set by the controller's `context` method.
 
 For example:
@@ -924,6 +955,22 @@ class PeopleController < ApplicationController
 
 end
 ```
+
+###### Serialization Options
+
+Additional options can be passed to the serializer using the `serialization_options` method.
+
+For example:
+
+```ruby
+class ApplicationController < JSONAPI::ResourceController
+  def serialization_options
+    {copyright: 'Copyright 2015'}
+  end
+end
+```
+
+These `serialization_options` are passed to the `meta` method used to generate resource `meta` values.
 
 > __Note__: This gem [uses the filter chain to set up the request](https://github.com/cerebris/jsonapi-resources/issues/458#issuecomment-143297055). In some instances, variables that are set in the filter chain (such as `current_user`) may not be set at the right time. If this happens (i.e. `current_user` is `nil` in `context` but it's set properly everywhere else), you may want to have your authentication occur earlier in the filter chain, using `prepend_before_action` instead of `before_action`.
 

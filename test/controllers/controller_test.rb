@@ -2264,12 +2264,89 @@ class Api::V5::AuthorsControllerTest < ActionController::TestCase
     assert_equal nil, json_response['data'][0]['attributes']['email']
   end
 
+  def test_show_person_as_author
+    get :show, {id: '1'}
+    assert_response :success
+    assert_equal '1', json_response['data']['id']
+    assert_equal 'authors', json_response['data']['type']
+    assert_equal 'Joe Author', json_response['data']['attributes']['name']
+    assert_equal nil, json_response['data']['attributes']['email']
+  end
+
   def test_get_person_as_author_by_name_filter
     get :index, {filter: {name: 'thor'}}
     assert_response :success
     assert_equal 3, json_response['data'].size
     assert_equal '1', json_response['data'][0]['id']
     assert_equal 'Joe Author', json_response['data'][0]['attributes']['name']
+  end
+
+  def test_meta_serializer_options
+    JSONAPI.configuration.json_key_format = :camelized_key
+
+    Api::V5::AuthorResource.class_eval do
+      def meta(options)
+        {
+          fixed: 'Hardcoded value',
+          computed: "#{self.class._type.to_s}: #{options[:serializer].url_generator.self_link(self)}",
+          computed_foo: options[:serialization_options][:foo],
+          options[:serializer].format_key('test_key') => 'test value'
+        }
+      end
+    end
+
+    get :show, {id: '1'}
+    assert_response :success
+    assert_equal '1', json_response['data']['id']
+    assert_equal 'Hardcoded value', json_response['data']['meta']['fixed']
+    assert_equal 'authors: http://test.host/api/v5/authors/1', json_response['data']['meta']['computed']
+    assert_equal 'bar', json_response['data']['meta']['computed_foo']
+    assert_equal 'test value', json_response['data']['meta']['testKey']
+
+  ensure
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    Api::V5::AuthorResource.class_eval do
+      def meta(options)
+        # :nocov:
+        { }
+        # :nocov:
+      end
+    end
+  end
+
+  def test_meta_serializer_hash_data
+    JSONAPI.configuration.json_key_format = :camelized_key
+
+    Api::V5::AuthorResource.class_eval do
+      def meta(options)
+        {
+          custom_hash: {
+            fixed: 'Hardcoded value',
+            computed: "#{self.class._type.to_s}: #{options[:serializer].url_generator.self_link(self)}",
+            computed_foo: options[:serialization_options][:foo],
+            options[:serializer].format_key('test_key') => 'test value'
+          }
+        }
+      end
+    end
+
+    get :show, {id: '1'}
+    assert_response :success
+    assert_equal '1', json_response['data']['id']
+    assert_equal 'Hardcoded value', json_response['data']['meta']['custom_hash']['fixed']
+    assert_equal 'authors: http://test.host/api/v5/authors/1', json_response['data']['meta']['custom_hash']['computed']
+    assert_equal 'bar', json_response['data']['meta']['custom_hash']['computed_foo']
+    assert_equal 'test value', json_response['data']['meta']['custom_hash']['testKey']
+
+  ensure
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    Api::V5::AuthorResource.class_eval do
+      def meta(options)
+        # :nocov:
+        { }
+        # :nocov:
+      end
+    end
   end
 end
 

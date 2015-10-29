@@ -79,9 +79,9 @@ module JSONAPI
     def apply
       key = @resource_klass.verify_key(@id, @context)
 
-      resource_record = resource_klass.find_by_key(key,
-                                                   context: @context,
-                                                   include_directives: @include_directives)
+      resource_record = @resource_klass.find_by_key(key,
+                                                    context: @context,
+                                                    include_directives: @include_directives)
 
       return JSONAPI::ResourceOperationResult.new(:ok, resource_record)
 
