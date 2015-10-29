@@ -21,10 +21,6 @@ end
 class ArticleWithBadAfterSaveResource < JSONAPI::Resource
   model_name 'PostWithBadAfterSave'
   attribute :title
-
-  def self.records(options)
-    options[:context].posts
-  end
 end
 
 class NoMatchResource < JSONAPI::Resource
