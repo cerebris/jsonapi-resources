@@ -118,6 +118,10 @@ module JSONAPI
       _model.public_send relation_name
     end
 
+    def model_error_messages
+      _model.errors.messages
+    end
+
     # Override this to return resource level meta data
     # must return a hash, and if the hash is empty the meta section will not be serialized with the resource
     # meta keys will be not be formatted with the key formatter for the serializer by default. They can however use the
