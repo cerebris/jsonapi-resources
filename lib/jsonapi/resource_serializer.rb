@@ -1,6 +1,9 @@
 module JSONAPI
   class ResourceSerializer
 
+    attr_reader :url_generator, :key_formatter, :serialization_options, :primary_class_name
+
+    # initialize
     # Options can include
     # include:
     #     Purpose: determines which objects will be side loaded with the source objects in a linked section
@@ -10,9 +13,7 @@ module JSONAPI
     #              relationship ids in the links section for a resource. Fields are global for a resource type.
     #     Example: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}
     # key_formatter: KeyFormatter class to override the default configuration
-    # base_url: a string to prepend to generated resource links
-
-    attr_reader :url_generator
+    # serializer_options: additional options that will be passed to resource meta and links lambdas
 
     def initialize(primary_resource_klass, options = {})
       @primary_class_name = primary_resource_klass._type
@@ -25,6 +26,7 @@ module JSONAPI
                                                           JSONAPI.configuration.always_include_to_one_linkage_data)
       @always_include_to_many_linkage_data = options.fetch(:always_include_to_many_linkage_data,
                                                            JSONAPI.configuration.always_include_to_many_linkage_data)
+      @serialization_options = options.fetch(:serialization_options, {})
     end
 
     # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
@@ -74,6 +76,15 @@ module JSONAPI
       url_generator.query_link(query_params)
     end
 
+    def format_key(key)
+      @key_formatter.format(key)
+    end
+
+    def format_value(value, format)
+      value_formatter = JSONAPI::ValueFormatter.value_formatter_for(format)
+      value_formatter.format(value)
+    end
+
     private
 
     # Process the primary source object(s). This will then serialize associated object recursively based on the
@@ -119,6 +130,10 @@ module JSONAPI
       relationships = relationship_data(source, include_directives)
       obj_hash['relationships'] = relationships unless relationships.nil? || relationships.empty?
 
+      meta = source.meta(custom_generation_options)
+      if meta.is_a?(Hash) && !meta.empty?
+        obj_hash['meta'] = meta
+      end
       obj_hash
     end
 
@@ -142,6 +157,13 @@ module JSONAPI
           hash[format_key(name)] = format_value(source.public_send(name), format)
         end
       end
+    end
+
+    def custom_generation_options
+      {
+        serializer: self,
+        serialization_options: @serialization_options
+      }
     end
 
     def relationship_data(source, include_directives)
@@ -311,15 +333,6 @@ module JSONAPI
       else
         @included_objects[type].store(id, primary: primary, object_hash: object_hash)
       end
-    end
-
-    def format_key(key)
-      @key_formatter.format(key)
-    end
-
-    def format_value(value, format)
-      value_formatter = JSONAPI::ValueFormatter.value_formatter_for(format)
-      value_formatter.format(value)
     end
 
     def generate_link_builder(primary_resource_klass, options)

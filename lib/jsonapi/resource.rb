@@ -122,6 +122,15 @@ module JSONAPI
       _model.errors.messages
     end
 
+    # Override this to return resource level meta data
+    # must return a hash, and if the hash is empty the meta section will not be serialized with the resource
+    # meta keys will be not be formatted with the key formatter for the serializer by default. They can however use the
+    # serializer's format_key and format_value methods if desired
+    # the _options hash will contain the serializer and the serialization_options
+    def meta(_options)
+      {}
+    end
+
     private
 
     def save
@@ -150,7 +159,13 @@ module JSONAPI
 
       if defined? @model.save
         saved = @model.save(validate: false)
-        fail JSONAPI::Exceptions::SaveFailed.new unless saved
+        unless saved
+          if @model.errors.present?
+            fail JSONAPI::Exceptions::ValidationErrors.new(self)
+          else
+            fail JSONAPI::Exceptions::SaveFailed.new
+          end
+        end
       else
         saved = true
       end
