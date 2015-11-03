@@ -9,50 +9,50 @@ module JSONAPI
     end
 
     def index
-      setup_and_process_request
+      process_request
     end
 
     def show
-      setup_and_process_request
+      process_request
     end
 
     def show_relationship
-      setup_and_process_request
+      process_request
     end
 
     def create
-      setup_and_process_request
+      process_request
     end
 
     def create_relationship
-      setup_and_process_request
+      process_request
     end
 
     def update_relationship
-      setup_and_process_request
+      process_request
     end
 
     def update
-      setup_and_process_request
+      process_request
     end
 
     def destroy
-      setup_and_process_request
+      process_request
     end
 
     def destroy_relationship
-      setup_and_process_request
+      process_request
     end
 
     def get_related_resource
-      setup_and_process_request
+      process_request
     end
 
     def get_related_resources
-      setup_and_process_request
+      process_request
     end
 
-    def setup_and_process_request
+    def process_request
       @request = JSONAPI::Request.new(params, context: context,
                                       key_formatter: key_formatter,
                                       server_error_callbacks: (self.class.server_error_callbacks || []))
