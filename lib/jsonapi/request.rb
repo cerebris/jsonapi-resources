@@ -22,7 +22,7 @@ module JSONAPI
       @include_directives = nil
       @paginator = nil
       @id = nil
-      @server_error_callbacks = []
+      @server_error_callbacks = options.fetch(:server_error_callbacks, [])
 
       setup_action(@params)
     end
