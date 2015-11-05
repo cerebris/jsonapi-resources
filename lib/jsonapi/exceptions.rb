@@ -10,10 +10,17 @@ module JSONAPI
       end
 
       def errors
+        unless Rails.env.prod?
+          meta = Hash.new
+          meta[:exception] = exception.message
+          meta[:backtrace] = exception.backtrace
+        end
+
         [JSONAPI::Error.new(code: JSONAPI::INTERNAL_SERVER_ERROR,
                             status: :internal_server_error,
                             title: 'Internal Server Error',
-                            detail: 'Internal Server Error')]
+                            detail: 'Internal Server Error',
+                            meta: meta)]
       end
     end
 
