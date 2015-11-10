@@ -293,13 +293,37 @@ module JSONAPI
         check_reserved_resource_name(base._type, base.name)
       end
 
-      def resource_for(type)
-        resource_name = JSONAPI::Resource._resource_name_from_type(type)
-        resource = resource_name.safe_constantize if resource_name
-        if resource.nil?
-          fail NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
+      def resource_for(resource_path)
+        unless @@resource_types.key? resource_path
+          klass_name = "#{resource_path.to_s.underscore.singularize}_resource".camelize
+          klass = (klass_name.safe_constantize or
+            fail NameError,
+                 "JSONAPI: Could not find resource '#{resource_path}'. (Class #{klass_name} not found)")
+          normalized_path = resource_path.rpartition('/').first
+          normalized_model = klass._model_name.to_s.gsub(/\A::/, '')
+          @@resource_types[resource_path] = {
+            resource: klass,
+            path: normalized_path,
+            model: normalized_model,
+          }
         end
-        resource
+        @@resource_types[resource_path][:resource]
+      end
+
+      def resource_for_model_path(model, path)
+        normalized_model = model.class.to_s.gsub(/\A::/, '')
+        normalized_path = path.gsub(/\/\z/, '')
+        resource = @@resource_types.find { |_, h|
+          h[:path] == normalized_path && h[:model] == normalized_model
+        }
+        if resource
+          resource.last[:resource]
+        else
+          #:nocov:#
+          fail NameError,
+               "JSONAPI: Could not find resource for model '#{path}#{normalized_model}'"
+          #:nocov:#
+        end
       end
 
       attr_accessor :_attributes, :_relationships, :_allowed_filters, :_type, :_paginator
@@ -522,7 +546,7 @@ module JSONAPI
 
         resources = []
         records.each do |model|
-          resources.push resource_for(resource_type_for(model)).new(model, context)
+          resources.push resource_for_model_path(model, self.module_path).new(model, context)
         end
 
         resources
@@ -534,11 +558,7 @@ module JSONAPI
         records = apply_includes(records, options)
         model = records.where({_primary_key => key}).first
         fail JSONAPI::Exceptions::RecordNotFound.new(key) if model.nil?
-        resource_for(resource_type_for(model)).new(model, context)
-      end
-
-      def resource_type_for(model)
-        self.module_path + model.class.to_s.underscore
+        resource_for_model_path(model, self.module_path).new(model, context)
       end
 
       # Override this method if you want to customize the relation for
@@ -652,15 +672,6 @@ module JSONAPI
 
       def _allowed_filters
         !@_allowed_filters.nil? ? @_allowed_filters : { id: {} }
-      end
-
-      def _resource_name_from_type(type)
-        class_name = @@resource_types[type]
-        if class_name.nil?
-          class_name = "#{type.to_s.underscore.singularize}_resource".camelize
-          @@resource_types[type] = class_name
-        end
-        return class_name
       end
 
       def _paginator
@@ -782,7 +793,7 @@ module JSONAPI
               define_method attr do |options = {}|
                 if relationship.polymorphic?
                   associated_model = public_send(associated_records_method_name)
-                  resource_klass = Resource.resource_for(self.class.resource_type_for(associated_model)) if associated_model
+                  resource_klass = self.class.resource_for_model_path(associated_model, self.class.module_path) if associated_model
                   return resource_klass.new(associated_model, @context) if resource_klass
                 else
                   resource_klass = relationship.resource_klass
@@ -835,7 +846,7 @@ module JSONAPI
               end
 
               return records.collect do |record|
-                resource_klass = Resource.resource_for(self.class.resource_type_for(record))
+                resource_klass = self.class.resource_for_model_path(record, self.class.module_path)
                 resource_klass.new(record, @context)
               end
             end unless method_defined?(attr)

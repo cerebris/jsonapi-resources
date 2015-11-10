@@ -140,6 +140,7 @@ TestApp.routes.draw do
   jsonapi_resources :vehicles
   jsonapi_resources :cars
   jsonapi_resources :boats
+  jsonapi_resources :flat_posts
 
   namespace :api do
     namespace :v1 do
