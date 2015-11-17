@@ -1381,6 +1381,20 @@ module MyEngine
   end
 end
 
+module Legacy
+  class FlatPost < ActiveRecord::Base
+    self.table_name = "posts"
+  end
+end
+
+class FlatPostResource < JSONAPI::Resource
+  model_name "::Legacy::FlatPost"
+  attribute :title
+end
+
+class FlatPostsController < JSONAPI::ResourceController
+end
+
 ### PORO Data - don't do this in a production app
 $breed_data = BreedData.new
 $breed_data.add(Breed.new(0, 'persian'))
