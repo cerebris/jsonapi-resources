@@ -107,9 +107,8 @@ module JSONAPI
       end
     end
 
-    # Override this on a resource instance to override the fetchable keys
     def fetchable_fields
-      self.class.fields
+      self.class.fetchable_fields(context)
     end
 
     # Override this on a resource to customize how the associated records
@@ -427,6 +426,11 @@ module JSONAPI
         end
       end
       # :nocov:
+
+      # Override in your resource to filter the fetchable keys
+      def fetchable_fields(_context = nil)
+        fields
+      end
 
       # Override in your resource to filter the updatable keys
       def updatable_fields(_context = nil)
