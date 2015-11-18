@@ -76,7 +76,7 @@ end
 class DasherizedKeyFormatter < JSONAPI::KeyFormatter
   class << self
     def format(key)
-      super.dasherize
+      super.underscore.dasherize
     end
 
     def unformat(formatted_key)
