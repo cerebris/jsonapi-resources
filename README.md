@@ -371,7 +371,7 @@ posts:
 
 ```ruby
 class PostResource < JSONAPI::Resource
-  attribute :title, :body
+  attributes :title, :body
 
   relationship :author, to: :one
 end
@@ -391,7 +391,7 @@ And here's the equivalent resources using the `has_one` and `has_many` methods:
 
 ```ruby
 class PostResource < JSONAPI::Resource
-  attribute :title, :body
+  attributes :title, :body
 
   has_one :author
 end
@@ -524,7 +524,7 @@ For example to allow a user to only retrieve his own posts you can do the follow
 
 ```ruby
 class PostResource < JSONAPI::Resource
-  attribute :title, :body
+  attributes :title, :body
 
   def self.records(options = {})
     context = options[:context]
