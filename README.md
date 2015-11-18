@@ -187,7 +187,7 @@ end
 ##### Fetchable Attributes
 
 By default all attributes are assumed to be fetchable. The list of fetchable attributes can be filtered by overriding
-the `fetchable_fields` method.
+the `self.fetchable_fields` method.
 
 Here's an example that prevents guest users from seeing the `email` field:
 
@@ -197,7 +197,7 @@ class AuthorResource < JSONAPI::Resource
   model_name 'Person'
   has_many :posts
 
-  def fetchable_fields
+  def self.fetchable_fields(context)
     if (context[:current_user].guest)
       super - [:email]
     else
