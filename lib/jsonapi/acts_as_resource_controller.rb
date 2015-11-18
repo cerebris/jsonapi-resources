@@ -2,10 +2,11 @@ require 'csv'
 
 module JSONAPI
   module ActsAsResourceController
-    extend ActiveSupport::Concern
 
-    included do
-      before_action :ensure_correct_media_type, only: [:create, :update, :create_relationship, :update_relationship]
+    def self.included(base)
+      base.extend ClassMethods
+      base.before_action :ensure_correct_media_type, only: [:create, :update, :create_relationship, :update_relationship]
+      base.cattr_reader :server_error_callbacks
     end
 
     def index
@@ -191,13 +192,12 @@ module JSONAPI
     # Ignores whitelist exceptions from config
 
     module ClassMethods
-      attr_reader :server_error_callbacks
 
       def on_server_error(*args, &callback_block)
-        @server_error_callbacks ||= []
+        callbacks ||= []
 
         if callback_block
-          @server_error_callbacks << callback_block
+          callbacks << callback_block
         end
 
         method_callbacks = args.map do |method|
@@ -209,8 +209,10 @@ module JSONAPI
             end
           end
         end.compact
-        @server_error_callbacks += method_callbacks
+        callbacks += method_callbacks
+        self.class_variable_set :@@server_error_callbacks, callbacks
       end
+
     end
   end
 end

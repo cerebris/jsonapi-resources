@@ -530,8 +530,12 @@ end
 class PeopleController < JSONAPI::ResourceController
 end
 
-class PostsController < ActionController::Base
+class BaseController < ActionController::Base
   include JSONAPI::ActsAsResourceController
+end
+
+class PostsController < BaseController
+
   class SpecialError < StandardError; end
   class SubSpecialError < PostsController::SpecialError; end
 
