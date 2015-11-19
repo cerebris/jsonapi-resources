@@ -610,16 +610,18 @@ end
 
 ###### Applying Filters
 
-The `apply_filter` method is called to apply each filter to the `Arel` relation. You may override this method to gain
-control over how the filters are applied to the `Arel` relation.
+You may customize how a filter behaves by suppling a callable to the `:with` option.
+This callable will be used to apply that filter.
 
 This example shows how you can implement different approaches for different filters.
 
 ```ruby
+filter :visibility, with: ->(records, value, _) {
+  records.where('users.publicly_visible = ?', value == :public)
+}
+
 def self.apply_filter(records, filter, value, options)
   case filter
-    when :visibility
-      records.where('users.publicly_visible = ?', value == :public)
     when :last_name, :first_name, :name
       if value.is_a?(Array)
         value.each do |val|
