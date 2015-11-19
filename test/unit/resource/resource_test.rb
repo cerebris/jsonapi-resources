@@ -264,6 +264,26 @@ class ResourceTest < ActiveSupport::TestCase
     end
   end
 
+  def test_filter_on_to_many_relationship_id
+    posts = PostResource.find(:comments => 3)
+    assert_equal([2], posts.map(&:id))
+  end
+
+  def test_filter_on_aliased_to_many_relationship_id
+    # Comment 2 is approved
+    books = Api::V2::BookResource.find(:aliased_comments => 2)
+    assert_equal([0], books.map(&:id))
+
+    # However, comment 3 is non-approved, so it won't be accessible through this relationship
+    books = Api::V2::BookResource.find(:aliased_comments => 3)
+    assert_equal([], books.map(&:id))
+  end
+
+  def test_filter_on_has_one_relationship_id
+    people = PreferencesResource.find(:author => 1)
+    assert_equal([1], people.map(&:id))
+  end
+
   def test_to_many_relationship_filters
     post_resource = PostResource.new(Post.find(1), nil)
     comments = post_resource.comments

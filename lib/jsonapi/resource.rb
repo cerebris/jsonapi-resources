@@ -523,11 +523,11 @@ module JSONAPI
         if filters
           filters.each do |filter, value|
             if _relationships.include?(filter)
-              if _relationships[filter].is_a?(JSONAPI::Relationship::ToMany)
-                required_includes.push(filter.to_s)
-                records = apply_filter(records, "#{filter}.#{_relationships[filter].primary_key}", value, options)
+              if _relationships[filter].belongs_to?
+                records = apply_filter(records, _relationships[filter].foreign_key, value, options)
               else
-                records = apply_filter(records, "#{_relationships[filter].foreign_key}", value, options)
+                required_includes.push(filter.to_s)
+                records = apply_filter(records, "#{_relationships[filter].table_name}.#{_relationships[filter].primary_key}", value, options)
               end
             else
               records = apply_filter(records, filter, value, options)
@@ -694,6 +694,10 @@ module JSONAPI
 
       def _primary_key
         @_primary_key ||= _model_class.respond_to?(:primary_key) ? _model_class.primary_key : :id
+      end
+
+      def _table_name
+        @_table_name ||= _model_class.respond_to?(:table_name) ? _model_class.table_name : _model_name.tableize
       end
 
       def _as_parent_key

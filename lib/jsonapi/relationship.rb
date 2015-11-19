@@ -25,6 +25,10 @@ module JSONAPI
       @resource_klass = @parent_resource.resource_for(@class_name)
     end
 
+    def table_name
+      @table_name ||= resource_klass._table_name
+    end
+
     def relation_name(options)
       case @relation_name
         when Symbol
@@ -45,6 +49,10 @@ module JSONAPI
       else
         type
       end
+    end
+
+    def belongs_to?
+      false
     end
 
     class ToOne < Relationship
