@@ -494,8 +494,14 @@ module JSONAPI
         end
       end
 
-      def apply_filter(records, filter, value, _options = {})
-        records.where(filter => value)
+      def apply_filter(records, filter, value, options = {})
+        strategy = _allowed_filters.fetch(filter.to_sym, Hash.new)[:with]
+
+        if strategy
+          strategy.(records, value, options)
+        else
+          records.where(filter => value)
+        end
       end
 
       def apply_filters(records, filters, options = {})
