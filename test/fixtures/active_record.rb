@@ -15,6 +15,7 @@ ActiveRecord::Schema.define do
     t.belongs_to :preferences
     t.integer    :hair_cut_id, index: true
     t.boolean    :book_admin, default: false
+    t.boolean    :special, default: false
     t.timestamps null: false
   end
 
@@ -767,6 +768,14 @@ class PersonResource < BaseResource
         end
     end
     return filter, values
+  end
+end
+
+class SpecialPersonResource < BaseResource
+  model_name 'Person'
+
+  def self.records(options = {})
+    Person.where(special: true)
   end
 end
 

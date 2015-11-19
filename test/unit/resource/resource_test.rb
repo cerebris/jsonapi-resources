@@ -471,4 +471,11 @@ class ResourceTest < ActiveSupport::TestCase
     end
     assert_equal(err.error_messages[:base], ['Boom! Error added in after_save callback.'])
   end
+
+  def test_resource_for_model_path_two_model_with_same_model_name
+    special_person = Person.create!(name: 'Special', date_joined: Date.today, special: true)
+    special_resource = SpecialPersonResource.new(special_person, nil)
+    resource_model = SpecialPersonResource.records({}).first # simulate a find
+    assert_equal(SpecialPersonResource, JSONAPI::Resource.resource_for_model_path(resource_model, ''))
+  end
 end
