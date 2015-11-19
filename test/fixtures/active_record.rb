@@ -1132,24 +1132,18 @@ module Api
 
       has_many :aliased_comments, class_name: 'BookComments', relation_name: :approved_book_comments
 
-      filters :banned, :book_comments
+      filters :book_comments
+      filter :banned, with: ->(records, value, options) {
+        context = options[:context]
+        current_user = context ? context[:current_user] : nil
+
+        # Only book admins my filter for banned books
+        if current_user && current_user.book_admin
+          records.where('books.banned = ?', value[0] == 'true')
+        end
+      }
 
       class << self
-        def apply_filter(records, filter, value, options)
-          context = options[:context]
-          current_user = context ? context[:current_user] : nil
-
-          case filter
-            when :banned
-              # Only book admins my filter for banned books
-              if current_user && current_user.book_admin
-                return records.where('books.banned = ?', value[0] == 'true')
-              end
-            else
-              return super(records, filter, value)
-          end
-        end
-
         def books
           Book.arel_table
         end
@@ -1178,7 +1172,15 @@ module Api
       has_one :book
       has_one :author, class_name: 'Person'
 
-      filters :approved, :book
+      filters :book
+      filter :approved, with: ->(records, value, options) {
+        context = options[:context]
+        current_user = context ? context[:current_user] : nil
+
+        if current_user && current_user.book_admin
+          records.where(approved_comments(value[0] == 'true'))
+        end
+      }
 
       class << self
         def book_comments
@@ -1187,23 +1189,6 @@ module Api
 
         def approved_comments(approved = true)
           book_comments[:approved].eq(approved)
-        end
-
-        def apply_filter(records, filter, value, options)
-          context = options[:context]
-          current_user = context ? context[:current_user] : nil
-
-          case filter
-            when :approved
-              # Only book admins my filter for unapproved comments
-              if current_user && current_user.book_admin
-                records.where(approved_comments(value[0] == 'true'))
-              end
-            else
-              #:nocov:
-              return super(records, filter, value)
-            #:nocov:
-          end
         end
 
         def records(options = {})
