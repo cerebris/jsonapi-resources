@@ -755,19 +755,14 @@ class PersonResource < BaseResource
   has_one :preferences
   has_one :hair_cut
 
-  filter :name
-
-  def self.verify_custom_filter(filter, values, context)
-    case filter
-      when :name
-        values.each do |value|
-          if value.length < 3
-            raise JSONAPI::Exceptions::InvalidFilterValue.new(filter, value)
-          end
-        end
+  filter :name, verify: ->(filter, values, context) {
+    values.each do |value|
+      if value.length < 3
+        raise JSONAPI::Exceptions::InvalidFilterValue.new(filter, value)
+      end
     end
     return filter, values
-  end
+  }
 end
 
 class VehicleResource < JSONAPI::Resource
@@ -871,7 +866,14 @@ class PostResource < JSONAPI::Resource
   end
 
   filters :title, :author, :tags, :comments
-  filters :id, :ids
+  filter :id, verify: ->(filter, values, context) {
+    verify_keys(values, context)
+    return filter, values
+  }
+  filter :ids, verify: ->(filter, values, context) {
+    verify_keys(values, context)
+    return :id, values
+  }
 
   def self.updatable_fields(context)
     super(context) - [:author, :subject]
@@ -883,17 +885,6 @@ class PostResource < JSONAPI::Resource
 
   def self.sortable_fields(context)
     super(context) - [:id]
-  end
-
-  def self.verify_custom_filter(filter, values, context = nil)
-    case filter
-      when :id
-        verify_keys(values, context)
-      when :ids #coerce :ids to :id
-        verify_keys(values, context)
-        return :id, values
-    end
-    return filter, values
   end
 
   def self.verify_key(key, context = nil)

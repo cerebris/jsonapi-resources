@@ -597,7 +597,13 @@ module JSONAPI
         if is_filter_relationship?(filter)
           verify_relationship_filter(filter, filter_values, context)
         else
-          verify_custom_filter(filter, filter_values, context)
+          strategy = _allowed_filters.fetch(filter, Hash.new)[:verify]
+
+          if strategy
+            strategy.(filter, filter_values, context)
+          else
+            verify_custom_filter(filter, filter_values, context)
+          end
         end
       end
 
