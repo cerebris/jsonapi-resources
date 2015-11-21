@@ -495,7 +495,7 @@ module JSONAPI
       end
 
       def apply_filter(records, filter, value, options = {})
-        strategy = _allowed_filters.fetch(filter.to_sym, Hash.new)[:with]
+        strategy = _allowed_filters.fetch(filter.to_sym, Hash.new)[:apply]
 
         if strategy
           strategy.(records, value, options)

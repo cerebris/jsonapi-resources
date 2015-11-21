@@ -1133,7 +1133,7 @@ module Api
       has_many :aliased_comments, class_name: 'BookComments', relation_name: :approved_book_comments
 
       filters :book_comments
-      filter :banned, with: ->(records, value, options) {
+      filter :banned, apply: ->(records, value, options) {
         context = options[:context]
         current_user = context ? context[:current_user] : nil
 
@@ -1173,7 +1173,7 @@ module Api
       has_one :author, class_name: 'Person'
 
       filters :book
-      filter :approved, with: ->(records, value, options) {
+      filter :approved, apply: ->(records, value, options) {
         context = options[:context]
         current_user = context ? context[:current_user] : nil
 
