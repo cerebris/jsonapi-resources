@@ -616,7 +616,7 @@ This callable will be used to apply that filter.
 This example shows how you can implement different approaches for different filters.
 
 ```ruby
-filter :visibility, apply: ->(records, value, _) {
+filter :visibility, apply: ->(records, value, _options) {
   records.where('users.publicly_visible = ?', value == :public)
 }
 
