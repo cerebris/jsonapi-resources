@@ -594,13 +594,13 @@ module JSONAPI
         filter_values = []
         filter_values += CSV.parse_line(raw) unless raw.nil? || raw.empty?
 
-        if is_filter_relationship?(filter)
-          verify_relationship_filter(filter, filter_values, context)
-        else
-          strategy = _allowed_filters.fetch(filter, Hash.new)[:verify]
+        strategy = _allowed_filters.fetch(filter, Hash.new)[:verify]
 
-          if strategy
-            strategy.(filter, filter_values, context)
+        if strategy
+          [filter, strategy.(filter_values, context)]
+        else
+          if is_filter_relationship?(filter)
+            verify_relationship_filter(filter, filter_values, context)
           else
             verify_custom_filter(filter, filter_values, context)
           end
