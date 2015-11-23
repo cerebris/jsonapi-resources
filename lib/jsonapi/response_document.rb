@@ -76,7 +76,7 @@ module JSONAPI
                 relationship = result.source_resource.class._relationships[result._type.to_sym]
                 links[link_name] = serializer.url_generator.relationships_related_link(result.source_resource, relationship, query_params(params))
               else
-                links[link_name] = serializer.find_link(query_params(params))
+                links[link_name] = serializer.query_link(query_params(params))
               end
             end
         end

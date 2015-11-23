@@ -72,7 +72,7 @@ module JSONAPI
       }
     end
 
-    def find_link(query_params)
+    def query_link(query_params)
       url_generator.query_link(query_params)
     end
 
