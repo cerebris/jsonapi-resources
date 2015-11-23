@@ -1,7 +1,7 @@
 module JSONAPI
   class ResourceSerializer
 
-    attr_reader :url_generator, :key_formatter, :serialization_options, :primary_class_name
+    attr_reader :link_builder, :key_formatter, :serialization_options, :primary_class_name
 
     # initialize
     # Options can include
@@ -21,7 +21,7 @@ module JSONAPI
       @include            = options.fetch(:include, [])
       @include_directives = options[:include_directives]
       @key_formatter      = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
-      @url_generator      = generate_link_builder(primary_resource_klass, options)
+      @link_builder       = generate_link_builder(primary_resource_klass, options)
       @always_include_to_one_linkage_data = options.fetch(:always_include_to_one_linkage_data,
                                                           JSONAPI.configuration.always_include_to_one_linkage_data)
       @always_include_to_many_linkage_data = options.fetch(:always_include_to_many_linkage_data,
@@ -73,7 +73,7 @@ module JSONAPI
     end
 
     def query_link(query_params)
-      url_generator.query_link(query_params)
+      link_builder.query_link(query_params)
     end
 
     def format_key(key)
@@ -226,7 +226,7 @@ module JSONAPI
 
     def relationship_links(source)
       links = {}
-      links[:self] = url_generator.self_link(source)
+      links[:self] = link_builder.self_link(source)
 
       links
     end
@@ -237,11 +237,11 @@ module JSONAPI
     end
 
     def self_link(source, relationship)
-      url_generator.relationships_self_link(source, relationship)
+      link_builder.relationships_self_link(source, relationship)
     end
 
     def related_link(source, relationship)
-      url_generator.relationships_related_link(source, relationship)
+      link_builder.relationships_related_link(source, relationship)
     end
 
     def to_one_linkage(source, relationship)

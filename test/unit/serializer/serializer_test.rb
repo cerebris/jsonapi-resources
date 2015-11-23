@@ -1742,7 +1742,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
       def meta(options)
         {
           fixed: 'Hardcoded value',
-          computed: "#{self.class._type.to_s}: #{options[:serializer].url_generator.self_link(self)}"
+          computed: "#{self.class._type.to_s}: #{options[:serializer].link_builder.self_link(self)}"
         }
       end
     end
