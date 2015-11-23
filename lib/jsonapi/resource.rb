@@ -650,12 +650,13 @@ module JSONAPI
         end
       end
 
-      # override to allow for custom filters
+      # Either add a custom :verify labmda or override verify_custom_filter to allow for custom filters
       def verify_custom_filter(filter, value, _context = nil)
         [filter, value]
       end
 
-      # override to allow for custom relationship logic, such as uuids, multiple keys or permission checks on keys
+      # Either add a custom :verify labmda or override verify_relationship_filter to allow for custom
+      # relationship logic, such as uuids, multiple keys or permission checks on keys
       def verify_relationship_filter(filter, raw, _context = nil)
         [filter, raw]
       end
