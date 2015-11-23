@@ -755,13 +755,13 @@ class PersonResource < BaseResource
   has_one :preferences
   has_one :hair_cut
 
-  filter :name, verify: ->(filter, values, context) {
+  filter :name, verify: ->(values, _context) {
     values.each do |value|
       if value.length < 3
-        raise JSONAPI::Exceptions::InvalidFilterValue.new(filter, value)
+        raise JSONAPI::Exceptions::InvalidFilterValue.new(:name, value)
       end
     end
-    return filter, values
+    return values
   }
 end
 
@@ -866,14 +866,18 @@ class PostResource < JSONAPI::Resource
   end
 
   filters :title, :author, :tags, :comments
-  filter :id, verify: ->(filter, values, context) {
+  filter :id, verify: ->(values, context) {
     verify_keys(values, context)
-    return filter, values
+    return values
   }
-  filter :ids, verify: ->(filter, values, context) {
-    verify_keys(values, context)
-    return :id, values
-  }
+  filter :ids,
+         verify: ->(values, context) {
+           verify_keys(values, context)
+           return values
+         },
+         apply: -> (records, value, _options) {
+           records.where('id IN (?)', value)
+         }
 
   def self.updatable_fields(context)
     super(context) - [:author, :subject]
