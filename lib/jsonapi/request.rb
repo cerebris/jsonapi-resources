@@ -610,11 +610,6 @@ module JSONAPI
     def parse_single_replace_operation(data, keys, id_key_presence_check_required: true)
       fail JSONAPI::Exceptions::MissingKey.new if data[:id].nil?
 
-      type = data[:type]
-      if type.nil? || type != format_key(@resource_klass._type).to_s
-        fail JSONAPI::Exceptions::ParameterMissing.new(:type)
-      end
-
       key = data[:id]
       if id_key_presence_check_required && !keys.include?(key)
         fail JSONAPI::Exceptions::KeyNotIncludedInURL.new(key)
