@@ -293,7 +293,7 @@ module JSONAPI
       end
 
       def resource_for(resource_path)
-        unless @@resource_types.key? resource_path
+        unless @@resource_types.key?(resource_path) && Rails.configuration.cache_classes
           klass_name = "#{resource_path.to_s.underscore.singularize}_resource".camelize
           klass = (klass_name.safe_constantize or
             fail NameError,
