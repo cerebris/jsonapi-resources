@@ -226,6 +226,8 @@ TestApp.routes.draw do
       jsonapi_resources :customers
       jsonapi_resources :purchase_orders
       jsonapi_resources :line_items
+
+      jsonapi_resources :clients
     end
 
     namespace :v8 do

@@ -277,55 +277,54 @@ module JSONAPI
     end
 
     class << self
-      def inherited(base)
-        base.abstract(false)
-        base.immutable(false)
-        base._attributes = (_attributes || {}).dup
-        base._relationships = (_relationships || {}).dup
-        base._allowed_filters = (_allowed_filters || Set.new).dup
+      def inherited(subclass)
+        subclass.abstract(false)
+        subclass.immutable(false)
+        subclass._attributes = (_attributes || {}).dup
+        subclass._model_hints = (_model_hints || {}).dup
+        subclass._relationships = (_relationships || {}).dup
+        subclass._allowed_filters = (_allowed_filters || Set.new).dup
 
-        type = base.name.demodulize.sub(/Resource$/, '').underscore
-        base._type = type.pluralize.to_sym
+        type = subclass.name.demodulize.sub(/Resource$/, '').underscore
+        subclass._type = type.pluralize.to_sym
 
-        base.attribute :id, format: :id
+        subclass.attribute :id, format: :id
 
-        check_reserved_resource_name(base._type, base.name)
+        check_reserved_resource_name(subclass._type, subclass.name)
       end
 
-      def resource_for(resource_path)
-        unless @@resource_types.key? resource_path
-          klass_name = "#{resource_path.to_s.underscore.singularize}_resource".camelize
-          klass = (klass_name.safe_constantize or
-            fail NameError,
-                 "JSONAPI: Could not find resource '#{resource_path}'. (Class #{klass_name} not found)")
-          normalized_path = resource_path.rpartition('/').first
-          normalized_model = klass._model_name.to_s.gsub(/\A::/, '')
-          @@resource_types[resource_path] = {
-            resource: klass,
-            path: normalized_path,
-            model: normalized_model,
-          }
+      def resource_for(type)
+        resource_name = JSONAPI::Resource._resource_name_from_type(type)
+        resource = resource_name.safe_constantize if resource_name
+        if resource.nil?
+          fail NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
         end
-        @@resource_types[resource_path][:resource]
+        resource
       end
 
-      def resource_for_model_path(model, path)
-        normalized_model = model.class.to_s.gsub(/\A::/, '')
-        normalized_path = path.gsub(/\/\z/, '')
-        resource = @@resource_types.find { |_, h|
-          h[:path] == normalized_path && h[:model] == normalized_model
-        }
-        if resource
-          resource.last[:resource]
+      def resource_for_model(model)
+        resource_for(resource_type_for(model))
+      end
+
+      def _resource_name_from_type(type)
+        class_name = @@resource_types[type]
+        if class_name.nil?
+          class_name = "#{type.to_s.underscore.singularize}_resource".camelize
+          @@resource_types[type] = class_name
+        end
+        return class_name
+      end
+
+      def resource_type_for(model)
+        model_name = model.class.to_s.underscore
+        if _model_hints[model_name]
+          module_path + _model_hints[model_name]
         else
-          #:nocov:#
-          fail NameError,
-               "JSONAPI: Could not find resource for model '#{path}#{normalized_model}'"
-          #:nocov:#
+          module_path + model_name.rpartition('/').last
         end
       end
 
-      attr_accessor :_attributes, :_relationships, :_allowed_filters, :_type, :_paginator
+      attr_accessor :_attributes, :_relationships, :_allowed_filters, :_type, :_paginator, :_model_hints
 
       def create(context)
         new(create_model, context)
@@ -396,8 +395,17 @@ module JSONAPI
         _add_relationship(Relationship::ToMany, *attrs)
       end
 
-      def model_name(model)
+      def model_name(model, options = {})
         @_model_name = model.to_sym
+
+        model_hint(model: @_model_name, resource: self) unless options[:model_hint] == false
+      end
+
+      def model_hint(model:, resource:)
+        model_name = ((model.is_a?(Class)) && (model < ActiveRecord::Base)) ? model.name : model
+        resource_type = ((resource.is_a?(Class)) && (resource < JSONAPI::Resource)) ? resource._type : resource.to_s
+
+        _model_hints[model_name.to_s.gsub('::', '/').underscore] = resource_type.to_s
       end
 
       def filters(*attrs)
@@ -550,7 +558,7 @@ module JSONAPI
 
         resources = []
         records.each do |model|
-          resources.push resource_for_model_path(model, self.module_path).new(model, context)
+          resources.push self.resource_for_model(model).new(model, context)
         end
 
         resources
@@ -562,7 +570,7 @@ module JSONAPI
         records = apply_includes(records, options)
         model = records.where({_primary_key => key}).first
         fail JSONAPI::Exceptions::RecordNotFound.new(key) if model.nil?
-        resource_for_model_path(model, self.module_path).new(model, context)
+        self.resource_for_model(model).new(model, context)
       end
 
       # Override this method if you want to customize the relation for
@@ -797,7 +805,7 @@ module JSONAPI
               define_method attr do |options = {}|
                 if relationship.polymorphic?
                   associated_model = public_send(associated_records_method_name)
-                  resource_klass = self.class.resource_for_model_path(associated_model, self.class.module_path) if associated_model
+                  resource_klass = self.class.resource_for_model(associated_model) if associated_model
                   return resource_klass.new(associated_model, @context) if resource_klass
                 else
                   resource_klass = relationship.resource_klass
@@ -850,7 +858,7 @@ module JSONAPI
               end
 
               return records.collect do |record|
-                resource_klass = self.class.resource_for_model_path(record, self.class.module_path)
+                resource_klass = self.class.resource_for_model(record)
                 resource_klass.new(record, @context)
               end
             end unless method_defined?(attr)

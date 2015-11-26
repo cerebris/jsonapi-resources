@@ -3236,3 +3236,30 @@ class VehiclesControllerTest < ActionController::TestCase
     end
   end
 end
+
+class Api::V7::ClientsControllerTest < ActionController::TestCase
+  def test_get_namespaced_model_not_matching_resource_using_model_hint
+    get :index
+    assert_response :success
+    assert_equal 'clients', json_response['data'][0]['type']
+  ensure
+    Api::V7::ClientResource._model_hints['api/v7/customer'] = 'clients'
+  end
+
+  def test_get_namespaced_model_not_matching_resource_not_using_model_hint
+    Api::V7::ClientResource._model_hints.delete('api/v7/customer')
+    get :index
+    assert_response :success
+    assert_equal 'customers', json_response['data'][0]['type']
+  ensure
+    Api::V7::ClientResource._model_hints['api/v7/customer'] = 'clients'
+  end
+end
+
+class Api::V7::CustomersControllerTest < ActionController::TestCase
+  def test_get_namespaced_model_matching_resource
+    get :index
+    assert_response :success
+    assert_equal 'customers', json_response['data'][0]['type']
+  end
+end

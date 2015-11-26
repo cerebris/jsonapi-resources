@@ -503,6 +503,16 @@ end
 class WebPage < ActiveRecord::Base
 end
 
+module Api
+  module V7
+    class Client < Customer
+    end
+
+    class Customer < Customer
+    end
+  end
+end
+
 ### OperationsProcessor
 class CountingActiveRecordOperationsProcessor < ActiveRecordOperationsProcessor
   after_find_operation do
@@ -732,6 +742,9 @@ module Api
 
     class OrderFlagsController < JSONAPI::ResourceController
     end
+
+    class ClientsController < JSONAPI::ResourceController
+    end
   end
 
   module V8
@@ -771,7 +784,13 @@ class PersonResource < BaseResource
   end
 end
 
-class SpecialPersonResource < BaseResource
+class SpecialBaseResource < BaseResource
+  abstract
+
+  model_hint model: Person, resource: :special_person
+end
+
+class SpecialPersonResource < SpecialBaseResource
   model_name 'Person'
 
   def self.records(options = {})
@@ -1358,10 +1377,24 @@ module Api
   end
 
   module V7
-    CustomerResource = V6::CustomerResource.dup
     PurchaseOrderResource = V6::PurchaseOrderResource.dup
     OrderFlagResource = V6::OrderFlagResource.dup
     LineItemResource = V6::LineItemResource.dup
+
+    class CustomerResource < V6::CustomerResource
+      model_name 'Api::V7::Customer'
+      attribute :name
+      has_many :purchase_orders
+    end
+
+    class ClientResource < JSONAPI::Resource
+      model_name 'Api::V7::Customer'
+
+      attribute :name
+
+      has_many :purchase_orders
+    end
+
   end
 
   module V8
@@ -1401,7 +1434,10 @@ module Legacy
 end
 
 class FlatPostResource < JSONAPI::Resource
-  model_name "::Legacy::FlatPost"
+  model_name "Legacy::FlatPost", model_hint: false
+
+  model_hint model: "Legacy::FlatPost", resource: FlatPostResource
+
   attribute :title
 end
 
