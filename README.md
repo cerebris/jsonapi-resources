@@ -361,16 +361,6 @@ class AuthorResource < JSONAPI::Resource
 end
 ```
 
-When the `model_name` is called a corresponding `model_hint` is also added. This can be skipped by using the
-`model_hint` option set to false. For example:
-
-```ruby
-class AuthorResource < JSONAPI::Resource
-  model_name 'Legacy::Person', model_hint: false
-  model_hint model: 'Legacy::Person', resource: 'person'
-end
-```
-
 #### Model Hints
 
 Resource instances are created from model records. The determination of the correct resource type is performed using a
@@ -390,9 +380,18 @@ class AuthorResource < JSONAPI::Resource
 end
 ```
 
-Model hints inherit from parent resources, but are not global in scope. The `model_hint` method requires a `model` and
-a `resource` named parameter. `model` takes an ActiveRecord class or class name, and `resource` takes a resource type or
-a resource class.
+Note that when `model_name` is set a corresponding `model_hint` is also added. This can be skipped by using the
+`add_model_hint` option set to false. For example:
+
+```ruby
+class AuthorResource < JSONAPI::Resource
+  model_name 'Legacy::Person', add_model_hint: false
+end
+```
+
+Model hints inherit from parent resources, but are not global in scope. The `model_hint` method accepts `model` and
+`resource` named parameters. `model` takes an ActiveRecord class or class name (defaults to the model name), and 
+`resource` takes a resource type or a resource class (defaults to the current resource's type).
 
 #### Relationships
 
