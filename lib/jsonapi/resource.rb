@@ -401,7 +401,7 @@ module JSONAPI
         model_hint(model: @_model_name, resource: self) unless options[:model_hint] == false
       end
 
-      def model_hint(model:, resource:)
+      def model_hint(model: _model_name, resource: _type)
         model_name = ((model.is_a?(Class)) && (model < ActiveRecord::Base)) ? model.name : model
         resource_type = ((resource.is_a?(Class)) && (resource < JSONAPI::Resource)) ? resource._type : resource.to_s
 
