@@ -1434,7 +1434,7 @@ module Legacy
 end
 
 class FlatPostResource < JSONAPI::Resource
-  model_name "Legacy::FlatPost", model_hint: false
+  model_name "Legacy::FlatPost", add_model_hint: false
 
   model_hint model: "Legacy::FlatPost", resource: FlatPostResource
 

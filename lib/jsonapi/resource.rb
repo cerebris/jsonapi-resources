@@ -398,7 +398,7 @@ module JSONAPI
       def model_name(model, options = {})
         @_model_name = model.to_sym
 
-        model_hint(model: @_model_name, resource: self) unless options[:model_hint] == false
+        model_hint(model: @_model_name, resource: self) unless options[:add_model_hint] == false
       end
 
       def model_hint(model: _model_name, resource: _type)
