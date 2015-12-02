@@ -1058,6 +1058,83 @@ class WebPageResource < JSONAPI::Resource
   attribute :link
 end
 
+class SimpleCustomLinkResource < JSONAPI::Resource
+  model_name 'Post'
+  attributes :title, :body, :subject
+
+  def subject
+    @model.title
+  end
+
+  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+  has_one :section
+  has_many :comments, acts_as_set: false
+
+  filters :writer
+
+  custom_link :raw, ->(source, link_builder) { link_builder.self_link(source) + "/raw" }
+end
+
+class CustomLinkWithRelativePathOptionResource < JSONAPI::Resource
+  model_name 'Post'
+  attributes :title, :body, :subject
+
+  def subject
+    @model.title
+  end
+
+  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+  has_one :section
+  has_many :comments, acts_as_set: false
+
+  filters :writer
+
+  custom_link :raw, ->(source, link_builder) do
+    link_builder.self_link(source) + "/super/duper/path.xml"
+  end
+end
+
+class CustomLinkWithIfCondition < JSONAPI::Resource
+  model_name 'Post'
+  attributes :title, :body, :subject
+
+  def subject
+    @model.title
+  end
+
+  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+  has_one :section
+  has_many :comments, acts_as_set: false
+
+  filters :writer
+
+  custom_link :conditional_custom_link, ->(source, link_builder) do
+    if source.title == "JR Solves your serialization woes!"
+      link_builder.self_link(source) + "/conditional/link.json"
+    end
+  end
+end
+
+class CustomLinkWithLambda < JSONAPI::Resource
+  model_name 'Post'
+  attributes :title, :body, :subject, :created_at
+
+  def subject
+    @model.title
+  end
+
+  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+  has_one :section
+  has_many :comments, acts_as_set: false
+
+  filters :writer
+
+  custom_link :link_to_external_api, ->(source, link_builder) do 
+    "http://external-api.com/posts/#{ source.created_at.year }/#{ source.created_at.month }/#{ source.created_at.day }-#{ source.subject.gsub(' ', '-') }"
+  end
+end
+
+
 module Api
   module V1
     class WriterResource < JSONAPI::Resource

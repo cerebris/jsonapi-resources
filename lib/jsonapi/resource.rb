@@ -283,6 +283,7 @@ module JSONAPI
         base._attributes = (_attributes || {}).dup
         base._relationships = (_relationships || {}).dup
         base._allowed_filters = (_allowed_filters || Set.new).dup
+        base._custom_links = (_custom_links || {}).dup
 
         type = base.name.demodulize.sub(/Resource$/, '').underscore
         base._type = type.pluralize.to_sym
@@ -325,7 +326,15 @@ module JSONAPI
         end
       end
 
-      attr_accessor :_attributes, :_relationships, :_allowed_filters, :_type, :_paginator
+      attr_accessor :_attributes, :_relationships, :_allowed_filters, :_type, :_paginator, :_custom_links
+
+      def custom_links
+        @_custom_links ||= {}
+      end
+
+      def custom_link(name, func)
+        @_custom_links[name.to_sym] = func
+      end
 
       def create(context)
         new(create_model, context)

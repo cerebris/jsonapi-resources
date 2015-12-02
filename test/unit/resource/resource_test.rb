@@ -66,6 +66,35 @@ module MyModule
   end
 end
 
+class CustomLinkTestResource < JSONAPI::Resource
+  model_name 'Post'
+
+  custom_link :raw, ->(source, link_builder) { link_builder.self_link(source) + "/raw" }
+end
+
+class CustomLinkTestWithExtensionResource < JSONAPI::Resource
+  model_name 'Post'
+
+  custom_link :raw, ->(source, link_builder) { link_builder.self_link(source) + "/raw.xml" }
+end
+
+class CustomLinkTestWithCustomPathResource < JSONAPI::Resource
+  model_name 'Post'
+
+  custom_link :raw, ->(source, link_builder) do 
+    link_builder.self_link(source) + "/super/duper/path.xml" 
+  end
+end
+
+class CustomLinkLambda< JSONAPI::Resource
+  model_name 'Post'
+
+  custom_link :raw, ->(source, link_builder) do 
+    "http://external-api/posts/" + 
+      "#{ instance.created_at.year }/#{ instance.created_at.month}/#{ instance.created_at.day }" 
+  end
+end
+
 class ResourceTest < ActiveSupport::TestCase
   def setup
     @post = Post.first
