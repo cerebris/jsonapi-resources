@@ -671,7 +671,7 @@ module JSONAPI
       end
 
       def _model_name
-        @_model_name ||= name.demodulize.sub(/Resource$/, '')
+        _abstract ? '' : @_model_name ||= name.demodulize.sub(/Resource$/, '')
       end
 
       def _primary_key

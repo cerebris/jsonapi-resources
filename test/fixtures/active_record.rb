@@ -135,6 +135,11 @@ ActiveRecord::Schema.define do
     t.boolean :banned, default: false
   end
 
+  create_table :book_authors, force: true do |t|
+    t.integer :book_id
+    t.integer :person_id
+  end
+
   create_table :book_comments, force: true do |t|
     t.text       :body
     t.belongs_to :book, index: true
@@ -254,6 +259,8 @@ class Person < ActiveRecord::Base
   belongs_to :preferences
   belongs_to :hair_cut
   has_one :author_detail
+
+  has_and_belongs_to_many :books, join_table: :book_authors
 
   ### Validations
   validates :name, presence: true
@@ -409,6 +416,8 @@ end
 class Book < ActiveRecord::Base
   has_many :book_comments
   has_many :approved_book_comments, -> { where(approved: true) }, class_name: "BookComment"
+
+  has_and_belongs_to_many :authors, join_table: :book_authors, class_name: "Person"
 end
 
 class BookComment < ActiveRecord::Base
@@ -608,6 +617,12 @@ class CarsController < JSONAPI::ResourceController
 end
 
 class BoatsController < JSONAPI::ResourceController
+end
+
+class BooksController < JSONAPI::ResourceController
+end
+
+class AuthorsController < JSONAPI::ResourceController
 end
 
 ### CONTROLLERS
@@ -1084,6 +1099,19 @@ end
 class WebPageResource < JSONAPI::Resource
   attribute :href
   attribute :link
+end
+
+class AuthorResource < JSONAPI::Resource
+  model_name 'Person'
+  attributes :name
+end
+
+class BookResource < JSONAPI::Resource
+  has_many :authors, class_name: 'Author'
+end
+
+class AuthorDetailResource < JSONAPI::Resource
+  attributes :author_stuff
 end
 
 module Api

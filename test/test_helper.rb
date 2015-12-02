@@ -143,6 +143,9 @@ TestApp.routes.draw do
   jsonapi_resources :boats
   jsonapi_resources :flat_posts
 
+  jsonapi_resources :books
+  jsonapi_resources :authors
+
   namespace :api do
     namespace :v1 do
       jsonapi_resources :people
