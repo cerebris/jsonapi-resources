@@ -4,8 +4,6 @@ module JSONAPI
   class Resource
     include Callbacks
 
-    @@resource_types = {}
-
     attr_reader :context
 
     define_jsonapi_resources_callbacks :create,
@@ -281,8 +279,19 @@ module JSONAPI
         subclass.abstract(false)
         subclass.immutable(false)
         subclass._attributes = (_attributes || {}).dup
+        subclass.model_name(_model_name, add_model_hint: false) unless _model_name == ''
         subclass._model_hints = (_model_hints || {}).dup
-        subclass._relationships = (_relationships || {}).dup
+
+        subclass._relationships = {}
+        # Add the relationships from the base class to the subclass using the original options
+        if _relationships.is_a?(Hash)
+          _relationships.each_value do |relationship|
+            options = relationship.options.dup
+            options[:parent_resource] = subclass
+            subclass._add_relationship(relationship.class, relationship.name, options)
+          end
+        end
+
         subclass._allowed_filters = (_allowed_filters || Set.new).dup
 
         type = subclass.name.demodulize.sub(/Resource$/, '').underscore
@@ -741,49 +750,28 @@ module JSONAPI
         end
       end
 
-      private
-
-      def check_reserved_resource_name(type, name)
-        if [:ids, :types, :hrefs, :links].include?(type)
-          warn "[NAME COLLISION] `#{name}` is a reserved resource name."
-          return
-        end
-      end
-
-      def check_reserved_attribute_name(name)
-        # Allow :id since it can be used to specify the format. Since it is a method on the base Resource
-        # an attribute method won't be created for it.
-        if [:type].include?(name.to_sym)
-          warn "[NAME COLLISION] `#{name}` is a reserved key in #{@@resource_types[_type]}."
-        end
-      end
-
-      def check_reserved_relationship_name(name)
-        if [:id, :ids, :type, :types].include?(name.to_sym)
-          warn "[NAME COLLISION] `#{name}` is a reserved relationship name in #{@@resource_types[_type]}."
-        end
-      end
-
       def _add_relationship(klass, *attrs)
         options = attrs.extract_options!
-        options[:module_path] = module_path
+        options[:parent_resource] = self
 
         attrs.each do |attr|
-          check_reserved_relationship_name(attr)
+          relationship_name = attr.to_sym
+
+          check_reserved_relationship_name(relationship_name)
 
           # Initialize from an ActiveRecord model's properties
           if _model_class && _model_class.ancestors.collect{|ancestor| ancestor.name}.include?('ActiveRecord::Base')
-            model_association = _model_class.reflect_on_association(attr)
+            model_association = _model_class.reflect_on_association(relationship_name)
             if model_association
               options[:class_name] ||= model_association.class_name
             end
           end
 
-          @_relationships[attr] = relationship = klass.new(attr, options)
+          @_relationships[relationship_name] = relationship = klass.new(relationship_name, options)
 
           associated_records_method_name = case relationship
-                                           when JSONAPI::Relationship::ToOne then "record_for_#{attr}"
-                                           when JSONAPI::Relationship::ToMany then "records_for_#{attr}"
+                                           when JSONAPI::Relationship::ToOne then "record_for_#{relationship_name}"
+                                           when JSONAPI::Relationship::ToMany then "records_for_#{relationship_name}"
                                            end
 
           foreign_key = relationship.foreign_key
@@ -793,6 +781,7 @@ module JSONAPI
           end unless method_defined?("#{foreign_key}=")
 
           define_method associated_records_method_name do
+            relationship = self.class._relationships[relationship_name]
             relation_name = relationship.relation_name(context: @context)
             records_for(relation_name)
           end unless method_defined?(associated_records_method_name)
@@ -803,7 +792,9 @@ module JSONAPI
                 @model.method(foreign_key).call
               end unless method_defined?(foreign_key)
 
-              define_method attr do |options = {}|
+              define_method relationship_name do |options = {}|
+                relationship = self.class._relationships[relationship_name]
+
                 if relationship.polymorphic?
                   associated_model = public_send(associated_records_method_name)
                   resource_klass = self.class.resource_for_model(associated_model) if associated_model
@@ -815,21 +806,25 @@ module JSONAPI
                     return associated_model ? resource_klass.new(associated_model, @context) : nil
                   end
                 end
-              end unless method_defined?(attr)
+              end unless method_defined?(relationship_name)
             else
               define_method foreign_key do
+                relationship = self.class._relationships[relationship_name]
+
                 record = public_send(associated_records_method_name)
                 return nil if record.nil?
                 record.public_send(relationship.resource_klass._primary_key)
               end unless method_defined?(foreign_key)
 
-              define_method attr do |options = {}|
+              define_method relationship_name do |options = {}|
+                relationship = self.class._relationships[relationship_name]
+
                 resource_klass = relationship.resource_klass
                 if resource_klass
                   associated_model = public_send(associated_records_method_name)
                   return associated_model ? resource_klass.new(associated_model, @context) : nil
                 end
-              end unless method_defined?(attr)
+              end unless method_defined?(relationship_name)
             end
           elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
             define_method foreign_key do
@@ -838,7 +833,10 @@ module JSONAPI
                 record.public_send(relationship.resource_klass._primary_key)
               end
             end unless method_defined?(foreign_key)
-            define_method attr do |options = {}|
+
+            define_method relationship_name do |options = {}|
+              relationship = self.class._relationships[relationship_name]
+
               resource_klass = relationship.resource_klass
               records = public_send(associated_records_method_name)
 
@@ -859,14 +857,36 @@ module JSONAPI
               end
 
               return records.collect do |record|
-                resource_klass = self.class.resource_for_model(record)
-                if current_relationship.polymorphic?
+                if relationship.polymorphic?
                   resource_klass = self.class.resource_for_model(record)
                 end
                 resource_klass.new(record, @context)
               end
-            end unless method_defined?(attr)
+            end unless method_defined?(relationship_name)
           end
+        end
+      end
+
+      private
+
+      def check_reserved_resource_name(type, name)
+        if [:ids, :types, :hrefs, :links].include?(type)
+          warn "[NAME COLLISION] `#{name}` is a reserved resource name."
+          return
+        end
+      end
+
+      def check_reserved_attribute_name(name)
+        # Allow :id since it can be used to specify the format. Since it is a method on the base Resource
+        # an attribute method won't be created for it.
+        if [:type].include?(name.to_sym)
+          warn "[NAME COLLISION] `#{name}` is a reserved key in #{_resource_name_from_type(_type)}."
+        end
+      end
+
+      def check_reserved_relationship_name(name)
+        if [:id, :ids, :type, :types].include?(name.to_sym)
+          warn "[NAME COLLISION] `#{name}` is a reserved relationship name in #{_resource_name_from_type(_type)}."
         end
       end
     end
