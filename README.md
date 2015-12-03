@@ -524,7 +524,7 @@ filter :visibility, apply: ->(records, value, _options) {
 }
 ```
 
-If you omit the `apply` callable the filter will applied as `records.where(filter => value)`.
+If you omit the `apply` callable the filter will be applied as `records.where(filter => value)`.
 
 Note: It is also possible to override the `self.apply_filter` method, though this approach is now deprecated:
 
