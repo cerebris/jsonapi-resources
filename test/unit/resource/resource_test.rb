@@ -63,6 +63,20 @@ end
 
 module MyModule
   class MyNamespacedResource < JSONAPI::Resource
+    model_name "Person"
+    has_many :related
+  end
+
+  class RelatedResource < JSONAPI::Resource
+    model_name "Comment"
+  end
+end
+
+module MyAPI
+  class MyNamespacedResource < MyModule::MyNamespacedResource
+  end
+
+  class RelatedResource < MyModule::RelatedResource
   end
 end
 
@@ -83,6 +97,30 @@ class ResourceTest < ActiveSupport::TestCase
     assert_equal(MyModule::MyNamespacedResource.module_path, 'my_module/')
   end
 
+  def test_resource_for_root_resource
+    assert_raises NameError do
+      JSONAPI::Resource.resource_for('related')
+    end
+  end
+
+  def test_resource_for_with_namespaced_paths
+    assert_equal(JSONAPI::Resource.resource_for('my_module/related'), MyModule::RelatedResource)
+    assert_equal(PostResource.resource_for('my_module/related'), MyModule::RelatedResource)
+    assert_equal(MyModule::MyNamespacedResource.resource_for('my_module/related'), MyModule::RelatedResource)
+  end
+
+  def test_resource_for_resource_does_not_exist_at_root
+    assert_raises NameError do
+      ArticleResource.resource_for('related')
+    end
+    assert_raises NameError do
+      JSONAPI::Resource.resource_for('related')
+    end
+  end
+
+  def test_resource_for_namespaced_resource
+    assert_equal(MyModule::MyNamespacedResource.resource_for('related'), MyModule::RelatedResource)
+  end
   def test_base_resource_abstract
     assert BaseResource._abstract
   end

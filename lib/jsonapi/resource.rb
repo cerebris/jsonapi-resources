@@ -294,7 +294,9 @@ module JSONAPI
       end
 
       def resource_for(type)
-        resource_name = JSONAPI::Resource._resource_name_from_type(type)
+        type_with_module = type.include?('/') ? type : module_path + type
+
+        resource_name = _resource_name_from_type(type_with_module)
         resource = resource_name.safe_constantize if resource_name
         if resource.nil?
           fail NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
@@ -307,20 +309,15 @@ module JSONAPI
       end
 
       def _resource_name_from_type(type)
-        class_name = @@resource_types[type]
-        if class_name.nil?
-          class_name = "#{type.to_s.underscore.singularize}_resource".camelize
-          @@resource_types[type] = class_name
-        end
-        return class_name
+        "#{type.to_s.underscore.singularize}_resource".camelize
       end
 
       def resource_type_for(model)
         model_name = model.class.to_s.underscore
         if _model_hints[model_name]
-          module_path + _model_hints[model_name]
+          _model_hints[model_name]
         else
-          module_path + model_name.rpartition('/').last
+          model_name.rpartition('/').last
         end
       end
 
@@ -728,7 +725,11 @@ module JSONAPI
       end
 
       def module_path
-        name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').underscore : ''
+        if name == 'JSONAPI::Resource'
+          ''
+        else
+          name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').underscore : ''
+        end
       end
 
       def construct_order_options(sort_params)
@@ -859,6 +860,9 @@ module JSONAPI
 
               return records.collect do |record|
                 resource_klass = self.class.resource_for_model(record)
+                if current_relationship.polymorphic?
+                  resource_klass = self.class.resource_for_model(record)
+                end
                 resource_klass.new(record, @context)
               end
             end unless method_defined?(attr)

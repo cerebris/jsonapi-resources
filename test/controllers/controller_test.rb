@@ -2183,7 +2183,7 @@ class PeopleControllerTest < ActionController::TestCase
     assert_equal json_response['data'][0]['attributes']['name'], 'Joe Author'
   end
 
-  def test_get_related_resource
+  def test_get_related_resource_no_namespace
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :dasherized_key
     JSONAPI.configuration.route_format = :underscored_key
@@ -2250,6 +2250,15 @@ class PeopleControllerTest < ActionController::TestCase
                          data: nil
                        }
 
+  end
+end
+
+class BooksControllerTest < ActionController::TestCase
+  def test_books_include_correct_type
+    $test_user = Person.find(1)
+    get :index, {filter: {id: '1'}, include: 'authors'}
+    assert_response :success
+    assert_equal 'authors', json_response['included'][0]['type']
   end
 end
 
