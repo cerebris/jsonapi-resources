@@ -548,9 +548,9 @@ end
 
 ##### Verifying Filters
 
-Because filters are provided by the users of the API your code is given an opportunity to verify the value. You may
-provide a callable to the `verify` option. This callable will be passed the `value` and the `context`. Verify should 
-return the a verified value, which may be modified.
+Because filters typically come straight from the request, it's prudent to verify their values. To do so, provide a 
+callable to the `verify` option. This callable will be passed the `value` and the `context`. Verify should return the
+verified value, which may be modified.
 
 ```ruby
   filter :ids,
