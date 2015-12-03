@@ -340,7 +340,8 @@ end
 
 ##### Custom resource key validators
 
-If you need more control over the key, you can override the #verify_key method on your resource, or set a lambda that accepts key and context arguments in `config/initializers/jsonapi_resources.rb`:
+If you need more control over the key, you can override the #verify_key method on your resource, or set a lambda that
+accepts key and context arguments in `config/initializers/jsonapi_resources.rb`:
 
 ```ruby
 JSONAPI.configure do |config|
@@ -509,11 +510,65 @@ end
 
 The default value is used as if it came from the request.
 
+##### Applying Filters
+
+You may customize how a filter behaves by supplying a callable to the `:apply` option. This callable will be used to
+apply that filter. The callable is passed the `records`, which is an `ActiveRecord::Relation`, the `value`, and an 
+`_options` hash. It is expected to return an `ActiveRecord::Relation`. 
+
+This example shows how you can implement different approaches for different filters.
+
+```ruby
+filter :visibility, apply: ->(records, value, _options) {
+  records.where('users.publicly_visible = ?', value == :public)
+}
+```
+
+If you omit the `apply` callable the filter will be applied as `records.where(filter => value)`.
+
+Note: It is also possible to override the `self.apply_filter` method, though this approach is now deprecated:
+
+```ruby
+def self.apply_filter(records, filter, value, options)
+  case filter
+    when :last_name, :first_name, :name
+      if value.is_a?(Array)
+        value.each do |val|
+          records = records.where(_model_class.arel_table[filter].matches(val))
+        end
+        return records
+      else
+        records.where(_model_class.arel_table[filter].matches(value))
+      end
+    else
+      return super(records, filter, value)
+  end
+end
+```
+
+##### Verifying Filters
+
+Because filters typically come straight from the request, it's prudent to verify their values. To do so, provide a 
+callable to the `verify` option. This callable will be passed the `value` and the `context`. Verify should return the
+verified value, which may be modified.
+
+```ruby
+  filter :ids,
+         verify: ->(values, context) {
+           verify_keys(values, context)
+           return values
+         },
+         apply: -> (records, value, _options) {
+           records.where('id IN (?)', value)
+         }
+```
+
 ##### Finders
 
 Basic finding by filters is supported by resources. This is implemented in the `find` and `find_by_key` finder methods.
 Currently this is implemented for `ActiveRecord` based resources. The finder methods rely on the `records` method to get
-an `Arel` relation. It is therefore possible to override `records` to affect the three find related methods.
+an `ActiveRecord::Relation` relation. It is therefore possible to override `records` to affect the three find related 
+methods.
 
 ###### Customizing base records for finder methods
 
@@ -572,7 +627,6 @@ class BaseResource < JSONAPI::Resource
 end
 ```
 
-
 ###### Raising Errors
 
 Inside the finder methods (like `records_for`) or inside of resource callbacks
@@ -603,34 +657,6 @@ class ApiController < ApplicationController
   rescue_from NotAuthorizedError, with: :reject_forbidden_request
   def reject_forbidden_request
     render json: {error: 'Forbidden'}, :status => 403
-  end
-end
-```
-
-
-###### Applying Filters
-
-The `apply_filter` method is called to apply each filter to the `Arel` relation. You may override this method to gain
-control over how the filters are applied to the `Arel` relation.
-
-This example shows how you can implement different approaches for different filters.
-
-```ruby
-def self.apply_filter(records, filter, value, options)
-  case filter
-    when :visibility
-      records.where('users.publicly_visible = ?', value == :public)
-    when :last_name, :first_name, :name
-      if value.is_a?(Array)
-        value.each do |val|
-          records = records.where(_model_class.arel_table[filter].matches(val))
-        end
-        return records
-      else
-        records.where(_model_class.arel_table[filter].matches(value))
-      end
-    else
-      return super(records, filter, value)
   end
 end
 ```

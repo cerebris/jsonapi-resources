@@ -755,19 +755,14 @@ class PersonResource < BaseResource
   has_one :preferences
   has_one :hair_cut
 
-  filter :name
-
-  def self.verify_custom_filter(filter, values, context)
-    case filter
-      when :name
-        values.each do |value|
-          if value.length < 3
-            raise JSONAPI::Exceptions::InvalidFilterValue.new(filter, value)
-          end
-        end
+  filter :name, verify: ->(values, _context) {
+    values.each do |value|
+      if value.length < 3
+        raise JSONAPI::Exceptions::InvalidFilterValue.new(:name, value)
+      end
     end
-    return filter, values
-  end
+    return values
+  }
 end
 
 class VehicleResource < JSONAPI::Resource
@@ -871,7 +866,18 @@ class PostResource < JSONAPI::Resource
   end
 
   filters :title, :author, :tags, :comments
-  filters :id, :ids
+  filter :id, verify: ->(values, context) {
+    verify_keys(values, context)
+    return values
+  }
+  filter :ids,
+         verify: ->(values, context) {
+           verify_keys(values, context)
+           return values
+         },
+         apply: -> (records, value, _options) {
+           records.where('id IN (?)', value)
+         }
 
   def self.updatable_fields(context)
     super(context) - [:author, :subject]
@@ -883,17 +889,6 @@ class PostResource < JSONAPI::Resource
 
   def self.sortable_fields(context)
     super(context) - [:id]
-  end
-
-  def self.verify_custom_filter(filter, values, context = nil)
-    case filter
-      when :id
-        verify_keys(values, context)
-      when :ids #coerce :ids to :id
-        verify_keys(values, context)
-        return :id, values
-    end
-    return filter, values
   end
 
   def self.verify_key(key, context = nil)
@@ -1132,24 +1127,18 @@ module Api
 
       has_many :aliased_comments, class_name: 'BookComments', relation_name: :approved_book_comments
 
-      filters :banned, :book_comments
+      filters :book_comments
+      filter :banned, apply: ->(records, value, options) {
+        context = options[:context]
+        current_user = context ? context[:current_user] : nil
+
+        # Only book admins my filter for banned books
+        if current_user && current_user.book_admin
+          records.where('books.banned = ?', value[0] == 'true')
+        end
+      }
 
       class << self
-        def apply_filter(records, filter, value, options)
-          context = options[:context]
-          current_user = context ? context[:current_user] : nil
-
-          case filter
-            when :banned
-              # Only book admins my filter for banned books
-              if current_user && current_user.book_admin
-                return records.where('books.banned = ?', value[0] == 'true')
-              end
-            else
-              return super(records, filter, value)
-          end
-        end
-
         def books
           Book.arel_table
         end
@@ -1178,7 +1167,15 @@ module Api
       has_one :book
       has_one :author, class_name: 'Person'
 
-      filters :approved, :book
+      filters :book
+      filter :approved, apply: ->(records, value, options) {
+        context = options[:context]
+        current_user = context ? context[:current_user] : nil
+
+        if current_user && current_user.book_admin
+          records.where(approved_comments(value[0] == 'true'))
+        end
+      }
 
       class << self
         def book_comments
@@ -1187,23 +1184,6 @@ module Api
 
         def approved_comments(approved = true)
           book_comments[:approved].eq(approved)
-        end
-
-        def apply_filter(records, filter, value, options)
-          context = options[:context]
-          current_user = context ? context[:current_user] : nil
-
-          case filter
-            when :approved
-              # Only book admins my filter for unapproved comments
-              if current_user && current_user.book_admin
-                records.where(approved_comments(value[0] == 'true'))
-              end
-            else
-              #:nocov:
-              return super(records, filter, value)
-            #:nocov:
-          end
         end
 
         def records(options = {})

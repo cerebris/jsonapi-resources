@@ -494,8 +494,14 @@ module JSONAPI
         end
       end
 
-      def apply_filter(records, filter, value, _options = {})
-        records.where(filter => value)
+      def apply_filter(records, filter, value, options = {})
+        strategy = _allowed_filters.fetch(filter.to_sym, Hash.new)[:apply]
+
+        if strategy
+          strategy.call(records, value, options)
+        else
+          records.where(filter => value)
+        end
       end
 
       def apply_filters(records, filters, options = {})
@@ -588,10 +594,16 @@ module JSONAPI
         filter_values = []
         filter_values += CSV.parse_line(raw) unless raw.nil? || raw.empty?
 
-        if is_filter_relationship?(filter)
-          verify_relationship_filter(filter, filter_values, context)
+        strategy = _allowed_filters.fetch(filter, Hash.new)[:verify]
+
+        if strategy
+          [filter, strategy.call(filter_values, context)]
         else
-          verify_custom_filter(filter, filter_values, context)
+          if is_filter_relationship?(filter)
+            verify_relationship_filter(filter, filter_values, context)
+          else
+            verify_custom_filter(filter, filter_values, context)
+          end
         end
       end
 
@@ -638,12 +650,13 @@ module JSONAPI
         end
       end
 
-      # override to allow for custom filters
+      # Either add a custom :verify labmda or override verify_custom_filter to allow for custom filters
       def verify_custom_filter(filter, value, _context = nil)
         [filter, value]
       end
 
-      # override to allow for custom relationship logic, such as uuids, multiple keys or permission checks on keys
+      # Either add a custom :verify labmda or override verify_relationship_filter to allow for custom
+      # relationship logic, such as uuids, multiple keys or permission checks on keys
       def verify_relationship_filter(filter, raw, _context = nil)
         [filter, raw]
       end
