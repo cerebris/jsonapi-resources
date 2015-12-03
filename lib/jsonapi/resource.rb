@@ -498,7 +498,7 @@ module JSONAPI
         strategy = _allowed_filters.fetch(filter.to_sym, Hash.new)[:apply]
 
         if strategy
-          strategy.(records, value, options)
+          strategy.call(records, value, options)
         else
           records.where(filter => value)
         end
@@ -597,7 +597,7 @@ module JSONAPI
         strategy = _allowed_filters.fetch(filter, Hash.new)[:verify]
 
         if strategy
-          [filter, strategy.(filter_values, context)]
+          [filter, strategy.call(filter_values, context)]
         else
           if is_filter_relationship?(filter)
             verify_relationship_filter(filter, filter_values, context)
