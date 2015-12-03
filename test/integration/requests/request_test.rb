@@ -427,6 +427,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_filter_related_resources
+    Api::V2::BookCommentResource.paginator :offset
     JSONAPI.configuration.top_level_meta_include_record_count = true
     get '/api/v2/books/1/book_comments?filter[book]=2'
     assert_equal 0, json_response['meta']['record_count']
