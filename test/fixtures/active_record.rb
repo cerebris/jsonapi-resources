@@ -1144,32 +1144,32 @@ module Api
       filters :writer
     end
 
-    PersonResource = PersonResource.dup
-    CommentResource = CommentResource.dup
-    TagResource = TagResource.dup
-    SectionResource = SectionResource.dup
-    IsoCurrencyResource = IsoCurrencyResource.dup
-    ExpenseEntryResource = ExpenseEntryResource.dup
-    BreedResource = BreedResource.dup
-    PlanetResource = PlanetResource.dup
-    PlanetTypeResource = PlanetTypeResource.dup
-    MoonResource = MoonResource.dup
-    CraterResource = CraterResource.dup
-    PreferencesResource = PreferencesResource.dup
-    EmployeeResource = EmployeeResource.dup
-    FriendResource = FriendResource.dup
-    HairCutResource = HairCutResource.dup
-    VehicleResource = VehicleResource.dup
-    CarResource = CarResource.dup
-    BoatResource = BoatResource.dup
+    class PersonResource < PersonResource; end
+    class CommentResource < CommentResource; end
+    class TagResource < TagResource; end
+    class SectionResource < SectionResource; end
+    class IsoCurrencyResource < IsoCurrencyResource; end
+    class ExpenseEntryResource < ExpenseEntryResource; end
+    class BreedResource < BreedResource; end
+    class PlanetResource < PlanetResource; end
+    class PlanetTypeResource < PlanetTypeResource; end
+    class MoonResource < MoonResource; end
+    class CraterResource < CraterResource; end
+    class PreferencesResource < PreferencesResource; end
+    class EmployeeResource < EmployeeResource; end
+    class FriendResource < FriendResource; end
+    class HairCutResource < HairCutResource; end
+    class VehicleResource < VehicleResource; end
+    class CarResource < CarResource; end
+    class BoatResource < BoatResource; end
   end
 end
 
 module Api
   module V2
-    PreferencesResource = PreferencesResource.dup
-    PersonResource = PersonResource.dup
-    PostResource = PostResource.dup
+    class PreferencesResource < PreferencesResource; end
+    class PersonResource < PersonResource; end
+    class PostResource < PostResource; end
 
     class BookResource < JSONAPI::Resource
       attribute :title
@@ -1273,17 +1273,17 @@ end
 
 module Api
   module V3
-    PostResource = PostResource.dup
-    PreferencesResource = PreferencesResource.dup
+    class PostResource < PostResource; end
+    class PreferencesResource < PreferencesResource; end
   end
 end
 
 module Api
   module V4
-    PostResource = PostResource.dup
-    ExpenseEntryResource = ExpenseEntryResource.dup
-    IsoCurrencyResource = IsoCurrencyResource.dup
-
+    class PostResource < PostResource; end
+    class PersonResource < PersonResource; end
+    class ExpenseEntryResource < ExpenseEntryResource; end
+    class IsoCurrencyResource < IsoCurrencyResource; end
 
     class BookResource < Api::V2::BookResource
       paginator :paged
@@ -1334,11 +1334,14 @@ module Api
       attributes :author_stuff
     end
 
-    PersonResource = PersonResource.dup
-    PostResource = PostResource.dup
-    ExpenseEntryResource = ExpenseEntryResource.dup
-    IsoCurrencyResource = IsoCurrencyResource.dup
-    EmployeeResource = EmployeeResource.dup
+    class PersonResource < PersonResource; end
+    class PostResource < PostResource; end
+    class TagResource < TagResource; end
+    class SectionResource < SectionResource; end
+    class CommentResource < CommentResource; end
+    class ExpenseEntryResource < ExpenseEntryResource; end
+    class IsoCurrencyResource < IsoCurrencyResource; end
+    class EmployeeResource < EmployeeResource; end
   end
 end
 
@@ -1405,9 +1408,9 @@ module Api
   end
 
   module V7
-    PurchaseOrderResource = V6::PurchaseOrderResource.dup
-    OrderFlagResource = V6::OrderFlagResource.dup
-    LineItemResource = V6::LineItemResource.dup
+    class PurchaseOrderResource < V6::PurchaseOrderResource; end
+    class OrderFlagResource < V6::OrderFlagResource; end
+    class LineItemResource < V6::LineItemResource; end
 
     class CustomerResource < V6::CustomerResource
       model_name 'Api::V7::Customer'
