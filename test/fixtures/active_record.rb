@@ -15,6 +15,7 @@ ActiveRecord::Schema.define do
     t.belongs_to :preferences
     t.integer    :hair_cut_id, index: true
     t.boolean    :book_admin, default: false
+    t.boolean    :special, default: false
     t.timestamps null: false
   end
 
@@ -132,6 +133,11 @@ ActiveRecord::Schema.define do
     t.string :title
     t.string :isbn
     t.boolean :banned, default: false
+  end
+
+  create_table :book_authors, force: true do |t|
+    t.integer :book_id
+    t.integer :person_id
   end
 
   create_table :book_comments, force: true do |t|
@@ -253,6 +259,8 @@ class Person < ActiveRecord::Base
   belongs_to :preferences
   belongs_to :hair_cut
   has_one :author_detail
+
+  has_and_belongs_to_many :books, join_table: :book_authors
 
   ### Validations
   validates :name, presence: true
@@ -408,6 +416,8 @@ end
 class Book < ActiveRecord::Base
   has_many :book_comments
   has_many :approved_book_comments, -> { where(approved: true) }, class_name: "BookComment"
+
+  has_and_belongs_to_many :authors, join_table: :book_authors, class_name: "Person"
 end
 
 class BookComment < ActiveRecord::Base
@@ -500,6 +510,16 @@ class Make < ActiveRecord::Base
 end
 
 class WebPage < ActiveRecord::Base
+end
+
+module Api
+  module V7
+    class Client < Customer
+    end
+
+    class Customer < Customer
+    end
+  end
 end
 
 ### OperationsProcessor
@@ -597,6 +617,12 @@ class CarsController < JSONAPI::ResourceController
 end
 
 class BoatsController < JSONAPI::ResourceController
+end
+
+class BooksController < JSONAPI::ResourceController
+end
+
+class AuthorsController < JSONAPI::ResourceController
 end
 
 ### CONTROLLERS
@@ -731,6 +757,9 @@ module Api
 
     class OrderFlagsController < JSONAPI::ResourceController
     end
+
+    class ClientsController < JSONAPI::ResourceController
+    end
   end
 
   module V8
@@ -763,6 +792,20 @@ class PersonResource < BaseResource
     end
     return values
   }
+end
+
+class SpecialBaseResource < BaseResource
+  abstract
+
+  model_hint model: Person, resource: :special_person
+end
+
+class SpecialPersonResource < SpecialBaseResource
+  model_name 'Person'
+
+  def self.records(options = {})
+    Person.where(special: true)
+  end
 end
 
 class VehicleResource < JSONAPI::Resource
@@ -1053,6 +1096,19 @@ class WebPageResource < JSONAPI::Resource
   attribute :link
 end
 
+class AuthorResource < JSONAPI::Resource
+  model_name 'Person'
+  attributes :name
+end
+
+class BookResource < JSONAPI::Resource
+  has_many :authors, class_name: 'Author'
+end
+
+class AuthorDetailResource < JSONAPI::Resource
+  attributes :author_stuff
+end
+
 module Api
   module V1
     class WriterResource < JSONAPI::Resource
@@ -1083,32 +1139,32 @@ module Api
       filters :writer
     end
 
-    PersonResource = PersonResource.dup
-    CommentResource = CommentResource.dup
-    TagResource = TagResource.dup
-    SectionResource = SectionResource.dup
-    IsoCurrencyResource = IsoCurrencyResource.dup
-    ExpenseEntryResource = ExpenseEntryResource.dup
-    BreedResource = BreedResource.dup
-    PlanetResource = PlanetResource.dup
-    PlanetTypeResource = PlanetTypeResource.dup
-    MoonResource = MoonResource.dup
-    CraterResource = CraterResource.dup
-    PreferencesResource = PreferencesResource.dup
-    EmployeeResource = EmployeeResource.dup
-    FriendResource = FriendResource.dup
-    HairCutResource = HairCutResource.dup
-    VehicleResource = VehicleResource.dup
-    CarResource = CarResource.dup
-    BoatResource = BoatResource.dup
+    class PersonResource < PersonResource; end
+    class CommentResource < CommentResource; end
+    class TagResource < TagResource; end
+    class SectionResource < SectionResource; end
+    class IsoCurrencyResource < IsoCurrencyResource; end
+    class ExpenseEntryResource < ExpenseEntryResource; end
+    class BreedResource < BreedResource; end
+    class PlanetResource < PlanetResource; end
+    class PlanetTypeResource < PlanetTypeResource; end
+    class MoonResource < MoonResource; end
+    class CraterResource < CraterResource; end
+    class PreferencesResource < PreferencesResource; end
+    class EmployeeResource < EmployeeResource; end
+    class FriendResource < FriendResource; end
+    class HairCutResource < HairCutResource; end
+    class VehicleResource < VehicleResource; end
+    class CarResource < CarResource; end
+    class BoatResource < BoatResource; end
   end
 end
 
 module Api
   module V2
-    PreferencesResource = PreferencesResource.dup
-    PersonResource = PersonResource.dup
-    PostResource = PostResource.dup
+    class PreferencesResource < PreferencesResource; end
+    class PersonResource < PersonResource; end
+    class PostResource < PostResource; end
 
     class BookResource < JSONAPI::Resource
       attribute :title
@@ -1197,17 +1253,17 @@ end
 
 module Api
   module V3
-    PostResource = PostResource.dup
-    PreferencesResource = PreferencesResource.dup
+    class PostResource < PostResource; end
+    class PreferencesResource < PreferencesResource; end
   end
 end
 
 module Api
   module V4
-    PostResource = PostResource.dup
-    ExpenseEntryResource = ExpenseEntryResource.dup
-    IsoCurrencyResource = IsoCurrencyResource.dup
-
+    class PostResource < PostResource; end
+    class PersonResource < PersonResource; end
+    class ExpenseEntryResource < ExpenseEntryResource; end
+    class IsoCurrencyResource < IsoCurrencyResource; end
 
     class BookResource < Api::V2::BookResource
       paginator :paged
@@ -1258,11 +1314,14 @@ module Api
       attributes :author_stuff
     end
 
-    PersonResource = PersonResource.dup
-    PostResource = PostResource.dup
-    ExpenseEntryResource = ExpenseEntryResource.dup
-    IsoCurrencyResource = IsoCurrencyResource.dup
-    EmployeeResource = EmployeeResource.dup
+    class PersonResource < PersonResource; end
+    class PostResource < PostResource; end
+    class TagResource < TagResource; end
+    class SectionResource < SectionResource; end
+    class CommentResource < CommentResource; end
+    class ExpenseEntryResource < ExpenseEntryResource; end
+    class IsoCurrencyResource < IsoCurrencyResource; end
+    class EmployeeResource < EmployeeResource; end
   end
 end
 
@@ -1329,10 +1388,24 @@ module Api
   end
 
   module V7
-    CustomerResource = V6::CustomerResource.dup
-    PurchaseOrderResource = V6::PurchaseOrderResource.dup
-    OrderFlagResource = V6::OrderFlagResource.dup
-    LineItemResource = V6::LineItemResource.dup
+    class PurchaseOrderResource < V6::PurchaseOrderResource; end
+    class OrderFlagResource < V6::OrderFlagResource; end
+    class LineItemResource < V6::LineItemResource; end
+
+    class CustomerResource < V6::CustomerResource
+      model_name 'Api::V7::Customer'
+      attribute :name
+      has_many :purchase_orders
+    end
+
+    class ClientResource < JSONAPI::Resource
+      model_name 'Api::V7::Customer'
+
+      attribute :name
+
+      has_many :purchase_orders
+    end
+
   end
 
   module V8
@@ -1372,7 +1445,10 @@ module Legacy
 end
 
 class FlatPostResource < JSONAPI::Resource
-  model_name "::Legacy::FlatPost"
+  model_name "Legacy::FlatPost", add_model_hint: false
+
+  model_hint model: "Legacy::FlatPost", resource: FlatPostResource
+
   attribute :title
 end
 
