@@ -2979,6 +2979,18 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   ensure
     book_comment.delete
   end
+
+  def test_get_show_relationship_context_flows
+    $test_user = Person.find(1)
+    get :show_relationship, {book_id: '1', relationship: 'book_comments'}
+    assert_response :success
+    assert_equal 26, json_response['data'].size
+
+    $test_user = Person.find(5)
+    get :show_relationship, {book_id: '1', relationship: 'book_comments'}
+    assert_response :success
+    assert_equal 51, json_response['data'].size
+  end
 end
 
 class Api::V2::BookCommentsControllerTest < ActionController::TestCase
@@ -3016,6 +3028,18 @@ class Api::V2::BookCommentsControllerTest < ActionController::TestCase
     assert_response :success
     assert_equal 130, json_response['data'].size
     assert_query_count(1)
+  end
+
+  def test_get_related_resource_context_flows
+    $test_user = Person.find(1)
+    get :get_related_resources, {book_id: '1', relationship: 'book_comments', source: "api/v2/books"}
+    assert_response :success
+    assert_equal 26, json_response['data'].size
+
+    $test_user = Person.find(5)
+    get :get_related_resources, {book_id: '1', relationship: 'book_comments', source: "api/v2/books"}
+    assert_response :success
+    assert_equal 51, json_response['data'].size
   end
 end
 
