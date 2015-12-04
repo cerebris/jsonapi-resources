@@ -486,7 +486,7 @@ module JSONAPI
         records
       end
 
-      def apply_sort(records, order_options, options = {})
+      def apply_sort(records, order_options, _options = {})
         if order_options.any?
           records.order(order_options)
         else
