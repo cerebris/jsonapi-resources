@@ -365,7 +365,7 @@ end
 
 Resource instances are created from model records. The determination of the correct resource type is performed using a
 simple rule based on the model's name. The name is used to find a resource in the same module (as the originating 
-resource) that matches the name. This usually works quite well, however it can fail when model name's do not match
+resource) that matches the name. This usually works quite well, however it can fail when model names do not match
 resource names. It can also fail when using namespaced models. In this case a `model_hint` can be created to map model
 names to resources. For example:
 
