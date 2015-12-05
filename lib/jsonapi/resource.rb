@@ -437,17 +437,36 @@ module JSONAPI
 
       def apply_sort(records, order_options)
         if order_options.any?
-           order_options.each_pair do |field, direction|
-            if field.to_s.include?(".")
-              model_name, field = field.split(".")
-              records = records.order("#{model_name.pluralize}.#{field} #{direction}")
+           order_options.each_pair do |path, direction|
+            if path.to_s.include?(".")
+              *model_names, terminus, column_name = path.split(".")
+              records = records.includes(build_includes_path(model_names, terminus))
+
+              table_name = resolve_terminus_classname([records.model.to_s, *model_names, terminus])
+              records = records.order("#{table_name}.#{column_name} #{direction}")
             else
-              records = records.order(field => direction)
+              records = records.order(path => direction)
             end
           end
         end
 
         records
+      end
+
+      def build_includes_path(model_names, terminus)
+        model_names.inject(terminus.to_sym) do |acc, model_name|
+          hash = {}
+          hash[model_name.to_sym] = acc
+          [hash]
+        end
+      end
+
+      def resolve_terminus_classname(model_names)
+        model_names.inject do |prev, current|
+          prev.classify.constantize.reflect_on_all_associations.detect do |assoc|
+            assoc.name.to_s.downcase == current.downcase
+          end
+        end.table_name
       end
 
       def apply_filter(records, filter, value, _options = {})

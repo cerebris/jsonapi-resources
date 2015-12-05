@@ -117,7 +117,7 @@ class PostResource < JSONAPI::Resource
   attribute :id
 
   def self.sortable_fields(context)
-    (super(context) << :"person.name") - [:id]
+    (super(context) << :"author.name") - [:id]
   end
 end
 
