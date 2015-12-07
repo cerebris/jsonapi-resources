@@ -646,6 +646,7 @@ Example:
 def self.apply_sort(records, order_options, context = {})  
   if order_options.has?(:trending)
     records = records.order_by_trending_scope
+    order_options - [:trending]
   end
   
   super(records, order_options, context)
