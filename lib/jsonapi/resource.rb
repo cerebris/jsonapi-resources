@@ -564,7 +564,7 @@ module JSONAPI
 
         sort_criteria = options.fetch(:sort_criteria) { [] }
         order_options = construct_order_options(sort_criteria)
-        records = sort_records(records, order_options, options)
+        records = sort_records(records, order_options, context)
 
         records = apply_pagination(records, options[:paginator], order_options)
 
