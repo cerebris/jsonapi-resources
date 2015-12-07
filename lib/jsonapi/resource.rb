@@ -486,7 +486,7 @@ module JSONAPI
         records
       end
 
-      def apply_sort(records, order_options, _options = {})
+      def apply_sort(records, order_options, _context = {})
         if order_options.any?
           records.order(order_options)
         else
@@ -528,8 +528,8 @@ module JSONAPI
         apply_includes(records, options)
       end
 
-      def sort_records(records, order_options, options = {})
-        apply_sort(records, order_options, options)
+      def sort_records(records, order_options, context = {})
+        apply_sort(records, order_options, context)
       end
 
       def find_count(filters, options = {})
@@ -841,7 +841,7 @@ module JSONAPI
               sort_criteria =  options.fetch(:sort_criteria, {})
               unless sort_criteria.nil? || sort_criteria.empty?
                 order_options = relationship.resource_klass.construct_order_options(sort_criteria)
-                records = resource_klass.apply_sort(records, order_options, context: @context)
+                records = resource_klass.apply_sort(records, order_options, @context)
               end
 
               paginator = options[:paginator]
