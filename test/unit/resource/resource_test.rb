@@ -63,6 +63,20 @@ end
 
 module MyModule
   class MyNamespacedResource < JSONAPI::Resource
+    model_name "Person"
+    has_many :related
+  end
+
+  class RelatedResource < JSONAPI::Resource
+    model_name "Comment"
+  end
+end
+
+module MyAPI
+  class MyNamespacedResource < MyModule::MyNamespacedResource
+  end
+
+  class RelatedResource < MyModule::RelatedResource
   end
 end
 
@@ -81,6 +95,47 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_module_path
     assert_equal(MyModule::MyNamespacedResource.module_path, 'my_module/')
+  end
+
+  def test_resource_for_root_resource
+    assert_raises NameError do
+      JSONAPI::Resource.resource_for('related')
+    end
+  end
+
+  def test_resource_for_with_namespaced_paths
+    assert_equal(JSONAPI::Resource.resource_for('my_module/related'), MyModule::RelatedResource)
+    assert_equal(PostResource.resource_for('my_module/related'), MyModule::RelatedResource)
+    assert_equal(MyModule::MyNamespacedResource.resource_for('my_module/related'), MyModule::RelatedResource)
+  end
+
+  def test_resource_for_resource_does_not_exist_at_root
+    assert_raises NameError do
+      ArticleResource.resource_for('related')
+    end
+    assert_raises NameError do
+      JSONAPI::Resource.resource_for('related')
+    end
+  end
+
+  def test_resource_for_namespaced_resource
+    assert_equal(MyModule::MyNamespacedResource.resource_for('related'), MyModule::RelatedResource)
+  end
+
+  def test_relationship_parent_point_to_correct_resource
+    assert_equal MyModule::MyNamespacedResource, MyModule::MyNamespacedResource._relationships[:related].parent_resource
+  end
+
+  def test_relationship_parent_option_point_to_correct_resource
+    assert_equal MyModule::MyNamespacedResource, MyModule::MyNamespacedResource._relationships[:related].options[:parent_resource]
+  end
+
+  def test_derived_resources_relationships_parent_point_to_correct_resource
+    assert_equal MyAPI::MyNamespacedResource, MyAPI::MyNamespacedResource._relationships[:related].parent_resource
+  end
+
+  def test_derived_resources_relationships_parent_options_point_to_correct_resource
+    assert_equal MyAPI::MyNamespacedResource, MyAPI::MyNamespacedResource._relationships[:related].options[:parent_resource]
   end
 
   def test_base_resource_abstract
@@ -470,5 +525,12 @@ class ResourceTest < ActiveSupport::TestCase
       post_resource.replace_fields({:attributes => {:title => 'Some title'}})
     end
     assert_equal(err.error_messages[:base], ['Boom! Error added in after_save callback.'])
+  end
+
+  def test_resource_for_model_use_hint
+    special_person = Person.create!(name: 'Special', date_joined: Date.today, special: true)
+    special_resource = SpecialPersonResource.new(special_person, nil)
+    resource_model = SpecialPersonResource.records({}).first # simulate a find
+    assert_equal(SpecialPersonResource, SpecialPersonResource.resource_for_model(resource_model))
   end
 end

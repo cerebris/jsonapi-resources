@@ -340,7 +340,8 @@ end
 
 ##### Custom resource key validators
 
-If you need more control over the key, you can override the #verify_key method on your resource, or set a lambda that accepts key and context arguments in `config/initializers/jsonapi_resources.rb`:
+If you need more control over the key, you can override the #verify_key method on your resource, or set a lambda that
+accepts key and context arguments in `config/initializers/jsonapi_resources.rb`:
 
 ```ruby
 JSONAPI.configure do |config|
@@ -360,6 +361,38 @@ class AuthorResource < JSONAPI::Resource
   has_many :posts
 end
 ```
+
+#### Model Hints
+
+Resource instances are created from model records. The determination of the correct resource type is performed using a
+simple rule based on the model's name. The name is used to find a resource in the same module (as the originating 
+resource) that matches the name. This usually works quite well, however it can fail when model names do not match
+resource names. It can also fail when using namespaced models. In this case a `model_hint` can be created to map model
+names to resources. For example:
+
+```ruby
+class AuthorResource < JSONAPI::Resource
+  attribute :name
+  model_name 'Person'
+  model_hint model: Commenter, resource: :special_person
+
+  has_many :posts
+  has_many :commenters
+end
+```
+
+Note that when `model_name` is set a corresponding `model_hint` is also added. This can be skipped by using the
+`add_model_hint` option set to false. For example:
+
+```ruby
+class AuthorResource < JSONAPI::Resource
+  model_name 'Legacy::Person', add_model_hint: false
+end
+```
+
+Model hints inherit from parent resources, but are not global in scope. The `model_hint` method accepts `model` and
+`resource` named parameters. `model` takes an ActiveRecord class or class name (defaults to the model name), and 
+`resource` takes a resource type or a resource class (defaults to the current resource's type).
 
 #### Relationships
 
@@ -509,11 +542,65 @@ end
 
 The default value is used as if it came from the request.
 
+##### Applying Filters
+
+You may customize how a filter behaves by supplying a callable to the `:apply` option. This callable will be used to
+apply that filter. The callable is passed the `records`, which is an `ActiveRecord::Relation`, the `value`, and an 
+`_options` hash. It is expected to return an `ActiveRecord::Relation`. 
+
+This example shows how you can implement different approaches for different filters.
+
+```ruby
+filter :visibility, apply: ->(records, value, _options) {
+  records.where('users.publicly_visible = ?', value == :public)
+}
+```
+
+If you omit the `apply` callable the filter will be applied as `records.where(filter => value)`.
+
+Note: It is also possible to override the `self.apply_filter` method, though this approach is now deprecated:
+
+```ruby
+def self.apply_filter(records, filter, value, options)
+  case filter
+    when :last_name, :first_name, :name
+      if value.is_a?(Array)
+        value.each do |val|
+          records = records.where(_model_class.arel_table[filter].matches(val))
+        end
+        return records
+      else
+        records.where(_model_class.arel_table[filter].matches(value))
+      end
+    else
+      return super(records, filter, value)
+  end
+end
+```
+
+##### Verifying Filters
+
+Because filters typically come straight from the request, it's prudent to verify their values. To do so, provide a 
+callable to the `verify` option. This callable will be passed the `value` and the `context`. Verify should return the
+verified value, which may be modified.
+
+```ruby
+  filter :ids,
+         verify: ->(values, context) {
+           verify_keys(values, context)
+           return values
+         },
+         apply: -> (records, value, _options) {
+           records.where('id IN (?)', value)
+         }
+```
+
 ##### Finders
 
 Basic finding by filters is supported by resources. This is implemented in the `find` and `find_by_key` finder methods.
 Currently this is implemented for `ActiveRecord` based resources. The finder methods rely on the `records` method to get
-an `Arel` relation. It is therefore possible to override `records` to affect the three find related methods.
+an `ActiveRecord::Relation` relation. It is therefore possible to override `records` to affect the three find related 
+methods.
 
 ###### Customizing base records for finder methods
 
@@ -571,7 +658,6 @@ class BaseResource < JSONAPI::Resource
   end
 end
 ```
-
 
 ###### Raising Errors
 
@@ -635,6 +721,7 @@ def self.apply_filter(records, filter, value, options)
 end
 ```
 
+
 ###### Applying Sorting
 
 You can override the `apply_sort` method to gain control over how the sorting is done. This may be useful in case you'd
@@ -652,6 +739,7 @@ def self.apply_sort(records, order_options, context = {})
   super(records, order_options, context)
 end
 ```
+
 
 ###### Override finder methods
 

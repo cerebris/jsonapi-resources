@@ -2183,7 +2183,7 @@ class PeopleControllerTest < ActionController::TestCase
     assert_equal json_response['data'][0]['attributes']['name'], 'Joe Author'
   end
 
-  def test_get_related_resource
+  def test_get_related_resource_no_namespace
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :dasherized_key
     JSONAPI.configuration.route_format = :underscored_key
@@ -2250,6 +2250,15 @@ class PeopleControllerTest < ActionController::TestCase
                          data: nil
                        }
 
+  end
+end
+
+class BooksControllerTest < ActionController::TestCase
+  def test_books_include_correct_type
+    $test_user = Person.find(1)
+    get :index, {filter: {id: '1'}, include: 'authors'}
+    assert_response :success
+    assert_equal 'authors', json_response['included'][0]['type']
   end
 end
 
@@ -3100,19 +3109,17 @@ class Api::V1::MoonsControllerTest < ActionController::TestCase
    def test_get_related_resource
       get :get_related_resource, {crater_id: 'S56D', relationship: 'moon', source: "api/v1/craters"}
       assert_response :success
-      assert_hash_equals json_response,
-                              {
-                                data: {
-                                  id: "1",
-                                  type: "moons",
-                                  links: {self: "http://test.host/moons/1"},
-                                  attributes: {name: "Titan", description: "Best known of the Saturn moons."},
-                                  relationships: {
-                                    planet: {links: {self: "http://test.host/moons/1/relationships/planet", related: "http://test.host/moons/1/planet"}},
-                                    craters: {links: {self: "http://test.host/moons/1/relationships/craters", related: "http://test.host/moons/1/craters"}}}
-                                  }
-                                }
-
+      assert_hash_equals({
+                           data: {
+                             id: "1",
+                             type: "moons",
+                             links: {self: "http://test.host/api/v1/moons/1"},
+                             attributes: {name: "Titan", description: "Best known of the Saturn moons."},
+                             relationships: {
+                               planet: {links: {self: "http://test.host/api/v1/moons/1/relationships/planet", related: "http://test.host/api/v1/moons/1/planet"}},
+                               craters: {links: {self: "http://test.host/api/v1/moons/1/relationships/craters", related: "http://test.host/api/v1/moons/1/craters"}}}
+                             }
+                           }, json_response)
    end
 
    def test_get_related_resources_with_select_some_db_columns
@@ -3141,23 +3148,24 @@ class Api::V1::CratersControllerTest < ActionController::TestCase
   def test_get_related_resources
     get :get_related_resources, {moon_id: '1', relationship: 'craters', source: "api/v1/moons"}
     assert_response :success
-    assert_hash_equals json_response,
-                      {
-                        data: [
-                          {id:"A4D3",
-                           type:"craters",
-                           links:{self: "http://test.host/api/v1/craters/A4D3"},
-                           attributes:{code: "A4D3", description: "Small crater"},
-                           relationships:{moon: {links: {self: "http://test.host/api/v1/craters/A4D3/relationships/moon", related: "http://test.host/api/v1/craters/A4D3/moon"}}}
-                          },
-                          {id: "S56D",
-                           type: "craters",
-                           links:{self: "http://test.host/api/v1/craters/S56D"},
-                           attributes:{code: "S56D", description: "Very large crater"},
-                           relationships:{moon: {links: {self: "http://test.host/api/v1/craters/S56D/relationships/moon", related: "http://test.host/api/v1/craters/S56D/moon"}}}
-                          }
-                        ]
-                      }
+    assert_hash_equals({
+                         data: [
+                           {
+                             id:"A4D3",
+                             type:"craters",
+                             links:{self: "http://test.host/api/v1/craters/A4D3"},
+                             attributes:{code: "A4D3", description: "Small crater"},
+                             relationships:{moon: {links: {self: "http://test.host/api/v1/craters/A4D3/relationships/moon", related: "http://test.host/api/v1/craters/A4D3/moon"}}}
+                           },
+                           {
+                             id: "S56D",
+                             type: "craters",
+                             links:{self: "http://test.host/api/v1/craters/S56D"},
+                             attributes:{code: "S56D", description: "Very large crater"},
+                             relationships:{moon: {links: {self: "http://test.host/api/v1/craters/S56D/relationships/moon", related: "http://test.host/api/v1/craters/S56D/moon"}}}
+                           }
+                         ]
+                       }, json_response)
   end
 
   def test_show_relationship
@@ -3234,5 +3242,32 @@ class VehiclesControllerTest < ActionController::TestCase
               }
             }
     end
+  end
+end
+
+class Api::V7::ClientsControllerTest < ActionController::TestCase
+  def test_get_namespaced_model_not_matching_resource_using_model_hint
+    get :index
+    assert_response :success
+    assert_equal 'clients', json_response['data'][0]['type']
+  ensure
+    Api::V7::ClientResource._model_hints['api/v7/customer'] = 'clients'
+  end
+
+  def test_get_namespaced_model_not_matching_resource_not_using_model_hint
+    Api::V7::ClientResource._model_hints.delete('api/v7/customer')
+    get :index
+    assert_response :success
+    assert_equal 'customers', json_response['data'][0]['type']
+  ensure
+    Api::V7::ClientResource._model_hints['api/v7/customer'] = 'clients'
+  end
+end
+
+class Api::V7::CustomersControllerTest < ActionController::TestCase
+  def test_get_namespaced_model_matching_resource
+    get :index
+    assert_response :success
+    assert_equal 'customers', json_response['data'][0]['type']
   end
 end

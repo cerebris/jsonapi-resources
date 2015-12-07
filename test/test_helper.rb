@@ -116,6 +116,7 @@ end
 JSONAPI.configuration.route_format = :underscored_route
 TestApp.routes.draw do
   jsonapi_resources :people
+  jsonapi_resources :special_people
   jsonapi_resources :comments
   jsonapi_resources :firms
   jsonapi_resources :tags
@@ -141,6 +142,9 @@ TestApp.routes.draw do
   jsonapi_resources :cars
   jsonapi_resources :boats
   jsonapi_resources :flat_posts
+
+  jsonapi_resources :books
+  jsonapi_resources :authors
 
   namespace :api do
     namespace :v1 do
@@ -225,6 +229,8 @@ TestApp.routes.draw do
       jsonapi_resources :customers
       jsonapi_resources :purchase_orders
       jsonapi_resources :line_items
+
+      jsonapi_resources :clients
     end
 
     namespace :v8 do
