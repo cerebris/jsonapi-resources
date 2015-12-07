@@ -247,6 +247,16 @@ ActiveRecord::Schema.define do
 
   create_table :questionables, force: true do |t|
   end
+
+  create_table :parents, force: true do |t|
+    t.string :name
+  end
+
+  create_table :children, force: true do |t|
+    t.string :name
+    t.integer :age
+    t.integer :parent_id
+  end
   # special cases
 end
 
@@ -510,6 +520,14 @@ class Make < ActiveRecord::Base
 end
 
 class WebPage < ActiveRecord::Base
+end
+
+class Parent < ActiveRecord::Base
+  has_many :children
+end
+
+class Child < ActiveRecord:: Base
+  belongs_to :parent
 end
 
 module Api
@@ -1006,6 +1024,16 @@ class PlanetResource < JSONAPI::Resource
   def records_for_moons
     Moon.joins(:craters).select('moons.*, craters.code').distinct
   end
+end
+
+class ChildResource < JSONAPI::Resource
+  attribute :name
+  attribute :age
+end
+
+class ParentResource < JSONAPI::Resource
+  attribute :name
+  attribute :children, format: :nested_attribute, with: ChildResource
 end
 
 class PropertyResource < JSONAPI::Resource

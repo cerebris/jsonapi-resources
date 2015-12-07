@@ -1,0 +1,11 @@
+a:
+  id: 1
+  name: John Smith Jr.
+  age: 2
+  parent_id: 1
+
+b:
+  id: 2
+  name: Jane Smith
+  age: 5
+  parent_id: 1

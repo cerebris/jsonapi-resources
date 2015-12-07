@@ -80,9 +80,28 @@ module JSONAPI
       @key_formatter.format(key)
     end
 
-    def format_value(value, format)
+    def format_value(value, format, options = {})
       value_formatter = JSONAPI::ValueFormatter.value_formatter_for(format)
-      value_formatter.format(value)
+      value_formatter.format(value, options)
+    end
+
+    def attribute_hash(source)
+      requested = requested_fields(source.class)
+      fields = source.fetchable_fields & source.class._attributes.keys.to_a
+      fields = requested & fields unless requested.nil?
+
+      fields.each_with_object({}) do |name, hash|
+        format = source.class._attribute_options(name)[:format]
+        unless name == :id
+          if format == :nested_attribute
+            hash[format_key(name)] = format_value(source.public_send(name),
+                                                  format,
+                                                  source.class._attribute_options(name).merge(context: source.context))
+          else
+            hash[format_key(name)] = format_value(source.public_send(name), format)
+          end
+        end
+      end
     end
 
     private
@@ -99,7 +118,7 @@ module JSONAPI
             set_primary(@primary_class_name, id)
           end
 
-          add_included_object(id, object_hash(resource,  include_directives), true)
+          add_included_object(id, object_hash(resource, include_directives), true)
         end
       else
         return {} if source.nil?
@@ -143,19 +162,6 @@ module JSONAPI
         @fields[klass._type]
       elsif klass.superclass != JSONAPI::Resource
         requested_fields(klass.superclass)
-      end
-    end
-
-    def attribute_hash(source)
-      requested = requested_fields(source.class)
-      fields = source.fetchable_fields & source.class._attributes.keys.to_a
-      fields = requested & fields unless requested.nil?
-
-      fields.each_with_object({}) do |name, hash|
-        format = source.class._attribute_options(name)[:format]
-        unless name == :id
-          hash[format_key(name)] = format_value(source.public_send(name), format)
-        end
       end
     end
 
@@ -337,9 +343,9 @@ module JSONAPI
 
     def generate_link_builder(primary_resource_klass, options)
       LinkBuilder.new(
-        base_url: options.fetch(:base_url, ''),
-        route_formatter: options.fetch(:route_formatter, JSONAPI.configuration.route_formatter),
-        primary_resource_klass: primary_resource_klass,
+          base_url: options.fetch(:base_url, ''),
+          route_formatter: options.fetch(:route_formatter, JSONAPI.configuration.route_formatter),
+          primary_resource_klass: primary_resource_klass,
       )
     end
   end

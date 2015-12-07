@@ -1,7 +1,7 @@
 module JSONAPI
   class Formatter
     class << self
-      def format(arg)
+      def format(arg, options = {})
         arg.to_s
       end
 
@@ -42,8 +42,8 @@ module JSONAPI
 
   class ValueFormatter < Formatter
     class << self
-      def format(raw_value)
-        super(raw_value)
+      def format(raw_value, options = {})
+        super(raw_value, options)
       end
 
       def unformat(value)
@@ -87,7 +87,7 @@ end
 
 class DefaultValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value)
+    def format(raw_value, options = {})
       raw_value
     end
   end
@@ -95,7 +95,7 @@ end
 
 class IdValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value)
+    def format(raw_value, options = {})
       return if raw_value.nil?
       raw_value.to_s
     end
@@ -125,6 +125,36 @@ class DasherizedRouteFormatter < JSONAPI::RouteFormatter
 
     def unformat(formatted_route)
       formatted_route.to_s.underscore
+    end
+  end
+end
+
+##
+# Method utilizes the JSONAPI::ResourceSerializer#attribute_hash to serialize the passed in raw value
+# which should be serializable by the resource class in the options hash under they :with key.
+class NestedAttributeValueFormatter < JSONAPI::ValueFormatter
+  class << self
+    def format(raw_value, options = {})
+      resource_class = options[:with]
+      fail ArgumentError.new('with: must be specified if using format: nested_attribute') unless resource_class
+      context = options.fetch(:context, {})
+      serializer = JSONAPI::ResourceSerializer.new resource_class
+
+      if raw_value.respond_to? :each
+        attrs = []
+        raw_value.each do |id|
+          resource = resource_class.new(id, context)
+          attrs << serializer.send(:attribute_hash, resource)
+        end
+        attrs
+      else
+        resource = resource_class.new(raw_value, context)
+        serializer.send :attribute_hash, resource
+      end
+    end
+
+    def unformat(value)
+      super(value)
     end
   end
 end
