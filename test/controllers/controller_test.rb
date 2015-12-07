@@ -2297,7 +2297,7 @@ class Api::V5::AuthorsControllerTest < ActionController::TestCase
       def meta(options)
         {
           fixed: 'Hardcoded value',
-          computed: "#{self.class._type.to_s}: #{options[:serializer].url_generator.self_link(self)}",
+          computed: "#{self.class._type.to_s}: #{options[:serializer].link_builder.self_link(self)}",
           computed_foo: options[:serialization_options][:foo],
           options[:serializer].format_key('test_key') => 'test value'
         }
@@ -2331,7 +2331,7 @@ class Api::V5::AuthorsControllerTest < ActionController::TestCase
         {
           custom_hash: {
             fixed: 'Hardcoded value',
-            computed: "#{self.class._type.to_s}: #{options[:serializer].url_generator.self_link(self)}",
+            computed: "#{self.class._type.to_s}: #{options[:serializer].link_builder.self_link(self)}",
             computed_foo: options[:serialization_options][:foo],
             options[:serializer].format_key('test_key') => 'test value'
           }
