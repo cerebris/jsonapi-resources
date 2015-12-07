@@ -693,6 +693,54 @@ class ApiController < ApplicationController
 end
 ```
 
+
+###### Applying Filters
+
+The `apply_filter` method is called to apply each filter to the `Arel` relation. You may override this method to gain
+control over how the filters are applied to the `Arel` relation.
+
+This example shows how you can implement different approaches for different filters.
+
+```ruby
+def self.apply_filter(records, filter, value, options)
+  case filter
+    when :visibility
+      records.where('users.publicly_visible = ?', value == :public)
+    when :last_name, :first_name, :name
+      if value.is_a?(Array)
+        value.each do |val|
+          records = records.where(_model_class.arel_table[filter].matches(val))
+        end
+        return records
+      else
+        records.where(_model_class.arel_table[filter].matches(value))
+      end
+    else
+      return super(records, filter, value)
+  end
+end
+```
+
+
+###### Applying Sorting
+
+You can override the `apply_sort` method to gain control over how the sorting is done. This may be useful in case you'd
+like to base the sorting on variables in your context.
+
+Example:
+
+```ruby
+def self.apply_sort(records, order_options, context = {})  
+  if order_options.has?(:trending)
+    records = records.order_by_trending_scope
+    order_options - [:trending]
+  end
+  
+  super(records, order_options, context)
+end
+```
+
+
 ###### Override finder methods
 
 Finally if you have more complex requirements for finding you can override the `find` and `find_by_key` methods on the
