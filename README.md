@@ -635,6 +635,23 @@ def self.apply_filter(records, filter, value, options)
 end
 ```
 
+###### Applying Sorting
+
+You can override the `apply_sort` method to gain control over how the sorting is done. This may be useful in case you'd
+like to base the sorting on variables in your context.
+
+Example:
+
+```ruby
+def self.apply_sort(records, order_options, context = {})  
+  if order_options.has?(:trending)
+    records = records.order_by_trending_scope
+  end
+  
+  super(records, order_options, context)
+end
+```
+
 ###### Override finder methods
 
 Finally if you have more complex requirements for finding you can override the `find` and `find_by_key` methods on the
