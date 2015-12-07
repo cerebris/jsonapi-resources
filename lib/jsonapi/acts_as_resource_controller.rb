@@ -64,12 +64,12 @@ module JSONAPI
         render_results(operation_results)
       end
 
+    rescue => e
+      handle_exceptions(e)
+    ensure
       if response.body.size > 0
         response.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
       end
-
-    rescue => e
-      handle_exceptions(e)
     end
 
     # set the operations processor in the configuration or override this to use another operations processor
