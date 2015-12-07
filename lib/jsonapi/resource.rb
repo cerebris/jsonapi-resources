@@ -279,7 +279,6 @@ module JSONAPI
         subclass.abstract(false)
         subclass.immutable(false)
         subclass._attributes = (_attributes || {}).dup
-        subclass.model_name(subclass._model_name, add_model_hint: false)
         subclass._model_hints = (_model_hints || {}).dup
 
         subclass._relationships = {}

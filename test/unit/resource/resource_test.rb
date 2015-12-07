@@ -86,11 +86,11 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_model_name
-    assert_equal(:Post, PostResource._model_name)
+    assert_equal("Post", PostResource._model_name)
   end
 
   def test_model_name_of_subclassed_non_abstract_resource
-    assert_equal(:Firm, FirmResource._model_name)
+    assert_equal("Firm", FirmResource._model_name)
   end
 
   def test_model
