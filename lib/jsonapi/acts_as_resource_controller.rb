@@ -178,10 +178,10 @@ module JSONAPI
       case e
       when JSONAPI::Exceptions::Error
         render_errors(e.errors)
-      else # raise all other exceptions
-        # :nocov:
-        fail e
-        # :nocov:
+      else
+        internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
+        Rails.logger.error { "Internal Server Error: #{e.message} #{e.backtrace.join("\n")}" }
+        render_errors(internal_server_error.errors)
       end
     end
 

@@ -565,6 +565,15 @@ class PostsController < BaseController
     head :forbidden
   end
 
+  def handle_exceptions(e)
+    case e
+      when PostsController::SpecialError
+        raise e
+      else
+        super(e)
+    end
+  end
+
   #called by test_on_server_error
   def self.set_callback_message(error)
     @callback_message = "Sent from method"
@@ -756,6 +765,9 @@ module Api
     end
 
     class OrderFlagsController < JSONAPI::ResourceController
+    end
+
+    class CategoriesController < JSONAPI::ResourceController
     end
 
     class ClientsController < JSONAPI::ResourceController
@@ -1406,6 +1418,14 @@ module Api
       has_many :purchase_orders
     end
 
+    class CategoryResource < CategoryResource
+      attribute :name
+
+      # Raise exception for failure in controller
+      def name
+        fail "Something Exceptional Happened"
+      end
+    end
   end
 
   module V8
