@@ -222,15 +222,20 @@ module JSONAPI
     end
 
     def links_hash(source)
-      links = {}
-      links[:self] = link_builder.self_link(source)
+      custom_links_hash(source).merge(
+        self: link_builder.self_link(source)
+      )
+    end
 
-      if source.class.custom_links
-        customized_links = link_builder.build_custom_links(source)
-        links.merge!(customized_links)
+    def custom_links_hash(source)
+      link_instructions = source.class.custom_links || {}
+      custom_links = {}
+
+      link_instructions.each do |key, custom_link_lambda|
+        custom_links[key] = custom_link_lambda.call(source, custom_generation_options)
       end
 
-      links
+      custom_links
     end
 
     def already_serialized?(type, id)

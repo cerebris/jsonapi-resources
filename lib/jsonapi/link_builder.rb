@@ -49,17 +49,6 @@ module JSONAPI
       end
     end
 
-    def build_custom_links(source)
-      link_instructions = source.class.custom_links
-      custom_links = {}
-
-      link_instructions.each do |key, custom_link_lambda|
-        custom_links[key] = custom_link_lambda.call(source, self)
-      end
-
-      custom_links
-    end
-
     private
 
     def self_link_extension(key, source, link_info={})

@@ -1139,7 +1139,7 @@ class SimpleCustomLinkResource < JSONAPI::Resource
 
   filters :writer
 
-  custom_link :raw, ->(source, link_builder) { link_builder.self_link(source) + "/raw" }
+  custom_link :raw, ->(source, options) { options[:serializer].link_builder.self_link(source) + "/raw" }
 end
 
 class CustomLinkWithRelativePathOptionResource < JSONAPI::Resource
@@ -1156,8 +1156,8 @@ class CustomLinkWithRelativePathOptionResource < JSONAPI::Resource
 
   filters :writer
 
-  custom_link :raw, ->(source, link_builder) do
-    link_builder.self_link(source) + "/super/duper/path.xml"
+  custom_link :raw, ->(source, options) do
+    options[:serializer].link_builder.self_link(source) + "/super/duper/path.xml"
   end
 end
 
@@ -1175,9 +1175,9 @@ class CustomLinkWithIfCondition < JSONAPI::Resource
 
   filters :writer
 
-  custom_link :conditional_custom_link, ->(source, link_builder) do
+  custom_link :conditional_custom_link, ->(source, options) do
     if source.title == "JR Solves your serialization woes!"
-      link_builder.self_link(source) + "/conditional/link.json"
+      options[:serializer].link_builder.self_link(source) + "/conditional/link.json"
     end
   end
 end
@@ -1196,7 +1196,7 @@ class CustomLinkWithLambda < JSONAPI::Resource
 
   filters :writer
 
-  custom_link :link_to_external_api, ->(source, link_builder) do
+  custom_link :link_to_external_api, ->(source, options) do
     "http://external-api.com/posts/#{ source.created_at.year }/#{ source.created_at.month }/#{ source.created_at.day }-#{ source.subject.gsub(' ', '-') }"
   end
 end
