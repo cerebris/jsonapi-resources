@@ -141,7 +141,7 @@ module JSONAPI
       obj_hash['type'] = format_key(source.class._type.to_s)
 
       links = relationship_links(source)
-      obj_hash['links'] = links unless links.empty?
+      obj_hash['links'] = links unless links.empty? || !source.class._include_links
 
       attributes = attribute_hash(source)
       obj_hash['attributes'] = attributes unless attributes.empty?

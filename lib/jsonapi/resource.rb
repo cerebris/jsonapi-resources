@@ -330,7 +330,7 @@ module JSONAPI
         end
       end
 
-      attr_accessor :_attributes, :_relationships, :_allowed_filters, :_type, :_paginator, :_model_hints
+      attr_accessor :_attributes, :_relationships, :_allowed_filters, :_type, :_paginator, :_model_hints, :_include_links
 
       def create(context)
         new(create_model, context)
@@ -346,6 +346,14 @@ module JSONAPI
 
       def routing_resource_options
         @_routing_resource_options ||= {}
+      end
+
+      def render_links(choice)
+        @_include_links = choice
+      end
+
+      def _include_links
+        @_include_links.nil? ? true : @_include_links
       end
 
       # Methods used in defining a resource class

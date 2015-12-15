@@ -1971,4 +1971,24 @@ class SerializerTest < ActionDispatch::IntegrationTest
       out.strip
     )
   end
+
+  def test_optional_links
+    @resource = NoLinks.new(name: 'Mike')
+    serialized = JSONAPI::ResourceSerializer.new(
+        NoLinksResource,
+    ).serialize_to_hash(NoLinksResource.new(@resource, nil))
+
+    assert_hash_equals(
+      {
+        data: {
+          id: nil,
+          type: "noLinks",
+          attributes: {
+            name: "Mike"
+          }
+        }
+      },
+      serialized
+    )
+  end
 end

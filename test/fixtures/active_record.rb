@@ -334,6 +334,12 @@ end
 class Cat < ActiveRecord::Base
 end
 
+# No table backing needed.
+class NoLinks
+  include ActiveModel::Model
+  attr_accessor :name, :id
+end
+
 class IsoCurrency < ActiveRecord::Base
   self.primary_key = :code
   # has_many :expense_entries, foreign_key: 'currency_code'
@@ -1135,6 +1141,11 @@ end
 
 class AuthorDetailResource < JSONAPI::Resource
   attributes :author_stuff
+end
+
+class NoLinksResource < JSONAPI::Resource
+  attributes :name
+  render_links false
 end
 
 module Api
