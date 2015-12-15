@@ -27,6 +27,7 @@ backed by ActiveRecord models or by custom objects.
     * [Pagination] (#pagination)
     * [Included relationships (side-loading resources)] (#included-relationships-side-loading-resources)
     * [Resource meta] (#resource-meta)
+    * [Custom Links] (#resource-meta)
     * [Callbacks] (#callbacks)
   * [Controllers] (#controllers)
     * [Namespaces] (#namespaces)
@@ -394,74 +395,6 @@ end
 Model hints inherit from parent resources, but are not global in scope. The `model_hint` method accepts `model` and
 `resource` named parameters. `model` takes an ActiveRecord class or class name (defaults to the model name), and
 `resource` takes a resource type or a resource class (defaults to the current resource's type).
-
-#### Custom Links
-
-You can define custom links for Resource classes with the #custom_link method which takes a symbolized key and a lambda that accepts a source (Resource instance) and a link builder. For example:
-
-````ruby
-class CityCouncilMeeting < JSONAPI::Resource
-  attribute :title, :location, :approved
-
-  has_one :organizer
-
-  custom_link :minutes, ->(source, link_builder) { link_builder.self_link(source) + "/minutes" }
-end
-````
-
-This will create a custom link with the key `minutes` that is generated using the lambda. Here's an example JSON output
-
-````
-{
-  "data": [
-    {
-      "id": "1",
-      "type": "cityCouncilMeetings",
-      "links": {
-        "self": "http://city.gov/api/city-council-meetings/1",
-        "minutes": "http://city.gov/api/city-council-meetings/1/minutes"
-      },
-      "attributes": {...}
-    },
-    //...
-  ]
-}
-````
-
-If you set an if condition in the lambda that is not met the custom link will simply be set to null. Here's an example using the same class as above with a slight modification to the lambda.
-
-````ruby
-class CityCouncilMeeting < JSONAPI::Resource
-  attribute :title, :location, :approved
-
-  delegate :approved?, to: :model
-
-  has_one :organizer
-
-  custom_link :minutes, ->(source, link_builder) do
-    if source.approved?
-      link_builder.self_link(source) + "/minutes"
-    end
-  end
-end
-````
-
-````
-{
-  "data": [
-    {
-      "id": "2",
-      "type": "cityCouncilMeetings",
-      "links": {
-        "self": "http://city.gov/api/city-council-meetings/2",
-        "minutes": null
-      },
-      "attribute": {...}
-    },
-    //...
-  ]
-}
-````
 
 #### Relationships
 
@@ -996,6 +929,72 @@ method is called with an `options` has. The `options` hash will contain the foll
 
  * `:serializer` -> the serializer instance
  * `:serialization_options` -> the contents of the `serialization_options` method on the controller.
+
+#### Custom Links
+
+Custom links can be included for each resource by overriding the `custom_links` method. If a non empty hash is returned from `custom_links`, it will be merged with the default links hash containing the resource's `self` link. The `custom_links` method is called with the same `options` hash used by for [resource meta information](#resource-meta). The `options` hash contains the following:
+
+ * `:serializer` -> the serializer instance
+ * `:serialization_options` -> the contents of the `serialization_options` method on the controller.
+
+For example:
+
+```ruby
+class CityCouncilMeeting < JSONAPI::Resource
+  attribute :title, :location, :approved
+
+  def custom_links(options)
+    { minutes: options[:serialzer].link_builder.self_link(self) + "/minutes" }
+  end
+end
+```
+
+This will create a custom link with the key `minutes`, which will be merged with the default `self` link, like so:
+
+```json
+{
+  "data": [
+    {
+      "id": "1",
+      "type": "cityCouncilMeetings",
+      "links": {
+        "self": "http://city.gov/api/city-council-meetings/1",
+        "minutes": "http://city.gov/api/city-council-meetings/1/minutes"
+      },
+      "attributes": {...}
+    },
+    //...
+  ]
+}
+```
+
+Of course, the `custom_links` method can include logic to include links only when relevant:
+
+````ruby
+class CityCouncilMeeting < JSONAPI::Resource
+  attribute :title, :location, :approved
+
+  delegate :approved?, to: :model
+
+  def custom_links(options)
+    extra_links = {}
+    if approved?
+      extra_links[:minutes] = options[:serialzer].link_builder.self_link(self) + "/minutes"
+    end
+    extra_links
+  end
+end
+```
+
+It's also possibly to suppress the default `self` link by returning a hash with `{self: nil}`:
+
+````ruby
+class Selfless < JSONAPI::Resource
+  def custom_links(options)
+    {self: nil}
+  end
+end
+```
 
 #### Callbacks
 
