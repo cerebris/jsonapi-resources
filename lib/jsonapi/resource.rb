@@ -152,6 +152,15 @@ module JSONAPI
       {}
     end
 
+    # Override this to return custom links
+    # must return a hash, which will be merged with the default { self: 'self-url' } links hash
+    # links keys will be not be formatted with the key formatter for the serializer by default.
+    # They can however use the serializer's format_key and format_value methods if desired
+    # the _options hash will contain the serializer and the serialization_options
+    def custom_links(_options)
+      {}
+    end
+
     private
 
     def save
@@ -317,7 +326,6 @@ module JSONAPI
         end
 
         subclass._allowed_filters = (_allowed_filters || Set.new).dup
-        subclass._custom_links = (_custom_links || {}).dup
 
         type = subclass.name.demodulize.sub(/Resource$/, '').underscore
         subclass._type = type.pluralize.to_sym
@@ -355,15 +363,7 @@ module JSONAPI
         end
       end
 
-      attr_accessor :_attributes, :_relationships, :_allowed_filters, :_type, :_paginator, :_model_hints, :_custom_links
-
-      def custom_links
-        @_custom_links ||= {}
-      end
-
-      def custom_link(name, func)
-        @_custom_links[name.to_sym] = func
-      end
+      attr_accessor :_attributes, :_relationships, :_allowed_filters, :_type, :_paginator, :_model_hints
 
       def create(context)
         new(create_model, context)

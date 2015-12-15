@@ -2039,7 +2039,6 @@ class SerializerTest < ActionDispatch::IntegrationTest
           },
         links: {
           self: "http://example.com/customLinkWithIfConditions/1",
-          conditional_custom_link: nil
         },
         relationships: {
           writer: {

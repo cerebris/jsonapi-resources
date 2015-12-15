@@ -51,24 +51,6 @@ module JSONAPI
 
     private
 
-    def self_link_extension(key, source, link_info={})
-      extension = link_info[:ext]
-      path = link_info[:path] || key
-
-      url = "#{ self_link(source) }/#{ path }"
-      url += ".#{extension}" if extension
-
-      url
-    end
-
-    def build_custom_link(key, source, link_info)
-      extension = link_info[:ext]
-      url = link_info[:with].call(source)
-      url += ".#{ extension }" if extension
-
-      url
-    end
-
     def build_engine_name
       scopes = module_scopes_from_class(primary_resource_klass)
 

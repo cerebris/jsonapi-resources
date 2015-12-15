@@ -163,6 +163,17 @@ module JSONAPI
       (meta.is_a?(Hash) && meta) || {}
     end
 
+    def links_hash(source)
+      {
+        self: link_builder.self_link(source)
+      }.merge(custom_links_hash(source)).compact
+    end
+
+    def custom_links_hash(source)
+      custom_links = source.custom_links(custom_generation_options)
+      (custom_links.is_a?(Hash) && custom_links) || {}
+    end
+
     def relationships_hash(source, include_directives)
       relationships = source.class._relationships
       requested = requested_fields(source.class)
@@ -219,23 +230,6 @@ module JSONAPI
           end
         end
       end
-    end
-
-    def links_hash(source)
-      custom_links_hash(source).merge(
-        self: link_builder.self_link(source)
-      )
-    end
-
-    def custom_links_hash(source)
-      link_instructions = source.class.custom_links || {}
-      custom_links = {}
-
-      link_instructions.each do |key, custom_link_lambda|
-        custom_links[key] = custom_link_lambda.call(source, custom_generation_options)
-      end
-
-      custom_links
     end
 
     def already_serialized?(type, id)
