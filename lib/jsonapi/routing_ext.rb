@@ -17,6 +17,7 @@ module ActionDispatch
         end
 
         def jsonapi_resource(*resources, &_block)
+          current_scope = @scope.dup
           @resource_type = resources.first
           res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
 
@@ -45,6 +46,8 @@ module ActionDispatch
               jsonapi_relationships
             end
           end
+        ensure
+          @scope = current_scope
         end
 
         def jsonapi_relationships(options = {})
@@ -61,6 +64,7 @@ module ActionDispatch
         end
 
         def jsonapi_resources(*resources, &_block)
+          current_scope = @scope.dup
           @resource_type = resources.first
           res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
 
@@ -103,6 +107,8 @@ module ActionDispatch
               jsonapi_relationships
             end
           end
+        ensure
+          @scope = current_scope
         end
 
         def links_methods(options)
