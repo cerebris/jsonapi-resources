@@ -18,8 +18,8 @@ module JSONAPI
 
         [JSONAPI::Error.new(code: JSONAPI::INTERNAL_SERVER_ERROR,
                             status: :internal_server_error,
-                            title: 'Internal Server Error',
-                            detail: 'Internal Server Error',
+                            title: I18n.translate('exceptions.internal_server_error.title'),
+                            detail: I18n.translate('exceptions.internal_server_error.detail'),
                             meta: meta)]
       end
     end
@@ -33,8 +33,8 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_RESOURCE,
                             status: :bad_request,
-                            title: 'Invalid resource',
-                            detail: "#{resource} is not a valid resource.")]
+                            title: I18n.translate('exceptions.invalid_resource.title'),
+                            detail: I18n.translate('exceptions.invalid_resource.detail', resource: resource))]
       end
     end
 
@@ -47,8 +47,8 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::RECORD_NOT_FOUND,
                             status: :not_found,
-                            title: 'Record not found',
-                            detail: "The record identified by #{id} could not be found.")]
+                            title: I18n.translate('exceptions.record_not_found.title'),
+                            detail: I18n.translate('exceptions.record_not_found.detail', id: id))]
       end
     end
 
@@ -61,8 +61,10 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::UNSUPPORTED_MEDIA_TYPE,
                             status: :unsupported_media_type,
-                            title: 'Unsupported media type',
-                            detail: "All requests that create or update resources must use the '#{JSONAPI::MEDIA_TYPE}' Content-Type. This request specified '#{media_type}.'")]
+                            title: I18n.translate('exceptions.unsupported_media_type.title'),
+                            detail: I18n.translate("exceptions.unsupported_media_type.detail",
+                                                   needed_media_type: JSONAPI::MEDIA_TYPE,
+                                                   media_type: media_type))]
       end
     end
 
@@ -75,8 +77,8 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::RELATION_EXISTS,
                             status: :bad_request,
-                            title: 'Relation exists',
-                            detail: "The relation to #{id} already exists.")]
+                            title: I18n.translate('exceptions.has_many_relation.title'),
+                            detail: I18n.translate('exceptions.has_many_relation.detail', id: id))]
       end
     end
 
@@ -84,8 +86,8 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::FORBIDDEN,
                             status: :forbidden,
-                            title: 'Complete replacement forbidden',
-                            detail: 'Complete replacement forbidden for this relationship')]
+                            title: I18n.translate('exceptions.to_many_set_replacement_forbidden.title'),
+                            detail: I18n.translate('exceptions.to_many_set_replacement_forbidden.detail'))]
       end
     end
 
@@ -98,8 +100,8 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_FILTERS_SYNTAX,
                             status: :bad_request,
-                            title: 'Invalid filters syntax',
-                            detail: "#{filters} is not a valid syntax for filtering.")]
+                            title: I18n.translate('exceptions.invalid_filter_syntax.title'),
+                            detail: I18n.translate('exceptions.invalid_filter_syntax.title'))]
       end
     end
 
@@ -112,8 +114,8 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::FILTER_NOT_ALLOWED,
                             status: :bad_request,
-                            title: 'Filter not allowed',
-                            detail: "#{filter} is not allowed.")]
+                            title: I18n.translate('exceptions.filter_not_allowed.title'),
+                            detail: I18n.translate('exceptions.filter_not_allowed.detail', filter: filter))]
       end
     end
 
@@ -127,8 +129,9 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_FILTER_VALUE,
                             status: :bad_request,
-                            title: 'Invalid filter value',
-                            detail: "#{value} is not a valid value for #{filter}.")]
+                            title: I18n.translate('exceptions.invalid_filter_value.title'),
+                            detail: I18n.translate('exceptions.invalid_filter_value.detail'),
+                                                    value: value, filter: filter)]
       end
     end
 
@@ -142,8 +145,9 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_FIELD_VALUE,
                             status: :bad_request,
-                            title: 'Invalid field value',
-                            detail: "#{value} is not a valid value for #{field}.")]
+                            title: I18n.translate('exceptions.invalid_field_value.title'),
+                            detail: I18n.translate('exceptions.invalid_field_value.detail',
+                                                    value: value, field: field))]
       end
     end
 
@@ -151,8 +155,8 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_FIELD_FORMAT,
                             status: :bad_request,
-                            title: 'Invalid field format',
-                            detail: 'Fields must specify a type.')]
+                            title: I18n.translate('exceptions.invalid_field_format.title'),
+                            detail: I18n.translate('exceptions.invalid_field_format.detail'))]
       end
     end
 
@@ -160,8 +164,8 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_LINKS_OBJECT,
                             status: :bad_request,
-                            title: 'Invalid Links Object',
-                            detail: 'Data is not a valid Links Object.')]
+                            title: I18n.translate('exceptions.invalid_links_object.title'),
+                            detail: I18n.translate('exceptions.invalid_links_object.detail'))]
       end
     end
 
@@ -174,8 +178,8 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::TYPE_MISMATCH,
                             status: :bad_request,
-                            title: 'Type Mismatch',
-                            detail: "#{type} is not a valid type for this operation.")]
+                            title: I18n.translate('exceptions.type_mismatch.title'),
+                            detail: I18n.translate('exceptions.type_mismatch.detail', type: type))]
       end
     end
 
@@ -189,8 +193,9 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_FIELD,
                             status: :bad_request,
-                            title: 'Invalid field',
-                            detail: "#{field} is not a valid field for #{type}.")]
+                            title: I18n.translate('exceptions.invalid_field.title'),
+                            detail: I18n.translate('exceptions.invalid_field.detail',
+                                                    field: field, type: type))]
       end
     end
 
@@ -204,8 +209,9 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_INCLUDE,
                             status: :bad_request,
-                            title: 'Invalid field',
-                            detail: "#{relationship} is not a valid relationship of #{resource}")]
+                            title: I18n.translate('exceptions.invalid_include.title'),
+                            detail: I18n.translate('exceptions.invalid_include.detail',
+                                                    relationship: relationship, resource: resource))]
       end
     end
 
@@ -219,8 +225,9 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_SORT_CRITERIA,
                             status: :bad_request,
-                            title: 'Invalid sort criteria',
-                            detail: "#{sort_criteria} is not a valid sort criteria for #{resource}")]
+                            title: I18n.translate('exceptions.invalid_sort_criteria.title'),
+                            detail: I18n.translate('exceptions.invalid_sort_criteria.detail',
+                                                    sort_criteria: sort_criteria, resource: resource))]
       end
     end
 
@@ -234,8 +241,9 @@ module JSONAPI
         params.collect do |param|
           JSONAPI::Error.new(code: JSONAPI::PARAM_NOT_ALLOWED,
                              status: :bad_request,
-                             title: 'Param not allowed',
-                             detail: "#{param} is not allowed.")
+                             title: I18n.translate('exceptions.parameters_not_allowed.title'),
+                             detail: I18n.translate('exceptions.parameters_not_allowed.detail', param: param))
+
         end
       end
     end
@@ -249,8 +257,8 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::PARAM_MISSING,
                             status: :bad_request,
-                            title: 'Missing Parameter',
-                            detail: "The required parameter, #{param}, is missing.")]
+                            title: I18n.translate('exceptions.parameter_missing.title'),
+                            detail: I18n.translate('exceptions.parameter_missing.detail', param: param))]
       end
     end
 
@@ -258,8 +266,8 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::COUNT_MISMATCH,
                             status: :bad_request,
-                            title: 'Count to key mismatch',
-                            detail: 'The resource collection does not contain the same number of objects as the number of keys.')]
+                            title: I18n.translate('exceptions.count_mismatch.title'),
+                            detail: I18n.translate('exceptions.count_mismatch.detail'))]
       end
     end
 
@@ -272,8 +280,9 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::KEY_NOT_INCLUDED_IN_URL,
                             status: :bad_request,
-                            title: 'Key is not included in URL',
-                            detail: "The URL does not support the key #{key}")]
+                            title: I18n.translate('exceptions.key_not_included_in_url.title'),
+                            detail: I18n.translate('exceptions.key_not_included_in_url.detail',
+                                                    key: key))]
       end
     end
 
@@ -281,8 +290,8 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::KEY_ORDER_MISMATCH,
                             status: :bad_request,
-                            title: 'A key is required',
-                            detail: 'The resource object does not contain a key.')]
+                            title: I18n.translate('exceptions.missing_key.title'),
+                            detail: I18n.translate('exceptions.missing_key.detail'))]
       end
     end
 
@@ -295,7 +304,7 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::LOCKED,
                             status: :locked,
-                            title: 'Locked resource',
+                            title: I18n.translate('exceptions.record_locked.title'),
                             detail: "#{message}")]
       end
     end
@@ -343,8 +352,8 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::SAVE_FAILED,
                             status: :unprocessable_entity,
-                            title: 'Save failed or was cancelled',
-                            detail: 'Save failed or was cancelled')]
+                            title: I18n.translate('exceptions.save_failed.title'),
+                            detail: I18n.translate('exceptions.save_failed.detail'))]
       end
     end
 
@@ -352,8 +361,8 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_PAGE_OBJECT,
                             status: :bad_request,
-                            title: 'Invalid Page Object',
-                            detail: 'Invalid Page Object.')]
+                            title: I18n.translate('exceptions.invalid_page_object.title'),
+                            detail: I18n.translate('exceptions.invalid_page_object.detail'))]
       end
     end
 
@@ -367,8 +376,8 @@ module JSONAPI
         params.collect do |param|
           JSONAPI::Error.new(code: JSONAPI::PARAM_NOT_ALLOWED,
                              status: :bad_request,
-                             title: 'Page parameter not allowed',
-                             detail: "#{param} is not an allowed page parameter.")
+                             title: I18n.translate('exceptions.page_parameters_not_allowed.title'),
+                             detail: I18n.translate('exceptions.page_parameters_not_allowed.detail', param: param))
         end
       end
     end
@@ -378,13 +387,13 @@ module JSONAPI
       def initialize(page, value, msg = nil)
         @page = page
         @value = value
-        @msg = msg || "#{value} is not a valid value for #{page} page parameter."
+        @msg = msg || I18n.translate('exceptions.invalid_page_value.detail', value: value, page: page)
       end
 
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_PAGE_VALUE,
                             status: :bad_request,
-                            title: 'Invalid page value',
+                            title: I18n.translate('exceptions.invalid_page_value.title'),
                             detail: @msg)]
       end
     end
