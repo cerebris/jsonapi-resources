@@ -1042,6 +1042,10 @@ end
 
 Of course you are free to extend this as needed and override action handlers or other methods.
 
+A jsonapi-controller generator is avaliable
+```
+rails generate jsonapi:controller contact
+```
 
 ###### Context
 
