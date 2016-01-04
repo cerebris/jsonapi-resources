@@ -642,7 +642,7 @@ end
 
 ```
 
-For example, you may want raise an error if the user is not authorized to view the related records. See the next
+For example, you may want to raise an error if the user is not authorized to view the related records. See the next
 section for additional details on raising errors.
 
 ```ruby
