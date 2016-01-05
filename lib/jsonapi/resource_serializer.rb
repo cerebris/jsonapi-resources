@@ -278,6 +278,7 @@ module JSONAPI
     end
 
     def link_object_to_many(source, relationship, include_linkage)
+      include_linkage = include_linkage | @always_include_to_many_linkage_data | relationship.always_include_linkage_data
       link_object_hash = {}
       link_object_hash[:links] = {}
       link_object_hash[:links][:self] = self_link(source, relationship)
