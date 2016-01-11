@@ -33,7 +33,12 @@ module ActionDispatch
           end
 
           resource @resource_type, options do
-            @scope.instance_variable_get(:@hash)[:jsonapi_resource] = @resource_type
+            if @scope.respond_to? :[]=
+              @scope[:jsonapi_resource] = @resource_type
+            else
+              @scope.instance_variable_get(:@hash)[:jsonapi_resource] = @resource_type
+            end
+
             if block_given?
               yield
             else
@@ -86,7 +91,12 @@ module ActionDispatch
           end
 
           resources @resource_type, options do
-            @scope.instance_variable_get(:@hash)[:jsonapi_resource] = @resource_type
+            if @scope.respond_to? :[]=
+              @scope[:jsonapi_resource] = @resource_type
+            else
+              @scope.instance_variable_get(:@hash)[:jsonapi_resource] = @resource_type
+            end
+
             if block_given?
               yield
             else
