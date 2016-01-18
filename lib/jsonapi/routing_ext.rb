@@ -69,7 +69,7 @@ module ActionDispatch
           options[:path] = format_route(@resource_type)
 
           if res.resource_key_type == :uuid
-            options[:constraints] = {id: /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(,[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})*/}
+            options[:constraints] = {id: /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/}
           end
 
           if options[:except]
