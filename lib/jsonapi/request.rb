@@ -479,7 +479,7 @@ module JSONAPI
     def parse_to_many_relationship(link_value, relationship, &add_result)
       if link_value.is_a?(Array) && link_value.length == 0
         linkage = []
-      elsif link_value.is_a?(Hash)
+      elsif (link_value.is_a?(Hash) || link_value.is_a?(ActionController::Parameters))
         linkage = link_value[:data]
       else
         fail JSONAPI::Exceptions::InvalidLinksObject.new
