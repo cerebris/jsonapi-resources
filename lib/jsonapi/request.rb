@@ -516,7 +516,7 @@ module JSONAPI
       params.each do |key, value|
         case key.to_s
         when 'relationships'
-          value.each_key do |links_key|
+          value.keys.each do |links_key|
             unless formatted_allowed_fields.include?(links_key.to_sym)
               params_not_allowed.push(links_key)
               unless JSONAPI.configuration.raise_if_parameters_not_allowed
