@@ -174,8 +174,9 @@ module JSONAPI
     end
 
     def _remove
-      @model.destroy
-
+      unless @model.destroy
+        fail JSONAPI::Exceptions::ValidationErrors.new(self)
+      end
       :completed
     end
 
