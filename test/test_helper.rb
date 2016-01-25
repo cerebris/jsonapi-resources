@@ -24,6 +24,9 @@ require File.expand_path('../helpers/functional_helpers', __FILE__)
 
 Rails.env = 'test'
 
+I18n.load_path += Dir[File.expand_path("../../locales/*.yml", __FILE__)]
+I18n.enforce_available_locales = false
+
 JSONAPI.configure do |config|
   config.json_key_format = :camelized_key
 end
