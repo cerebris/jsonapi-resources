@@ -583,7 +583,7 @@ module JSONAPI
       # Override this method if you want to customize the relation for
       # finder methods (find, find_by_key)
       def records(_options = {})
-        _model_class
+        _model_class.all
       end
 
       def verify_filters(filters, context = nil)
