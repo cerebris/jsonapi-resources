@@ -248,6 +248,12 @@ TestApp.routes.draw do
     end
   end
 
+  namespace :dasherized_namespace, path: 'dasherized-namespace' do
+    namespace :v1 do
+      jsonapi_resources :people
+    end
+  end
+
   namespace :pets do
     namespace :v1 do
       jsonapi_resources :cats
@@ -265,6 +271,12 @@ MyEngine::Engine.routes.draw do
   end
 
   namespace :admin_api do
+    namespace :v1 do
+      jsonapi_resources :people
+    end
+  end
+
+  namespace :dasherized_namespace, path: 'dasherized-namespace' do
     namespace :v1 do
       jsonapi_resources :people
     end
