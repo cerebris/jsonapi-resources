@@ -49,6 +49,11 @@ class TestApp < Rails::Application
 
   # Turn off millisecond precision to maintain Rails 4.0 and 4.1 compatibility in test results
   ActiveSupport::JSON::Encoding.time_precision = 0 if Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR >= 1
+
+  if Rails::VERSION::MAJOR >= 5
+    config.active_support.halt_callback_chains_on_return_false = false
+    config.active_record.time_zone_aware_types = [:time, :datetime]
+  end
 end
 
 module MyEngine
