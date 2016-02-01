@@ -123,6 +123,75 @@ if Rails::VERSION::MAJOR < 5
   end
 end
 
+# Patch to allow :api_json mime type to be treated as JSON
+# Otherwise it is run through `to_query` and empty arrays are dropped.
+if Rails::VERSION::MAJOR >= 5
+  module ActionController
+    class TestRequest < ActionDispatch::TestRequest
+      def assign_parameters(routes, controller_path, action, parameters, generated_path, query_string_keys)
+        non_path_parameters = {}
+        path_parameters = {}
+
+        parameters.each do |key, value|
+          if query_string_keys.include?(key)
+            non_path_parameters[key] = value
+          else
+            if value.is_a?(Array)
+              value = value.map(&:to_param)
+            else
+              value = value.to_param
+            end
+
+            path_parameters[key] = value
+          end
+        end
+
+        if get?
+          if self.query_string.blank?
+            self.query_string = non_path_parameters.to_query
+          end
+        else
+          if ENCODER.should_multipart?(non_path_parameters)
+            self.content_type = ENCODER.content_type
+            data = ENCODER.build_multipart non_path_parameters
+          else
+            fetch_header('CONTENT_TYPE') do |k|
+              set_header k, 'application/x-www-form-urlencoded'
+            end
+
+            # parser = ActionDispatch::Http::Parameters::DEFAULT_PARSERS[Mime::Type.lookup(fetch_header('CONTENT_TYPE'))]
+
+            case content_mime_type.to_sym
+              when nil
+                raise "Unknown Content-Type: #{content_type}"
+              when :json, :api_json
+                data = ActiveSupport::JSON.encode(non_path_parameters)
+              when :xml
+                data = non_path_parameters.to_xml
+              when :url_encoded_form
+                data = non_path_parameters.to_query
+              else
+                @custom_param_parsers[content_mime_type] = ->(_) { non_path_parameters }
+                data = non_path_parameters.to_query
+            end
+          end
+
+          set_header 'CONTENT_LENGTH', data.length.to_s
+          set_header 'rack.input', StringIO.new(data)
+        end
+
+        fetch_header("PATH_INFO") do |k|
+          set_header k, generated_path
+        end
+        path_parameters[:controller] = controller_path
+        path_parameters[:action] = action
+
+        self.path_parameters = path_parameters
+      end
+    end
+  end
+end
+
 def count_queries(&block)
   @query_count = 0
   @queries = []
