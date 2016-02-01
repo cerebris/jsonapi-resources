@@ -346,8 +346,14 @@ class Planet < ActiveRecord::Base
   def check_not_pluto
     # Pluto can't be a planet, so cancel the save
     if name.downcase == 'pluto'
-      return false
-    end
+      # :nocov:
+      if Rails::VERSION::MAJOR >= 5
+        throw(:abort)
+      else
+        return false
+      end
+      # :nocov:
+   end
   end
 end
 
@@ -403,7 +409,7 @@ class Breed
     if name.is_a?(String) && name.length > 0
       return true
     else
-      @errors.set(:name, ["can't be blank"])
+      @errors.add(:name, "can't be blank")
       return false
     end
   end

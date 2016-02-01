@@ -153,11 +153,13 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_nil_model_class
     # ToDo:Figure out why this test does not work on Rails 4.0
+    # :nocov:
     if Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR >= 1
       assert_output nil, "[MODEL NOT FOUND] Model could not be found for NoMatchResource. If this a base Resource declare it as abstract.\n" do
         assert_nil NoMatchResource._model_class
       end
     end
+    # :nocov:
   end
 
   def test_nil_abstract_model_class
