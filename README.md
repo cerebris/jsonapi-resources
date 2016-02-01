@@ -2,6 +2,8 @@
 
 [![Join the chat at https://gitter.im/cerebris/jsonapi-resources](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cerebris/jsonapi-resources?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+**_NOTE: This Rails 5 branch is a work in progress. It contains some monkey patches (in `test_helper.rb`) to allow existing tests to pass with Rails 5.0.0.beta1.1_. Things may break with future changes to Rails.**
+
 `JSONAPI::Resources`, or "JR", provides a framework for developing a server that complies with the
 [JSON API](http://jsonapi.org/) specification.
 
