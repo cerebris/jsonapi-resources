@@ -77,6 +77,38 @@ if Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR < 1
   end
 end
 
+# Tests are now using the rails 5 format for the http methods. So for rails 4 we will simply convert them back
+# in a standard way.
+if Rails::VERSION::MAJOR < 5
+  module Rails4ActionControllerProcess
+    def process(*args)
+      if args[2] && args[2][:params]
+        args[2] = args[2][:params]
+      end
+      super *args
+    end
+  end
+  class ActionController::TestCase
+    prepend Rails4ActionControllerProcess
+  end
+
+  module ActionDispatch
+    module Integration #:nodoc:
+      module Rails4IntegrationProcess
+        def process(method, path, parameters = nil, headers_or_env = nil)
+          params = parameters.nil? ? nil : parameters[:params]
+          headers = parameters.nil? ? nil : parameters[:headers]
+          super method, path, params, headers
+        end
+      end
+
+      class Session
+        prepend Rails4IntegrationProcess
+      end
+    end
+  end
+end
+
 def count_queries(&block)
   @query_count = 0
   @queries = []
