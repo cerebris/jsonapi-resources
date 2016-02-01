@@ -94,9 +94,10 @@ module JSONAPI
         format = source.class._attribute_options(name)[:format]
         unless name == :id
           if format == :nested_attribute
-            hash[format_key(name)] = format_value(source.public_send(name),
-                                                  format,
-                                                  source.class._attribute_options(name).merge(context: source.context))
+            formatted_value = format_value(source.public_send(name),
+                                           format,
+                                           source.class._attribute_options(name).merge(context: source.context))
+            hash[format_key(name)] = formatted_value if source.public_send(name)
           else
             hash[format_key(name)] = format_value(source.public_send(name), format)
           end
