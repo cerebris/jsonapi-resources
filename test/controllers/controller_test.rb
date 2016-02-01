@@ -2865,7 +2865,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     Api::V2::BookResource.paginator :offset
     JSONAPI.configuration.top_level_meta_include_record_count = true
     count_queries do
-      get :index, params: {page: {offset: 50, limit: 12}, filter: {banned: 'false'}}
+      get :index, params: {page: {offset: 50, limit: 12}, filter: {banned: 'false'}, fields: {books: 'id,title'}}
     end
     assert_response :success
     assert_equal 12, json_response['data'].size
