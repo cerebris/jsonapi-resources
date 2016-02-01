@@ -77,6 +77,20 @@ if Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR < 1
   end
 end
 
+# Monkeypatch ActionController::TestCase to delete the RAW_POST_DATA on subsequent calls in the same test.
+if Rails::VERSION::MAJOR >= 5
+  module ClearRawPostHeader
+    def process(action, *args)
+      @request.delete_header 'RAW_POST_DATA'
+      super
+    end
+  end
+
+  class ActionController::TestCase
+    prepend ClearRawPostHeader
+  end
+end
+
 # Tests are now using the rails 5 format for the http methods. So for rails 4 we will simply convert them back
 # in a standard way.
 if Rails::VERSION::MAJOR < 5
