@@ -8,3 +8,9 @@ rvm:
   - 2.0
   - 2.1
   - 2.2
+matrix:
+  exclude:
+    - rvm: 2.0
+      env: "RAILS_VERSION=5.0.0.beta1.1"
+    - rvm: 2.1
+      env: "RAILS_VERSION=5.0.0.beta1.1"
