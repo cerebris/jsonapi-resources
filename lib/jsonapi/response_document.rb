@@ -90,10 +90,17 @@ module JSONAPI
       query_params[:page] = params
 
       request = @options[:request]
-      query_params[:fields] = request.params[:fields].to_unsafe_hash if request.params[:fields]
+      if request.params[:fields]
+        query_params[:fields] = request.params[:fields].respond_to?(:to_unsafe_hash) ? request.params[:fields].to_unsafe_hash : request.params[:fields]
+      end
+
       query_params[:include] = request.params[:include] if request.params[:include]
       query_params[:sort] = request.params[:sort] if request.params[:sort]
-      query_params[:filter] = request.params[:filter].to_unsafe_hash if request.params[:filter]
+
+      if request.params[:filter]
+        query_params[:filter] = request.params[:filter].respond_to?(:to_unsafe_hash) ? request.params[:filter].to_unsafe_hash : request.params[:filter]
+      end
+
       query_params
     end
 
