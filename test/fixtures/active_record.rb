@@ -288,7 +288,12 @@ class Post < ActiveRecord::Base
   def destroy_callback
     if title == "can't destroy me"
       errors.add(:title, "can't destroy me")
-      return false
+
+      if Rails::VERSION::MAJOR >= 5
+        throw(:abort)
+      else
+        return false
+      end
     end
   end
 end
