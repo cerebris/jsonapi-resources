@@ -120,6 +120,29 @@ module JSONAPI
       _model.errors.messages
     end
 
+    # Add metadata to validation error objects.
+    #
+    # Suppose `model_error_messages` returned the following error messages
+    # hash:
+    #
+    #   {password: ["too_short", "format"]}
+    #
+    # Then to add data to the validation error `validation_error_metadata`
+    # could return:
+    #
+    #   {
+    #     password: {
+    #       "too_short": {"minimum_length" => 6},
+    #       "format": {"requirement" => "must contain letters and numbers"}
+    #     }
+    #   }
+    #
+    # The specified metadata is then be merged into the validation error
+    # object.
+    def validation_error_metadata
+      {}
+    end
+
     # Override this to return resource level meta data
     # must return a hash, and if the hash is empty the meta section will not be serialized with the resource
     # meta keys will be not be formatted with the key formatter for the serializer by default. They can however use the
@@ -174,8 +197,9 @@ module JSONAPI
     end
 
     def _remove
-      @model.destroy
-
+      unless @model.destroy
+        fail JSONAPI::Exceptions::ValidationErrors.new(self)
+      end
       :completed
     end
 
@@ -519,11 +543,11 @@ module JSONAPI
         if filters
           filters.each do |filter, value|
             if _relationships.include?(filter)
-              if _relationships[filter].is_a?(JSONAPI::Relationship::ToMany)
-                required_includes.push(filter.to_s)
-                records = apply_filter(records, "#{filter}.#{_relationships[filter].primary_key}", value, options)
+              if _relationships[filter].belongs_to?
+                records = apply_filter(records, _relationships[filter].foreign_key, value, options)
               else
-                records = apply_filter(records, "#{_relationships[filter].foreign_key}", value, options)
+                required_includes.push(filter.to_s)
+                records = apply_filter(records, "#{_relationships[filter].table_name}.#{_relationships[filter].primary_key}", value, options)
               end
             else
               records = apply_filter(records, filter, value, options)
@@ -583,7 +607,7 @@ module JSONAPI
       # Override this method if you want to customize the relation for
       # finder methods (find, find_by_key)
       def records(_options = {})
-        _model_class
+        _model_class.all
       end
 
       def verify_filters(filters, context = nil)
@@ -690,6 +714,10 @@ module JSONAPI
 
       def _primary_key
         @_primary_key ||= _model_class.respond_to?(:primary_key) ? _model_class.primary_key : :id
+      end
+
+      def _table_name
+        @_table_name ||= _model_class.respond_to?(:table_name) ? _model_class.table_name : _model_name.tableize
       end
 
       def _as_parent_key

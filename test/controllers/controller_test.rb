@@ -485,7 +485,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 1, json_response['meta']["warnings"].count
     assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
     assert_equal "asdfg is not allowed.", json_response['meta']["warnings"][0]["detail"]
-    assert_equal 105, json_response['meta']["warnings"][0]["code"]
+    assert_equal '105', json_response['meta']["warnings"][0]["code"]
   ensure
     JSONAPI.configuration.raise_if_parameters_not_allowed = true
   end
@@ -695,7 +695,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 1, json_response['meta']["warnings"].count
     assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
     assert_equal "subject is not allowed.", json_response['meta']["warnings"][0]["detail"]
-    assert_equal 105, json_response['meta']["warnings"][0]["code"]
+    assert_equal '105', json_response['meta']["warnings"][0]["code"]
   ensure
     JSONAPI.configuration.raise_if_parameters_not_allowed = true
   end
@@ -866,7 +866,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 1, json_response['meta']["warnings"].count
     assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
     assert_equal "subject is not allowed.", json_response['meta']["warnings"][0]["detail"]
-    assert_equal 105, json_response['meta']["warnings"][0]["code"]
+    assert_equal '105', json_response['meta']["warnings"][0]["code"]
   ensure
     JSONAPI.configuration.raise_if_parameters_not_allowed = true
   end
@@ -1651,6 +1651,14 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
+  end
+
+  def test_delete_with_validation_error
+    post = Post.create!(title: "can't destroy me", author: Person.first)
+    delete :destroy, { id: post.id }
+
+    assert_equal "can't destroy me", json_response['errors'][0]['title']
+    assert_response :unprocessable_entity
   end
 
   def test_delete_single
