@@ -377,8 +377,7 @@ class Crater < ActiveRecord::Base
 end
 
 class Preferences < ActiveRecord::Base
-  has_one :author, class_name: 'Person'
-  has_many :friends, class_name: 'Person'
+  has_one :author, class_name: 'Person', :inverse_of => 'preferences'
 end
 
 class Fact < ActiveRecord::Base
@@ -988,9 +987,6 @@ class EmployeeResource < JSONAPI::Resource
   model_name 'Person'
 end
 
-class FriendResource < JSONAPI::Resource
-end
-
 class BreedResource < JSONAPI::Resource
   attribute :name, format: :title
 
@@ -1062,8 +1058,7 @@ end
 class PreferencesResource < JSONAPI::Resource
   attribute :advanced_mode
 
-  has_one :author, foreign_key: :person_id
-  has_many :friends
+  has_one :author, :foreign_key_on => :related
 
   def self.find_by_key(key, options = {})
     new(Preferences.first, nil)
@@ -1173,7 +1168,6 @@ module Api
     class CraterResource < CraterResource; end
     class PreferencesResource < PreferencesResource; end
     class EmployeeResource < EmployeeResource; end
-    class FriendResource < FriendResource; end
     class HairCutResource < HairCutResource; end
     class VehicleResource < VehicleResource; end
     class CarResource < CarResource; end

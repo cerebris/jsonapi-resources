@@ -115,7 +115,7 @@ generate routes for `index`, `show` and `show_relationship`.
 
 ###### Immutable for Readonly
 
-Some resources are read-only and are not to be modified through the API. Declaring a resource as immutable prevents 
+Some resources are read-only and are not to be modified through the API. Declaring a resource as immutable prevents
 creation of routes that allow modification of the resource.
 
 ###### Immutable Heterogeneous Collections
@@ -366,7 +366,7 @@ end
 #### Model Hints
 
 Resource instances are created from model records. The determination of the correct resource type is performed using a
-simple rule based on the model's name. The name is used to find a resource in the same module (as the originating 
+simple rule based on the model's name. The name is used to find a resource in the same module (as the originating
 resource) that matches the name. This usually works quite well, however it can fail when model names do not match
 resource names. It can also fail when using namespaced models. In this case a `model_hint` can be created to map model
 names to resources. For example:
@@ -392,7 +392,7 @@ end
 ```
 
 Model hints inherit from parent resources, but are not global in scope. The `model_hint` method accepts `model` and
-`resource` named parameters. `model` takes an ActiveRecord class or class name (defaults to the model name), and 
+`resource` named parameters. `model` takes an ActiveRecord class or class name (defaults to the model name), and
 `resource` takes a resource type or a resource class (defaults to the current resource's type).
 
 #### Relationships
@@ -450,6 +450,7 @@ The relationship methods (`relationship`, `has_one`, and `has_many`) support the
  * `acts_as_set` - allows the entire set of related records to be replaced in one operation. Defaults to false if not set.
  * `polymorphic` - set to true to identify relationships that are polymorphic.
  * `relation_name` - the name of the relation to use on the model. A lambda may be provided which allows conditional selection of the relation based on the context.
+ * `always_include_linkage_data` - if set to true, the relationship includes linkage data. Defaults to false if not set.
 
 `to_one` relationships support the additional option:
  * `foreign_key_on` - defaults to `:self`. To indicate that the foreign key is on the related resource specify `:related`.
@@ -546,8 +547,8 @@ The default value is used as if it came from the request.
 ##### Applying Filters
 
 You may customize how a filter behaves by supplying a callable to the `:apply` option. This callable will be used to
-apply that filter. The callable is passed the `records`, which is an `ActiveRecord::Relation`, the `value`, and an 
-`_options` hash. It is expected to return an `ActiveRecord::Relation`. 
+apply that filter. The callable is passed the `records`, which is an `ActiveRecord::Relation`, the `value`, and an
+`_options` hash. It is expected to return an `ActiveRecord::Relation`.
 
 This example shows how you can implement different approaches for different filters.
 
@@ -581,7 +582,7 @@ end
 
 ##### Verifying Filters
 
-Because filters typically come straight from the request, it's prudent to verify their values. To do so, provide a 
+Because filters typically come straight from the request, it's prudent to verify their values. To do so, provide a
 callable to the `verify` option. This callable will be passed the `value` and the `context`. Verify should return the
 verified value, which may be modified.
 
@@ -600,7 +601,7 @@ verified value, which may be modified.
 
 Basic finding by filters is supported by resources. This is implemented in the `find` and `find_by_key` finder methods.
 Currently this is implemented for `ActiveRecord` based resources. The finder methods rely on the `records` method to get
-an `ActiveRecord::Relation` relation. It is therefore possible to override `records` to affect the three find related 
+an `ActiveRecord::Relation` relation. It is therefore possible to override `records` to affect the three find related
 methods.
 
 ###### Customizing base records for finder methods
@@ -731,12 +732,12 @@ like to base the sorting on variables in your context.
 Example:
 
 ```ruby
-def self.apply_sort(records, order_options, context = {})  
+def self.apply_sort(records, order_options, context = {})
   if order_options.has?(:trending)
     records = records.order_by_trending_scope
     order_options - [:trending]
   end
-  
+
   super(records, order_options, context)
 end
 ```
@@ -922,7 +923,7 @@ end
 ```
 
 The `meta` method will be called for each resource instance. Override the `meta` method on a resource class to control
-the meta information for the resource. If a non empty hash is returned from `meta` this will be serialized. The `meta` 
+the meta information for the resource. If a non empty hash is returned from `meta` this will be serialized. The `meta`
 method is called with an `options` has. The `options` hash will contain the following:
 
  * `:serializer` -> the serializer instance
@@ -1042,6 +1043,10 @@ end
 
 Of course you are free to extend this as needed and override action handlers or other methods.
 
+A jsonapi-controller generator is avaliable
+```
+rails generate jsonapi:controller contact
+```
 
 ###### Context
 
@@ -1189,31 +1194,31 @@ Error codes are provided for each error object returned, based on the error. The
 
 ```ruby
 module JSONAPI
-  VALIDATION_ERROR = 100
-  INVALID_RESOURCE = 101
-  FILTER_NOT_ALLOWED = 102
-  INVALID_FIELD_VALUE = 103
-  INVALID_FIELD = 104
-  PARAM_NOT_ALLOWED = 105
-  PARAM_MISSING = 106
-  INVALID_FILTER_VALUE = 107
-  COUNT_MISMATCH = 108
-  KEY_ORDER_MISMATCH = 109
-  KEY_NOT_INCLUDED_IN_URL = 110
-  INVALID_INCLUDE = 112
-  RELATION_EXISTS = 113
-  INVALID_SORT_CRITERIA = 114
-  INVALID_LINKS_OBJECT = 115
-  TYPE_MISMATCH = 116
-  INVALID_PAGE_OBJECT = 117
-  INVALID_PAGE_VALUE = 118
-  INVALID_FIELD_FORMAT = 119
-  INVALID_FILTERS_SYNTAX = 120
-  SAVE_FAILED = 121
-  FORBIDDEN = 403
-  RECORD_NOT_FOUND = 404
-  UNSUPPORTED_MEDIA_TYPE = 415
-  LOCKED = 423
+  VALIDATION_ERROR = '100'
+  INVALID_RESOURCE = '101'
+  FILTER_NOT_ALLOWED = '102'
+  INVALID_FIELD_VALUE = '103'
+  INVALID_FIELD = '104'
+  PARAM_NOT_ALLOWED = '105'
+  PARAM_MISSING = '106'
+  INVALID_FILTER_VALUE = '107'
+  COUNT_MISMATCH = '108'
+  KEY_ORDER_MISMATCH = '109'
+  KEY_NOT_INCLUDED_IN_URL = '110'
+  INVALID_INCLUDE = '112'
+  RELATION_EXISTS = '113'
+  INVALID_SORT_CRITERIA = '114'
+  INVALID_LINKS_OBJECT = '115'
+  TYPE_MISMATCH = '116'
+  INVALID_PAGE_OBJECT = '117'
+  INVALID_PAGE_VALUE = '118'
+  INVALID_FIELD_FORMAT = '119'
+  INVALID_FILTERS_SYNTAX = '120'
+  SAVE_FAILED = '121'
+  FORBIDDEN = '403'
+  RECORD_NOT_FOUND = '404'
+  UNSUPPORTED_MEDIA_TYPE = '415'
+  LOCKED = '423'
 end
 ```
 

@@ -1638,12 +1638,6 @@ class SerializerTest < ActionDispatch::IntegrationTest
                 self: '/preferences/1/relationships/author',
                 related: '/preferences/1/author'
               }
-            },
-            friends: {
-              links: {
-                self: '/preferences/1/relationships/friends',
-                related: '/preferences/1/friends'
-              }
             }
           }
         }

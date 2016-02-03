@@ -93,14 +93,7 @@ module JSONAPI
     # The fields options controls both fields and included links references.
     def process_primary(source, include_directives)
       if source.respond_to?(:to_ary)
-        source.each do |resource|
-          id = resource.id
-          if already_serialized?(resource.class._type, id)
-            set_primary(@primary_class_name, id)
-          end
-
-          add_included_object(id, object_hash(resource,  include_directives), true)
-        end
+        source.each { |resource| process_primary(resource, include_directives) }
       else
         return {} if source.nil?
 
@@ -278,6 +271,7 @@ module JSONAPI
     end
 
     def link_object_to_many(source, relationship, include_linkage)
+      include_linkage = include_linkage | relationship.always_include_linkage_data
       link_object_hash = {}
       link_object_hash[:links] = {}
       link_object_hash[:links][:self] = self_link(source, relationship)

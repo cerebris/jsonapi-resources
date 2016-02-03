@@ -485,7 +485,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 1, json_response['meta']["warnings"].count
     assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
     assert_equal "asdfg is not allowed.", json_response['meta']["warnings"][0]["detail"]
-    assert_equal 105, json_response['meta']["warnings"][0]["code"]
+    assert_equal '105', json_response['meta']["warnings"][0]["code"]
   ensure
     JSONAPI.configuration.raise_if_parameters_not_allowed = true
   end
@@ -695,7 +695,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 1, json_response['meta']["warnings"].count
     assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
     assert_equal "subject is not allowed.", json_response['meta']["warnings"][0]["detail"]
-    assert_equal 105, json_response['meta']["warnings"][0]["code"]
+    assert_equal '105', json_response['meta']["warnings"][0]["code"]
   ensure
     JSONAPI.configuration.raise_if_parameters_not_allowed = true
   end
@@ -866,7 +866,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 1, json_response['meta']["warnings"].count
     assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
     assert_equal "subject is not allowed.", json_response['meta']["warnings"][0]["detail"]
-    assert_equal 105, json_response['meta']["warnings"][0]["code"]
+    assert_equal '105', json_response['meta']["warnings"][0]["code"]
   ensure
     JSONAPI.configuration.raise_if_parameters_not_allowed = true
   end
@@ -3281,10 +3281,32 @@ class Api::V7::CustomersControllerTest < ActionController::TestCase
 end
 
 class Api::V7::CategoriesControllerTest < ActionController::TestCase
-  def test_uncaught_error_in_controller
+  def test_uncaught_error_in_controller_translated_to_internal_server_error
 
     get :show, {id: '1'}
     assert_response 500
     assert_match /Internal Server Error/, json_response['errors'][0]['detail']
+  end
+
+  def test_not_whitelisted_error_in_controller
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.operations_processor = :error_raising
+    JSONAPI.configuration.exception_class_whitelist = []
+    get :show, {id: '1'}
+    assert_response 500
+    assert_match /Internal Server Error/, json_response['errors'][0]['detail']
+  ensure
+    JSONAPI.configuration = original_config
+  end
+
+  def test_whitelisted_error_in_controller
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.operations_processor = :error_raising
+    JSONAPI.configuration.exception_class_whitelist = [PostsController::SubSpecialError]
+    assert_raises PostsController::SubSpecialError do
+      get :show, {id: '1'}
+    end
+  ensure
+    JSONAPI.configuration = original_config
   end
 end
