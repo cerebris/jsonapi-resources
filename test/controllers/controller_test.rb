@@ -1655,7 +1655,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_delete_with_validation_error
     post = Post.create!(title: "can't destroy me", author: Person.first)
-    delete :destroy, { id: post.id }
+    delete :destroy, params: { id: post.id }
 
     assert_equal "can't destroy me", json_response['errors'][0]['title']
     assert_response :unprocessable_entity
