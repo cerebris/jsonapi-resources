@@ -22,7 +22,7 @@ module JSONAPI
       @include_directives = nil
       @paginator = nil
       @id = nil
-      @server_error_callbacks = []
+      @server_error_callbacks = options.fetch(:server_error_callbacks, [])
 
       setup_action(@params)
     end
@@ -32,11 +32,9 @@ module JSONAPI
 
       @resource_klass ||= Resource.resource_for(params[:controller]) if params[:controller]
 
-      unless params.nil?
-        setup_action_method_name = "setup_#{params[:action]}_action"
-        if respond_to?(setup_action_method_name)
-          send(setup_action_method_name, params)
-        end
+      setup_action_method_name = "setup_#{params[:action]}_action"
+      if respond_to?(setup_action_method_name)
+        send(setup_action_method_name, params)
       end
     rescue ActionController::ParameterMissing => e
       @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)
@@ -463,7 +461,7 @@ module JSONAPI
 
       unless links_object[:id].nil?
         resource = self.resource_klass || Resource
-        relationship_resource = resource.resource_for(@resource_klass.module_path + unformat_key(links_object[:type]).to_s)
+        relationship_resource = resource.resource_for(unformat_key(links_object[:type]).to_s)
         relationship_id = relationship_resource.verify_key(links_object[:id], @context)
         if relationship.polymorphic?
           { id: relationship_id, type: unformat_key(links_object[:type].to_s) }
@@ -516,7 +514,7 @@ module JSONAPI
       params.each do |key, value|
         case key.to_s
         when 'relationships'
-          value.each_key do |links_key|
+          value.keys.each do |links_key|
             unless formatted_allowed_fields.include?(links_key.to_sym)
               params_not_allowed.push(links_key)
               unless JSONAPI.configuration.raise_if_parameters_not_allowed
@@ -609,11 +607,6 @@ module JSONAPI
 
     def parse_single_replace_operation(data, keys, id_key_presence_check_required: true)
       fail JSONAPI::Exceptions::MissingKey.new if data[:id].nil?
-
-      type = data[:type]
-      if type.nil? || type != format_key(@resource_klass._type).to_s
-        fail JSONAPI::Exceptions::ParameterMissing.new(:type)
-      end
 
       key = data[:id]
       if id_key_presence_check_required && !keys.include?(key)

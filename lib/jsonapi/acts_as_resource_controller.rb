@@ -2,56 +2,74 @@ require 'csv'
 
 module JSONAPI
   module ActsAsResourceController
-    extend ActiveSupport::Concern
 
-    included do
-      before_action :ensure_correct_media_type, only: [:create, :update, :create_relationship, :update_relationship]
-      append_before_action :setup_request
-      after_action :setup_response
+    def self.included(base)
+      base.extend ClassMethods
+      base.before_action :ensure_correct_media_type, only: [:create, :update, :create_relationship, :update_relationship]
+      base.cattr_reader :server_error_callbacks
     end
 
     def index
-      process_request_operations
+      process_request
     end
 
     def show
-      process_request_operations
+      process_request
     end
 
     def show_relationship
-      process_request_operations
+      process_request
     end
 
     def create
-      process_request_operations
+      process_request
     end
 
     def create_relationship
-      process_request_operations
+      process_request
     end
 
     def update_relationship
-      process_request_operations
+      process_request
     end
 
     def update
-      process_request_operations
+      process_request
     end
 
     def destroy
-      process_request_operations
+      process_request
     end
 
     def destroy_relationship
-      process_request_operations
+      process_request
     end
 
     def get_related_resource
-      process_request_operations
+      process_request
     end
 
     def get_related_resources
-      process_request_operations
+      process_request
+    end
+
+    def process_request
+      @request = JSONAPI::Request.new(params, context: context,
+                                      key_formatter: key_formatter,
+                                      server_error_callbacks: (self.class.server_error_callbacks || []))
+      unless @request.errors.empty?
+        render_errors(@request.errors)
+      else
+        operation_results = create_operations_processor.process(@request)
+        render_results(operation_results)
+      end
+
+    rescue => e
+      handle_exceptions(e)
+    ensure
+      if response.body.size > 0
+        response.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
+      end
     end
 
     # set the operations processor in the configuration or override this to use another operations processor
@@ -85,22 +103,12 @@ module JSONAPI
       handle_exceptions(e)
     end
 
-    def setup_request
-      @request = JSONAPI::Request.new(params, context: context, key_formatter: key_formatter)
-
-      render_errors(@request.errors) unless @request.errors.empty?
-    rescue => e
-      handle_exceptions(e)
-    end
-
-    def setup_response
-      if response.body.size > 0
-        response.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
-      end
-    end
-
     # override to set context
     def context
+      {}
+    end
+
+    def serialization_options
       {}
     end
 
@@ -159,15 +167,9 @@ module JSONAPI
         base_meta: base_meta,
         base_links: base_response_links,
         resource_serializer_klass: resource_serializer_klass,
-        request: @request
+        request: @request,
+        serialization_options: serialization_options
       )
-    end
-
-    def process_request_operations
-      operation_results = create_operations_processor.process(@request)
-      render_results(operation_results)
-    rescue => e
-      handle_exceptions(e)
     end
 
     # override this to process other exceptions
@@ -176,15 +178,15 @@ module JSONAPI
       case e
       when JSONAPI::Exceptions::Error
         render_errors(e.errors)
-      else # raise all other exceptions
-        # :nocov:
-        fail e
-        # :nocov:
+      else
+        if JSONAPI.configuration.exception_class_whitelist.any? { |k| e.class.ancestors.include?(k) }
+          fail e
+        else
+          internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
+          Rails.logger.error { "Internal Server Error: #{e.message} #{e.backtrace.join("\n")}" }
+          render_errors(internal_server_error.errors)
+        end
       end
-    end
-
-    def add_error_callbacks(callbacks)
-      @request.server_error_callbacks = callbacks || []
     end
 
     # Pass in a methods or a block to be run when an exception is
@@ -194,8 +196,9 @@ module JSONAPI
     # Ignores whitelist exceptions from config
 
     module ClassMethods
+
       def on_server_error(*args, &callback_block)
-        callbacks = []
+        callbacks ||= []
 
         if callback_block
           callbacks << callback_block
@@ -211,8 +214,9 @@ module JSONAPI
           end
         end.compact
         callbacks += method_callbacks
-        append_before_action { add_error_callbacks(callbacks) }
+        self.class_variable_set :@@server_error_callbacks, callbacks
       end
+
     end
   end
 end
