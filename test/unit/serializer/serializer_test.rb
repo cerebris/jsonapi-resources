@@ -1480,9 +1480,38 @@ class SerializerTest < ActionDispatch::IntegrationTest
     )
   end
 
+  def test_nested_attributes_serialization
+    planet_hash = JSONAPI::ResourceSerializer.new(ParentResource).serialize_to_hash(
+        ParentResource.new(Parent.find(1), nil))
+
+    assert_hash_equals(
+      {
+        data: {
+          type: 'parents',
+          id: '1',
+          links: {
+            self: '/parents/1'
+          },
+          attributes: {
+            name: 'John Smith',
+            children: [
+              {
+                name: 'John Smith Jr.',
+                age: 2
+              },
+              {
+                name: 'Jane Smith',
+                age: 5
+              }
+            ]
+        }
+      }
+      }, planet_hash)
+  end
+
   def test_serializer_empty_links_null_and_array
     planet_hash = JSONAPI::ResourceSerializer.new(PlanetResource).serialize_to_hash(
-      PlanetResource.new(Planet.find(8), nil))
+        PlanetResource.new(Planet.find(8), nil))
 
     assert_hash_equals(
       {

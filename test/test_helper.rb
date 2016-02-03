@@ -149,6 +149,8 @@ TestApp.routes.draw do
   jsonapi_resources :books
   jsonapi_resources :authors
 
+  jsonapi_resources :parents
+
   namespace :api do
     namespace :v1 do
       jsonapi_resources :people
@@ -315,7 +317,7 @@ end
 
 class DateWithTimezoneValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value)
+    def format(raw_value, options = {})
       raw_value.in_time_zone('Eastern Time (US & Canada)').to_s
     end
   end
@@ -323,7 +325,7 @@ end
 
 class DateValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value)
+    def format(raw_value, options = {})
       raw_value.strftime('%m/%d/%Y')
     end
   end
@@ -331,7 +333,7 @@ end
 
 class TitleValueFormatter < JSONAPI::ValueFormatter
   class << self
-    def format(raw_value)
+    def format(raw_value, options = {})
       super(raw_value).titlecase
     end
 
