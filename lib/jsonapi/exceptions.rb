@@ -355,10 +355,11 @@ module JSONAPI
     end
 
     class ValidationErrors < Error
-      attr_reader :error_messages, :resource_relationships
+      attr_reader :error_messages, :error_metadata, :resource_relationships
 
       def initialize(resource)
         @error_messages = resource.model_error_messages
+        @error_metadata = resource.validation_error_metadata
         @resource_relationships = resource.class._relationships.keys
         @key_formatter = JSONAPI.configuration.key_formatter
       end
@@ -380,7 +381,13 @@ module JSONAPI
                            status: :unprocessable_entity,
                            title: message,
                            detail: "#{format_key(attr_key)} - #{message}",
-                           source: { pointer: pointer(attr_key) })
+                           source: { pointer: pointer(attr_key) },
+                           meta: metadata_for(attr_key, message))
+      end
+
+      def metadata_for(attr_key, message)
+        return if error_metadata.nil?
+        error_metadata[attr_key] ?  error_metadata[attr_key][message] : nil
       end
 
       def pointer(attr_or_relationship_name)
