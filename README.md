@@ -258,8 +258,7 @@ class PostResource < JSONAPI::Resource
 end
 ```
 
-JR also supports sorting primary resources by fields on shallow relationships.
-To sort on these fields you must `include` the model in your request.
+JR also supports sorting primary resources by fields on relationships.
 
 Here's an example of sorting books by the author name:
 
