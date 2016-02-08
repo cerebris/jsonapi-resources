@@ -299,7 +299,16 @@ class PostsControllerTest < ActionController::TestCase
     get :index, {sort: 'author.name'}
 
     assert_response :success
+    assert json_response['data'].length > 10
     assert_equal '17', json_response['data'][0]['id']
+  end
+
+  def test_desc_sorting_by_relationship_field
+    get :index, {sort: '-author.name'}
+
+    assert_response :success
+    assert json_response['data'].length > 10
+    assert_equal '17', json_response['data'][-1]['id']
   end
 
   def test_invalid_sort_param

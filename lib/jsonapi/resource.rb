@@ -525,9 +525,9 @@ module JSONAPI
             if field.to_s.include?(".")
               *model_names, terminus, column_name = field.split(".")
               records = records.includes(build_includes_path(model_names, terminus))
-
-              table_name = resolve_terminus_classname([records.model.to_s, *model_names, terminus])
-              records = records.order("#{table_name}.#{column_name} #{direction}")
+              record_class = resolve_terminus_classname([records.model.to_s, *model_names, terminus])
+              order_by = "#{record_class.table_name}.#{column_name} #{direction}"
+              records = records.order(order_by)
             else
               records = records.order(field => direction)
             end
@@ -550,7 +550,7 @@ module JSONAPI
           prev.classify.constantize.reflect_on_all_associations.detect do |assoc|
             assoc.name.to_s.downcase == current.downcase
           end
-        end.table_name
+        end
       end
 
       def apply_filter(records, filter, value, options = {})
