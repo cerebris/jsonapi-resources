@@ -4,10 +4,7 @@ module JSONAPI
   class Resource
     include Callbacks
 
-    @@resource_types = {}
-
     attr_reader :context
-    attr_reader :model
 
     define_jsonapi_resources_callbacks :create,
                                        :update,
@@ -27,8 +24,12 @@ module JSONAPI
       @context = context
     end
 
+    def _model
+      @model
+    end
+
     def id
-      model.public_send(self.class._primary_key)
+      _model.public_send(self.class._primary_key)
     end
 
     def is_new?
@@ -112,7 +113,43 @@ module JSONAPI
     # Override this on a resource to customize how the associated records
     # are fetched for a model. Particularly helpful for authorization.
     def records_for(relation_name)
-      model.public_send relation_name
+      _model.public_send relation_name
+    end
+
+    def model_error_messages
+      _model.errors.messages
+    end
+
+    # Add metadata to validation error objects.
+    #
+    # Suppose `model_error_messages` returned the following error messages
+    # hash:
+    #
+    #   {password: ["too_short", "format"]}
+    #
+    # Then to add data to the validation error `validation_error_metadata`
+    # could return:
+    #
+    #   {
+    #     password: {
+    #       "too_short": {"minimum_length" => 6},
+    #       "format": {"requirement" => "must contain letters and numbers"}
+    #     }
+    #   }
+    #
+    # The specified metadata is then be merged into the validation error
+    # object.
+    def validation_error_metadata
+      {}
+    end
+
+    # Override this to return resource level meta data
+    # must return a hash, and if the hash is empty the meta section will not be serialized with the resource
+    # meta keys will be not be formatted with the key formatter for the serializer by default. They can however use the
+    # serializer's format_key and format_value methods if desired
+    # the _options hash will contain the serializer and the serialization_options
+    def meta(_options)
+      {}
     end
 
     private
@@ -142,8 +179,14 @@ module JSONAPI
       end
 
       if defined? @model.save
-        saved = @model.save
-        fail JSONAPI::Exceptions::SaveFailed.new unless saved
+        saved = @model.save(validate: false)
+        unless saved
+          if @model.errors.present?
+            fail JSONAPI::Exceptions::ValidationErrors.new(self)
+          else
+            fail JSONAPI::Exceptions::SaveFailed.new
+          end
+        end
       else
         saved = true
       end
@@ -154,8 +197,9 @@ module JSONAPI
     end
 
     def _remove
-      @model.destroy
-
+      unless @model.destroy
+        fail JSONAPI::Exceptions::ValidationErrors.new(self)
+      end
       :completed
     end
 
@@ -169,7 +213,7 @@ module JSONAPI
         # TODO: Add option to skip relations that already exist instead of returning an error?
         relation = @model.public_send(relation_name).where(relationship.primary_key => relationship_key_value).first
         if relation.nil?
-          @model.public_send(relation_name) << related_resource.model
+          @model.public_send(relation_name) << related_resource._model
         else
           fail JSONAPI::Exceptions::HasManyRelationExists.new(relationship_key_value)
         end
@@ -198,8 +242,8 @@ module JSONAPI
     def _replace_polymorphic_to_one_link(relationship_type, key_value, key_type)
       relationship = self.class._relationships[relationship_type.to_sym]
 
-      model.public_send("#{relationship.foreign_key}=", key_value)
-      model.public_send("#{relationship.polymorphic_type}=", key_type.to_s.classify)
+      _model.public_send("#{relationship.foreign_key}=", key_value)
+      _model.public_send("#{relationship.polymorphic_type}=", key_type.to_s.classify)
 
       @save_needed = true
 
@@ -256,22 +300,36 @@ module JSONAPI
     end
 
     class << self
-      def inherited(base)
-        base.abstract(false)
-        base._attributes = (_attributes || {}).dup
-        base._relationships = (_relationships || {}).dup
-        base._allowed_filters = (_allowed_filters || Set.new).dup
+      def inherited(subclass)
+        subclass.abstract(false)
+        subclass.immutable(false)
+        subclass._attributes = (_attributes || {}).dup
+        subclass._model_hints = (_model_hints || {}).dup
 
-        type = base.name.demodulize.sub(/Resource$/, '').underscore
-        base._type = type.pluralize.to_sym
+        subclass._relationships = {}
+        # Add the relationships from the base class to the subclass using the original options
+        if _relationships.is_a?(Hash)
+          _relationships.each_value do |relationship|
+            options = relationship.options.dup
+            options[:parent_resource] = subclass
+            subclass._add_relationship(relationship.class, relationship.name, options)
+          end
+        end
 
-        base.attribute :id, format: :id
+        subclass._allowed_filters = (_allowed_filters || Set.new).dup
 
-        check_reserved_resource_name(base._type, base.name)
+        type = subclass.name.demodulize.sub(/Resource$/, '').underscore
+        subclass._type = type.pluralize.to_sym
+
+        subclass.attribute :id, format: :id
+
+        check_reserved_resource_name(subclass._type, subclass.name)
       end
 
       def resource_for(type)
-        resource_name = JSONAPI::Resource._resource_name_from_type(type)
+        type_with_module = type.include?('/') ? type : module_path + type
+
+        resource_name = _resource_name_from_type(type_with_module)
         resource = resource_name.safe_constantize if resource_name
         if resource.nil?
           fail NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
@@ -279,7 +337,24 @@ module JSONAPI
         resource
       end
 
-      attr_accessor :_attributes, :_relationships, :_allowed_filters, :_type, :_paginator
+      def resource_for_model(model)
+        resource_for(resource_type_for(model))
+      end
+
+      def _resource_name_from_type(type)
+        "#{type.to_s.underscore.singularize}_resource".camelize
+      end
+
+      def resource_type_for(model)
+        model_name = model.class.to_s.underscore
+        if _model_hints[model_name]
+          _model_hints[model_name]
+        else
+          model_name.rpartition('/').last
+        end
+      end
+
+      attr_accessor :_attributes, :_relationships, :_allowed_filters, :_type, :_paginator, :_model_hints
 
       def create(context)
         new(create_model, context)
@@ -350,8 +425,17 @@ module JSONAPI
         _add_relationship(Relationship::ToMany, *attrs)
       end
 
-      def model_name(model)
+      def model_name(model, options = {})
         @_model_name = model.to_sym
+
+        model_hint(model: @_model_name, resource: self) unless options[:add_model_hint] == false
+      end
+
+      def model_hint(model: _model_name, resource: _type)
+        model_name = ((model.is_a?(Class)) && (model < ActiveRecord::Base)) ? model.name : model
+        resource_type = ((resource.is_a?(Class)) && (resource < JSONAPI::Resource)) ? resource._type : resource.to_s
+
+        _model_hints[model_name.to_s.gsub('::', '/').underscore] = resource_type.to_s
       end
 
       def filters(*attrs)
@@ -435,17 +519,17 @@ module JSONAPI
         records
       end
 
-      def apply_sort(records, order_options)
+      def apply_sort(records, order_options, _context = {})
         if order_options.any?
-           order_options.each_pair do |path, direction|
-            if path.to_s.include?(".")
-              *model_names, terminus, column_name = path.split(".")
+           order_options.each_pair do |field, direction|
+            if field.to_s.include?(".")
+              *model_names, terminus, column_name = field.split(".")
               records = records.includes(build_includes_path(model_names, terminus))
 
               table_name = resolve_terminus_classname([records.model.to_s, *model_names, terminus])
               records = records.order("#{table_name}.#{column_name} #{direction}")
             else
-              records = records.order(path => direction)
+              records = records.order(field => direction)
             end
           end
         end
@@ -469,8 +553,14 @@ module JSONAPI
         end.table_name
       end
 
-      def apply_filter(records, filter, value, _options = {})
-        records.where(filter => value)
+      def apply_filter(records, filter, value, options = {})
+        strategy = _allowed_filters.fetch(filter.to_sym, Hash.new)[:apply]
+
+        if strategy
+          strategy.call(records, value, options)
+        else
+          records.where(filter => value)
+        end
       end
 
       def apply_filters(records, filters, options = {})
@@ -479,11 +569,11 @@ module JSONAPI
         if filters
           filters.each do |filter, value|
             if _relationships.include?(filter)
-              if _relationships[filter].is_a?(JSONAPI::Relationship::ToMany)
-                required_includes.push(filter.to_s)
-                records = apply_filter(records, "#{filter}.#{_relationships[filter].primary_key}", value, options)
+              if _relationships[filter].belongs_to?
+                records = apply_filter(records, _relationships[filter].foreign_key, value, options)
               else
-                records = apply_filter(records, "#{_relationships[filter].foreign_key}", value, options)
+                required_includes.push(filter.to_s)
+                records = apply_filter(records, "#{_relationships[filter].table_name}.#{_relationships[filter].primary_key}", value, options)
               end
             else
               records = apply_filter(records, filter, value, options)
@@ -503,8 +593,8 @@ module JSONAPI
         apply_includes(records, options)
       end
 
-      def sort_records(records, order_options)
-        apply_sort(records, order_options)
+      def sort_records(records, order_options, context = {})
+        apply_sort(records, order_options, context)
       end
 
       def find_count(filters, options = {})
@@ -519,13 +609,13 @@ module JSONAPI
 
         sort_criteria = options.fetch(:sort_criteria) { [] }
         order_options = construct_order_options(sort_criteria)
-        records = sort_records(records, order_options)
+        records = sort_records(records, order_options, context)
 
         records = apply_pagination(records, options[:paginator], order_options)
 
         resources = []
         records.each do |model|
-          resources.push new(model, context)
+          resources.push self.resource_for_model(model).new(model, context)
         end
 
         resources
@@ -537,13 +627,13 @@ module JSONAPI
         records = apply_includes(records, options)
         model = records.where({_primary_key => key}).first
         fail JSONAPI::Exceptions::RecordNotFound.new(key) if model.nil?
-        new(model, context)
+        self.resource_for_model(model).new(model, context)
       end
 
       # Override this method if you want to customize the relation for
       # finder methods (find, find_by_key)
       def records(_options = {})
-        _model_class
+        _model_class.all
       end
 
       def verify_filters(filters, context = nil)
@@ -563,10 +653,16 @@ module JSONAPI
         filter_values = []
         filter_values += CSV.parse_line(raw) unless raw.nil? || raw.empty?
 
-        if is_filter_relationship?(filter)
-          verify_relationship_filter(filter, filter_values, context)
+        strategy = _allowed_filters.fetch(filter, Hash.new)[:verify]
+
+        if strategy
+          [filter, strategy.call(filter_values, context)]
         else
-          verify_custom_filter(filter, filter_values, context)
+          if is_filter_relationship?(filter)
+            verify_relationship_filter(filter, filter_values, context)
+          else
+            verify_custom_filter(filter, filter_values, context)
+          end
         end
       end
 
@@ -580,40 +676,28 @@ module JSONAPI
 
       def verify_key(key, context = nil)
         key_type = resource_key_type
-        verification_proc = case key_type
 
+        case key_type
         when :integer
-          -> (key, context) {
-            begin
-              return key if key.nil?
-              Integer(key)
-            rescue
-              raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
-            end
-          }
+          return if key.nil?
+          Integer(key)
         when :string
-          -> (key, context) {
-            return key if key.nil?
-            if key.to_s.include?(',')
-              raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
-            else
-              key
-            end
-          }
+          return if key.nil?
+          if key.to_s.include?(',')
+            raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
+          else
+            key
+          end
         when :uuid
-          -> (key, context) {
-            return key if key.nil?
-            if key.to_s.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-              key
-            else
-              raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
-            end
-          }
+          return if key.nil?
+          if key.to_s.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
+            key
+          else
+            raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
+          end
         else
-          key_type
+          key_type.call(key, context)
         end
-
-        verification_proc.call(key, context)
       rescue
         raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
       end
@@ -625,12 +709,13 @@ module JSONAPI
         end
       end
 
-      # override to allow for custom filters
+      # Either add a custom :verify labmda or override verify_custom_filter to allow for custom filters
       def verify_custom_filter(filter, value, _context = nil)
         [filter, value]
       end
 
-      # override to allow for custom relationship logic, such as uuids, multiple keys or permission checks on keys
+      # Either add a custom :verify labmda or override verify_relationship_filter to allow for custom
+      # relationship logic, such as uuids, multiple keys or permission checks on keys
       def verify_relationship_filter(filter, raw, _context = nil)
         [filter, raw]
       end
@@ -650,11 +735,15 @@ module JSONAPI
       end
 
       def _model_name
-        @_model_name ||= name.demodulize.sub(/Resource$/, '')
+        _abstract ? '' : @_model_name ||= name.demodulize.sub(/Resource$/, '')
       end
 
       def _primary_key
         @_primary_key ||= _model_class.respond_to?(:primary_key) ? _model_class.primary_key : :id
+      end
+
+      def _table_name
+        @_table_name ||= _model_class.respond_to?(:table_name) ? _model_class.table_name : _model_name.tableize
       end
 
       def _as_parent_key
@@ -663,15 +752,6 @@ module JSONAPI
 
       def _allowed_filters
         !@_allowed_filters.nil? ? @_allowed_filters : { id: {} }
-      end
-
-      def _resource_name_from_type(type)
-        class_name = @@resource_types[type]
-        if class_name.nil?
-          class_name = "#{type.to_s.underscore.singularize}_resource".camelize
-          @@resource_types[type] = class_name
-        end
-        return class_name
       end
 
       def _paginator
@@ -690,6 +770,18 @@ module JSONAPI
         @abstract
       end
 
+      def immutable(val = true)
+        @immutable = val
+      end
+
+      def _immutable
+        @immutable
+      end
+
+      def mutable?
+        !@immutable
+      end
+
       def _model_class
         return nil if _abstract
 
@@ -704,7 +796,11 @@ module JSONAPI
       end
 
       def module_path
-        @module_path ||= name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').underscore : ''
+        if name == 'JSONAPI::Resource'
+          ''
+        else
+          name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').underscore : ''
+        end
       end
 
       def construct_order_options(sort_params)
@@ -713,6 +809,123 @@ module JSONAPI
         sort_params.each_with_object({}) do |sort, order_hash|
           field = sort[:field] == 'id' ? _primary_key : sort[:field]
           order_hash[field] = sort[:direction]
+        end
+      end
+
+      def _add_relationship(klass, *attrs)
+        options = attrs.extract_options!
+        options[:parent_resource] = self
+
+        attrs.each do |attr|
+          relationship_name = attr.to_sym
+
+          check_reserved_relationship_name(relationship_name)
+
+          # Initialize from an ActiveRecord model's properties
+          if _model_class && _model_class.ancestors.collect{|ancestor| ancestor.name}.include?('ActiveRecord::Base')
+            model_association = _model_class.reflect_on_association(relationship_name)
+            if model_association
+              options[:class_name] ||= model_association.class_name
+            end
+          end
+
+          @_relationships[relationship_name] = relationship = klass.new(relationship_name, options)
+
+          associated_records_method_name = case relationship
+                                           when JSONAPI::Relationship::ToOne then "record_for_#{relationship_name}"
+                                           when JSONAPI::Relationship::ToMany then "records_for_#{relationship_name}"
+                                           end
+
+          foreign_key = relationship.foreign_key
+
+          define_method "#{foreign_key}=" do |value|
+            @model.method("#{foreign_key}=").call(value)
+          end unless method_defined?("#{foreign_key}=")
+
+          define_method associated_records_method_name do
+            relationship = self.class._relationships[relationship_name]
+            relation_name = relationship.relation_name(context: @context)
+            records_for(relation_name)
+          end unless method_defined?(associated_records_method_name)
+
+          if relationship.is_a?(JSONAPI::Relationship::ToOne)
+            if relationship.belongs_to?
+              define_method foreign_key do
+                @model.method(foreign_key).call
+              end unless method_defined?(foreign_key)
+
+              define_method relationship_name do |options = {}|
+                relationship = self.class._relationships[relationship_name]
+
+                if relationship.polymorphic?
+                  associated_model = public_send(associated_records_method_name)
+                  resource_klass = self.class.resource_for_model(associated_model) if associated_model
+                  return resource_klass.new(associated_model, @context) if resource_klass
+                else
+                  resource_klass = relationship.resource_klass
+                  if resource_klass
+                    associated_model = public_send(associated_records_method_name)
+                    return associated_model ? resource_klass.new(associated_model, @context) : nil
+                  end
+                end
+              end unless method_defined?(relationship_name)
+            else
+              define_method foreign_key do
+                relationship = self.class._relationships[relationship_name]
+
+                record = public_send(associated_records_method_name)
+                return nil if record.nil?
+                record.public_send(relationship.resource_klass._primary_key)
+              end unless method_defined?(foreign_key)
+
+              define_method relationship_name do |options = {}|
+                relationship = self.class._relationships[relationship_name]
+
+                resource_klass = relationship.resource_klass
+                if resource_klass
+                  associated_model = public_send(associated_records_method_name)
+                  return associated_model ? resource_klass.new(associated_model, @context) : nil
+                end
+              end unless method_defined?(relationship_name)
+            end
+          elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
+            define_method foreign_key do
+              records = public_send(associated_records_method_name)
+              return records.collect do |record|
+                record.public_send(relationship.resource_klass._primary_key)
+              end
+            end unless method_defined?(foreign_key)
+
+            define_method relationship_name do |options = {}|
+              relationship = self.class._relationships[relationship_name]
+
+              resource_klass = relationship.resource_klass
+              records = public_send(associated_records_method_name)
+
+              filters = options.fetch(:filters, {})
+              unless filters.nil? || filters.empty?
+                records = resource_klass.apply_filters(records, filters, options)
+              end
+
+              sort_criteria =  options.fetch(:sort_criteria, {})
+              unless sort_criteria.nil? || sort_criteria.empty?
+                order_options = relationship.resource_klass.construct_order_options(sort_criteria)
+                records = resource_klass.apply_sort(records, order_options, @context)
+              end
+
+              paginator = options[:paginator]
+              if paginator
+                records = resource_klass.apply_pagination(records, paginator, order_options)
+              end
+
+              return records.collect do |record|
+                if relationship.polymorphic?
+                  resource_klass = self.class.resource_for_model(record)
+                end
+                resource_klass.new(record, @context)
+              end
+            end unless method_defined?(relationship_name)
+          end
         end
       end
 
@@ -728,119 +941,14 @@ module JSONAPI
       def check_reserved_attribute_name(name)
         # Allow :id since it can be used to specify the format. Since it is a method on the base Resource
         # an attribute method won't be created for it.
-        if [:type, :href, :links, :model].include?(name.to_sym)
-          warn "[NAME COLLISION] `#{name}` is a reserved key in #{@@resource_types[_type]}."
+        if [:type].include?(name.to_sym)
+          warn "[NAME COLLISION] `#{name}` is a reserved key in #{_resource_name_from_type(_type)}."
         end
       end
 
       def check_reserved_relationship_name(name)
-        if [:id, :ids, :type, :types, :href, :hrefs, :link, :links].include?(name.to_sym)
-          warn "[NAME COLLISION] `#{name}` is a reserved relationship name in #{@@resource_types[_type]}."
-        end
-      end
-
-      def _add_relationship(klass, *attrs)
-        options = attrs.extract_options!
-        options[:module_path] = module_path
-
-        attrs.each do |attr|
-          check_reserved_relationship_name(attr)
-
-          # Initialize from an ActiveRecord model's properties
-          if _model_class && _model_class.ancestors.collect{|ancestor| ancestor.name}.include?('ActiveRecord::Base')
-            model_association = _model_class.reflect_on_association(attr)
-            if model_association
-              options[:class_name] ||= model_association.class_name
-            end
-          end
-
-          @_relationships[attr] = relationship = klass.new(attr, options)
-
-          associated_records_method_name = case relationship
-                                           when JSONAPI::Relationship::ToOne then "record_for_#{attr}"
-                                           when JSONAPI::Relationship::ToMany then "records_for_#{attr}"
-                                           end
-
-          foreign_key = relationship.foreign_key
-
-          define_method "#{foreign_key}=" do |value|
-            @model.method("#{foreign_key}=").call(value)
-          end unless method_defined?("#{foreign_key}=")
-
-          define_method associated_records_method_name do
-            relation_name = relationship.relation_name(context: @context)
-            records_for(relation_name)
-          end unless method_defined?(associated_records_method_name)
-
-          if relationship.is_a?(JSONAPI::Relationship::ToOne)
-            if relationship.belongs_to?
-              define_method foreign_key do
-                @model.method(foreign_key).call
-              end unless method_defined?(foreign_key)
-
-              define_method attr do |options = {}|
-                if relationship.polymorphic?
-                  associated_model = public_send(associated_records_method_name)
-                  resource_klass = Resource.resource_for(self.class.module_path + associated_model.class.to_s.underscore) if associated_model
-                  return resource_klass.new(associated_model, @context) if resource_klass
-                else
-                  resource_klass = relationship.resource_klass
-                  if resource_klass
-                    associated_model = public_send(associated_records_method_name)
-                    return associated_model ? resource_klass.new(associated_model, @context) : nil
-                  end
-                end
-              end unless method_defined?(attr)
-            else
-              define_method foreign_key do
-                record = public_send(associated_records_method_name)
-                return nil if record.nil?
-                record.public_send(relationship.resource_klass._primary_key)
-              end unless method_defined?(foreign_key)
-
-              define_method attr do |options = {}|
-                resource_klass = relationship.resource_klass
-                if resource_klass
-                  associated_model = public_send(associated_records_method_name)
-                  return associated_model ? resource_klass.new(associated_model, @context) : nil
-                end
-              end unless method_defined?(attr)
-            end
-          elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
-            define_method foreign_key do
-              records = public_send(associated_records_method_name)
-              return records.collect do |record|
-                record.public_send(relationship.resource_klass._primary_key)
-              end
-            end unless method_defined?(foreign_key)
-            define_method attr do |options = {}|
-              resource_klass = relationship.resource_klass
-              records = public_send(associated_records_method_name)
-
-              filters = options.fetch(:filters, {})
-              unless filters.nil? || filters.empty?
-                records = resource_klass.apply_filters(records, filters, options)
-              end
-
-              sort_criteria =  options.fetch(:sort_criteria, {})
-              unless sort_criteria.nil? || sort_criteria.empty?
-                order_options = relationship.resource_klass.construct_order_options(sort_criteria)
-                records = resource_klass.apply_sort(records, order_options)
-              end
-
-              paginator = options[:paginator]
-              if paginator
-                records = resource_klass.apply_pagination(records, paginator, order_options)
-              end
-
-              return records.collect do |record|
-                if relationship.polymorphic?
-                  resource_klass = Resource.resource_for(self.class.module_path + record.class.to_s.underscore)
-                end
-                resource_klass.new(record, @context)
-              end
-            end unless method_defined?(attr)
-          end
+        if [:id, :ids, :type, :types].include?(name.to_sym)
+          warn "[NAME COLLISION] `#{name}` is a reserved relationship name in #{_resource_name_from_type(_type)}."
         end
       end
     end

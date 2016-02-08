@@ -1,7 +1,6 @@
 require File.expand_path('../../../test_helper', __FILE__)
 
 class CatResource < JSONAPI::Resource
-  attribute :id
   attribute :name
   attribute :breed
 

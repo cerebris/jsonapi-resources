@@ -1,6 +1,9 @@
 module JSONAPI
   class ResourceSerializer
 
+    attr_reader :link_builder, :key_formatter, :serialization_options, :primary_class_name
+
+    # initialize
     # Options can include
     # include:
     #     Purpose: determines which objects will be side loaded with the source objects in a linked section
@@ -10,9 +13,7 @@ module JSONAPI
     #              relationship ids in the links section for a resource. Fields are global for a resource type.
     #     Example: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}
     # key_formatter: KeyFormatter class to override the default configuration
-    # base_url: a string to prepend to generated resource links
-
-    attr_reader :url_generator
+    # serializer_options: additional options that will be passed to resource meta and links lambdas
 
     def initialize(primary_resource_klass, options = {})
       @primary_class_name = primary_resource_klass._type
@@ -20,11 +21,12 @@ module JSONAPI
       @include            = options.fetch(:include, [])
       @include_directives = options[:include_directives]
       @key_formatter      = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
-      @url_generator      = generate_link_builder(primary_resource_klass, options)
+      @link_builder       = generate_link_builder(primary_resource_klass, options)
       @always_include_to_one_linkage_data = options.fetch(:always_include_to_one_linkage_data,
                                                           JSONAPI.configuration.always_include_to_one_linkage_data)
       @always_include_to_many_linkage_data = options.fetch(:always_include_to_many_linkage_data,
                                                            JSONAPI.configuration.always_include_to_many_linkage_data)
+      @serialization_options = options.fetch(:serialization_options, {})
     end
 
     # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
@@ -70,8 +72,17 @@ module JSONAPI
       }
     end
 
-    def find_link(query_params)
-      url_generator.query_link(query_params)
+    def query_link(query_params)
+      link_builder.query_link(query_params)
+    end
+
+    def format_key(key)
+      @key_formatter.format(key)
+    end
+
+    def format_value(value, format)
+      value_formatter = JSONAPI::ValueFormatter.value_formatter_for(format)
+      value_formatter.format(value)
     end
 
     private
@@ -82,14 +93,7 @@ module JSONAPI
     # The fields options controls both fields and included links references.
     def process_primary(source, include_directives)
       if source.respond_to?(:to_ary)
-        source.each do |resource|
-          id = resource.id
-          if already_serialized?(resource.class._type, id)
-            set_primary(@primary_class_name, id)
-          end
-
-          add_included_object(id, object_hash(resource,  include_directives), true)
-        end
+        source.each { |resource| process_primary(resource, include_directives) }
       else
         return {} if source.nil?
 
@@ -119,6 +123,10 @@ module JSONAPI
       relationships = relationship_data(source, include_directives)
       obj_hash['relationships'] = relationships unless relationships.nil? || relationships.empty?
 
+      meta = source.meta(custom_generation_options)
+      if meta.is_a?(Hash) && !meta.empty?
+        obj_hash['meta'] = meta
+      end
       obj_hash
     end
 
@@ -142,6 +150,13 @@ module JSONAPI
           hash[format_key(name)] = format_value(source.public_send(name), format)
         end
       end
+    end
+
+    def custom_generation_options
+      {
+        serializer: self,
+        serialization_options: @serialization_options
+      }
     end
 
     def relationship_data(source, include_directives)
@@ -204,7 +219,7 @@ module JSONAPI
 
     def relationship_links(source)
       links = {}
-      links[:self] = url_generator.self_link(source)
+      links[:self] = link_builder.self_link(source)
 
       links
     end
@@ -215,11 +230,11 @@ module JSONAPI
     end
 
     def self_link(source, relationship)
-      url_generator.relationships_self_link(source, relationship)
+      link_builder.relationships_self_link(source, relationship)
     end
 
     def related_link(source, relationship)
-      url_generator.relationships_related_link(source, relationship)
+      link_builder.relationships_related_link(source, relationship)
     end
 
     def to_one_linkage(source, relationship)
@@ -256,6 +271,7 @@ module JSONAPI
     end
 
     def link_object_to_many(source, relationship, include_linkage)
+      include_linkage = include_linkage | relationship.always_include_linkage_data
       link_object_hash = {}
       link_object_hash[:links] = {}
       link_object_hash[:links][:self] = self_link(source, relationship)
@@ -282,7 +298,7 @@ module JSONAPI
     def foreign_key_types_and_values(source, relationship)
       if relationship.is_a?(JSONAPI::Relationship::ToMany)
         if relationship.polymorphic?
-          source.model.public_send(relationship.name).pluck(:type, :id).map do |type, id|
+          source._model.public_send(relationship.name).pluck(:type, :id).map do |type, id|
             [type.pluralize, IdValueFormatter.format(id)]
           end
         else
@@ -311,15 +327,6 @@ module JSONAPI
       else
         @included_objects[type].store(id, primary: primary, object_hash: object_hash)
       end
-    end
-
-    def format_key(key)
-      @key_formatter.format(key)
-    end
-
-    def format_value(value, format)
-      value_formatter = JSONAPI::ValueFormatter.value_formatter_for(format)
-      value_formatter.format(value)
     end
 
     def generate_link_builder(primary_resource_klass, options)

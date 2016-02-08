@@ -88,7 +88,7 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
             },
             attributes: {
               make: 'Mazda',
-              vehicleModel: 'Miata MX5',
+              model: 'Miata MX5',
               driveLayout: 'Front Engine RWD',
               serialNumber: '32432adfsfdysua'
             },
@@ -109,7 +109,7 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
             },
             attributes: {
               make: 'Chris-Craft',
-              vehicleModel: 'Launch 20',
+              model: 'Launch 20',
               lengthAtWaterLine: '15.5ft',
               serialNumber: '434253JJJSD'
             },

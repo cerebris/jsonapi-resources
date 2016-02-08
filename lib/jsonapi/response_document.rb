@@ -36,7 +36,8 @@ module JSONAPI
         fields: @options[:fields],
         base_url: @options.fetch(:base_url, ''),
         key_formatter: @key_formatter,
-        route_formatter: @options.fetch(:route_formatter, JSONAPI.configuration.route_formatter)
+        route_formatter: @options.fetch(:route_formatter, JSONAPI.configuration.route_formatter),
+        serialization_options: @options.fetch(:serialization_options, {})
       )
     end
 
@@ -73,9 +74,9 @@ module JSONAPI
             result.pagination_params.each_pair do |link_name, params|
               if result.is_a?(JSONAPI::RelatedResourcesOperationResult)
                 relationship = result.source_resource.class._relationships[result._type.to_sym]
-                links[link_name] = serializer.url_generator.relationships_related_link(result.source_resource, relationship, query_params(params))
+                links[link_name] = serializer.link_builder.relationships_related_link(result.source_resource, relationship, query_params(params))
               else
-                links[link_name] = serializer.find_link(query_params(params))
+                links[link_name] = serializer.query_link(query_params(params))
               end
             end
         end
