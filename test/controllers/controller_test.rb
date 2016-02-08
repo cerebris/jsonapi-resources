@@ -296,7 +296,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_sorting_by_relationship_field
-    get :index, {include: 'author', sort: 'person.name'}
+    get :index, {sort: 'author.name'}
 
     assert_response :success
     assert_equal '17', json_response['data'][0]['id']
