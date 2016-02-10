@@ -86,6 +86,7 @@ module JSONAPI
     end
 
     def attribute_hash(source)
+      return if source._model.nil?
       requested = requested_fields(source.class)
       fields = source.fetchable_fields & source.class._attributes.keys.to_a
       fields = requested & fields unless requested.nil?
