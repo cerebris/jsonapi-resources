@@ -80,40 +80,6 @@ module MyAPI
   end
 end
 
-class CustomLinkTestResource < JSONAPI::Resource
-  model_name 'Post'
-
-  def custom_links(options)
-    {raw: options[:serializer].link_builder.self_link(self) + "/raw"}
-  end
-end
-
-class CustomLinkTestWithExtensionResource < JSONAPI::Resource
-  model_name 'Post'
-
-  def custom_links(options)
-    {raw: options[:serializer].link_builder.self_link(self) + "/raw.xml"}
-  end
-end
-
-class CustomLinkTestWithCustomPathResource < JSONAPI::Resource
-  model_name 'Post'
-
-  def custom_links(options)
-    {raw: options[:serializer].link_builder.self_link(self) + "/super/duper/path.xml"}
-  end
-end
-
-class CustomLinkLambda< JSONAPI::Resource
-  model_name 'Post'
-
-  def custom_links(options)
-    {
-      raw: "http://external-api/posts/#{ created_at.year }/#{ created_at.month}/#{ created_at.day }"
-    }
-  end
-end
-
 class ResourceTest < ActiveSupport::TestCase
   def setup
     @post = Post.first
