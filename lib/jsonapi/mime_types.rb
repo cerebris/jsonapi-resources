@@ -4,7 +4,9 @@ end
 
 Mime::Type.register JSONAPI::MEDIA_TYPE, :api_json
 
-ActionDispatch::ParamsParser::DEFAULT_PARSERS[Mime::Type.lookup(JSONAPI::MEDIA_TYPE)] = lambda do |body|
+(
+  Rails::VERSION::MAJOR >= 5 ? ActionDispatch::Http::Parameters : ActionDispatch::ParamsParser
+)::DEFAULT_PARSERS[Mime::Type.lookup(JSONAPI::MEDIA_TYPE)] = lambda do |body|
   data = JSON.parse(body)
   data = {:_json => data} unless data.is_a?(Hash)
   data.with_indifferent_access
