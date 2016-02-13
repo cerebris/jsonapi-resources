@@ -785,11 +785,21 @@ The `paged` `paginator` returns results based on pages of a fixed size. Valid `p
 If `number` is omitted the first page is returned. If `size` is omitted the `default_page_size` from the configuration
 settings is used.
 
+```
+GET /articles?page%5Bnumber%5D=10&page%5Bsize%5D=10 HTTP/1.1
+Accept: application/vnd.api+json
+```
+
 ###### Offset Paginator
 
 The `offset` `paginator` returns results based on an offset from the beginning of the resultset. Valid `page` parameters
 are `offset` and `limit`. If `offset` is omitted a value of 0 will be used. If `limit` is omitted the `default_page_size`
 from the configuration settings is used.
+
+```
+GET /articles?page%5Blimit%5D=10&page%5Boffset%5D=10 HTTP/1.1
+Accept: application/vnd.api+json
+```
 
 ###### Custom Paginators
 
