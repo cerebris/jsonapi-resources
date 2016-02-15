@@ -804,14 +804,17 @@ class PersonResource < BaseResource
   has_one :preferences
   has_one :hair_cut
 
-  filter :name, verify: ->(values, _context) {
+  filter :name, verify: :verify_name_filter
+
+  def self.verify_name_filter(values, _context)
     values.each do |value|
       if value.length < 3
         raise JSONAPI::Exceptions::InvalidFilterValue.new(:name, value)
       end
     end
     return values
-  }
+  end
+
 end
 
 class SpecialBaseResource < BaseResource
@@ -1199,15 +1202,7 @@ module Api
       has_many :aliased_comments, class_name: 'BookComments', relation_name: :approved_book_comments
 
       filters :book_comments
-      filter :banned, apply: ->(records, value, options) {
-        context = options[:context]
-        current_user = context ? context[:current_user] : nil
-
-        # Only book admins my filter for banned books
-        if current_user && current_user.book_admin
-          records.where('books.banned = ?', value[0] == 'true')
-        end
-      }
+      filter :banned, apply: :apply_filter_banned
 
       class << self
         def books
@@ -1229,6 +1224,17 @@ module Api
           end
           records
         end
+
+        def apply_filter_banned(records, value, options)
+          context = options[:context]
+          current_user = context ? context[:current_user] : nil
+
+          # Only book admins might filter for banned books
+          if current_user && current_user.book_admin
+            records.where('books.banned = ?', value[0] == 'true')
+          end
+        end
+
       end
     end
 

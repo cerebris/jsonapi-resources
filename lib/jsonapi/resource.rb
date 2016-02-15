@@ -531,7 +531,11 @@ module JSONAPI
         strategy = _allowed_filters.fetch(filter.to_sym, Hash.new)[:apply]
 
         if strategy
-          strategy.call(records, value, options)
+          if strategy.is_a?(Symbol) || strategy.is_a?(String)
+            send(strategy, records, value, options)
+          else
+            strategy.call(records, value, options)
+          end
         else
           records.where(filter => value)
         end
@@ -630,7 +634,12 @@ module JSONAPI
         strategy = _allowed_filters.fetch(filter, Hash.new)[:verify]
 
         if strategy
-          [filter, strategy.call(filter_values, context)]
+          if strategy.is_a?(Symbol) || strategy.is_a?(String)
+            values = send(strategy, filter_values, context)
+          else
+            values = strategy.call(filter_values, context)
+          end
+          [filter, values]
         else
           if is_filter_relationship?(filter)
             verify_relationship_filter(filter, filter_values, context)
