@@ -156,7 +156,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
     paginator = OffsetPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 50)
 
-    assert_equal 4, links_params.size
+    assert_equal 5, links_params.size
 
     assert_equal 5, links_params['first']['limit']
     assert_equal 0, links_params['first']['offset']
@@ -182,7 +182,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
     paginator = OffsetPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 50)
 
-    assert_equal 4, links_params.size
+    assert_equal 5, links_params.size
 
     assert_equal 5, links_params['first']['limit']
     assert_equal 0, links_params['first']['offset']
@@ -208,7 +208,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
     paginator = OffsetPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 50)
 
-    assert_equal 3, links_params.size
+    assert_equal 4, links_params.size
 
     assert_equal 5, links_params['first']['limit']
     assert_equal 0, links_params['first']['offset']
@@ -231,7 +231,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
     paginator = OffsetPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 50)
 
-    assert_equal 3, links_params.size
+    assert_equal 4, links_params.size
 
     assert_equal 5, links_params['first']['limit']
     assert_equal 0, links_params['first']['offset']

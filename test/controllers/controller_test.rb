@@ -3053,7 +3053,7 @@ class Api::V4::BooksControllerTest < ActionController::TestCase
     assert_response :success
     assert_equal 12, json_response['data'].size
     assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
-    assert_equal 5, json_response['links'].size
+    assert_equal 6, json_response['links'].size
     assert_equal 'https://test_corp.com', json_response['links']['spec']
   ensure
     JSONAPI.configuration = original_config
