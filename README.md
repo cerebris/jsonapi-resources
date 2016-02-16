@@ -29,6 +29,7 @@ backed by ActiveRecord models or by custom objects.
     * [Pagination] (#pagination)
     * [Included relationships (side-loading resources)] (#included-relationships-side-loading-resources)
     * [Resource meta] (#resource-meta)
+    * [Custom Links] (#resource-meta)
     * [Callbacks] (#callbacks)
   * [Controllers] (#controllers)
     * [Namespaces] (#namespaces)
@@ -930,6 +931,72 @@ method is called with an `options` has. The `options` hash will contain the foll
 
  * `:serializer` -> the serializer instance
  * `:serialization_options` -> the contents of the `serialization_options` method on the controller.
+
+#### Custom Links
+
+Custom links can be included for each resource by overriding the `custom_links` method. If a non empty hash is returned from `custom_links`, it will be merged with the default links hash containing the resource's `self` link. The `custom_links` method is called with the same `options` hash used by for [resource meta information](#resource-meta). The `options` hash contains the following:
+
+ * `:serializer` -> the serializer instance
+ * `:serialization_options` -> the contents of the `serialization_options` method on the controller.
+
+For example:
+
+```ruby
+class CityCouncilMeeting < JSONAPI::Resource
+  attribute :title, :location, :approved
+
+  def custom_links(options)
+    { minutes: options[:serialzer].link_builder.self_link(self) + "/minutes" }
+  end
+end
+```
+
+This will create a custom link with the key `minutes`, which will be merged with the default `self` link, like so:
+
+```json
+{
+  "data": [
+    {
+      "id": "1",
+      "type": "cityCouncilMeetings",
+      "links": {
+        "self": "http://city.gov/api/city-council-meetings/1",
+        "minutes": "http://city.gov/api/city-council-meetings/1/minutes"
+      },
+      "attributes": {...}
+    },
+    //...
+  ]
+}
+```
+
+Of course, the `custom_links` method can include logic to include links only when relevant:
+
+````ruby
+class CityCouncilMeeting < JSONAPI::Resource
+  attribute :title, :location, :approved
+
+  delegate :approved?, to: :model
+
+  def custom_links(options)
+    extra_links = {}
+    if approved?
+      extra_links[:minutes] = options[:serialzer].link_builder.self_link(self) + "/minutes"
+    end
+    extra_links
+  end
+end
+```
+
+It's also possibly to suppress the default `self` link by returning a hash with `{self: nil}`:
+
+````ruby
+class Selfless < JSONAPI::Resource
+  def custom_links(options)
+    {self: nil}
+  end
+end
+```
 
 #### Callbacks
 

@@ -152,6 +152,15 @@ module JSONAPI
       {}
     end
 
+    # Override this to return custom links
+    # must return a hash, which will be merged with the default { self: 'self-url' } links hash
+    # links keys will be not be formatted with the key formatter for the serializer by default.
+    # They can however use the serializer's format_key and format_value methods if desired
+    # the _options hash will contain the serializer and the serialization_options
+    def custom_links(_options)
+      {}
+    end
+
     private
 
     def save
