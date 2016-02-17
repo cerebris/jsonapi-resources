@@ -31,6 +31,12 @@ module JSONAPI
                                                     include_directives: @include_directives)
     end
 
+    def page_count
+      if @paginator.is_a?(PagedPaginator)
+        @_page_count ||= @paginator.calculate_page_count(record_count)
+      end
+    end
+
     def pagination_params
       if @paginator && JSONAPI.configuration.top_level_links_include_pagination
         options = {}
