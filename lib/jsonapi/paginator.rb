@@ -131,6 +131,10 @@ class PagedPaginator < JSONAPI::Paginator
     true
   end
 
+  def calculate_page_count(record_count)
+    (record_count / @size.to_f).ceil
+  end
+
   def apply(relation, _order_options)
     offset = (@number - 1) * @size
     relation.offset(offset).limit(@size)
@@ -138,7 +142,7 @@ class PagedPaginator < JSONAPI::Paginator
 
   def links_page_params(options = {})
     record_count = options[:record_count]
-    page_count = (record_count / @size.to_f).ceil
+    page_count = calculate_page_count(record_count)
 
     links_page_params = {}
 
