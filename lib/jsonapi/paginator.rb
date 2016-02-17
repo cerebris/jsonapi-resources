@@ -62,8 +62,6 @@ class OffsetPaginator < JSONAPI::Paginator
         'offset' => previous_offset,
         'limit' => @limit
       }
-
-      links_page_params['previous'] = links_page_params['prev']
     end
 
     next_offset = @offset + @limit
