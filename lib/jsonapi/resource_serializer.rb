@@ -114,19 +114,18 @@ module JSONAPI
 
       obj_hash['type'] = format_key(source.class._type.to_s)
 
-      links = relationship_links(source)
+      links = links_hash(source)
       obj_hash['links'] = links unless links.empty?
 
-      attributes = attribute_hash(source)
+      attributes = attributes_hash(source)
       obj_hash['attributes'] = attributes unless attributes.empty?
 
-      relationships = relationship_data(source, include_directives)
+      relationships = relationships_hash(source, include_directives)
       obj_hash['relationships'] = relationships unless relationships.nil? || relationships.empty?
 
-      meta = source.meta(custom_generation_options)
-      if meta.is_a?(Hash) && !meta.empty?
-        obj_hash['meta'] = meta
-      end
+      meta = meta_hash(source)
+      obj_hash['meta'] = meta unless meta.empty?
+
       obj_hash
     end
 
@@ -139,7 +138,7 @@ module JSONAPI
       end
     end
 
-    def attribute_hash(source)
+    def attributes_hash(source)
       requested = requested_fields(source.class)
       fields = source.fetchable_fields & source.class._attributes.keys.to_a
       fields = requested & fields unless requested.nil?
@@ -159,7 +158,23 @@ module JSONAPI
       }
     end
 
-    def relationship_data(source, include_directives)
+    def meta_hash(source)
+      meta = source.meta(custom_generation_options)
+      (meta.is_a?(Hash) && meta) || {}
+    end
+
+    def links_hash(source)
+      {
+        self: link_builder.self_link(source)
+      }.merge(custom_links_hash(source)).compact
+    end
+
+    def custom_links_hash(source)
+      custom_links = source.custom_links(custom_generation_options)
+      (custom_links.is_a?(Hash) && custom_links) || {}
+    end
+
+    def relationships_hash(source, include_directives)
       relationships = source.class._relationships
       requested = requested_fields(source.class)
       fields = relationships.keys
@@ -197,7 +212,7 @@ module JSONAPI
                 if include_linkage && !relationships_only
                   add_included_object(id, object_hash(resource, ia))
                 elsif include_linked_children || relationships_only
-                  relationship_data(resource, ia)
+                  relationships_hash(resource, ia)
                 end
               end
             elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
@@ -208,20 +223,13 @@ module JSONAPI
                 if include_linkage && !relationships_only
                   add_included_object(id, object_hash(resource, ia))
                 elsif include_linked_children || relationships_only
-                  relationship_data(resource, ia)
+                  relationships_hash(resource, ia)
                 end
               end
             end
           end
         end
       end
-    end
-
-    def relationship_links(source)
-      links = {}
-      links[:self] = link_builder.self_link(source)
-
-      links
     end
 
     def already_serialized?(type, id)
@@ -299,7 +307,7 @@ module JSONAPI
       if relationship.is_a?(JSONAPI::Relationship::ToMany)
         if relationship.polymorphic?
           source._model.public_send(relationship.name).pluck(:type, :id).map do |type, id|
-            [type.pluralize, IdValueFormatter.format(id)]
+            [type.underscore.pluralize, IdValueFormatter.format(id)]
           end
         else
           source.public_send(relationship.foreign_key).map do |value|

@@ -815,14 +815,17 @@ class PersonResource < BaseResource
   has_one :preferences
   has_one :hair_cut
 
-  filter :name, verify: ->(values, _context) {
+  filter :name, verify: :verify_name_filter
+
+  def self.verify_name_filter(values, _context)
     values.each do |value|
       if value.length < 3
         raise JSONAPI::Exceptions::InvalidFilterValue.new(:name, value)
       end
     end
     return values
-  }
+  end
+
 end
 
 class SpecialBaseResource < BaseResource
@@ -1136,6 +1139,87 @@ class AuthorDetailResource < JSONAPI::Resource
   attributes :author_stuff
 end
 
+class SimpleCustomLinkResource < JSONAPI::Resource
+  model_name 'Post'
+  attributes :title, :body, :subject
+
+  def subject
+    @model.title
+  end
+
+  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+  has_one :section
+  has_many :comments, acts_as_set: false
+
+  filters :writer
+
+  def custom_links(options)
+    { raw: options[:serializer].link_builder.self_link(self) + "/raw" }
+  end
+end
+
+class CustomLinkWithRelativePathOptionResource < JSONAPI::Resource
+  model_name 'Post'
+  attributes :title, :body, :subject
+
+  def subject
+    @model.title
+  end
+
+  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+  has_one :section
+  has_many :comments, acts_as_set: false
+
+  filters :writer
+
+  def custom_links(options)
+    { raw: options[:serializer].link_builder.self_link(self) + "/super/duper/path.xml" }
+  end
+end
+
+class CustomLinkWithIfCondition < JSONAPI::Resource
+  model_name 'Post'
+  attributes :title, :body, :subject
+
+  def subject
+    @model.title
+  end
+
+  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+  has_one :section
+  has_many :comments, acts_as_set: false
+
+  filters :writer
+
+  def custom_links(options)
+    if title == "JR Solves your serialization woes!"
+      {conditional_custom_link: options[:serializer].link_builder.self_link(self) + "/conditional/link.json"}
+    end
+  end
+end
+
+class CustomLinkWithLambda < JSONAPI::Resource
+  model_name 'Post'
+  attributes :title, :body, :subject, :created_at
+
+  def subject
+    @model.title
+  end
+
+  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+  has_one :section
+  has_many :comments, acts_as_set: false
+
+  filters :writer
+
+  def custom_links(options)
+    {
+      link_to_external_api: "http://external-api.com/posts/#{ created_at.year }/#{ created_at.month }/#{ created_at.day }-#{ subject.gsub(' ', '-') }"
+    }
+  end
+end
+
+
 module Api
   module V1
     class WriterResource < JSONAPI::Resource
@@ -1210,15 +1294,7 @@ module Api
       has_many :aliased_comments, class_name: 'BookComments', relation_name: :approved_book_comments
 
       filters :book_comments
-      filter :banned, apply: ->(records, value, options) {
-        context = options[:context]
-        current_user = context ? context[:current_user] : nil
-
-        # Only book admins my filter for banned books
-        if current_user && current_user.book_admin
-          records.where('books.banned = ?', value[0] == 'true')
-        end
-      }
+      filter :banned, apply: :apply_filter_banned
 
       class << self
         def books
@@ -1240,6 +1316,17 @@ module Api
           end
           records
         end
+
+        def apply_filter_banned(records, value, options)
+          context = options[:context]
+          current_user = context ? context[:current_user] : nil
+
+          # Only book admins might filter for banned books
+          if current_user && current_user.book_admin
+            records.where('books.banned = ?', value[0] == 'true')
+          end
+        end
+
       end
     end
 
