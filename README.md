@@ -1097,6 +1097,14 @@ JSONAPI.configure do |config|
 end
 ```
 
+To use a specific `OperationsProcessor` in a `ResourceController`, override the `create_operations_processor` method:
+
+```ruby
+def create_operations_processor
+  CountingActiveRecordOperationsProcessor.new
+end
+```
+
 The callback code will be called after each find. It will use the same options as the find operation, without the
 pagination, to collect the record count. This is stored in the `operation_meta`, which will be returned in the top level
 meta element.
