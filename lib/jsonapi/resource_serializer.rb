@@ -307,7 +307,7 @@ module JSONAPI
       if relationship.is_a?(JSONAPI::Relationship::ToMany)
         if relationship.polymorphic?
           source._model.public_send(relationship.name).pluck(:type, :id).map do |type, id|
-            [type.pluralize, IdValueFormatter.format(id)]
+            [type.underscore.pluralize, IdValueFormatter.format(id)]
           end
         else
           source.public_send(relationship.foreign_key).map do |value|
