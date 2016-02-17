@@ -21,6 +21,8 @@ module JSONAPI
                 :top_level_links_include_pagination,
                 :top_level_meta_include_record_count,
                 :top_level_meta_record_count_key,
+                :top_level_meta_include_page_count,
+                :top_level_meta_page_count_key,
                 :exception_class_whitelist,
                 :always_include_to_one_linkage_data,
                 :always_include_to_many_linkage_data
@@ -58,6 +60,9 @@ module JSONAPI
       # Output record count in top level meta for find operation
       self.top_level_meta_include_record_count = false
       self.top_level_meta_record_count_key = :record_count
+
+      self.top_level_meta_include_page_count = false
+      self.top_level_meta_page_count_key = :page_count
 
       self.use_text_errors = false
 
@@ -110,6 +115,10 @@ module JSONAPI
     attr_writer :top_level_meta_include_record_count
 
     attr_writer :top_level_meta_record_count_key
+
+    attr_writer :top_level_meta_include_page_count
+
+    attr_writer :top_level_meta_page_count_key
 
     attr_writer :exception_class_whitelist
 
