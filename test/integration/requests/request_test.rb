@@ -442,6 +442,22 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.top_level_meta_include_record_count = false
   end
 
+  def test_page_count_meta
+    Api::V2::BookCommentResource.paginator :paged
+    JSONAPI.configuration.top_level_meta_include_record_count = true
+    JSONAPI.configuration.top_level_meta_include_page_count = true
+    get '/api/v2/books/1/book_comments'
+    assert_equal 26, json_response['meta']['record_count']
+    # based on default page size
+    assert_equal 3, json_response['meta']['page_count']
+    get '/api/v2/books/1/book_comments?page[size]=5'
+    assert_equal 26, json_response['meta']['record_count']
+    assert_equal 6, json_response['meta']['page_count']
+  ensure
+    JSONAPI.configuration.top_level_meta_include_record_count = false
+    JSONAPI.configuration.top_level_meta_include_page_count = false
+  end
+
   def test_pagination_related_resources_without_related
     Api::V2::BookResource.paginator :offset
     Api::V2::BookCommentResource.paginator :offset

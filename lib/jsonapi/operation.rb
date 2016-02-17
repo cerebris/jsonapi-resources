@@ -57,6 +57,10 @@ module JSONAPI
         options[:record_count] = record_count
       end
 
+      if JSONAPI.configuration.top_level_meta_include_page_count
+        options[:page_count] = page_count
+      end
+
       return JSONAPI::ResourcesOperationResult.new(:ok,
                                                    resource_records,
                                                    options)
@@ -153,6 +157,12 @@ module JSONAPI
       @_record_count ||= records.count(:all)
     end
 
+    def page_count
+      if @paginator.is_a?(PagedPaginator)
+        @_page_count ||= @paginator.calculate_page_count(record_count)
+      end
+    end
+
     def source_resource
       @_source_resource ||= @source_klass.find_by_key(@source_id, context: @context)
     end
@@ -176,6 +186,7 @@ module JSONAPI
       opts = {}
       opts.merge!(pagination_params: pagination_params) if JSONAPI.configuration.top_level_links_include_pagination
       opts.merge!(record_count: record_count) if JSONAPI.configuration.top_level_meta_include_record_count
+      opts.merge!(page_count: page_count) if JSONAPI.configuration.top_level_meta_include_page_count
       opts
     end
 
