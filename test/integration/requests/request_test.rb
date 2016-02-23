@@ -45,6 +45,15 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration = original_config
   end
 
+  def test_filter_with_value_containing_double_quote
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.json_key_format = :underscored_key
+    get '/iso_currencies?filter[country_name]="'
+    assert_jsonapi_response 200
+  ensure
+    JSONAPI.configuration = original_config
+  end
+
   def test_get_underscored_key_filtered
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :underscored_key

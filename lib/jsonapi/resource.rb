@@ -807,7 +807,11 @@ module JSONAPI
       def verify_filter(filter, raw, context = nil)
         filter_values = []
         if raw.present?
-          filter_values += raw.is_a?(String) ? CSV.parse_line(raw) : [raw]
+          begin
+            filter_values += raw.is_a?(String) ? CSV.parse_line(raw) : [raw]
+          rescue CSV::MalformedCSVError
+            filter_values << raw
+          end
         end
 
         strategy = _allowed_filters.fetch(filter, Hash.new)[:verify]
