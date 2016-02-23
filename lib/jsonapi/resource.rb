@@ -152,6 +152,15 @@ module JSONAPI
       {}
     end
 
+    # Override this to return custom links
+    # must return a hash, which will be merged with the default { self: 'self-url' } links hash
+    # links keys will be not be formatted with the key formatter for the serializer by default.
+    # They can however use the serializer's format_key and format_value methods if desired
+    # the _options hash will contain the serializer and the serialization_options
+    def custom_links(_options)
+      {}
+    end
+
     private
 
     def save
@@ -557,7 +566,11 @@ module JSONAPI
         strategy = _allowed_filters.fetch(filter.to_sym, Hash.new)[:apply]
 
         if strategy
-          strategy.call(records, value, options)
+          if strategy.is_a?(Symbol) || strategy.is_a?(String)
+            send(strategy, records, value, options)
+          else
+            strategy.call(records, value, options)
+          end
         else
           records.where(filter => value)
         end
@@ -656,7 +669,12 @@ module JSONAPI
         strategy = _allowed_filters.fetch(filter, Hash.new)[:verify]
 
         if strategy
-          [filter, strategy.call(filter_values, context)]
+          if strategy.is_a?(Symbol) || strategy.is_a?(String)
+            values = send(strategy, filter_values, context)
+          else
+            values = strategy.call(filter_values, context)
+          end
+          [filter, values]
         else
           if is_filter_relationship?(filter)
             verify_relationship_filter(filter, filter_values, context)
