@@ -638,7 +638,12 @@ module JSONAPI
 
       def verify_filter(filter, raw, context = nil)
         filter_values = []
-        filter_values += CSV.parse_line(raw) unless raw.nil? || raw.empty?
+
+        begin
+          filter_values += CSV.parse_line(raw) unless raw.nil? || raw.empty?
+        rescue CSV::MalformedCSVError => ex
+          filter_values << raw
+        end
 
         strategy = _allowed_filters.fetch(filter, Hash.new)[:verify]
 
