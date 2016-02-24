@@ -179,7 +179,7 @@ module JSONAPI
       when JSONAPI::Exceptions::Error
         render_errors(e.errors)
       else
-        if JSONAPI.configuration.exception_class_whitelist.any? { |k| e.class.ancestors.include?(k) }
+        if JSONAPI.configuration.exception_class_whitelisted?(e)
           fail e
         else
           internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
