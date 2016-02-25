@@ -250,20 +250,6 @@ class ResourceTest < ActiveSupport::TestCase
     assert(!CatResource.updatable_fields.include?(:id))
   end
 
-  # TODO: Please remove after `updateable_fields` is removed
-  def test_updateable_fields_delegates_to_updatable_fields_with_deprecation
-    ActiveSupport::Deprecation.silence do
-      assert_empty(CatResource.updateable_fields(nil) - [:mother, :father, :name, :breed])
-    end
-  end
-
-  # TODO: Please remove after `createable_fields` is removed
-  def test_createable_fields_delegates_to_creatable_fields_with_deprecation
-    ActiveSupport::Deprecation.silence do
-      assert_empty(CatResource.createable_fields(nil) - [:mother, :father, :name, :breed, :id])
-    end
-  end
-
   def test_filter_on_to_many_relationship_id
     posts = PostResource.find(:comments => 3)
     assert_equal([2], posts.map(&:id))
@@ -304,7 +290,7 @@ class ResourceTest < ActiveSupport::TestCase
   ensure
     # reset method to original implementation
     PostResource.instance_eval do
-      def apply_filters(records, filters, options)
+      def apply_filters(records, options)
         # :nocov:
         super
         # :nocov:
@@ -319,7 +305,7 @@ class ResourceTest < ActiveSupport::TestCase
 
     # define apply_filters method on post resource to not respect filters
     PostResource.instance_eval do
-      def apply_sort(records, criteria, context = {})
+      def apply_sort(records, _options = {})
         # :nocov:
         records
         # :nocov:
@@ -332,7 +318,7 @@ class ResourceTest < ActiveSupport::TestCase
   ensure
     # reset method to original implementation
     PostResource.instance_eval do
-      def apply_sort(records, criteria, context = {})
+      def apply_sort(records, _options = {})
         # :nocov:
         super
         # :nocov:
@@ -347,7 +333,7 @@ class ResourceTest < ActiveSupport::TestCase
 
     # define apply_filters method on post resource to not respect filters
     PostResource.instance_eval do
-      def apply_pagination(records, criteria, order_options)
+      def apply_pagination(records, _options = {})
         # :nocov:
         records
         # :nocov:
@@ -371,7 +357,7 @@ class ResourceTest < ActiveSupport::TestCase
   ensure
     # reset method to original implementation
     PostResource.instance_eval do
-      def apply_pagination(records, criteria, order_options)
+      def apply_pagination(records, _options = {})
         # :nocov:
         super
         # :nocov:

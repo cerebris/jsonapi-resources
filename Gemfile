@@ -21,3 +21,5 @@ when 'default'
 else
   gem 'rails', "~> #{version}"
 end
+
+gem 'railsapi-resources', git: 'https://github.com/cerebris/railsapi-resources.git'

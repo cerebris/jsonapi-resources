@@ -1,3 +1,45 @@
+module Railsapi
+  module Exceptions
+    class Error < RuntimeError; end
+
+    class HasManyRelationExists < Error
+      def initialize(id)
+        raise JSONAPI::Exceptions::HasManyRelationExists.new(id)
+      end
+    end
+
+    class InvalidFieldValue < Error
+      def initialize(field, value)
+        raise JSONAPI::Exceptions::InvalidFieldValue.new(field, value)
+      end
+    end
+
+    class RecordNotFound < Error
+      def initialize(id)
+        raise JSONAPI::Exceptions::RecordNotFound.new(id)
+      end
+    end
+
+    class RecordLocked < Error
+      def initialize(message)
+        raise JSONAPI::Exceptions::RecordLocked.new(message)
+      end
+    end
+
+    class ValidationErrors < Error
+      def initialize(resource)
+        raise JSONAPI::Exceptions::ValidationErrors.new(resource)
+      end
+    end
+
+    class SaveFailed < Error
+      def initialize
+        raise JSONAPI::Exceptions::SaveFailed.new
+      end
+    end
+  end
+end
+
 module JSONAPI
   module Exceptions
     class Error < RuntimeError; end

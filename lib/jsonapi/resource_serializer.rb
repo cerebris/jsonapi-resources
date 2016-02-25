@@ -57,7 +57,7 @@ module JSONAPI
     end
 
     def serialize_to_links_hash(source, requested_relationship)
-      if requested_relationship.is_a?(JSONAPI::Relationship::ToOne)
+      if requested_relationship.is_a?(Railsapi::Relationship::ToOne)
         data = to_one_linkage(source, requested_relationship)
       else
         data = to_many_linkage(source, requested_relationship)
@@ -203,7 +203,7 @@ module JSONAPI
           # but it's possible all children won't have been captured. So we must still go
           # through the relationships.
           if include_linkage || include_linked_children
-            if relationship.is_a?(JSONAPI::Relationship::ToOne)
+            if relationship.is_a?(Railsapi::Relationship::ToOne)
               resource = source.public_send(name)
               if resource
                 id = resource.id
@@ -215,7 +215,7 @@ module JSONAPI
                   relationships_hash(resource, ia)
                 end
               end
-            elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
+            elsif relationship.is_a?(Railsapi::Relationship::ToMany)
               resources = source.public_send(name)
               resources.each do |resource|
                 id = resource.id
@@ -289,9 +289,9 @@ module JSONAPI
     end
 
     def link_object(source, relationship, include_linkage = false)
-      if relationship.is_a?(JSONAPI::Relationship::ToOne)
+      if relationship.is_a?(Railsapi::Relationship::ToOne)
         link_object_to_one(source, relationship, include_linkage)
-      elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
+      elsif relationship.is_a?(Railsapi::Relationship::ToMany)
         link_object_to_many(source, relationship, include_linkage)
       end
     end
@@ -304,7 +304,7 @@ module JSONAPI
     end
 
     def foreign_key_types_and_values(source, relationship)
-      if relationship.is_a?(JSONAPI::Relationship::ToMany)
+      if relationship.is_a?(Railsapi::Relationship::ToMany)
         if relationship.polymorphic?
           source._model.public_send(relationship.name).pluck(:type, :id).map do |type, id|
             [type.underscore.pluralize, IdValueFormatter.format(id)]

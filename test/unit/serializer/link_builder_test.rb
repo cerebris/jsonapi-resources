@@ -114,7 +114,7 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
     builder       = JSONAPI::LinkBuilder.new(config)
     source        = Api::V1::PersonResource.new(@steve, nil)
-    relationship  = JSONAPI::Relationship::ToMany.new("posts", {})
+    relationship  = Railsapi::Relationship::ToMany.new("posts", {})
     expected_link = "#{ @base_url }/api/v1/people/#{ @steve.id }/relationships/posts"
 
     assert_equal expected_link,
@@ -130,7 +130,7 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
     builder       = JSONAPI::LinkBuilder.new(config)
     source        = MyEngine::Api::V1::PersonResource.new(@steve, nil)
-    relationship  = JSONAPI::Relationship::ToMany.new("posts", {})
+    relationship  = Railsapi::Relationship::ToMany.new("posts", {})
     expected_link = "#{ @base_url }/boomshaka/api/v1/people/#{ @steve.id }/relationships/posts"
 
     assert_equal expected_link,
@@ -146,7 +146,7 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
     builder       = JSONAPI::LinkBuilder.new(config)
     source        = Api::V1::PersonResource.new(@steve, nil)
-    relationship  = JSONAPI::Relationship::ToMany.new("posts", {})
+    relationship  = Railsapi::Relationship::ToMany.new("posts", {})
     expected_link = "#{ @base_url }/api/v1/people/#{ @steve.id }/posts"
 
     assert_equal expected_link,
@@ -162,7 +162,7 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
     builder       = JSONAPI::LinkBuilder.new(config)
     source        = MyEngine::Api::V1::PersonResource.new(@steve, nil)
-    relationship  = JSONAPI::Relationship::ToMany.new("posts", {})
+    relationship  = Railsapi::Relationship::ToMany.new("posts", {})
     expected_link = "#{ @base_url }/boomshaka/api/v1/people/#{ @steve.id }/posts"
 
     assert_equal expected_link,
@@ -178,7 +178,7 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
     builder       = JSONAPI::LinkBuilder.new(config)
     source        = Api::V1::PersonResource.new(@steve, nil)
-    relationship  = JSONAPI::Relationship::ToMany.new("posts", {})
+    relationship  = Railsapi::Relationship::ToMany.new("posts", {})
     expected_link = "#{ @base_url }/api/v1/people/#{ @steve.id }/posts?page%5Blimit%5D=12&page%5Boffset%5D=0"
     query         = { page: { offset: 0, limit: 12 } }
 
