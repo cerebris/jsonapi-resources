@@ -2,6 +2,14 @@ require 'railsapi/resource'
 require 'jsonapi/resource_finder'
 require 'jsonapi/resource_metadata'
 
+module Railsapi
+  class Relationship
+    def always_include_linkage_data
+      options.fetch(:always_include_linkage_data, false) == true
+    end
+  end
+end
+
 module JSONAPI
   class Resource < Railsapi::Resource
     include JSONAPI::ResourceFinder
