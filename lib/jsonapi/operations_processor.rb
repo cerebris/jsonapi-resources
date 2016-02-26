@@ -92,7 +92,7 @@ module JSONAPI
       raise e
 
     rescue => e
-      if JSONAPI.configuration.exception_class_whitelist.any? { |k| e.class.ancestors.include?(k) }
+      if JSONAPI.configuration.exception_class_whitelisted?(e)
         raise e
       else
         @request.server_error_callbacks.each { |callback| safe_run_callback(callback, e) }
