@@ -387,14 +387,15 @@ module JSONAPI
         }
       end
 
-      if !(raw.is_a?(Hash) || raw.is_a?(ActionController::Parameters)) ||
-         raw.keys.length != 2 || !(raw.key?('type') && raw.key?('id'))
+      if !raw.is_a?(Hash) || raw.is_a?(ActionController::Parameters)) ||
+        (raw.length != 2 && !raw.key?('meta')) || !(raw.key?('type') && raw.key?('id'))
         fail JSONAPI::Exceptions::InvalidLinksObject.new
       end
 
       {
         type: unformat_key(raw['type']).to_s,
-        id: raw['id']
+        id: raw['id'],
+        meta: raw['meta']
       }
     end
 
