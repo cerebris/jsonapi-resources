@@ -103,6 +103,13 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 1, json_response['data'].size
   end
 
+  def test_index_filter_with_hash_values
+    get :index, {filter: {search: {title: 'New post'}}}
+    assert_response :success
+    assert json_response['data'].is_a?(Array)
+    assert_equal 1, json_response['data'].size
+  end
+
   def test_index_filter_by_ids
     get :index, {filter: {ids: '1,2'}}
     assert_response :success

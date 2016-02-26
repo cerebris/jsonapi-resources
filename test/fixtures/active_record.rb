@@ -945,6 +945,14 @@ class PostResource < JSONAPI::Resource
            records.where('id IN (?)', value)
          }
 
+  filter :search,
+    verify: ->(values, context) {
+      values.all?{|v| v.is_a?(Hash) } && values
+    },
+    apply: -> (records, values, _options) {
+      records.where(title: values.first['title'])
+    }
+
   def self.updatable_fields(context)
     super(context) - [:author, :subject]
   end
