@@ -493,6 +493,54 @@ class RequestTest < ActionDispatch::IntegrationTest
   #   assert_equal 'This is comment 18 on book 1.', json_response['data'][9]['attributes']['body']
   # end
 
+  def test_nested_route_relation_links
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.json_key_format = :underscored_key
+    JSONAPI.configuration.route_format = :underscored_route
+
+    get "/nested_api/writers/#{$test_user.id}/posts"
+    assert_jsonapi_response 200
+    post_1 = json_response['data'][0]
+    assert_hash_equals({
+                           'self' => "http://www.example.com/nested_api/writers/#{$test_user.id}/posts/#{post_1['id']}/relationships/writer",
+                           'related' => "http://www.example.com/nested_api/writers/#{$test_user.id}"
+                       }, post_1['relationships']['writer']['links'])
+  ensure
+    JSONAPI.configuration = original_config
+  end
+
+  def test_nested_route_pagination_links
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.json_key_format = :underscored_key
+    JSONAPI.configuration.route_format = :underscored_route
+    NestedApi::PostResource.paginator :paged
+
+    get "/nested_api/writers/#{$test_user.id}/posts?page[size]=1"
+    assert_jsonapi_response 200
+    assert_hash_equals({
+                           'first' => "http://www.example.com/nested_api/writers/#{$test_user.id}/posts?page%5Bnumber%5D=1&page%5Bsize%5D=1",
+                           'next' =>  "http://www.example.com/nested_api/writers/#{$test_user.id}/posts?page%5Bnumber%5D=2&page%5Bsize%5D=1",
+                           'last' =>  "http://www.example.com/nested_api/writers/#{$test_user.id}/posts?page%5Bnumber%5D=3&page%5Bsize%5D=1"
+                       }, json_response['links'])
+  ensure
+    JSONAPI.configuration = original_config
+  end
+
+  def test_nested_route_self_links
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.json_key_format = :underscored_key
+    JSONAPI.configuration.route_format = :underscored_route
+
+    get "/nested_api/writers/#{$test_user.id}/posts"
+    assert_jsonapi_response 200
+    post_1 = json_response['data'][0]
+    assert_hash_equals({
+                           'self' => "http://www.example.com/nested_api/writers/#{$test_user.id}/posts/#{post_1['id']}"
+                       }, post_1['links'])
+  ensure
+    JSONAPI.configuration = original_config
+  end
+
 
   def test_flow_self
     get '/posts'
@@ -502,6 +550,28 @@ class RequestTest < ActionDispatch::IntegrationTest
     get post_1['links']['self']
     assert_jsonapi_response 200
     assert_hash_equals post_1, json_response['data']
+  end
+
+  def test_flow_link_to_one_self_link_for_nested_resources
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.json_key_format = :underscored_key
+    JSONAPI.configuration.route_format = :underscored_route
+
+    get "/nested_api/writers/#{$test_user.id}/posts"
+    assert_jsonapi_response 200
+    post_1 = json_response['data'][0]
+
+    get post_1['relationships']['writer']['links']['self']
+    assert_jsonapi_response 200
+    assert_hash_equals({
+        'links' => {
+            'self' => "http://www.example.com/nested_api/writers/#{$test_user.id}/posts/#{post_1['id']}/relationships/writer",
+            'related' => "http://www.example.com/nested_api/writers/#{$test_user.id}"
+        },
+        'data' => {type: 'people', id: $test_user.id.to_s}
+    }, json_response)
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_flow_link_to_one_self_link

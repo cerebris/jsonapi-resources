@@ -643,6 +643,18 @@ class AuthorsController < JSONAPI::ResourceController
 end
 
 ### CONTROLLERS
+module NestedApi
+  class PostsController < ActionController::Base
+    include JSONAPI::ActsAsResourceController
+    def context
+      {writer_id: params[:writer_id]}
+    end
+  end
+  class WritersController < ActionController::Base
+    include JSONAPI::ActsAsResourceController
+  end
+end
+
 module Api
   module V1
     class AuthorsController < JSONAPI::ResourceController
@@ -1208,6 +1220,23 @@ class CustomLinkWithLambda < JSONAPI::Resource
   end
 end
 
+module NestedApi
+  class WriterResource < JSONAPI::Resource
+    attributes :name
+    model_name 'Person'
+    has_many :posts
+  end
+
+  class PostResource < JSONAPI::Resource
+    attributes :title, :body
+    has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+
+    def self.records(options = {})
+      context = options.fetch(:context, {})
+      super.where(author_id: context[:writer_id])
+    end
+  end
+end
 
 module Api
   module V1
