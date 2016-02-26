@@ -92,6 +92,7 @@ module JSONAPI
     # as fields: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}
     # The fields options controls both fields and included links references.
     def process_primary(source, include_directives)
+      @sources ||= source
       if source.respond_to?(:to_ary)
         source.each { |resource| process_primary(resource, include_directives) }
       else
@@ -209,10 +210,12 @@ module JSONAPI
                 id = resource.id
                 type = relationship.type_for_source(source)
                 relationships_only = already_serialized?(type, id)
-                if include_linkage && !relationships_only
-                  add_included_object(id, object_hash(resource, ia))
-                elsif include_linked_children || relationships_only
-                  relationships_hash(resource, ia)
+                unless @sources.detect { |item| item.id == resource.id }
+                  if include_linkage && !relationships_only
+                    add_included_object(id, object_hash(resource, ia))
+                  elsif include_linked_children || relationships_only
+                    relationships_hash(resource, ia)
+                  end
                 end
               end
             elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
