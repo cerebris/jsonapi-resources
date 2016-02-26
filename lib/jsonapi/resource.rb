@@ -532,11 +532,13 @@ module JSONAPI
         if order_options.any?
            order_options.each_pair do |field, direction|
             if field.to_s.include?(".")
-              *model_names, terminus, column_name = field.split(".")
-              records = records.includes(build_includes_path(model_names, terminus))
-              record_class = resolve_terminus_classname([records.model.to_s, *model_names, terminus])
-              order_by = "#{record_class.table_name}.#{column_name} #{direction}"
-              records = records.order(order_by)
+              *model_names, column_name = field.split(".")
+
+              associations = lookup_association_chain([records.model.to_s, *model_names])
+              joins_query = build_joins([records.model, *associations])
+
+              order_by_query = "#{associations.last.name}.#{column_name} #{direction}"
+              records = records.joins(joins_query).order(order_by_query)
             else
               records = records.order(field => direction)
             end
@@ -546,20 +548,28 @@ module JSONAPI
         records
       end
 
-      def build_includes_path(model_names, terminus)
-        model_names.inject(terminus.to_sym) do |acc, model_name|
-          hash = {}
-          hash[model_name.to_sym] = acc
-          [hash]
-        end
-      end
-
-      def resolve_terminus_classname(model_names)
+      def lookup_association_chain(model_names)
+        associations = []
         model_names.inject do |prev, current|
-          prev.classify.constantize.reflect_on_all_associations.detect do |assoc|
+          p = prev.classify.constantize.reflect_on_all_associations.detect do |assoc|
             assoc.name.to_s.downcase == current.downcase
           end
+          associations << p
+          p.class_name
         end
+
+        associations
+      end
+
+      def build_joins(associations)
+        joins = ""
+
+        associations.inject do |prev, current|
+          joins << "LEFT JOIN #{current.table_name} AS #{current.name} ON #{current.name}.id = #{prev.table_name}.#{current.foreign_key}"
+          current
+        end
+
+        joins
       end
 
       def apply_filter(records, filter, value, options = {})
