@@ -525,13 +525,12 @@ class ContactResource < JSONAPI::Resource
 end
 ```
 
-Then a request could pass in a filter for example `http://example.com/contacts?filter[name_last]=Smith` and the system
-will find all people where the last name exactly matches Smith.
+Then a request could pass in a filter like for example `http://example.com/contacts?filter[name_last]=Smith` and the system
+would find all people whose last name exactly matches Smith.
 
 ##### Default Filters
 
-A default filter may be defined for a resource using the `default` option on the `filter` method. This default is used
-unless the request overrides this value.
+A default filter with a default value may be defined for a resource using the `default` option on the `filter` method.
 
 For example:
 
@@ -545,12 +544,12 @@ For example:
 end
 ```
 
-The default value is used as if it came from the request.
+The filter will be applied as if it came from the request, unless the request overrides this default value.
 
 ##### Applying Filters
 
 You may customize how a filter behaves by supplying a callable to the `:apply` option. This callable will be used to
-apply that filter. The callable is passed the `records`, which is an `ActiveRecord::Relation`, the `value`, and an
+apply that filter. The callable will receive the `records`, which is an `ActiveRecord::Relation`, the `value`, and an
 `_options` hash. It is expected to return an `ActiveRecord::Relation`.
 
 This example shows how you can implement different approaches for different filters.
@@ -561,9 +560,9 @@ filter :visibility, apply: ->(records, value, _options) {
 }
 ```
 
-If you omit the `apply` callable the filter will be applied as `records.where(filter => value)`.
+If you omit the `apply` callable the filter will be applied as if it were called with `records.where(filter => value)`.
 
-Note: It is also possible to override the `self.apply_filter` method, though this approach is now deprecated:
+Note: It is also possible to override the `self.apply_filter` method, though this approach is now **deprecated**:
 
 ```ruby
 def self.apply_filter(records, filter, value, options)
@@ -586,7 +585,7 @@ end
 ##### Verifying Filters
 
 Because filters typically come straight from the request, it's prudent to verify their values. To do so, provide a
-callable to the `verify` option. This callable will be passed the `value` and the `context`. Verify should return the
+callable to the `verify` option. This callable will receive the `value` and the `context`. Verify should return the
 verified value, which may be modified.
 
 ```ruby
