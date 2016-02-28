@@ -537,7 +537,7 @@ module JSONAPI
               associations = lookup_association_chain([records.model.to_s, *model_names])
               joins_query = build_joins([records.model, *associations])
 
-              order_by_query = "#{associations.last.name}.#{column_name} #{direction}"
+              order_by_query = "#{associations.last.name}_sorting.#{column_name} #{direction}"
               records = records.joins(joins_query).order(order_by_query)
             else
               records = records.order(field => direction)
@@ -565,7 +565,7 @@ module JSONAPI
         joins = ""
 
         associations.inject do |prev, current|
-          joins << "LEFT JOIN #{current.table_name} AS #{current.name} ON #{current.name}.id = #{prev.table_name}.#{current.foreign_key}"
+          joins << "LEFT JOIN #{current.table_name} AS #{current.name}_sorting ON #{current.name}_sorting.id = #{prev.table_name}.#{current.foreign_key}"
           current
         end
 
