@@ -95,6 +95,10 @@ module JSONAPI
       @operations_processor = JSONAPI::OperationsProcessor.operations_processor_for(@operations_processor_name)
     end
 
+    def exception_class_whitelisted?(e)
+      @exception_class_whitelist.flatten.any? { |k| e.class.ancestors.include?(k) }
+    end
+
     attr_writer :allow_include, :allow_sort, :allow_filter
 
     attr_writer :default_paginator
