@@ -152,7 +152,17 @@ module JSONAPI
 
     def render_results(operation_results)
       response_doc = create_response_document(operation_results)
-      render status: response_doc.status, json: response_doc.contents
+
+      render_options = {
+        status: response_doc.status,
+        json:   response_doc.contents
+      }
+
+      render_options[:location] = response_doc.contents[:data]["links"][:self] if (
+        response_doc.status == :created && response_doc.contents[:data].class != Array
+      )
+
+      render(render_options)
     end
 
     def create_response_document(operation_results)
