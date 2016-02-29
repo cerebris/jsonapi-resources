@@ -117,7 +117,7 @@ module JSONAPI
       relationship = @resource_klass._relationship(relationship_type)
 
       # Removals of to-one relationships are done implicitly and require no specification of data
-      data_required = !(modification_type == :remove && relationship.is_a?(Railsapi::Relationship::ToOne))
+      data_required = !(modification_type == :remove && relationship.is_a?(RailsAPI::Relationship::ToOne))
 
       if data_required
         data = params.fetch(:data)
@@ -422,9 +422,9 @@ module JSONAPI
             param = unformat_key(link_key)
             relationship = @resource_klass._relationship(param)
 
-            if relationship.is_a?(Railsapi::Relationship::ToOne)
+            if relationship.is_a?(RailsAPI::Relationship::ToOne)
               checked_to_one_relationships[param] = parse_to_one_relationship(link_value, relationship)
-            elsif relationship.is_a?(Railsapi::Relationship::ToMany)
+            elsif relationship.is_a?(RailsAPI::Relationship::ToMany)
               parse_to_many_relationship(link_value, relationship) do |result_val|
                 checked_to_many_relationships[param] = result_val
               end
@@ -563,7 +563,7 @@ module JSONAPI
     # :nocov:
 
     def parse_add_relationship_operation(verified_params, relationship, parent_key)
-      if relationship.is_a?(Railsapi::Relationship::ToMany)
+      if relationship.is_a?(RailsAPI::Relationship::ToMany)
         @operations.push JSONAPI::CreateToManyRelationshipOperation.new(
           resource_klass,
           context: @context,
@@ -581,7 +581,7 @@ module JSONAPI
         relationship_type: relationship.name
       )
 
-      if relationship.is_a?(Railsapi::Relationship::ToOne)
+      if relationship.is_a?(RailsAPI::Relationship::ToOne)
         if relationship.polymorphic?
           operation_args[1].merge!(
             key_value: verified_params[:to_one].values[0][:id],
@@ -593,7 +593,7 @@ module JSONAPI
           operation_args[1].merge!(key_value: verified_params[:to_one].values[0])
           operation_klass = JSONAPI::ReplaceToOneRelationshipOperation
         end
-      elsif relationship.is_a?(Railsapi::Relationship::ToMany)
+      elsif relationship.is_a?(RailsAPI::Relationship::ToMany)
         unless relationship.acts_as_set
           fail JSONAPI::Exceptions::ToManySetReplacementForbidden.new
         end
@@ -662,7 +662,7 @@ module JSONAPI
         relationship_type: relationship.name
       )
 
-      if relationship.is_a?(Railsapi::Relationship::ToMany)
+      if relationship.is_a?(RailsAPI::Relationship::ToMany)
         keys = params[:to_many].values[0]
         keys.each do |key|
           operation_args = operation_base_args.dup

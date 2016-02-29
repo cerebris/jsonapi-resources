@@ -88,7 +88,7 @@ module JSONAPI
         records = records(options)
         records = apply_includes(records, options)
         model = records.where({_primary_key => key}).first
-        fail Railsapi::Exceptions::RecordNotFound.new(key) if model.nil?
+        fail RailsAPI::Exceptions::RecordNotFound.new(key) if model.nil?
         self.resource_for_model(model).new(model, context)
       end
 

@@ -2,7 +2,7 @@ require 'railsapi/resource_callbacks'
 
 module JSONAPI
   class OperationsProcessor
-    include Railsapi::ResourceCallbacks
+    include RailsAPI::ResourceCallbacks
     define_resource_callbacks :operation,
                               :operations,
                               :find_operation,
