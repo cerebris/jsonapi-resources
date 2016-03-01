@@ -210,7 +210,8 @@ module JSONAPI
                 id = resource.id
                 type = relationship.type_for_source(source)
                 relationships_only = already_serialized?(type, id)
-                unless @sources.detect { |item| item.id == resource.id }
+                #only works with uuids, will need to compare types
+                unless @sources.is_a?(Array) && @sources.detect { |item| item == resource }
                   if include_linkage && !relationships_only
                     add_included_object(id, object_hash(resource, ia))
                   elsif include_linked_children || relationships_only
