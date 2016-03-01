@@ -958,7 +958,7 @@ class PostResource < JSONAPI::Resource
 
   filter :search,
     verify: ->(values, context) {
-      values.all?{|v| v.is_a?(Hash) } && values
+      values.all?{|v| (v.is_a?(Hash) || v.is_a?(ActionController::Parameters)) } && values
     },
     apply: -> (records, values, _options) {
       records.where(title: values.first['title'])
