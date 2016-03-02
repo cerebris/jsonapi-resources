@@ -103,6 +103,13 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 1, json_response['data'].size
   end
 
+  def test_index_filter_with_hash_values
+    get :index, {filter: {search: {title: 'New post'}}}
+    assert_response :success
+    assert json_response['data'].is_a?(Array)
+    assert_equal 1, json_response['data'].size
+  end
+
   def test_index_filter_by_ids
     get :index, {filter: {ids: '1,2'}}
     assert_response :success
@@ -412,6 +419,7 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['data'].is_a?(Hash)
     assert_equal 'JR is Great', json_response['data']['attributes']['title']
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
+    assert_equal json_response['data']['links']['self'], response.location
   end
 
   def test_create_link_to_missing_object
@@ -433,6 +441,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :unprocessable_entity
     # TODO: check if this validation is working
     assert_match /author - can't be blank/, response.body
+    assert_equal nil, response.location
   end
 
   def test_create_extra_param
@@ -454,6 +463,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /asdfg is not allowed/, response.body
+    assert_equal nil,response.location
   end
 
   def test_create_extra_param_allow_extra_params
@@ -486,6 +496,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
     assert_equal "asdfg is not allowed.", json_response['meta']["warnings"][0]["detail"]
     assert_equal '105', json_response['meta']["warnings"][0]["code"]
+    assert_equal json_response['data']['links']['self'], response.location
   ensure
     JSONAPI.configuration.raise_if_parameters_not_allowed = true
   end
@@ -515,6 +526,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "/data/attributes/title", json_response['errors'][1]['source']['pointer']
     assert_equal "is too long (maximum is 35 characters)", json_response['errors'][1]['title']
     assert_equal "title - is too long (maximum is 35 characters)", json_response['errors'][1]['detail']
+    assert_equal nil, response.location
   end
 
   def test_create_multiple
@@ -551,6 +563,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_nil json_response['data'][0]['relationships']['author']['data']
     assert_match /JR is Great/, response.body
     assert_match /Ember is Great/, response.body
+    assert_equal nil, response.location
   end
 
   def test_create_multiple_wrong_case
@@ -583,6 +596,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /Title/, json_response['errors'][0]['detail']
+    assert_equal nil, response.location
   end
 
   def test_create_simple_missing_posts
@@ -603,6 +617,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /The required parameter, data, is missing./, json_response['errors'][0]['detail']
+    assert_equal nil, response.location
   end
 
   def test_create_simple_wrong_type
@@ -623,6 +638,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /posts_spelled_wrong is not a valid resource./, json_response['errors'][0]['detail']
+    assert_equal nil, response.location
   end
 
   def test_create_simple_missing_type
@@ -642,6 +658,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /The required parameter, type, is missing./, json_response['errors'][0]['detail']
+    assert_equal nil, response.location
   end
 
   def test_create_simple_unpermitted_attributes
@@ -662,6 +679,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /subject/, json_response['errors'][0]['detail']
+    assert_equal nil, response.location
   end
 
   def test_create_simple_unpermitted_attributes_allow_extra_params
@@ -696,6 +714,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
     assert_equal "subject is not allowed.", json_response['meta']["warnings"][0]["detail"]
     assert_equal '105', json_response['meta']["warnings"][0]["code"]
+    assert_equal json_response['data']['links']['self'], response.location
   ensure
     JSONAPI.configuration.raise_if_parameters_not_allowed = true
   end
@@ -723,6 +742,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal '3', json_response['data']['relationships']['author']['data']['id']
     assert_equal 'JR is Great', json_response['data']['attributes']['title']
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
+    assert_equal json_response['data']['links']['self'], response.location
   end
 
   def test_create_with_links_to_many_array
@@ -748,6 +768,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal '3', json_response['data']['relationships']['author']['data']['id']
     assert_equal 'JR is Great', json_response['data']['attributes']['title']
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
+    assert_equal json_response['data']['links']['self'], response.location
   end
 
   def test_create_with_links_include_and_fields
@@ -774,6 +795,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal '3', json_response['data']['relationships']['author']['data']['id']
     assert_equal 'JR is Great!', json_response['data']['attributes']['title']
     assert_not_nil json_response['included'].size
+    assert_equal json_response['data']['links']['self'], response.location
   end
 
   def test_update_with_links

@@ -161,8 +161,8 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
     assert_equal 5, links_params['first']['limit']
     assert_equal 0, links_params['first']['offset']
 
-    assert_equal 5, links_params['previous']['limit']
-    assert_equal 0, links_params['previous']['offset']
+    assert_equal 5, links_params['prev']['limit']
+    assert_equal 0, links_params['prev']['offset']
 
     assert_equal 5, links_params['next']['limit']
     assert_equal 7, links_params['next']['offset']
@@ -187,8 +187,8 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
     assert_equal 5, links_params['first']['limit']
     assert_equal 0, links_params['first']['offset']
 
-    assert_equal 5, links_params['previous']['limit']
-    assert_equal 22, links_params['previous']['offset']
+    assert_equal 5, links_params['prev']['limit']
+    assert_equal 22, links_params['prev']['offset']
 
     assert_equal 5, links_params['next']['limit']
     assert_equal 32, links_params['next']['offset']
@@ -213,8 +213,8 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
     assert_equal 5, links_params['first']['limit']
     assert_equal 0, links_params['first']['offset']
 
-    assert_equal 5, links_params['previous']['limit']
-    assert_equal 40, links_params['previous']['offset']
+    assert_equal 5, links_params['prev']['limit']
+    assert_equal 40, links_params['prev']['offset']
 
     assert_equal 5, links_params['last']['limit']
     assert_equal 45, links_params['last']['offset']
@@ -236,8 +236,8 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
     assert_equal 5, links_params['first']['limit']
     assert_equal 0, links_params['first']['offset']
 
-    assert_equal 5, links_params['previous']['limit']
-    assert_equal 43, links_params['previous']['offset']
+    assert_equal 5, links_params['prev']['limit']
+    assert_equal 43, links_params['prev']['offset']
 
     assert_equal 5, links_params['last']['limit']
     assert_equal 45, links_params['last']['offset']

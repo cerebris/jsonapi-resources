@@ -1,6 +1,8 @@
-# JSONAPI::Resources [![Build Status](https://secure.travis-ci.org/cerebris/jsonapi-resources.svg?branch=master)](http://travis-ci.org/cerebris/jsonapi-resources) [![Code Climate](https://codeclimate.com/github/cerebris/jsonapi-resources/badges/gpa.svg)](https://codeclimate.com/github/cerebris/jsonapi-resources)
+# JSONAPI::Resources [![Gem Version](https://badge.fury.io/rb/jsonapi-resources.svg)](https://badge.fury.io/rb/jsonapi-resources) [![Build Status](https://secure.travis-ci.org/cerebris/jsonapi-resources.svg?branch=master)](http://travis-ci.org/cerebris/jsonapi-resources) [![Code Climate](https://codeclimate.com/github/cerebris/jsonapi-resources/badges/gpa.svg)](https://codeclimate.com/github/cerebris/jsonapi-resources)
 
 [![Join the chat at https://gitter.im/cerebris/jsonapi-resources](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cerebris/jsonapi-resources?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
+**_NOTE: There is a Rails 5 branch that is a work in progress. In addition to some changes for Rails 5 support it contains some monkey patches (in `test_helper.rb`) to allow existing tests to pass with Rails 5.0.0.beta1.1_. Things may break with future changes to Rails. If you are using RAILS 5 it is recommended that you use the rails 5 branch.**
 
 `JSONAPI::Resources`, or "JR", provides a framework for developing a server that complies with the
 [JSON API](http://jsonapi.org/) specification.
@@ -27,6 +29,7 @@ backed by ActiveRecord models or by custom objects.
     * [Pagination] (#pagination)
     * [Included relationships (side-loading resources)] (#included-relationships-side-loading-resources)
     * [Resource meta] (#resource-meta)
+    * [Custom Links] (#resource-meta)
     * [Callbacks] (#callbacks)
   * [Controllers] (#controllers)
     * [Namespaces] (#namespaces)
@@ -785,11 +788,21 @@ The `paged` `paginator` returns results based on pages of a fixed size. Valid `p
 If `number` is omitted the first page is returned. If `size` is omitted the `default_page_size` from the configuration
 settings is used.
 
+```
+GET /articles?page%5Bnumber%5D=10&page%5Bsize%5D=10 HTTP/1.1
+Accept: application/vnd.api+json
+```
+
 ###### Offset Paginator
 
 The `offset` `paginator` returns results based on an offset from the beginning of the resultset. Valid `page` parameters
 are `offset` and `limit`. If `offset` is omitted a value of 0 will be used. If `limit` is omitted the `default_page_size`
 from the configuration settings is used.
+
+```
+GET /articles?page%5Blimit%5D=10&page%5Boffset%5D=10 HTTP/1.1
+Accept: application/vnd.api+json
+```
 
 ###### Custom Paginators
 
@@ -929,6 +942,72 @@ method is called with an `options` has. The `options` hash will contain the foll
  * `:serializer` -> the serializer instance
  * `:serialization_options` -> the contents of the `serialization_options` method on the controller.
 
+#### Custom Links
+
+Custom links can be included for each resource by overriding the `custom_links` method. If a non empty hash is returned from `custom_links`, it will be merged with the default links hash containing the resource's `self` link. The `custom_links` method is called with the same `options` hash used by for [resource meta information](#resource-meta). The `options` hash contains the following:
+
+ * `:serializer` -> the serializer instance
+ * `:serialization_options` -> the contents of the `serialization_options` method on the controller.
+
+For example:
+
+```ruby
+class CityCouncilMeeting < JSONAPI::Resource
+  attribute :title, :location, :approved
+
+  def custom_links(options)
+    { minutes: options[:serialzer].link_builder.self_link(self) + "/minutes" }
+  end
+end
+```
+
+This will create a custom link with the key `minutes`, which will be merged with the default `self` link, like so:
+
+```json
+{
+  "data": [
+    {
+      "id": "1",
+      "type": "cityCouncilMeetings",
+      "links": {
+        "self": "http://city.gov/api/city-council-meetings/1",
+        "minutes": "http://city.gov/api/city-council-meetings/1/minutes"
+      },
+      "attributes": {...}
+    },
+    //...
+  ]
+}
+```
+
+Of course, the `custom_links` method can include logic to include links only when relevant:
+
+````ruby
+class CityCouncilMeeting < JSONAPI::Resource
+  attribute :title, :location, :approved
+
+  delegate :approved?, to: :model
+
+  def custom_links(options)
+    extra_links = {}
+    if approved?
+      extra_links[:minutes] = options[:serialzer].link_builder.self_link(self) + "/minutes"
+    end
+    extra_links
+  end
+end
+```
+
+It's also possibly to suppress the default `self` link by returning a hash with `{self: nil}`:
+
+````ruby
+class Selfless < JSONAPI::Resource
+  def custom_links(options)
+    {self: nil}
+  end
+end
+```
+
 #### Callbacks
 
 `ActiveSupport::Callbacks` is used to provide callback functionality, so the behavior is very similar to what you may be
@@ -1015,6 +1094,14 @@ require 'jsonapi/counting_active_record_operations_processor'
 
 JSONAPI.configure do |config|
   config.operations_processor = :counting_active_record
+end
+```
+
+To use a specific `OperationsProcessor` in a `ResourceController`, override the `create_operations_processor` method:
+
+```ruby
+def create_operations_processor
+  CountingActiveRecordOperationsProcessor.new
 end
 ```
 
