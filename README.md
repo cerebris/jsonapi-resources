@@ -24,12 +24,13 @@ backed by ActiveRecord models or by custom objects.
     * [Attributes] (#attributes)
     * [Primary Key] (#primary-key)
     * [Model Name] (#model-name)
+    * [Model Hints] (#model-hints)
     * [Relationships] (#relationships)
     * [Filters] (#filters)
     * [Pagination] (#pagination)
     * [Included relationships (side-loading resources)] (#included-relationships-side-loading-resources)
     * [Resource meta] (#resource-meta)
-    * [Custom Links] (#resource-meta)
+    * [Custom Links] (#custom-links)
     * [Callbacks] (#callbacks)
   * [Controllers] (#controllers)
     * [Namespaces] (#namespaces)
@@ -37,7 +38,11 @@ backed by ActiveRecord models or by custom objects.
     * [Handling Exceptions] (#handling-exceptions)
     * [Action Callbacks] (#action-callbacks)
   * [Serializer] (#serializer)
+    * [Serializer options] (#serializer-options)
+    * [Formatting] (#formatting)
+    * [Key Format] (#key-format)
   * [Routing] (#routing)
+    * [Nested Routes] (#nested-routes)
 * [Configuration] (#configuration)
 * [Contributing] (#contributing)
 * [License] (#license)
@@ -1854,4 +1859,4 @@ end
 
 ## License
 
-Copyright 2014 Cerebris Corporation. MIT License (see LICENSE for details).
+Copyright 2014-2016 Cerebris Corporation. MIT License (see LICENSE for details).
