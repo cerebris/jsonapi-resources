@@ -306,8 +306,16 @@ module JSONAPI
     def foreign_key_types_and_values(source, relationship)
       if relationship.is_a?(JSONAPI::Relationship::ToMany)
         if relationship.polymorphic?
-          source._model.public_send(relationship.name).pluck(:type, :id).map do |type, id|
-            [type.underscore.pluralize, IdValueFormatter.format(id)]
+          assoc = source._model.public_send(relationship.name)
+          # Avoid hitting the database again for values already pre-loaded
+          if assoc.respond_to?(:loaded?) and assoc.loaded?
+            assoc.map do |obj|
+              [obj.type.underscore.pluralize, IdValueFormatter.format(obj.id)]
+            end
+          else
+            assoc.pluck(:type, :id).map do |type, id|
+              [type.underscore.pluralize, IdValueFormatter.format(id)]
+            end
           end
         else
           source.public_send(relationship.foreign_key).map do |value|
