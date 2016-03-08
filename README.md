@@ -77,8 +77,7 @@ Or install it yourself as:
 Resources define the public interface to your API. A resource defines which attributes are exposed, as well as
 relationships to other resources.
 
-Resource definitions should by convention be placed in a directory under app named resources, `app/resources`. The class
-name should be the single underscored name of the model that backs the resource with `_resource.rb` appended. For example,
+Resource definitions should by convention be placed in a directory under app named resources, `app/resources`. The file name should be the single underscored name of the model that backs the resource with `_resource.rb` appended. For example,
 a `Contact` model's resource should have a class named `ContactResource` defined in a file named `contact_resource.rb`.
 
 #### JSONAPI::Resource
