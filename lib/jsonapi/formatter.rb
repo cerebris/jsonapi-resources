@@ -9,9 +9,12 @@ module JSONAPI
         arg
       end
 
+      @@format_to_formatter_cache = JSONAPI::NaiveCache.new do |format|
+        "#{format.to_s.camelize}Formatter".safe_constantize
+      end
+
       def formatter_for(format)
-        formatter_class_name = "#{format.to_s.camelize}Formatter"
-        formatter_class_name.safe_constantize
+        @@format_to_formatter_cache.calc(format)
       end
     end
   end
@@ -50,9 +53,12 @@ module JSONAPI
         super(value)
       end
 
+      @@value_type_to_formatter_cache = JSONAPI::NaiveCache.new do |type|
+        "#{type.to_s.camelize}ValueFormatter".safe_constantize
+      end
+
       def value_formatter_for(type)
-        formatter_name = "#{type.to_s.camelize}Value"
-        formatter_for(formatter_name)
+        @@value_type_to_formatter_cache.calc(type)
       end
     end
   end
@@ -63,24 +69,38 @@ end
 
 class CamelizedKeyFormatter < JSONAPI::KeyFormatter
   class << self
+    @@format_cache = JSONAPI::NaiveCache.new do |key|
+      key.to_s.camelize(:lower)
+    end
+    @@unformat_cache = JSONAPI::NaiveCache.new do |formatted_key|
+      formatted_key.to_s.underscore
+    end
+
     def format(key)
-      super.camelize(:lower)
+      @@format_cache.calc(key)
     end
 
     def unformat(formatted_key)
-      formatted_key.to_s.underscore
+      @@unformat_cache.calc(formatted_key)
     end
   end
 end
 
 class DasherizedKeyFormatter < JSONAPI::KeyFormatter
   class << self
+    @@format_cache = JSONAPI::NaiveCache.new do |key|
+      key.to_s.underscore.dasherize
+    end
+    @@unformat_cache = JSONAPI::NaiveCache.new do |formatted_key|
+      formatted_key.to_s.underscore
+    end
+
     def format(key)
-      super.underscore.dasherize
+      @@format_cache.calc(key)
     end
 
     def unformat(formatted_key)
-      formatted_key.to_s.underscore
+      @@unformat_cache.calc(formatted_key)
     end
   end
 end
@@ -107,24 +127,38 @@ end
 
 class CamelizedRouteFormatter < JSONAPI::RouteFormatter
   class << self
+    @@format_cache = JSONAPI::NaiveCache.new do |route|
+      route.to_s.camelize(:lower)
+    end
+    @@unformat_cache = JSONAPI::NaiveCache.new do |formatted_route|
+      formatted_route.to_s.underscore
+    end
+
     def format(route)
-      super.camelize(:lower)
+      @@format_cache.calc(route)
     end
 
     def unformat(formatted_route)
-      formatted_route.to_s.underscore
+      @@unformat_cache.calc(formatted_route)
     end
   end
 end
 
 class DasherizedRouteFormatter < JSONAPI::RouteFormatter
   class << self
+    @@format_cache = JSONAPI::NaiveCache.new do |route|
+      route.to_s.dasherize
+    end
+    @@unformat_cache = JSONAPI::NaiveCache.new do |formatted_route|
+      formatted_route.to_s.underscore
+    end
+
     def format(route)
-      super.dasherize
+      @@format_cache.calc(route)
     end
 
     def unformat(formatted_route)
-      formatted_route.to_s.underscore
+      @@unformat_cache.calc(formatted_route)
     end
   end
 end

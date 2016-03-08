@@ -350,16 +350,28 @@ module JSONAPI
         resource_for(resource_type_for(model))
       end
 
-      def _resource_name_from_type(type)
+      @@type_name_to_resource_name_cache = JSONAPI::NaiveCache.new do |type|
         "#{type.to_s.underscore.singularize}_resource".camelize
       end
 
+      def _resource_name_from_type(type)
+        @@type_name_to_resource_name_cache.calc(type)
+      end
+
+      @@model_to_model_name_cache = JSONAPI::NaiveCache.new do |model|
+        model.class.to_s.underscore
+      end
+
+      @@model_name_to_resource_type_cache = JSONAPI::NaiveCache.new do |model_name|
+        model_name.rpartition('/').last
+      end
+
       def resource_type_for(model)
-        model_name = model.class.to_s.underscore
+        model_name = @@model_to_model_name_cache.calc(model)
         if _model_hints[model_name]
           _model_hints[model_name]
         else
-          model_name.rpartition('/').last
+          @@model_name_to_resource_type_cache.calc(model_name)
         end
       end
 

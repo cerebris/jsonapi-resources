@@ -9,6 +9,10 @@ module JSONAPI
       @primary_resource_klass = config[:primary_resource_klass]
       @route_formatter        = config[:route_formatter]
       @is_engine              = !!engine_name
+
+      @resources_path_cache   = JSONAPI::NaiveCache.new do |source_klass|
+        formatted_module_path_from_class(source_klass) + format_route(source_klass._type.to_s)
+      end
     end
 
     def engine?
@@ -113,11 +117,12 @@ module JSONAPI
       klass.name.to_s.split("::")[0...-1]
     end
 
+    def regular_resources_path(source_klass)
+      @resources_path_cache.calc(source_klass)
+    end
+
     def regular_primary_resources_path
-      [
-        formatted_module_path_from_class(primary_resource_klass),
-        format_route(primary_resource_klass._type.to_s),
-      ].join
+      regular_resources_path(primary_resource_klass)
     end
 
     def regular_primary_resources_url
@@ -125,11 +130,7 @@ module JSONAPI
     end
 
     def regular_resource_path(source)
-      [
-        formatted_module_path_from_class(source.class),
-        format_route(source.class._type.to_s),
-        "/#{ source.id }",
-      ].join
+      "#{regular_resources_path(source.class)}/#{source.id}"
     end
 
     def regular_resource_url(source)
