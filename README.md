@@ -158,7 +158,7 @@ code use Single Table Inheritance.
 
 #### Context
 
-Sometimes you will want to access things such as the current logged in user (and other state only available within your controllers) from within your resource classes. To make this state available to a resource class you need to put it into the context hash - this can be done via a `context` method one of your controllers or across all controllers using ApplicationController.
+Sometimes you will want to access things such as the current logged in user (and other state only available within your controllers) from within your resource classes. To make this state available to a resource class you need to put it into the context hash - this can be done via a `context` method in one of your controllers or across all controllers using ApplicationController.
 
 For example:
 
