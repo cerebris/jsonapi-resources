@@ -21,6 +21,7 @@ backed by ActiveRecord models or by custom objects.
 * [Usage] (#usage)
   * [Resources] (#resources)
     * [JSONAPI::Resource] (#jsonapiresource)
+    * [Context] (#context)
     * [Attributes] (#attributes)
     * [Primary Key] (#primary-key)
     * [Model Name] (#model-name)
@@ -159,6 +160,28 @@ end
 In the above example vehicles are immutable. A call to `/vehicles` or `/vehicles/1` will return vehicles with types
 of either `car` or `boat`. But calls to PUT or POST a `car` must be made to `/cars`. The rails models backing the above
 code use Single Table Inheritance.
+
+#### Context
+
+Sometimes you will want to access things such as the current logged in user (and other state only available within your controllers) from within your resource classes. To make this state available to a resource class you need to put it into the context hash - this can be done via a `context` method on one of your controllers or across all controllers using ApplicationController.
+
+For example:
+
+```ruby
+class ApplicationController < JSONAPI::ResourceController
+  def context
+    {current_user: current_user}
+  end
+end
+
+# Specific resource controllers derive from ApplicationController
+# and share its context
+class PeopleController < ApplicationController
+
+end
+```
+
+You can put things that affect serialization and resource configuration into the context.
 
 #### Attributes
 
@@ -1138,26 +1161,6 @@ Of course you are free to extend this as needed and override action handlers or 
 A jsonapi-controller generator is avaliable
 ```
 rails generate jsonapi:controller contact
-```
-
-###### Context
-
-The context that's used for serialization and resource configuration is set by the controller's `context` method.
-
-For example:
-
-```ruby
-class ApplicationController < JSONAPI::ResourceController
-  def context
-    {current_user: current_user}
-  end
-end
-
-# Specific resource controllers derive from ApplicationController
-# and share its context
-class PeopleController < ApplicationController
-
-end
 ```
 
 ###### Serialization Options
