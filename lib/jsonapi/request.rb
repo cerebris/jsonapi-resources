@@ -584,8 +584,8 @@ module JSONAPI
       if relationship.is_a?(JSONAPI::Relationship::ToOne)
         if relationship.polymorphic?
           operation_args[1].merge!(
-            key_value: verified_params[:to_one].values[0][:id],
-            key_type: verified_params[:to_one].values[0][:type]
+            key_value: verified_params[:to_one].values[0] && verified_params[:to_one].values[0][:id],
+            key_type: verified_params[:to_one].values[0] && verified_params[:to_one].values[0][:type]
           )
 
           operation_klass = JSONAPI::ReplacePolymorphicToOneRelationshipOperation
