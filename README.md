@@ -984,7 +984,7 @@ class CityCouncilMeeting < JSONAPI::Resource
   attribute :title, :location, :approved
 
   def custom_links(options)
-    { minutes: options[:serialzer].link_builder.self_link(self) + "/minutes" }
+    { minutes: options[:serializer].link_builder.self_link(self) + "/minutes" }
   end
 end
 ```
@@ -1019,7 +1019,7 @@ class CityCouncilMeeting < JSONAPI::Resource
   def custom_links(options)
     extra_links = {}
     if approved?
-      extra_links[:minutes] = options[:serialzer].link_builder.self_link(self) + "/minutes"
+      extra_links[:minutes] = options[:serializer].link_builder.self_link(self) + "/minutes"
     end
     extra_links
   end
