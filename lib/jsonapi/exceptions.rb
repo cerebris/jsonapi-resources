@@ -58,6 +58,20 @@ module JSONAPI
       end
     end
 
+    class HasManyRecordNotFound < Error
+      attr_accessor :message
+      def initialize(message)
+        @message = message
+      end
+
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::RECORD_NOT_FOUND,
+                            status: :not_found,
+                            title: 'Record not found',
+                            detail: "#{message}")]
+      end
+    end
+
     class UnsupportedMediaTypeError < Error
       attr_accessor :media_type
       def initialize(media_type)

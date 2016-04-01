@@ -692,6 +692,32 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration = original_config
   end
 
+  def test_post_formatted_invalid_relationship
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    post '/api/v6/purchase-orders',
+         {
+           'data' => {
+             'attributes' => {
+               'delivery-name' => 'ASDFG Corp'
+             },
+             'type' => 'purchase-orders',
+              'relationships' => {
+                'order-flags' => {
+                  'data' => [
+                    {'type' => 'order-flags', 'id' => '9999'}
+                  ]
+                }
+              }
+           }
+         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 404, status
+  ensure
+    JSONAPI.configuration = original_config
+  end
+
   def test_patch_formatted_dasherized
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
@@ -798,6 +824,30 @@ class RequestTest < ActionDispatch::IntegrationTest
   ensure
     JSONAPI.configuration = original_config
     $test_user = $original_test_user
+  end
+
+  def test_patch_to_many_invalid_relationship
+    $original_test_user = $test_user
+    $test_user = Person.find(5)
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.route_format = :dasherized_route
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    patch '/api/v6/purchase-orders/2?include=line-items,order-flags',
+          {
+            'data' => {
+              'id' => '2',
+              'type' => 'purchase-orders',
+              'relationships' => {
+                'order-flags' => {
+                  'data' => [
+                    {'type' => 'order-flags', 'id' => '9999'}
+                  ]
+                }
+              }
+            }
+          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+
+    assert_equal 404, status
   end
 
   def test_post_to_many_link

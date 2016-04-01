@@ -206,6 +206,10 @@ module JSONAPI
 
       return JSONAPI::ResourceOperationResult.new((result == :completed ? :created : :accepted), resource)
 
+    rescue ActiveRecord::RecordNotFound => e
+      records_not_found = JSONAPI::Exceptions::HasManyRecordNotFound.new(e)
+      return JSONAPI::ErrorsOperationResult.new(records_not_found.errors[0].code, records_not_found.errors)
+
     rescue JSONAPI::Exceptions::Error => e
       return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
     end
@@ -243,6 +247,11 @@ module JSONAPI
       result = resource.replace_fields(data)
 
       return JSONAPI::ResourceOperationResult.new(result == :completed ? :ok : :accepted, resource)
+
+      rescue ActiveRecord::RecordNotFound => e
+        records_not_found = JSONAPI::Exceptions::HasManyRecordNotFound.new(e)
+        return JSONAPI::ErrorsOperationResult.new(records_not_found.errors[0].code, records_not_found.errors)
+
     end
   end
 
