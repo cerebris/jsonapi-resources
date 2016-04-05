@@ -18,9 +18,26 @@ class PostWithBadAfterSave < ActiveRecord::Base
   end
 end
 
+class PostWithCustomValidationContext < ActiveRecord::Base
+  self.table_name = 'posts'
+  validate :api_specific_check, on: :json_api_create
+
+  def api_specific_check
+    errors[:base] << 'Record is invalid'
+  end
+end
+
 class ArticleWithBadAfterSaveResource < JSONAPI::Resource
   model_name 'PostWithBadAfterSave'
   attribute :title
+end
+
+class ArticleWithCustomValidationContextResource < JSONAPI::Resource
+  model_name 'PostWithCustomValidationContext'
+  attribute :title
+  def _save
+    super(:json_api_create)
+  end
 end
 
 class NoMatchResource < JSONAPI::Resource
@@ -556,5 +573,14 @@ class ResourceTest < ActiveSupport::TestCase
     special_resource = SpecialPersonResource.new(special_person, nil)
     resource_model = SpecialPersonResource.records({}).first # simulate a find
     assert_equal(SpecialPersonResource, SpecialPersonResource.resource_for_model(resource_model))
+  end
+
+  def test_resource_performs_validations_in_custom_context
+    post = PostWithCustomValidationContext.find(1)
+    post_resource = ArticleWithCustomValidationContextResource.new(post, nil)
+    err = assert_raises JSONAPI::Exceptions::ValidationErrors do
+      post_resource._save
+    end
+    assert_equal(err.error_messages[:base], ['Record is invalid'])
   end
 end
