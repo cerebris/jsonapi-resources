@@ -546,7 +546,7 @@ end
 ### OperationsProcessor
 class CountingActiveRecordOperationsProcessor < ActiveRecordOperationsProcessor
   after_find_operation do
-    @operation_meta[:total_records] = @operation.record_count
+    @operation_meta[:total_records] = @result.record_count
     @operation_links['spec'] = 'https://test_corp.com'
   end
 end
@@ -1590,6 +1590,26 @@ class FlatPostResource < JSONAPI::Resource
 end
 
 class FlatPostsController < JSONAPI::ResourceController
+end
+
+# CustomOperationProcessors
+
+class PostOperationProcessor < JSONAPI::OperationProcessor
+  def find
+    # puts("In custom Operations Processor without Namespace")
+    super
+  end
+end
+
+module Api
+  module V1
+    class PostOperationProcessor < JSONAPI::OperationProcessor
+      def show
+        # puts("In custom Operations Processor with Namespace")
+        super
+      end
+    end
+  end
 end
 
 ### PORO Data - don't do this in a production app
