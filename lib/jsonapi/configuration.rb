@@ -1,6 +1,4 @@
 require 'jsonapi/formatter'
-require 'jsonapi/operations_processor'
-require 'jsonapi/active_record_operations_processor'
 require 'concurrent'
 
 module JSONAPI
@@ -9,7 +7,6 @@ module JSONAPI
                 :resource_key_type,
                 :route_format,
                 :raise_if_parameters_not_allowed,
-                :operations_processor,
                 :allow_include,
                 :allow_sort,
                 :allow_filter,
@@ -33,9 +30,6 @@ module JSONAPI
 
       #:underscored_route, :camelized_route, :dasherized_route, or custom
       self.route_format = :dasherized_route
-
-      #:basic, :active_record, or custom
-      self.operations_processor = :active_record
 
       #:integer, :uuid, :string, or custom (provide a proc)
       self.resource_key_type = :integer
@@ -142,11 +136,6 @@ module JSONAPI
       end
 
       return formatter
-    end
-
-    def operations_processor=(operations_processor)
-      @operations_processor_name = operations_processor
-      @operations_processor = JSONAPI::OperationsProcessor.operations_processor_for(@operations_processor_name)
     end
 
     def exception_class_whitelisted?(e)

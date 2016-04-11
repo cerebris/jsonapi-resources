@@ -543,27 +543,6 @@ module Api
   end
 end
 
-### OperationsProcessor
-class CountingActiveRecordOperationsProcessor < ActiveRecordOperationsProcessor
-  after_find_operation do
-    @operation_meta[:total_records] = @result.record_count
-    @operation_links['spec'] = 'https://test_corp.com'
-  end
-end
-
-# This processor swaps in a mock for the operation that will raise an exception
-# when it receives the :apply method. This is used to test the
-# exception_class_whitelist configuration.
-class ErrorRaisingOperationsProcessor < ActiveRecordOperationsProcessor
-  def process_operation(operation)
-    mock_operation = Minitest::Mock.new
-    mock_operation.expect(:apply, true) do
-      raise PostsController::SubSpecialError
-    end
-    super(mock_operation)
-  end
-end
-
 ### CONTROLLERS
 class AuthorsController < JSONAPI::ResourceController
 end
@@ -581,7 +560,7 @@ class PostsController < BaseController
   class SubSpecialError < PostsController::SpecialError; end
 
   # This is used to test that classes that are whitelisted are reraised by
-  # the operations processor.
+  # the operations dispatcher.
   rescue_from PostsController::SpecialError do
     head :forbidden
   end
@@ -1593,11 +1572,43 @@ class FlatPostsController < JSONAPI::ResourceController
 end
 
 # CustomOperationProcessors
+class Api::V4::BookOperationProcessor < JSONAPI::OperationProcessor
+  after_find do
+    unless @results.is_a?(JSONAPI::ErrorsOperationResult)
+      @result.meta[:total_records] = @result.record_count
+      @result.links['spec'] = 'https://test_corp.com'
+    end
+  end
+end
 
 class PostOperationProcessor < JSONAPI::OperationProcessor
   def find
+    if $PostOperationProcessorRaisesErrors
+      raise PostsController::SubSpecialError
+    end
     # puts("In custom Operations Processor without Namespace")
     super
+  end
+
+  after_find do
+    unless @results.is_a?(JSONAPI::ErrorsOperationResult)
+      @result.meta[:total_records] = @result.record_count
+      @result.links['spec'] = 'https://test_corp.com'
+    end
+  end
+end
+
+module Api
+  module V7
+    class CategoryOperationProcessor < JSONAPI::OperationProcessor
+      def show
+        if $PostOperationProcessorRaisesErrors
+          raise PostsController::SubSpecialError
+        end
+        # puts("In custom Operations Processor without Namespace")
+        super
+      end
+    end
   end
 end
 

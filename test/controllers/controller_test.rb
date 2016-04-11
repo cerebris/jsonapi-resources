@@ -17,24 +17,25 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_exception_class_whitelist
     original_config = JSONAPI.configuration.dup
-    JSONAPI.configuration.operations_processor = :error_raising
-    # test that the operations processor rescues the error when it
+    $PostOperationProcessorRaisesErrors = true
+    # test that the operations dispatcher rescues the error when it
     # has not been added to the exception_class_whitelist
     get :index
     assert_response 500
-    # test that the operations processor does not rescue the error when it
+    # test that the operations dispatcher does not rescue the error when it
     # has been added to the exception_class_whitelist
     JSONAPI.configuration.exception_class_whitelist << PostsController::SpecialError
     get :index
     assert_response 403
   ensure
+    $PostOperationProcessorRaisesErrors = false
     JSONAPI.configuration = original_config
   end
 
   def test_on_server_error_block_callback_with_exception
     original_config = JSONAPI.configuration.dup
-    JSONAPI.configuration.operations_processor = :error_raising
     JSONAPI.configuration.exception_class_whitelist = []
+    $PostOperationProcessorRaisesErrors = true
 
     @controller.class.instance_variable_set(:@callback_message, "none")
     BaseController.on_server_error do
@@ -48,13 +49,14 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "Internal Server Error", json_response['errors'][0]['title']
     assert_equal "Internal Server Error", json_response['errors'][0]['detail']
   ensure
+    $PostOperationProcessorRaisesErrors = false
     JSONAPI.configuration = original_config
   end
 
   def test_on_server_error_method_callback_with_exception
     original_config = JSONAPI.configuration.dup
-    JSONAPI.configuration.operations_processor = :error_raising
     JSONAPI.configuration.exception_class_whitelist = []
+    $PostOperationProcessorRaisesErrors = true
 
     #ignores methods that don't exist
     @controller.class.on_server_error :set_callback_message, :a_bogus_method
@@ -66,6 +68,7 @@ class PostsControllerTest < ActionController::TestCase
     # test that it renders the default server error response
     assert_equal "Internal Server Error", json_response['errors'][0]['title']
   ensure
+    $PostOperationProcessorRaisesErrors = false
     JSONAPI.configuration = original_config
   end
 
@@ -80,6 +83,8 @@ class PostsControllerTest < ActionController::TestCase
 
     # test that it does not render error
     assert json_response.key?('data')
+  ensure
+    $PostOperationProcessorRaisesErrors = false
   end
 
   def test_index_filter_with_empty_result
@@ -3118,7 +3123,6 @@ class Api::V4::BooksControllerTest < ActionController::TestCase
 
   def test_books_offset_pagination_meta
     original_config = JSONAPI.configuration.dup
-    JSONAPI.configuration.operations_processor = :counting_active_record
     Api::V4::BookResource.paginator :offset
     get :index, params: {page: {offset: 50, limit: 12}}
     assert_response :success
@@ -3131,7 +3135,6 @@ class Api::V4::BooksControllerTest < ActionController::TestCase
 
   def test_books_operation_links
     original_config = JSONAPI.configuration.dup
-    JSONAPI.configuration.operations_processor = :counting_active_record
     Api::V4::BookResource.paginator :offset
     get :index, params: {page: {offset: 50, limit: 12}}
     assert_response :success
@@ -3374,7 +3377,6 @@ class Api::V7::CategoriesControllerTest < ActionController::TestCase
 
   def test_not_whitelisted_error_in_controller
     original_config = JSONAPI.configuration.dup
-    JSONAPI.configuration.operations_processor = :error_raising
     JSONAPI.configuration.exception_class_whitelist = []
     get :show, params: {id: '1'}
     assert_response 500
@@ -3385,12 +3387,13 @@ class Api::V7::CategoriesControllerTest < ActionController::TestCase
 
   def test_whitelisted_error_in_controller
     original_config = JSONAPI.configuration.dup
-    JSONAPI.configuration.operations_processor = :error_raising
+    $PostOperationProcessorRaisesErrors = true
     JSONAPI.configuration.exception_class_whitelist = [PostsController::SubSpecialError]
     assert_raises PostsController::SubSpecialError do
       get :show, params: {id: '1'}
     end
   ensure
     JSONAPI.configuration = original_config
+    $PostOperationProcessorRaisesErrors = false
   end
 end

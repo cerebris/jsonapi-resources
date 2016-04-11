@@ -1,26 +1,66 @@
 module JSONAPI
   class OperationProcessor
+    include Callbacks
+    define_jsonapi_resources_callbacks :find,
+                                       :show,
+                                       :show_relationship,
+                                       :show_related_resource,
+                                       :show_related_resources,
+                                       :create_resource,
+                                       :remove_resource,
+                                       :replace_fields,
+                                       :replace_to_one_relationship,
+                                       :replace_polymorphic_to_one_relationship,
+                                       :create_to_many_relationship,
+                                       :replace_to_many_relationship,
+                                       :remove_to_many_relationship,
+                                       :remove_to_one_relationship,
+                                       :operation
+
     class << self
-      def operation_processor_instance_for(resource_klass, params)
-        operation_processor_name = _operation_processor_from_resource_type(resource_klass)
-        operation_processor = operation_processor_name.safe_constantize if operation_processor_name
-        if operation_processor.nil?
-          operation_processor = JSONAPI::OperationProcessor
-        end
-        operation_processor.new(resource_klass, params)
+      def operation_processor_instance_for(resource_klass, operation_type, params)
+        _operation_processor_from_resource_type(resource_klass).new(resource_klass, operation_type, params)
       end
 
       def _operation_processor_from_resource_type(resource_klass)
-        resource_klass.name.gsub(/Resource$/,'OperationProcessor')
+        operation_processor = resource_klass.name.gsub(/Resource$/,'OperationProcessor').safe_constantize
+        if operation_processor.nil?
+          operation_processor = JSONAPI::OperationProcessor
+        end
+
+        operation_processor
+      end
+
+      def transactional(operation_type)
+        case operation_type
+          when :find, :show, :show_related_resource, :show_related_resources
+            false
+          else
+            true
+        end
       end
     end
 
-    attr_reader :resource_klass, :params, :context
+    attr_reader :resource_klass, :operation_type, :params, :context, :result, :result_options
 
-    def initialize(resource_klass, params)
+    def initialize(resource_klass, operation_type, params)
       @resource_klass = resource_klass
+      @operation_type = operation_type
       @params = params
       @context = params[:context]
+      @result = nil
+      @result_options = {}
+    end
+
+    def process
+      run_callbacks :operation do
+        run_callbacks operation_type do
+          @result = send(operation_type)
+        end
+      end
+
+    rescue JSONAPI::Exceptions::Error => e
+      @result = JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
     end
 
     def find
@@ -52,12 +92,9 @@ module JSONAPI
         page_options[:pagination_params] = paginator.links_page_params(page_options)
       end
 
-      return JSONAPI::ResourcesOperationResult.new(:ok,
-                                                   resource_records,
-                                                   page_options)
-
-    rescue JSONAPI::Exceptions::Error => e
-      return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
+      JSONAPI::ResourcesOperationResult.new(:ok,
+                                            resource_records,
+                                            page_options)
     end
 
     def show
@@ -70,10 +107,7 @@ module JSONAPI
                                                    context: context,
                                                    include_directives: include_directives)
 
-      return JSONAPI::ResourceOperationResult.new(:ok, resource_record)
-
-    rescue JSONAPI::Exceptions::Error => e
-      return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
+      JSONAPI::ResourceOperationResult.new(:ok, resource_record)
     end
 
     def show_relationship
@@ -82,11 +116,9 @@ module JSONAPI
 
       parent_resource = resource_klass.find_by_key(parent_key, context: context)
 
-      return JSONAPI::LinksObjectOperationResult.new(:ok,
-                                                     parent_resource,
-                                                     resource_klass._relationship(relationship_type))
-    rescue JSONAPI::Exceptions::Error => e
-      return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
+      JSONAPI::LinksObjectOperationResult.new(:ok,
+                                              parent_resource,
+                                              resource_klass._relationship(relationship_type))
     end
 
     def show_related_resource
@@ -98,10 +130,7 @@ module JSONAPI
 
       related_resource = source_resource.public_send(relationship_type)
 
-      return JSONAPI::ResourceOperationResult.new(:ok, related_resource)
-
-    rescue JSONAPI::Exceptions::Error => e
-      return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
+      JSONAPI::ResourceOperationResult.new(:ok, related_resource)
     end
 
     def show_related_resources
@@ -146,10 +175,7 @@ module JSONAPI
       opts.merge!(record_count: record_count) if JSONAPI.configuration.top_level_meta_include_record_count
       opts.merge!(page_count: page_count) if JSONAPI.configuration.top_level_meta_include_page_count
 
-      return JSONAPI::RelatedResourcesOperationResult.new(:ok, source_resource, relationship_type, related_resources, opts)
-
-    rescue JSONAPI::Exceptions::Error => e
-      return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
+      JSONAPI::RelatedResourcesOperationResult.new(:ok, source_resource, relationship_type, related_resources, opts)
     end
 
     def create_resource
@@ -158,10 +184,7 @@ module JSONAPI
       resource = resource_klass.create(context)
       result = resource.replace_fields(data)
 
-      return JSONAPI::ResourceOperationResult.new((result == :completed ? :created : :accepted), resource)
-
-    rescue JSONAPI::Exceptions::Error => e
-      return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
+      JSONAPI::ResourceOperationResult.new((result == :completed ? :created : :accepted), resource)
     end
 
     def remove_resource
@@ -170,10 +193,7 @@ module JSONAPI
       resource = resource_klass.find_by_key(resource_id, context: context)
       result = resource.remove
 
-      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
-
-    rescue JSONAPI::Exceptions::Error => e
-      return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
+      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
 
     def replace_fields
@@ -183,9 +203,7 @@ module JSONAPI
       resource = resource_klass.find_by_key(resource_id, context: context)
       result = resource.replace_fields(data)
 
-      return JSONAPI::ResourceOperationResult.new(result == :completed ? :ok : :accepted, resource)
-    rescue JSONAPI::Exceptions::Error => e
-      return JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
+      JSONAPI::ResourceOperationResult.new(result == :completed ? :ok : :accepted, resource)
     end
 
     def replace_to_one_relationship
@@ -196,7 +214,7 @@ module JSONAPI
       resource = resource_klass.find_by_key(resource_id, context: context)
       result = resource.replace_to_one_link(relationship_type, key_value)
 
-      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
 
     def replace_polymorphic_to_one_relationship
@@ -208,7 +226,7 @@ module JSONAPI
       resource = resource_klass.find_by_key(resource_id, context: context)
       result = resource.replace_polymorphic_to_one_link(relationship_type, key_value, key_type)
 
-      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
 
     def create_to_many_relationship
@@ -219,7 +237,7 @@ module JSONAPI
       resource = resource_klass.find_by_key(resource_id, context: context)
       result = resource.create_to_many_links(relationship_type, data)
 
-      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
 
     def replace_to_many_relationship
@@ -230,7 +248,7 @@ module JSONAPI
       resource = resource_klass.find_by_key(resource_id, context: context)
       result = resource.replace_to_many_links(relationship_type, data)
 
-      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
 
     def remove_to_many_relationship
@@ -241,7 +259,7 @@ module JSONAPI
       resource = resource_klass.find_by_key(resource_id, context: context)
       result = resource.remove_to_many_link(relationship_type, associated_key)
 
-      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
 
     def remove_to_one_relationship
@@ -251,7 +269,7 @@ module JSONAPI
       resource = resource_klass.find_by_key(resource_id, context: context)
       result = resource.remove_to_one_link(relationship_type)
 
-      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
   end
 end
