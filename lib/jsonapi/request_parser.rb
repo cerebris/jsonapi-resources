@@ -1,3 +1,4 @@
+require 'jsonapi/include_directive'
 require 'jsonapi/operation'
 require 'jsonapi/paginator'
 
@@ -225,7 +226,7 @@ module JSONAPI
         include.push(unformat_key(included_resource).to_s)
       end
 
-      @include_directives = JSONAPI::IncludeDirectives.new(include)
+      @include_directives = JSONAPI::IncludeDirective.new(include)
     end
 
     def parse_filters(filters)

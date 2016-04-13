@@ -1,3 +1,4 @@
+require 'jsonapi/include_directive'
 require 'jsonapi/callbacks'
 
 module JSONAPI
@@ -501,30 +502,20 @@ module JSONAPI
         _relationships.keys | _attributes.keys
       end
 
-      def resolve_relationship_names_to_relations(resource_klass, model_includes, options = {})
-        case model_includes
-          when Array
-            return model_includes.map do |value|
-              resolve_relationship_names_to_relations(resource_klass, value, options)
-            end
-          when Hash
-            model_includes.keys.each do |key|
-              relationship = resource_klass._relationships[key]
-              value = model_includes[key]
-              model_includes.delete(key)
-              model_includes[relationship.relation_name(options)] = resolve_relationship_names_to_relations(relationship.resource_klass, value, options)
-            end
-            return model_includes
-          when Symbol
-            relationship = resource_klass._relationships[model_includes]
-            return relationship.relation_name(options)
+      def resolve_relationship_names_to_relations(resource_klass, include_directives, options = {})
+        resource_klass._relationships
+                      .each_with_object({}) do |(key, rel), hash|
+          if include_directives.key?(key)
+            name = rel.relation_name(options)
+            hash[name] = resolve_relationship_names_to_relations(rel.resource_klass, include_directives[key])
+          end
         end
       end
 
       def apply_includes(records, options = {})
         include_directives = options[:include_directives]
         if include_directives
-          model_includes = resolve_relationship_names_to_relations(self, include_directives.model_includes, options)
+          model_includes = resolve_relationship_names_to_relations(self, include_directives, options)
           records = records.includes(model_includes)
         end
 
@@ -613,7 +604,7 @@ module JSONAPI
         end
 
         if required_includes.any?
-          records = apply_includes(records, options.merge(include_directives: IncludeDirectives.new(required_includes)))
+          records = apply_includes(records, options.merge(include_directives: JSONAPI::IncludeDirective.new(required_includes)))
         end
 
         records

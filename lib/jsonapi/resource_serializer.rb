@@ -1,3 +1,5 @@
+require 'jsonapi/include_directive'
+
 module JSONAPI
   class ResourceSerializer
 
@@ -41,9 +43,9 @@ module JSONAPI
       is_resource_collection = source.respond_to?(:to_ary)
 
       @included_objects = {}
-      @include_directives ||= JSONAPI::IncludeDirectives.new(@include)
+      @include_directives ||= JSONAPI::IncludeDirective.new(@include)
 
-      process_primary(source, @include_directives.include_directives)
+      process_primary(source, @include_directives)
 
       included_objects = []
       primary_objects = []
@@ -198,15 +200,12 @@ module JSONAPI
 
       included_relationships = source.fetchable_fields & relationships.keys
 
-      data = {}
-
-      relationships.each_with_object(data) do |(name, relationship), hash|
+      relationships.each_with_object({}) do |(name, relationship), hash|
         if included_relationships.include? name
-          ia = include_directives[:include_related][name]
+          ia = include_directives[name]
 
-          include_linkage = ia && ia[:include]
-          include_linked_children = ia && !ia[:include_related].empty?
-          resources = (include_linkage || include_linked_children) && [source.public_send(name)].flatten.compact
+          include_linkage = !ia.nil?
+          resources = include_linkage && [source.public_send(name)].flatten.compact
 
           if field_set.include?(name)
             hash[format_key(name)] = link_object(source, relationship, include_linkage)
@@ -215,14 +214,14 @@ module JSONAPI
           # If the object has been serialized once it will be in the related objects list,
           # but it's possible all children won't have been captured. So we must still go
           # through the relationships.
-          if include_linkage || include_linked_children
+          if include_linkage
             resources.each do |resource|
               next if self_referential_and_already_in_source(resource)
               id = resource.id
               relationships_only = already_serialized?(relationship.type, id)
               if include_linkage && !relationships_only
                 add_included_object(id, object_hash(resource, ia))
-              elsif include_linked_children || relationships_only
+              elsif include_linkage || relationships_only
                 relationships_hash(resource, ia)
               end
             end
