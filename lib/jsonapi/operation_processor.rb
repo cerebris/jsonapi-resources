@@ -25,7 +25,7 @@ module JSONAPI
       def _operation_processor_from_resource_type(resource_klass)
         operation_processor = resource_klass.name.gsub(/Resource$/,'OperationProcessor').safe_constantize
         if operation_processor.nil?
-          operation_processor = JSONAPI::OperationProcessor
+          operation_processor = JSONAPI.configuration.default_operation_processor_klass
         end
 
         operation_processor
