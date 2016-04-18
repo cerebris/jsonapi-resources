@@ -66,10 +66,6 @@ module JSONAPI
 
     rescue => e
       handle_exceptions(e)
-    ensure
-      if response.body.size > 0
-        response.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
-      end
     end
 
     # set the operations processor in the configuration or override this to use another operations processor
@@ -155,7 +151,8 @@ module JSONAPI
 
       render_options = {
         status: response_doc.status,
-        json:   response_doc.contents
+        json:   response_doc.contents,
+        content_type: JSONAPI::MEDIA_TYPE
       }
 
       render_options[:location] = response_doc.contents[:data]["links"][:self] if (

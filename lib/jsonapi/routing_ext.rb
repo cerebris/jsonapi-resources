@@ -33,12 +33,24 @@ module ActionDispatch
           end
 
           resource @resource_type, options do
-            @scope[:jsonapi_resource] = @resource_type
+            if @scope.respond_to? :[]=
+              # Rails 4
+              @scope[:jsonapi_resource] = @resource_type
 
-            if block_given?
-              yield
+              if block_given?
+                yield
+              else
+                jsonapi_relationships
+              end
             else
-              jsonapi_relationships
+              # Rails 5
+              jsonapi_resource_scope(SingletonResource.new(@resource_type, api_only?, @scope[:shallow], options), @resource_type) do
+                if block_given?
+                  yield
+                else
+                  jsonapi_relationships
+                end
+              end
             end
           end
         end
@@ -87,12 +99,23 @@ module ActionDispatch
           end
 
           resources @resource_type, options do
-            @scope[:jsonapi_resource] = @resource_type
-
-            if block_given?
-              yield
+            if @scope.respond_to? :[]=
+              # Rails 4
+              @scope[:jsonapi_resource] = @resource_type
+              if block_given?
+                yield
+              else
+                jsonapi_relationships
+              end
             else
-              jsonapi_relationships
+              # Rails 5
+              jsonapi_resource_scope(Resource.new(@resource_type, api_only?, @scope[:shallow], options), @resource_type) do
+                if block_given?
+                  yield
+                else
+                  jsonapi_relationships
+                end
+              end
             end
           end
         end
@@ -204,6 +227,16 @@ module ActionDispatch
           match "#{formatted_relationship_name}", controller: options[:controller],
                                                   relationship: relationship.name, source: resource_type_with_module_prefix(source._type),
                                                   action: 'get_related_resources', via: [:get]
+        end
+
+        protected
+
+        def jsonapi_resource_scope(resource, resource_type) #:nodoc:
+          @scope = @scope.new(scope_level_resource: resource, jsonapi_resource: resource_type)
+
+          controller(resource.resource_scope) { yield }
+        ensure
+          @scope = @scope.parent
         end
 
         private

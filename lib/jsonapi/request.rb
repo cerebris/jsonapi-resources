@@ -382,7 +382,8 @@ module JSONAPI
         }
       end
 
-      if !raw.is_a?(Hash) || raw.length != 2 || !(raw.key?('type') && raw.key?('id'))
+      if !(raw.is_a?(Hash) || raw.is_a?(ActionController::Parameters)) ||
+         raw.keys.length != 2 || !(raw.key?('type') && raw.key?('id'))
         fail JSONAPI::Exceptions::InvalidLinksObject.new
       end
 
@@ -476,7 +477,7 @@ module JSONAPI
     def parse_to_many_relationship(link_value, relationship, &add_result)
       if link_value.is_a?(Array) && link_value.length == 0
         linkage = []
-      elsif link_value.is_a?(Hash)
+      elsif (link_value.is_a?(Hash) || link_value.is_a?(ActionController::Parameters))
         linkage = link_value[:data]
       else
         fail JSONAPI::Exceptions::InvalidLinksObject.new
@@ -608,7 +609,7 @@ module JSONAPI
     def parse_single_replace_operation(data, keys, id_key_presence_check_required: true)
       fail JSONAPI::Exceptions::MissingKey.new if data[:id].nil?
 
-      key = data[:id]
+      key = data[:id].to_s
       if id_key_presence_check_required && !keys.include?(key)
         fail JSONAPI::Exceptions::KeyNotIncludedInURL.new(key)
       end
