@@ -529,6 +529,22 @@ class SerializerTest < ActionDispatch::IntegrationTest
     )
   end
 
+  def test_serializer_keeps_sorted_order_of_objects_with_self_referential_relationships
+    @post.parent_post = Post.find(3)
+    ordered_posts = [@post, Post.find(2), Post.find(3)]
+    serialized_data = JSONAPI::ResourceSerializer.new(
+      ParentApi::PostResource,
+      include: ['parent_post'],
+      base_url: 'http://example.com').serialize_to_hash(ordered_posts.map {|p| ParentApi::PostResource.new(p, nil)} 
+    )[:data]
+
+    assert_equal(3, serialized_data.length)
+    assert_equal("1", serialized_data[0]["id"])
+    assert_equal("2", serialized_data[1]["id"])
+    assert_equal("3", serialized_data[2]["id"])
+  end
+
+ 
   def test_serializer_different_foreign_key
     serialized = JSONAPI::ResourceSerializer.new(
       PersonResource,
