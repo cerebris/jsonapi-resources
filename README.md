@@ -36,6 +36,7 @@ backed by ActiveRecord models or by custom objects.
     * [Error Codes] (#error-codes)
     * [Handling Exceptions] (#handling-exceptions)
     * [Action Callbacks] (#action-callbacks)
+  * [Operation Processors] (#operation-processors)
   * [Serializer] (#serializer)
     * [Serializer options] (#serializer-options)
     * [Formatting] (#formatting)
@@ -1117,68 +1118,31 @@ Callbacks can be defined for the following `JSONAPI::Resource` events:
 - `:remove_to_one_link`
 - `:replace_fields`
 
-##### `JSONAPI::OperationsProcessor` Callbacks
+##### `JSONAPI::OperationProcessor` Callbacks
 
-Callbacks can also be defined for `JSONAPI::OperationsProcessor` events:
-- `:operations`: The set of operations.
+Callbacks can also be defined for `JSONAPI::OperationProcessor` events:
 - `:operation`: Any individual operation.
-- `:find_operation`: A `find_operation`.
-- `:show_operation`: A `show_operation`.
-- `:show_relationship_operation`: A `show_relationship_operation`.
-- `:show_related_resource_operation`: A `show_related_resource_operation`.
-- `:show_related_resources_operation`: A `show_related_resources_operation`.
-- `:create_resource_operation`: A `create_resource_operation`.
-- `:remove_resource_operation`: A `remove_resource_operation`.
-- `:replace_fields_operation`: A `replace_fields_operation`.
-- `:replace_to_one_relationship_operation`: A `replace_to_one_relationship_operation`.
-- `:create_to_many_relationship_operation`: A `create_to_many_relationship_operation`.
-- `:replace_to_many_relationship_operation`: A `replace_to_many_relationship_operation`.
-- `:remove_to_many_relationship_operation`: A `remove_to_many_relationship_operation`.
-- `:remove_to_one_relationship_operation`: A `remove_to_one_relationship_operation`.
+- `:find`: A `find` operation is being processed.
+- `:show`: A `show` operation is being processed.
+- `:show_relationship`: A `show_relationship` operation is being processed.
+- `:show_related_resource`: A `show_related_resource` operation is being processed.
+- `:show_related_resources`: A `show_related_resources` operation is being processed.
+- `:create_resource`: A `create_resource` operation is being processed.
+- `:remove_resource`: A `remove_resource` operation is being processed.
+- `:replace_fields`: A `replace_fields` operation is being processed.
+- `:replace_to_one_relationship`: A `replace_to_one_relationship` operation is being processed.
+- `:create_to_many_relationship`: A `create_to_many_relationship` operation is being processed.
+- `:replace_to_many_relationship`: A `replace_to_many_relationship` operation is being processed.
+- `:remove_to_many_relationship`: A `remove_to_many_relationship` operation is being processed.
+- `:remove_to_one_relationship`: A `remove_to_one_relationship` operation is being processed.
 
-The operation callbacks have access to two meta data hashes, `@operations_meta` and `@operation_meta`, two links hashes,
-`@operations_links` and `@operation_links`, the full list of `@operations`, each individual `@operation` and the
-`@result` variables.
+See [Operation Processors] (#operation-processors) for details on using OperationPprocessors
 
-##### Custom `OperationsProcessor` Example to Return total_count in Meta
+##### `JSONAPI::OperationsProcessor` Callbacks (a removed feature)
 
-Note: this can also be accomplished with the `top_level_meta_include_record_count` option, and in most cases that will
-be the better option.
-
-To return the total record count of a find operation in the meta data of a find operation you can create a custom
-OperationsProcessor. For example:
-
-```ruby
-# lib/jsonapi/counting_active_record_operations_processor.rb
-class CountingActiveRecordOperationsProcessor < ActiveRecordOperationsProcessor
-  after_find_operation do
-    @operation_meta[:total_records] = @operation.record_count
-  end
-end
-```
-
-Set the configuration option `operations_processor` to use the new `CountingActiveRecordOperationsProcessor` by
-specifying the snake cased name of the class (without the `OperationsProcessor`).
-
-```ruby
-require 'jsonapi/counting_active_record_operations_processor'
-
-JSONAPI.configure do |config|
-  config.operations_processor = :counting_active_record
-end
-```
-
-To use a specific `OperationsProcessor` in a `ResourceController`, override the `create_operations_processor` method:
-
-```ruby
-def create_operations_processor
-  CountingActiveRecordOperationsProcessor.new
-end
-```
-
-The callback code will be called after each find. It will use the same options as the find operation, without the
-pagination, to collect the record count. This is stored in the `operation_meta`, which will be returned in the top level
-meta element.
+Note: The `JSONAPI::OperationsProcessor` has been removed and replaced with the `JSONAPI::OperationDispatcher`
+and `OperationProcessor` classes per resource. The callbacks have been renamed and moved to the
+`OperationProcessor`s, with the exception of the `operations` callback which is now on the controller.
 
 ### Controllers
 
@@ -1202,6 +1166,7 @@ end
 Of course you are free to extend this as needed and override action handlers or other methods.
 
 A jsonapi-controller generator is avaliable
+
 ```
 rails generate jsonapi:controller contact
 ```
@@ -1415,6 +1380,56 @@ class UsersController < JSONAPI::ResourceController
   end
 end
 ```
+
+### Operation Processors
+
+Operation Processors are called to perform the operation(s) that make up a request. The controller (through the `OperationDispatcher`), creates an `OperatorProcessor` to handle each operation. The processor is created based on the resource name, including the namespace. If a processor does not exist for a resource (namespace matters) the default operation processor is used instead. The default processor can be changed by a configuration setting.
+
+Defining a custom `OperationProcessor` allows for custom callback handling of each operation type for each resource type. For example:
+
+```ruby
+class Api::V4::BookOperationProcessor < JSONAPI::OperationProcessor
+  after_find do
+    unless @results.is_a?(JSONAPI::ErrorsOperationResult)
+      @result.meta[:total_records_found] = @result.record_count
+    end
+  end
+end
+```
+
+This simple example uses a callback to update the result's meta property with the total count of records (a redundant
+feature only for example purposes), if there wasn't an error in the operation.  It is also possible to override the
+`find` method as well if a different behavior is needed, for example:
+
+```ruby
+class Api::V4::BookOperationProcessor < JSONAPI::OperationProcessor
+  def find
+    filters = params[:filters]
+    include_directives = params[:include_directives]
+    sort_criteria = params.fetch(:sort_criteria, [])
+    paginator = params[:paginator]
+
+    verified_filters = resource_klass.verify_filters(filters, context)
+    resource_records = resource_klass.find(verified_filters,
+                                           context: context,
+                                           include_directives: include_directives,
+                                           sort_criteria: sort_criteria,
+                                           paginator: paginator)
+
+    page_options = {}
+    # Overriding the default record count logic to always include it in the meta
+    #if (JSONAPI.configuration.top_level_meta_include_record_count ||
+    #  (paginator && paginator.class.requires_record_count))
+      page_options[:record_count] = resource_klass.find_count(verified_filters,
+                                                              context: context,
+                                                              include_directives: include_directives)
+    #end
+end
+```
+
+Note: The authors of this gem expect the most common uses cases to be handled using the callbacks. It is likely that the
+internal functionality of the operation processing methods will change, at least for several revisions. Effort will be
+made to call this out in release notes. You have been warned.
 
 ### Serializer
 
@@ -1836,8 +1851,7 @@ JR has a few configuration options. Some have already been mentioned above. To s
 initializer and add the options you wish to set. All options have defaults, so you only need to set the options that
 are different. The default options are shown below.
 
-If using custom classes (such as the CountingActiveRecordOperationsProcessor, or a CustomPaginator),
-be sure to require them at the top of the initializer before usage.
+If using custom classes (such as a CustomPaginator), be sure to require them at the top of the initializer before usage.
 
 ```ruby
 JSONAPI.configure do |config|
@@ -1847,8 +1861,9 @@ JSONAPI.configure do |config|
   #:underscored_route, :camelized_route, :dasherized_route, or custom
   config.route_format = :dasherized_route
 
-  #:basic, :active_record, or custom
-  config.operations_processor = :active_record
+  # Default OperationProcessor, used if a resource specific one is not defined.
+  # Must be a class
+  config.default_operation_processor_klass = JSONAPI::OperationProcessor
 
   #:integer, :uuid, :string, or custom (provide a proc)
   config.resource_key_type = :integer
