@@ -530,8 +530,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
   end
 
   def test_serializer_keeps_sorted_order_of_objects_with_self_referential_relationships
-    @post.parent_post = Post.find(3)
-    ordered_posts = [@post, Post.find(2), Post.find(3)]
+    post1, post2, post3 = Post.find(1), Post.find(2), Post.find(3)
+    post1.parent_post = post3
+    ordered_posts = [post1, post2, post3]
     serialized_data = JSONAPI::ResourceSerializer.new(
       ParentApi::PostResource,
       include: ['parent_post'],
@@ -542,6 +543,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
     assert_equal("1", serialized_data[0]["id"])
     assert_equal("2", serialized_data[1]["id"])
     assert_equal("3", serialized_data[2]["id"])
+  rescue => e
+    binding.pry
+    raise 
   end
 
  
