@@ -291,11 +291,13 @@ class Post < ActiveRecord::Base
     if title == "can't destroy me"
       errors.add(:title, "can't destroy me")
 
+      # :nocov:
       if Rails::VERSION::MAJOR >= 5
         throw(:abort)
       else
         return false
       end
+      # :nocov:
     end
   end
 end
