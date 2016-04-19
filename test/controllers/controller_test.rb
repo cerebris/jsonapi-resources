@@ -302,20 +302,31 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal '14', json_response['data'][0]['id']
   end
 
+  def create_alphabetically_first_user_and_post
+    author = Person.create(name: "Aardvark", date_joined: Time.now)
+    author.posts.create(title: "My first post", body: "Hello World")
+  end
+
   def test_sorting_by_relationship_field
-    get :index, {sort: 'author.name'}
+    post  = create_alphabetically_first_user_and_post
+    get :index, params: {sort: 'author.name'}
 
     assert_response :success
-    assert json_response['data'].length > 10
-    assert_equal '17', json_response['data'][0]['id']
+    assert json_response['data'].length > 10, 'there are enough recordsto show sort'
+    assert_equal '17', json_response['data'][0]['id'], 'nil is at the top'
+    assert_equal post.id.to_s, json_response['data'][1]['id'], 'alphabetically first user is second'
   end
 
   def test_desc_sorting_by_relationship_field
+    post  = create_alphabetically_first_user_and_post
     get :index, {sort: '-author.name'}
 
     assert_response :success
-    assert json_response['data'].length > 10
-    assert_equal '17', json_response['data'][-1]['id']
+    assert json_response['data'].length > 10, 'there are enough records to show sort'
+    assert_equal '17', json_response['data'][-1]['id'], 'nil is at the bottom'
+    assert_equal post.id.to_s, json_response['data'][-2]['id'], 'alphabetically first user is second last'
+  end
+
   end
 
   def test_invalid_sort_param
