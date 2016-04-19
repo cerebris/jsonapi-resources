@@ -327,8 +327,6 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal post.id.to_s, json_response['data'][-2]['id'], 'alphabetically first user is second last'
   end
 
-  end
-
   def test_invalid_sort_param
     get :index, params: {sort: 'asdfg'}
 

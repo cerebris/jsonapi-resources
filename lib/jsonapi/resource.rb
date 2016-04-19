@@ -537,6 +537,7 @@ module JSONAPI
               associations = _lookup_association_chain([records.model.to_s, *model_names])
               joins_query = _build_joins([records.model, *associations])
 
+              # _sorting is appended to avoid name clashes with manual joins eg. overriden filters
               order_by_query = "#{associations.last.name}_sorting.#{column_name} #{direction}"
               records = records.joins(joins_query).order(order_by_query)
             else
