@@ -290,7 +290,12 @@ class Post < ActiveRecord::Base
   def destroy_callback
     if title == "can't destroy me"
       errors.add(:title, "can't destroy me")
-      return false
+
+      if Rails::VERSION::MAJOR >= 5
+        throw(:abort)
+      else
+        return false
+      end
     end
   end
 end
@@ -357,8 +362,14 @@ class Planet < ActiveRecord::Base
   def check_not_pluto
     # Pluto can't be a planet, so cancel the save
     if name.downcase == 'pluto'
-      return false
-    end
+      # :nocov:
+      if Rails::VERSION::MAJOR >= 5
+        throw(:abort)
+      else
+        return false
+      end
+      # :nocov:
+   end
   end
 end
 
@@ -413,7 +424,7 @@ class Breed
     if name.is_a?(String) && name.length > 0
       return true
     else
-      @errors.set(:name, ["can't be blank"])
+      @errors.add(:name, "can't be blank")
       return false
     end
   end
@@ -953,6 +964,14 @@ class PostResource < JSONAPI::Resource
          apply: -> (records, value, _options) {
            records.where('id IN (?)', value)
          }
+
+  filter :search,
+    verify: ->(values, context) {
+      values.all?{|v| (v.is_a?(Hash) || v.is_a?(ActionController::Parameters)) } && values
+    },
+    apply: -> (records, values, _options) {
+      records.where(title: values.first['title'])
+    }
 
   def self.updatable_fields(context)
     super(context) - [:author, :subject]

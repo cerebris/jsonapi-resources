@@ -283,7 +283,7 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
 
   def test_create_resource_with_polymorphic_relationship
     document = Document.find(1)
-    post "/pictures/",
+    post "/pictures/", params:
       {
         data: {
           type: "pictures",
@@ -300,14 +300,14 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
           }
         }
       }.to_json,
-      {
+      headers: {
         'Content-Type' => JSONAPI::MEDIA_TYPE
       }
-    assert_equal response.status, 201
+    assert_equal 201, response.status
     picture = Picture.find(json_response["data"]["id"])
     assert_not_nil picture.imageable, "imageable should be present"
   ensure
-    picture.destroy
+    picture.destroy if picture
   end
 
   def test_polymorphic_create_relationship
@@ -315,7 +315,7 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
     original_imageable = picture.imageable
     assert_nil original_imageable
 
-    patch "/pictures/#{picture.id}/relationships/imageable",
+    patch "/pictures/#{picture.id}/relationships/imageable", params:
           {
             relationship: 'imageable',
             data: {
@@ -323,7 +323,7 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
               id: '1'
             }
           }.to_json,
-          {
+          headers: {
             'Content-Type' => JSONAPI::MEDIA_TYPE
           }
     assert_response :no_content
@@ -340,7 +340,7 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
     original_imageable = picture.imageable
     assert_not_equal 'Document', picture.imageable.class.to_s
 
-    patch "/pictures/#{picture.id}/relationships/imageable",
+    patch "/pictures/#{picture.id}/relationships/imageable", params:
           {
             relationship: 'imageable',
             data: {
@@ -348,7 +348,7 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
               id: '1'
             }
           }.to_json,
-          {
+          headers: {
             'Content-Type' => JSONAPI::MEDIA_TYPE
           }
     assert_response :no_content
@@ -365,11 +365,11 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
     original_imageable = picture.imageable
     assert original_imageable
 
-    delete "/pictures/#{picture.id}/relationships/imageable",
+    delete "/pictures/#{picture.id}/relationships/imageable", params:
            {
              relationship: 'imageable'
            }.to_json,
-           {
+           headers: {
              'Content-Type' => JSONAPI::MEDIA_TYPE
            }
     assert_response :no_content

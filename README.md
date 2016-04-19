@@ -21,15 +21,17 @@ backed by ActiveRecord models or by custom objects.
 * [Usage] (#usage)
   * [Resources] (#resources)
     * [JSONAPI::Resource] (#jsonapiresource)
+    * [Context] (#context)
     * [Attributes] (#attributes)
     * [Primary Key] (#primary-key)
     * [Model Name] (#model-name)
+    * [Model Hints] (#model-hints)
     * [Relationships] (#relationships)
     * [Filters] (#filters)
     * [Pagination] (#pagination)
     * [Included relationships (side-loading resources)] (#included-relationships-side-loading-resources)
     * [Resource meta] (#resource-meta)
-    * [Custom Links] (#resource-meta)
+    * [Custom Links] (#custom-links)
     * [Callbacks] (#callbacks)
   * [Controllers] (#controllers)
     * [Namespaces] (#namespaces)
@@ -37,7 +39,11 @@ backed by ActiveRecord models or by custom objects.
     * [Handling Exceptions] (#handling-exceptions)
     * [Action Callbacks] (#action-callbacks)
   * [Serializer] (#serializer)
+    * [Serializer options] (#serializer-options)
+    * [Formatting] (#formatting)
+    * [Key Format] (#key-format)
   * [Routing] (#routing)
+    * [Nested Routes] (#nested-routes)
 * [Configuration] (#configuration)
 * [Contributing] (#contributing)
 * [License] (#license)
@@ -154,6 +160,28 @@ end
 In the above example vehicles are immutable. A call to `/vehicles` or `/vehicles/1` will return vehicles with types
 of either `car` or `boat`. But calls to PUT or POST a `car` must be made to `/cars`. The rails models backing the above
 code use Single Table Inheritance.
+
+#### Context
+
+Sometimes you will want to access things such as the current logged in user (and other state only available within your controllers) from within your resource classes. To make this state available to a resource class you need to put it into the context hash - this can be done via a `context` method on one of your controllers or across all controllers using ApplicationController.
+
+For example:
+
+```ruby
+class ApplicationController < JSONAPI::ResourceController
+  def context
+    {current_user: current_user}
+  end
+end
+
+# Specific resource controllers derive from ApplicationController
+# and share its context
+class PeopleController < ApplicationController
+
+end
+```
+
+You can put things that affect serialization and resource configuration into the context.
 
 #### Attributes
 
@@ -982,7 +1010,7 @@ class CityCouncilMeeting < JSONAPI::Resource
   attribute :title, :location, :approved
 
   def custom_links(options)
-    { minutes: options[:serialzer].link_builder.self_link(self) + "/minutes" }
+    { minutes: options[:serializer].link_builder.self_link(self) + "/minutes" }
   end
 end
 ```
@@ -1017,7 +1045,7 @@ class CityCouncilMeeting < JSONAPI::Resource
   def custom_links(options)
     extra_links = {}
     if approved?
-      extra_links[:minutes] = options[:serialzer].link_builder.self_link(self) + "/minutes"
+      extra_links[:minutes] = options[:serializer].link_builder.self_link(self) + "/minutes"
     end
     extra_links
   end
@@ -1159,26 +1187,6 @@ Of course you are free to extend this as needed and override action handlers or 
 A jsonapi-controller generator is avaliable
 ```
 rails generate jsonapi:controller contact
-```
-
-###### Context
-
-The context that's used for serialization and resource configuration is set by the controller's `context` method.
-
-For example:
-
-```ruby
-class ApplicationController < JSONAPI::ResourceController
-  def context
-    {current_user: current_user}
-  end
-end
-
-# Specific resource controllers derive from ApplicationController
-# and share its context
-class PeopleController < ApplicationController
-
-end
 ```
 
 ###### Serialization Options
@@ -1880,4 +1888,4 @@ end
 
 ## License
 
-Copyright 2014 Cerebris Corporation. MIT License (see LICENSE for details).
+Copyright 2014-2016 Cerebris Corporation. MIT License (see LICENSE for details).

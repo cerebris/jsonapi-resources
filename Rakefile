@@ -1,20 +1,11 @@
 #!/usr/bin/env rake
 require 'bundler/gem_tasks'
 require 'rake/testtask'
-require './test/test_helper.rb'
 
-TestApp.load_tasks
+Rake::TestTask.new do |t|
+  t.verbose = true
+  t.warning = false
+  t.test_files = FileList['test/**/*_test.rb']
+end
 
 task default: :test
-
-desc 'Run tests in isolated processes'
-namespace :test do
-  task :isolated do
-    Dir[test_task.pattern].each do |file|
-      cmd = ['ruby']
-      test_task.libs.each { |l| cmd << '-I' << l }
-      cmd << file
-      sh cmd.join(' ')
-    end
-  end
-end

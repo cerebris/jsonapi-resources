@@ -1,11 +1,17 @@
 require 'simplecov'
 
 # To run tests with coverage:
-# COVERAGE=true rake test
-# To Switch rails versions and run a particular test order:
-# export RAILS_VERSION=4.2.0; bundle update rails; bundle exec rake TESTOPTS="--seed=39333" test
-# We are no longer having Travis test Rails 4.0.x. To test on Rails 4.0.x use this:
+# COVERAGE=true bundle exec rake test
+
+# To test on a specific rails version use this:
+# export RAILS_VERSION=4.2.6; bundle update rails; bundle exec rake test
+# export RAILS_VERSION=5.0.0.beta3; bundle update rails; bundle exec rake test
+
+# We are no longer having Travis test Rails 4.0.x., but you can try it with:
 # export RAILS_VERSION=4.0.0; bundle update rails; bundle exec rake test
+
+# To Switch rails versions and run a particular test order:
+# export RAILS_VERSION=4.2.6; bundle update rails; bundle exec rake TESTOPTS="--seed=39333" test
 
 if ENV['COVERAGE']
   SimpleCov.start do
@@ -48,6 +54,11 @@ class TestApp < Rails::Application
 
   # Turn off millisecond precision to maintain Rails 4.0 and 4.1 compatibility in test results
   ActiveSupport::JSON::Encoding.time_precision = 0 if Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR >= 1
+
+  if Rails::VERSION::MAJOR >= 5
+    config.active_support.halt_callback_chains_on_return_false = false
+    config.active_record.time_zone_aware_types = [:time, :datetime]
+  end
 end
 
 module MyEngine
@@ -66,6 +77,121 @@ if Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR < 1
         else
           %(#{time.strftime("%Y/%m/%d %H:%M:%S")} #{formatted_offset(false)})
         end
+      end
+    end
+  end
+end
+
+# Monkeypatch ActionController::TestCase to delete the RAW_POST_DATA on subsequent calls in the same test.
+if Rails::VERSION::MAJOR >= 5
+  module ClearRawPostHeader
+    def process(action, *args)
+      @request.delete_header 'RAW_POST_DATA'
+      super
+    end
+  end
+
+  class ActionController::TestCase
+    prepend ClearRawPostHeader
+  end
+end
+
+# Tests are now using the rails 5 format for the http methods. So for rails 4 we will simply convert them back
+# in a standard way.
+if Rails::VERSION::MAJOR < 5
+  module Rails4ActionControllerProcess
+    def process(*args)
+      if args[2] && args[2][:params]
+        args[2] = args[2][:params]
+      end
+      super *args
+    end
+  end
+  class ActionController::TestCase
+    prepend Rails4ActionControllerProcess
+  end
+
+  module ActionDispatch
+    module Integration #:nodoc:
+      module Rails4IntegrationProcess
+        def process(method, path, parameters = nil, headers_or_env = nil)
+          params = parameters.nil? ? nil : parameters[:params]
+          headers = parameters.nil? ? nil : parameters[:headers]
+          super method, path, params, headers
+        end
+      end
+
+      class Session
+        prepend Rails4IntegrationProcess
+      end
+    end
+  end
+end
+
+# Patch to allow :api_json mime type to be treated as JSON
+# Otherwise it is run through `to_query` and empty arrays are dropped.
+if Rails::VERSION::MAJOR >= 5
+  module ActionController
+    class TestRequest < ActionDispatch::TestRequest
+      def assign_parameters(routes, controller_path, action, parameters, generated_path, query_string_keys)
+        non_path_parameters = {}
+        path_parameters = {}
+
+        parameters.each do |key, value|
+          if query_string_keys.include?(key)
+            non_path_parameters[key] = value
+          else
+            if value.is_a?(Array)
+              value = value.map(&:to_param)
+            else
+              value = value.to_param
+            end
+
+            path_parameters[key] = value
+          end
+        end
+
+        if get?
+          if self.query_string.blank?
+            self.query_string = non_path_parameters.to_query
+          end
+        else
+          if ENCODER.should_multipart?(non_path_parameters)
+            self.content_type = ENCODER.content_type
+            data = ENCODER.build_multipart non_path_parameters
+          else
+            fetch_header('CONTENT_TYPE') do |k|
+              set_header k, 'application/x-www-form-urlencoded'
+            end
+
+            # parser = ActionDispatch::Http::Parameters::DEFAULT_PARSERS[Mime::Type.lookup(fetch_header('CONTENT_TYPE'))]
+
+            case content_mime_type.to_sym
+              when nil
+                raise "Unknown Content-Type: #{content_type}"
+              when :json, :api_json
+                data = ActiveSupport::JSON.encode(non_path_parameters)
+              when :xml
+                data = non_path_parameters.to_xml
+              when :url_encoded_form
+                data = non_path_parameters.to_query
+              else
+                @custom_param_parsers[content_mime_type] = ->(_) { non_path_parameters }
+                data = non_path_parameters.to_query
+            end
+          end
+
+          set_header 'CONTENT_LENGTH', data.length.to_s
+          set_header 'rack.input', StringIO.new(data)
+        end
+
+        fetch_header("PATH_INFO") do |k|
+          set_header k, generated_path
+        end
+        path_parameters[:controller] = controller_path
+        path_parameters[:action] = action
+
+        self.path_parameters = path_parameters
       end
     end
   end

@@ -66,10 +66,6 @@ module JSONAPI
 
     rescue => e
       handle_exceptions(e)
-    ensure
-      if response.body.size > 0
-        response.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
-      end
     end
 
     # set the operations processor in the configuration or override this to use another operations processor
@@ -152,7 +148,18 @@ module JSONAPI
 
     def render_results(operation_results)
       response_doc = create_response_document(operation_results)
-      render status: response_doc.status, json: response_doc.contents
+
+      render_options = {
+        status: response_doc.status,
+        json:   response_doc.contents,
+        content_type: JSONAPI::MEDIA_TYPE
+      }
+
+      render_options[:location] = response_doc.contents[:data]["links"][:self] if (
+        response_doc.status == :created && response_doc.contents[:data].class != Array
+      )
+
+      render(render_options)
     end
 
     def create_response_document(operation_results)
@@ -179,7 +186,7 @@ module JSONAPI
       when JSONAPI::Exceptions::Error
         render_errors(e.errors)
       else
-        if JSONAPI.configuration.exception_class_whitelist.any? { |k| e.class.ancestors.include?(k) }
+        if JSONAPI.configuration.exception_class_whitelisted?(e)
           fail e
         else
           internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
