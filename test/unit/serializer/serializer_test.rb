@@ -543,9 +543,6 @@ class SerializerTest < ActionDispatch::IntegrationTest
     assert_equal("1", serialized_data[0]["id"])
     assert_equal("2", serialized_data[1]["id"])
     assert_equal("3", serialized_data[2]["id"])
-  rescue => e
-    binding.pry
-    raise 
   end
 
  

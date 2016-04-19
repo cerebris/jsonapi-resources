@@ -31,7 +31,8 @@ module JSONAPI
 
     # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
     def serialize_to_hash(source)
-      @top_level_sources = [source].flatten
+      @top_level_sources = Set.new([source].flatten.compact.map {|s| top_level_source_key(s) })
+
       is_resource_collection = source.respond_to?(:to_ary)
 
       @included_objects = {}
@@ -175,8 +176,12 @@ module JSONAPI
       (custom_links.is_a?(Hash) && custom_links) || {}
     end
 
+    def top_level_source_key(source)
+      "#{source.class}_#{source.id}"
+    end
+
     def self_referential_and_already_in_source(resource)
-      resource && @top_level_sources.detect { |item| item.class == resource.class && item.id == resource.id }
+      resource && @top_level_sources.include?(top_level_source_key(resource))
     end
 
     def relationships_hash(source, include_directives)
@@ -207,7 +212,8 @@ module JSONAPI
           # but it's possible all children won't have been captured. So we must still go
           # through the relationships.
           if include_linkage || include_linked_children
-            resources.reject{|r| self_referential_and_already_in_source(r) }.each do |resource|
+            resources.each do |resource|
+              next if self_referential_and_already_in_source(resource)
               id = resource.id
               relationships_only = already_serialized?(relationship.type, id)
               if include_linkage && !relationships_only
