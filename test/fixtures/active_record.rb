@@ -963,9 +963,9 @@ class PostResource < JSONAPI::Resource
   end
 
   def self.sortable_fields(context)
-    super(context) - [:id]
+    super(context) - [:id] + [:"author.name"]
   end
-
+ 
   def self.verify_key(key, context = nil)
     super(key)
     raise JSONAPI::Exceptions::RecordNotFound.new(key) unless find_by_key(key, context: context)
