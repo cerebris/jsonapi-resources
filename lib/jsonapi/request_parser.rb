@@ -381,22 +381,20 @@ module JSONAPI
 
     def parse_to_one_links_object(raw)
       if raw.nil?
-        return {
-          type: nil,
-          id: nil
-        }
+        return link_object_hash(nil, nil)
       end
 
-      if !raw.is_a?(Hash) || raw.is_a?(ActionController::Parameters)) ||
-        (raw.length != 2 && !raw.key?('meta')) || !(raw.key?('type') && raw.key?('id'))
+      if !(raw.is_a?(Hash) || raw.is_a?(ActionController::Parameters)) || (raw.length != 2 && !raw.key?('meta')) || !(raw.key?('type') && raw.key?('id'))
         fail JSONAPI::Exceptions::InvalidLinksObject.new
       end
 
-      {
-        type: unformat_key(raw['type']).to_s,
-        id: raw['id'],
-        meta: raw['meta']
-      }
+      link_object_hash(unformat_key(raw['type']).to_s, raw['id'], raw['meta'])
+    end
+
+    def link_object_hash(type, id, meta=nil)
+      link_object = {type: type, id: id}
+      link_object[:meta] = meta unless meta.nil?
+      link_object
     end
 
     def parse_to_many_links_object(raw)
