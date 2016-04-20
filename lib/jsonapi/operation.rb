@@ -9,7 +9,7 @@ module JSONAPI
     end
 
     def transactional
-      JSONAPI::OperationProcessor._operation_processor_from_resource_type(resource_klass).transactional(operation_type)
+      JSONAPI::Processor._processor_from_resource_type(resource_klass).transactional(operation_type)
     end
 
     def process
@@ -18,7 +18,7 @@ module JSONAPI
 
     private
     def processor
-      JSONAPI::OperationProcessor.operation_processor_instance_for(resource_klass, operation_type, options)
+      JSONAPI::Processor.processor_instance_for(resource_klass, operation_type, options)
     end
   end
 end

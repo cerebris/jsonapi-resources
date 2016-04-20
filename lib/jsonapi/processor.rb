@@ -1,5 +1,5 @@
 module JSONAPI
-  class OperationProcessor
+  class Processor
     include Callbacks
     define_jsonapi_resources_callbacks :find,
                                        :show,
@@ -18,17 +18,17 @@ module JSONAPI
                                        :operation
 
     class << self
-      def operation_processor_instance_for(resource_klass, operation_type, params)
-        _operation_processor_from_resource_type(resource_klass).new(resource_klass, operation_type, params)
+      def processor_instance_for(resource_klass, operation_type, params)
+        _processor_from_resource_type(resource_klass).new(resource_klass, operation_type, params)
       end
 
-      def _operation_processor_from_resource_type(resource_klass)
-        operation_processor = resource_klass.name.gsub(/Resource$/,'OperationProcessor').safe_constantize
-        if operation_processor.nil?
-          operation_processor = JSONAPI.configuration.default_operation_processor_klass
+      def _processor_from_resource_type(resource_klass)
+        processor = resource_klass.name.gsub(/Resource$/,'Processor').safe_constantize
+        if processor.nil?
+          processor = JSONAPI.configuration.default_processor_klass
         end
 
-        operation_processor
+        processor
       end
 
       def transactional(operation_type)

@@ -1118,9 +1118,9 @@ Callbacks can be defined for the following `JSONAPI::Resource` events:
 - `:remove_to_one_link`
 - `:replace_fields`
 
-##### `JSONAPI::OperationProcessor` Callbacks
+##### `JSONAPI::Processor` Callbacks
 
-Callbacks can also be defined for `JSONAPI::OperationProcessor` events:
+Callbacks can also be defined for `JSONAPI::Processor` events:
 - `:operation`: Any individual operation.
 - `:find`: A `find` operation is being processed.
 - `:show`: A `show` operation is being processed.
@@ -1141,8 +1141,8 @@ See [Operation Processors] (#operation-processors) for details on using Operatio
 ##### `JSONAPI::OperationsProcessor` Callbacks (a removed feature)
 
 Note: The `JSONAPI::OperationsProcessor` has been removed and replaced with the `JSONAPI::OperationDispatcher`
-and `OperationProcessor` classes per resource. The callbacks have been renamed and moved to the
-`OperationProcessor`s, with the exception of the `operations` callback which is now on the controller.
+and `Processor` classes per resource. The callbacks have been renamed and moved to the
+`Processor`s, with the exception of the `operations` callback which is now on the controller.
 
 ### Controllers
 
@@ -1385,10 +1385,10 @@ end
 
 Operation Processors are called to perform the operation(s) that make up a request. The controller (through the `OperationDispatcher`), creates an `OperatorProcessor` to handle each operation. The processor is created based on the resource name, including the namespace. If a processor does not exist for a resource (namespace matters) the default operation processor is used instead. The default processor can be changed by a configuration setting.
 
-Defining a custom `OperationProcessor` allows for custom callback handling of each operation type for each resource type. For example:
+Defining a custom `Processor` allows for custom callback handling of each operation type for each resource type. For example:
 
 ```ruby
-class Api::V4::BookOperationProcessor < JSONAPI::OperationProcessor
+class Api::V4::BookProcessor < JSONAPI::Processor
   after_find do
     unless @results.is_a?(JSONAPI::ErrorsOperationResult)
       @result.meta[:total_records_found] = @result.record_count
@@ -1402,7 +1402,7 @@ feature only for example purposes), if there wasn't an error in the operation.  
 `find` method as well if a different behavior is needed, for example:
 
 ```ruby
-class Api::V4::BookOperationProcessor < JSONAPI::OperationProcessor
+class Api::V4::BookProcessor < JSONAPI::Processor
   def find
     filters = params[:filters]
     include_directives = params[:include_directives]
@@ -1861,9 +1861,9 @@ JSONAPI.configure do |config|
   #:underscored_route, :camelized_route, :dasherized_route, or custom
   config.route_format = :dasherized_route
 
-  # Default OperationProcessor, used if a resource specific one is not defined.
+  # Default Processor, used if a resource specific one is not defined.
   # Must be a class
-  config.default_operation_processor_klass = JSONAPI::OperationProcessor
+  config.default_processor_klass = JSONAPI::Processor
 
   #:integer, :uuid, :string, or custom (provide a proc)
   config.resource_key_type = :integer

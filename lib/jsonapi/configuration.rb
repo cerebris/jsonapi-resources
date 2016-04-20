@@ -1,5 +1,5 @@
 require 'jsonapi/formatter'
-require 'jsonapi/operation_processor'
+require 'jsonapi/processor'
 require 'concurrent'
 
 module JSONAPI
@@ -14,7 +14,7 @@ module JSONAPI
                 :default_paginator,
                 :default_page_size,
                 :maximum_page_size,
-                :default_operation_processor_klass,
+                :default_processor_klass,
                 :use_text_errors,
                 :top_level_links_include_pagination,
                 :top_level_meta_include_record_count,
@@ -78,7 +78,7 @@ module JSONAPI
 
       # The default Operation Processor to use if one is not defined specifically
       # for a Resource.
-      self.default_operation_processor_klass = JSONAPI::OperationProcessor
+      self.default_processor_klass = JSONAPI::Processor
 
       # Formatter Caching
       # Set to false to disable caching of string operations on keys and links.
@@ -148,8 +148,8 @@ module JSONAPI
       @exception_class_whitelist.flatten.any? { |k| e.class.ancestors.include?(k) }
     end
 
-    def default_operation_processor_klass=(default_operation_processor_klass)
-      @default_operation_processor_klass = default_operation_processor_klass
+    def default_processor_klass=(default_processor_klass)
+      @default_processor_klass = default_processor_klass
     end
 
     attr_writer :allow_include, :allow_sort, :allow_filter
