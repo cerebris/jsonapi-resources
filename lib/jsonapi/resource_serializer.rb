@@ -306,7 +306,10 @@ module JSONAPI
     def foreign_key_types_and_values(source, relationship)
       if relationship.is_a?(JSONAPI::Relationship::ToMany)
         if relationship.polymorphic?
-          source._model.public_send(relationship.name).pluck(:type, :id).map do |type, id|
+          relationship_model = relationship.options[:class_name].constantize
+          type_key = relationship_model.inheritance_column
+          id_key = relationship_model.primary_key
+          source._model.public_send(relationship.name).pluck(type_key.to_sym, id_key.to_sym).map do |type, id|
             [type.underscore.pluralize, IdValueFormatter.format(id)]
           end
         else
