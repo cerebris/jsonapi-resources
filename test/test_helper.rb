@@ -275,6 +275,12 @@ TestApp.routes.draw do
   jsonapi_resources :books
   jsonapi_resources :authors
 
+  namespace :nested_api do
+    jsonapi_resources :writers do
+      jsonapi_resources :posts
+    end
+  end
+
   namespace :api do
     namespace :v1 do
       jsonapi_resources :people
