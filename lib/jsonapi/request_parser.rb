@@ -2,7 +2,7 @@ require 'jsonapi/operation'
 require 'jsonapi/paginator'
 
 module JSONAPI
-  class Request
+  class RequestParser
     attr_accessor :fields, :include, :filters, :sort_criteria, :errors, :operations,
                   :resource_klass, :context, :paginator, :source_klass, :source_id,
                   :include_directives, :params, :warnings, :server_error_callbacks
