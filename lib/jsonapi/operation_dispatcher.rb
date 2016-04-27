@@ -60,9 +60,6 @@ module JSONAPI
 
     def with_default_handling(&block)
       block.yield
-    rescue JSONAPI::Exceptions::Error => e
-      raise e
-
     rescue => e
       if JSONAPI.configuration.exception_class_whitelisted?(e)
         raise e
