@@ -177,6 +177,14 @@ end
 class PeopleController < ApplicationController
 
 end
+
+# Assuming you don't permit user_id (so the client won't assign a wrong user to own the object)
+# you can ensure the current user is assigned the record by using the controller's context hash.
+class PeopleResource < JSONAPI::Resource
+  before_save do
+    @model.user_id = context[:current_user].id if @model.new_record?
+  end
+end
 ```
 
 You can put things that affect serialization and resource configuration into the context.
