@@ -403,7 +403,7 @@ module JSONAPI
         end unless method_defined?(attr)
 
         define_method "#{attr}=" do |value|
-          @model.public_send "#{options[:delegate] ? options[:delegate].to_sym : attr}=", value
+          @model.public_send("#{options[:delegate] ? options[:delegate].to_sym : attr}=", value)
         end unless method_defined?("#{attr}=")
       end
 
