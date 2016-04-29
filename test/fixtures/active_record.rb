@@ -28,6 +28,7 @@ ActiveRecord::Schema.define do
     t.string     :title
     t.text       :body
     t.integer    :author_id
+    t.integer    :parent_post_id
     t.belongs_to :section, index: true
     t.timestamps null: false
   end
@@ -279,6 +280,7 @@ class Post < ActiveRecord::Base
   has_many :special_post_tags, source: :tag
   has_many :special_tags, through: :special_post_tags, source: :tag
   belongs_to :section
+  has_one :parent_post, class_name: 'Post', foreign_key: 'parent_post_id'
 
   validates :author, presence: true
   validates :title, length: { maximum: 35 }
@@ -885,6 +887,14 @@ class SectionResource < JSONAPI::Resource
   attributes 'name'
 end
 
+module ParentApi
+  class PostResource < JSONAPI::Resource
+    model_name 'Post'
+    attributes :title
+    has_one :parent_post
+  end
+end
+
 class PostResource < JSONAPI::Resource
   attribute :title
   attribute :body
@@ -894,7 +904,6 @@ class PostResource < JSONAPI::Resource
   has_one :section
   has_many :tags, acts_as_set: true
   has_many :comments, acts_as_set: false
-
 
   # Not needed - just for testing
   primary_key :id
@@ -973,9 +982,9 @@ class PostResource < JSONAPI::Resource
   end
 
   def self.sortable_fields(context)
-    super(context) - [:id]
+    super(context) - [:id] + [:"author.name"]
   end
-
+ 
   def self.verify_key(key, context = nil)
     super(key)
     raise JSONAPI::Exceptions::RecordNotFound.new(key) unless find_by_key(key, context: context)
@@ -1226,7 +1235,6 @@ class CustomLinkWithLambda < JSONAPI::Resource
     }
   end
 end
-
 
 module Api
   module V1

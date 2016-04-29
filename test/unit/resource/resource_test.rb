@@ -342,6 +342,31 @@ class ResourceTest < ActiveSupport::TestCase
     end
   end
 
+  def test_lookup_association_chain
+    model_names = %w(person posts parent_post)
+    result = PostResource._lookup_association_chain(model_names)
+    assert_equal 2, result.length
+
+    posts_reflection, parent_post_reflection = result
+    assert_equal :posts, posts_reflection.name
+    assert_equal :parent_post, parent_post_reflection.name
+
+    assert_equal "posts", posts_reflection.table_name
+    assert_equal "posts", parent_post_reflection.table_name
+
+    assert_equal "author_id", posts_reflection.foreign_key
+    assert_equal "parent_post_id", parent_post_reflection.foreign_key
+  end
+
+  def test_build_joins
+    model_names = %w(person posts parent_post author)
+    associations = PostResource._lookup_association_chain(model_names)
+    result = PostResource._build_joins(associations)
+
+    assert_equal "LEFT JOIN posts AS parent_post_sorting ON parent_post_sorting.id = posts.parent_post_id
+LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", result
+  end
+
   def test_to_many_relationship_pagination
     post_resource = PostResource.new(Post.find(1), nil)
     comments = post_resource.comments

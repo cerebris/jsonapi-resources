@@ -530,10 +530,46 @@ module JSONAPI
 
       def apply_sort(records, order_options, _context = {})
         if order_options.any?
-          records.order(order_options)
-        else
-          records
+           order_options.each_pair do |field, direction|
+            if field.to_s.include?(".")
+              *model_names, column_name = field.split(".")
+
+              associations = _lookup_association_chain([records.model.to_s, *model_names])
+              joins_query = _build_joins([records.model, *associations])
+
+              # _sorting is appended to avoid name clashes with manual joins eg. overriden filters
+              order_by_query = "#{associations.last.name}_sorting.#{column_name} #{direction}"
+              records = records.joins(joins_query).order(order_by_query)
+            else
+              records = records.order(field => direction)
+            end
+          end
         end
+
+        records
+      end
+
+      def _lookup_association_chain(model_names)
+        associations = []
+        model_names.inject do |prev, current|
+          association = prev.classify.constantize.reflect_on_all_associations.detect do |assoc|
+            assoc.name.to_s.downcase == current.downcase
+          end
+          associations << association
+          association.class_name
+        end
+
+        associations
+      end
+
+      def _build_joins(associations)
+        joins = []
+
+        associations.inject do |prev, current|
+          joins << "LEFT JOIN #{current.table_name} AS #{current.name}_sorting ON #{current.name}_sorting.id = #{prev.table_name}.#{current.foreign_key}"
+          current
+        end
+        joins.join("\n")
       end
 
       def apply_filter(records, filter, value, options = {})

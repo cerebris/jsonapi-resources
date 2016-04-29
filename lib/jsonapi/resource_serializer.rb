@@ -31,6 +31,8 @@ module JSONAPI
 
     # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
     def serialize_to_hash(source)
+      @top_level_sources = Set.new([source].flatten.compact.map {|s| top_level_source_key(s) })
+
       is_resource_collection = source.respond_to?(:to_ary)
 
       @included_objects = {}
@@ -174,6 +176,14 @@ module JSONAPI
       (custom_links.is_a?(Hash) && custom_links) || {}
     end
 
+    def top_level_source_key(source)
+      "#{source.class}_#{source.id}"
+    end
+
+    def self_referential_and_already_in_source(resource)
+      resource && @top_level_sources.include?(top_level_source_key(resource))
+    end
+
     def relationships_hash(source, include_directives)
       relationships = source.class._relationships
       requested = requested_fields(source.class)
@@ -192,39 +202,24 @@ module JSONAPI
 
           include_linkage = ia && ia[:include]
           include_linked_children = ia && !ia[:include_related].empty?
+          resources = (include_linkage || include_linked_children) && [source.public_send(name)].flatten.compact
 
           if field_set.include?(name)
             hash[format_key(name)] = link_object(source, relationship, include_linkage)
           end
 
-          type = relationship.type
-
           # If the object has been serialized once it will be in the related objects list,
           # but it's possible all children won't have been captured. So we must still go
           # through the relationships.
           if include_linkage || include_linked_children
-            if relationship.is_a?(JSONAPI::Relationship::ToOne)
-              resource = source.public_send(name)
-              if resource
-                id = resource.id
-                type = relationship.type_for_source(source)
-                relationships_only = already_serialized?(type, id)
-                if include_linkage && !relationships_only
-                  add_included_object(id, object_hash(resource, ia))
-                elsif include_linked_children || relationships_only
-                  relationships_hash(resource, ia)
-                end
-              end
-            elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
-              resources = source.public_send(name)
-              resources.each do |resource|
-                id = resource.id
-                relationships_only = already_serialized?(type, id)
-                if include_linkage && !relationships_only
-                  add_included_object(id, object_hash(resource, ia))
-                elsif include_linked_children || relationships_only
-                  relationships_hash(resource, ia)
-                end
+            resources.each do |resource|
+              next if self_referential_and_already_in_source(resource)
+              id = resource.id
+              relationships_only = already_serialized?(relationship.type, id)
+              if include_linkage && !relationships_only
+                add_included_object(id, object_hash(resource, ia))
+              elsif include_linked_children || relationships_only
+                relationships_hash(resource, ia)
               end
             end
           end
