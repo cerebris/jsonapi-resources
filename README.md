@@ -744,7 +744,7 @@ default any other error that you raise will return a `500` status code
 for a general internal server error.
 
 To return useful error codes that represent application errors you
-should set the `exception_class_whitelist` config varible, and then you
+should set the `exception_class_whitelist` config variable, and then you
 should use the Rails `rescue_from` macro to render a status code.
 
 For example, this config setting allows the `NotAuthorizedError` to bubble up out of
