@@ -193,6 +193,18 @@ class ContactResource < JSONAPI::Resource
 end
 ```
 
+##### Attribute Delegation
+
+Normally resource attributes map to an attribute on the model of the same name. Using the `delegate` option allows a resource
+attribute to map to a differently named model attribute. For example:
+
+```ruby
+class ContactResource < JSONAPI::Resource
+  attribute :name_first, delegate: :first_name
+  attribute :name_last, delegate: :last_name
+end
+```
+
 ##### Fetchable Attributes
 
 By default all attributes are assumed to be fetchable. The list of fetchable attributes can be filtered by overriding
