@@ -9,7 +9,7 @@ class PagedPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = PagedPaginator.new(params)
+    paginator = JSONAPI::PagedPaginator.new(params)
 
     assert_equal JSONAPI.configuration.default_page_size, paginator.size
     assert_equal 1, paginator.number
@@ -22,7 +22,7 @@ class PagedPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = PagedPaginator.new(params)
+    paginator = JSONAPI::PagedPaginator.new(params)
 
     assert_equal 20, paginator.size
     assert_equal 1, paginator.number
@@ -36,7 +36,7 @@ class PagedPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = PagedPaginator.new(params)
+    paginator = JSONAPI::PagedPaginator.new(params)
 
     assert_equal 5, paginator.size
     assert_equal 7, paginator.number
@@ -51,7 +51,7 @@ class PagedPaginatorTest < ActiveSupport::TestCase
     )
 
     assert_raises JSONAPI::Exceptions::InvalidPageValue do
-      PagedPaginator.new(params)
+      JSONAPI::PagedPaginator.new(params)
     end
   end
 
@@ -64,7 +64,7 @@ class PagedPaginatorTest < ActiveSupport::TestCase
     )
 
     assert_raises JSONAPI::Exceptions::PageParametersNotAllowed do
-      PagedPaginator.new(params)
+      JSONAPI::PagedPaginator.new(params)
     end
   end
 
@@ -76,7 +76,7 @@ class PagedPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = PagedPaginator.new(params)
+    paginator = JSONAPI::PagedPaginator.new(params)
 
     assert_equal 5, paginator.size
     assert_equal 1, paginator.number
@@ -90,7 +90,7 @@ class PagedPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = PagedPaginator.new(params)
+    paginator = JSONAPI::PagedPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 0)
 
     assert_equal 2, links_params.size
@@ -110,7 +110,7 @@ class PagedPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = PagedPaginator.new(params)
+    paginator = JSONAPI::PagedPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 3)
 
     assert_equal 2, links_params.size
@@ -130,7 +130,7 @@ class PagedPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = PagedPaginator.new(params)
+    paginator = JSONAPI::PagedPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 50)
 
     assert_equal 3, links_params.size
@@ -153,7 +153,7 @@ class PagedPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = PagedPaginator.new(params)
+    paginator = JSONAPI::PagedPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 51)
 
     assert_equal 3, links_params.size
@@ -176,7 +176,7 @@ class PagedPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = PagedPaginator.new(params)
+    paginator = JSONAPI::PagedPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 50)
 
     assert_equal 4, links_params.size
@@ -202,7 +202,7 @@ class PagedPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = PagedPaginator.new(params)
+    paginator = JSONAPI::PagedPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 50)
 
     assert_equal 3, links_params.size
@@ -225,7 +225,7 @@ class PagedPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = PagedPaginator.new(params)
+    paginator = JSONAPI::PagedPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 50)
 
     assert_equal 3, links_params.size

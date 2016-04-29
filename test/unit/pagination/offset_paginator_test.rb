@@ -9,7 +9,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = OffsetPaginator.new(params)
+    paginator = JSONAPI::OffsetPaginator.new(params)
 
     assert_equal JSONAPI.configuration.default_page_size, paginator.limit
     assert_equal 0, paginator.offset
@@ -22,7 +22,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = OffsetPaginator.new(params)
+    paginator = JSONAPI::OffsetPaginator.new(params)
 
     assert_equal 20, paginator.limit
     assert_equal 0, paginator.offset
@@ -36,7 +36,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = OffsetPaginator.new(params)
+    paginator = JSONAPI::OffsetPaginator.new(params)
 
     assert_equal 5, paginator.limit
     assert_equal 7, paginator.offset
@@ -51,7 +51,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
     )
 
     assert_raises JSONAPI::Exceptions::InvalidPageValue do
-      OffsetPaginator.new(params)
+      JSONAPI::OffsetPaginator.new(params)
     end
   end
 
@@ -64,7 +64,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
     )
 
     assert_raises JSONAPI::Exceptions::PageParametersNotAllowed do
-      OffsetPaginator.new(params)
+      JSONAPI::OffsetPaginator.new(params)
     end
   end
 
@@ -76,7 +76,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = OffsetPaginator.new(params)
+    paginator = JSONAPI::OffsetPaginator.new(params)
 
     assert_equal 5, paginator.limit
     assert_equal 0, paginator.offset
@@ -90,7 +90,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = OffsetPaginator.new(params)
+    paginator = JSONAPI::OffsetPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 0)
 
     assert_equal 2, links_params.size
@@ -110,7 +110,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = OffsetPaginator.new(params)
+    paginator = JSONAPI::OffsetPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 3)
 
     assert_equal 2, links_params.size
@@ -130,7 +130,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = OffsetPaginator.new(params)
+    paginator = JSONAPI::OffsetPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 50)
 
     assert_equal 3, links_params.size
@@ -153,7 +153,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = OffsetPaginator.new(params)
+    paginator = JSONAPI::OffsetPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 50)
 
     assert_equal 4, links_params.size
@@ -179,7 +179,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = OffsetPaginator.new(params)
+    paginator = JSONAPI::OffsetPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 50)
 
     assert_equal 4, links_params.size
@@ -205,7 +205,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = OffsetPaginator.new(params)
+    paginator = JSONAPI::OffsetPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 50)
 
     assert_equal 3, links_params.size
@@ -228,7 +228,7 @@ class OffsetPaginatorTest < ActiveSupport::TestCase
       }
     )
 
-    paginator = OffsetPaginator.new(params)
+    paginator = JSONAPI::OffsetPaginator.new(params)
     links_params = paginator.links_page_params(record_count: 50)
 
     assert_equal 3, links_params.size
