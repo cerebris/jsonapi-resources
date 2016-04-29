@@ -182,8 +182,8 @@ module JSONAPI
     #   return :accepted
     # end
     # ```
-    def _save
-      unless @model.valid?
+    def _save(validation_context = nil)
+      unless @model.valid?(validation_context)
         fail JSONAPI::Exceptions::ValidationErrors.new(self)
       end
 
