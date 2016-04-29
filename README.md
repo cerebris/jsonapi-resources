@@ -999,7 +999,7 @@ class BookResource < JSONAPI::Resource
   def meta(options)
     {
       copyright: 'API Copyright 2015 - XYZ Corp.',
-      computed_copyright: options[:serialization_options][:copyright]
+      computed_copyright: options[:serialization_options][:copyright],
       last_updated_at: _model.updated_at
     }
    end
