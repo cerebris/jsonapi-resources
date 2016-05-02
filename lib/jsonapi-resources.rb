@@ -1,3 +1,4 @@
+require 'jsonapi/naive_cache'
 require 'jsonapi/resource'
 require 'jsonapi/response_document'
 require 'jsonapi/acts_as_resource_controller'

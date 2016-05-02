@@ -425,6 +425,25 @@ end
 class ActionDispatch::IntegrationTest
   self.fixture_path = "#{Rails.root}/fixtures"
   fixtures :all
+
+  def assert_jsonapi_response(expected_status)
+    assert_equal JSONAPI::MEDIA_TYPE, response.content_type
+    assert_equal expected_status, status
+  end
+end
+
+class IntegrationBenchmark < ActionDispatch::IntegrationTest
+  def self.runnable_methods
+    methods_matching(/^bench_/)
+  end
+
+  def self.run_one_method(klass, method_name, reporter)
+    Benchmark.bm(method_name.length) do |job|
+      job.report(method_name) do
+        super(klass, method_name, reporter)
+      end
+    end
+  end
 end
 
 class UpperCamelizedKeyFormatter < JSONAPI::KeyFormatter

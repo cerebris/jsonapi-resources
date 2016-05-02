@@ -637,8 +637,10 @@ module JSONAPI
         records = apply_pagination(records, options[:paginator], order_options)
 
         resources = []
+        resource_classes = {}
         records.each do |model|
-          resources.push self.resource_for_model(model).new(model, context)
+          resource_class = resource_classes[model.class] ||= self.resource_for_model(model)
+          resources.push resource_class.new(model, context)
         end
 
         resources
@@ -701,7 +703,7 @@ module JSONAPI
       end
 
       def resource_key_type
-        @_resource_key_type || JSONAPI.configuration.resource_key_type
+        @_resource_key_type ||= JSONAPI.configuration.resource_key_type
       end
 
       def verify_key(key, context = nil)
