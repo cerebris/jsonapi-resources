@@ -2,8 +2,6 @@
 
 [![Join the chat at https://gitter.im/cerebris/jsonapi-resources](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cerebris/jsonapi-resources?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**_NOTE: There is a Rails 5 branch that is a work in progress. In addition to some changes for Rails 5 support it contains some monkey patches (in `test_helper.rb`) to allow existing tests to pass with Rails 5.0.0.beta1.1_. Things may break with future changes to Rails. If you are using RAILS 5 it is recommended that you use the rails 5 branch.**
-
 `JSONAPI::Resources`, or "JR", provides a framework for developing a server that complies with the
 [JSON API](http://jsonapi.org/) specification.
 
@@ -21,15 +19,17 @@ backed by ActiveRecord models or by custom objects.
 * [Usage] (#usage)
   * [Resources] (#resources)
     * [JSONAPI::Resource] (#jsonapiresource)
+    * [Context] (#context)
     * [Attributes] (#attributes)
     * [Primary Key] (#primary-key)
     * [Model Name] (#model-name)
+    * [Model Hints] (#model-hints)
     * [Relationships] (#relationships)
     * [Filters] (#filters)
     * [Pagination] (#pagination)
     * [Included relationships (side-loading resources)] (#included-relationships-side-loading-resources)
     * [Resource meta] (#resource-meta)
-    * [Custom Links] (#resource-meta)
+    * [Custom Links] (#custom-links)
     * [Callbacks] (#callbacks)
   * [Controllers] (#controllers)
     * [Namespaces] (#namespaces)
@@ -37,7 +37,11 @@ backed by ActiveRecord models or by custom objects.
     * [Handling Exceptions] (#handling-exceptions)
     * [Action Callbacks] (#action-callbacks)
   * [Serializer] (#serializer)
+    * [Serializer options] (#serializer-options)
+    * [Formatting] (#formatting)
+    * [Key Format] (#key-format)
   * [Routing] (#routing)
+    * [Nested Routes] (#nested-routes)
 * [Configuration] (#configuration)
 * [Contributing] (#contributing)
 * [License] (#license)
@@ -72,8 +76,7 @@ Or install it yourself as:
 Resources define the public interface to your API. A resource defines which attributes are exposed, as well as
 relationships to other resources.
 
-Resource definitions should by convention be placed in a directory under app named resources, `app/resources`. The class
-name should be the single underscored name of the model that backs the resource with `_resource.rb` appended. For example,
+Resource definitions should by convention be placed in a directory under app named resources, `app/resources`. The file name should be the single underscored name of the model that backs the resource with `_resource.rb` appended. For example,
 a `Contact` model's resource should have a class named `ContactResource` defined in a file named `contact_resource.rb`.
 
 #### JSONAPI::Resource
@@ -155,6 +158,36 @@ In the above example vehicles are immutable. A call to `/vehicles` or `/vehicles
 of either `car` or `boat`. But calls to PUT or POST a `car` must be made to `/cars`. The rails models backing the above
 code use Single Table Inheritance.
 
+#### Context
+
+Sometimes you will want to access things such as the current logged in user (and other state only available within your controllers) from within your resource classes. To make this state available to a resource class you need to put it into the context hash - this can be done via a `context` method on one of your controllers or across all controllers using ApplicationController.
+
+For example:
+
+```ruby
+class ApplicationController < JSONAPI::ResourceController
+  def context
+    {current_user: current_user}
+  end
+end
+
+# Specific resource controllers derive from ApplicationController
+# and share its context
+class PeopleController < ApplicationController
+
+end
+
+# Assuming you don't permit user_id (so the client won't assign a wrong user to own the object)
+# you can ensure the current user is assigned the record by using the controller's context hash.
+class PeopleResource < JSONAPI::Resource
+  before_save do
+    @model.user_id = context[:current_user].id if @model.new_record?
+  end
+end
+```
+
+You can put things that affect serialization and resource configuration into the context.
+
 #### Attributes
 
 Any of a resource's attributes that are accessible must be explicitly declared. Single attributes can be declared using
@@ -185,6 +218,18 @@ class ContactResource < JSONAPI::Resource
   def full_name
     "#{@model.name_first}, #{@model.name_last}"
   end
+end
+```
+
+##### Attribute Delegation
+
+Normally resource attributes map to an attribute on the model of the same name. Using the `delegate` option allows a resource
+attribute to map to a differently named model attribute. For example:
+
+```ruby
+class ContactResource < JSONAPI::Resource
+  attribute :name_first, delegate: :first_name
+  attribute :name_last, delegate: :last_name
 end
 ```
 
@@ -259,6 +304,32 @@ class PostResource < JSONAPI::Resource
     super(context) - [:body]
   end
 end
+```
+
+JR also supports sorting primary resources by fields on relationships.
+
+Here's an example of sorting books by the author name:
+
+```ruby
+class Book < ActiveRecord::Base
+    belongs_to :author
+end
+
+class Author < ActiveRecord::Base
+    has_many :books
+end
+
+class BookResource < JSONAPI::Resource
+  attributes :title, :body
+
+  def self.sortable_fields(context)
+    super(context) << :"author.name"
+   end
+end
+```
+The request will look something like:
+```
+GET /books?include=author&sort=author.name
 ```
 
 ##### Attribute Formatting
@@ -673,7 +744,7 @@ default any other error that you raise will return a `500` status code
 for a general internal server error.
 
 To return useful error codes that represent application errors you
-should set the `exception_class_whitelist` config varible, and then you
+should set the `exception_class_whitelist` config variable, and then you
 should use the Rails `rescue_from` macro to render a status code.
 
 For example, this config setting allows the `NotAuthorizedError` to bubble up out of
@@ -927,7 +998,7 @@ class BookResource < JSONAPI::Resource
   def meta(options)
     {
       copyright: 'API Copyright 2015 - XYZ Corp.',
-      computed_copyright: options[:serialization_options][:copyright]
+      computed_copyright: options[:serialization_options][:copyright],
       last_updated_at: _model.updated_at
     }
    end
@@ -956,7 +1027,7 @@ class CityCouncilMeeting < JSONAPI::Resource
   attribute :title, :location, :approved
 
   def custom_links(options)
-    { minutes: options[:serialzer].link_builder.self_link(self) + "/minutes" }
+    { minutes: options[:serializer].link_builder.self_link(self) + "/minutes" }
   end
 end
 ```
@@ -991,7 +1062,7 @@ class CityCouncilMeeting < JSONAPI::Resource
   def custom_links(options)
     extra_links = {}
     if approved?
-      extra_links[:minutes] = options[:serialzer].link_builder.self_link(self) + "/minutes"
+      extra_links[:minutes] = options[:serializer].link_builder.self_link(self) + "/minutes"
     end
     extra_links
   end
@@ -1133,26 +1204,6 @@ Of course you are free to extend this as needed and override action handlers or 
 A jsonapi-controller generator is avaliable
 ```
 rails generate jsonapi:controller contact
-```
-
-###### Context
-
-The context that's used for serialization and resource configuration is set by the controller's `context` method.
-
-For example:
-
-```ruby
-class ApplicationController < JSONAPI::ResourceController
-  def context
-    {current_user: current_user}
-  end
-end
-
-# Specific resource controllers derive from ApplicationController
-# and share its context
-class PeopleController < ApplicationController
-
-end
 ```
 
 ###### Serialization Options
@@ -1854,4 +1905,4 @@ end
 
 ## License
 
-Copyright 2014 Cerebris Corporation. MIT License (see LICENSE for details).
+Copyright 2014-2016 Cerebris Corporation. MIT License (see LICENSE for details).

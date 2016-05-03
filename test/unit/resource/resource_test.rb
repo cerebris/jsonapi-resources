@@ -18,9 +18,26 @@ class PostWithBadAfterSave < ActiveRecord::Base
   end
 end
 
+class PostWithCustomValidationContext < ActiveRecord::Base
+  self.table_name = 'posts'
+  validate :api_specific_check, on: :json_api_create
+
+  def api_specific_check
+    errors[:base] << 'Record is invalid'
+  end
+end
+
 class ArticleWithBadAfterSaveResource < JSONAPI::Resource
   model_name 'PostWithBadAfterSave'
   attribute :title
+end
+
+class ArticleWithCustomValidationContextResource < JSONAPI::Resource
+  model_name 'PostWithCustomValidationContext'
+  attribute :title
+  def _save
+    super(:json_api_create)
+  end
 end
 
 class NoMatchResource < JSONAPI::Resource
@@ -33,6 +50,7 @@ end
 class CatResource < JSONAPI::Resource
   attribute :name
   attribute :breed
+  attribute :kind, :delegate => :breed
 
   has_one :mother, class_name: 'Cat'
   has_one :father, class_name: 'Cat'
@@ -153,11 +171,13 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_nil_model_class
     # ToDo:Figure out why this test does not work on Rails 4.0
+    # :nocov:
     if Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR >= 1
       assert_output nil, "[MODEL NOT FOUND] Model could not be found for NoMatchResource. If this a base Resource declare it as abstract.\n" do
         assert_nil NoMatchResource._model_class
       end
     end
+    # :nocov:
   end
 
   def test_nil_abstract_model_class
@@ -173,7 +193,7 @@ class ResourceTest < ActiveSupport::TestCase
   def test_class_attributes
     attrs = CatResource._attributes
     assert_kind_of(Hash, attrs)
-    assert_equal(attrs.keys.size, 3)
+    assert_equal(attrs.keys.size, 4)
   end
 
   def test_class_relationships
@@ -253,14 +273,14 @@ class ResourceTest < ActiveSupport::TestCase
   # TODO: Please remove after `updateable_fields` is removed
   def test_updateable_fields_delegates_to_updatable_fields_with_deprecation
     ActiveSupport::Deprecation.silence do
-      assert_empty(CatResource.updateable_fields(nil) - [:mother, :father, :name, :breed])
+      assert_empty(CatResource.updateable_fields(nil) - [:mother, :father, :name, :breed, :kind])
     end
   end
 
   # TODO: Please remove after `createable_fields` is removed
   def test_createable_fields_delegates_to_creatable_fields_with_deprecation
     ActiveSupport::Deprecation.silence do
-      assert_empty(CatResource.createable_fields(nil) - [:mother, :father, :name, :breed, :id])
+      assert_empty(CatResource.createable_fields(nil) - [:mother, :father, :name, :breed, :id, :kind])
     end
   end
 
@@ -338,6 +358,31 @@ class ResourceTest < ActiveSupport::TestCase
         # :nocov:
       end
     end
+  end
+
+  def test_lookup_association_chain
+    model_names = %w(person posts parent_post)
+    result = PostResource._lookup_association_chain(model_names)
+    assert_equal 2, result.length
+
+    posts_reflection, parent_post_reflection = result
+    assert_equal :posts, posts_reflection.name
+    assert_equal :parent_post, parent_post_reflection.name
+
+    assert_equal "posts", posts_reflection.table_name
+    assert_equal "posts", parent_post_reflection.table_name
+
+    assert_equal "author_id", posts_reflection.foreign_key
+    assert_equal "parent_post_id", parent_post_reflection.foreign_key
+  end
+
+  def test_build_joins
+    model_names = %w(person posts parent_post author)
+    associations = PostResource._lookup_association_chain(model_names)
+    result = PostResource._build_joins(associations)
+
+    assert_equal "LEFT JOIN posts AS parent_post_sorting ON parent_post_sorting.id = posts.parent_post_id
+LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", result
   end
 
   def test_to_many_relationship_pagination
@@ -556,5 +601,14 @@ class ResourceTest < ActiveSupport::TestCase
     special_resource = SpecialPersonResource.new(special_person, nil)
     resource_model = SpecialPersonResource.records({}).first # simulate a find
     assert_equal(SpecialPersonResource, SpecialPersonResource.resource_for_model(resource_model))
+  end
+
+  def test_resource_performs_validations_in_custom_context
+    post = PostWithCustomValidationContext.find(1)
+    post_resource = ArticleWithCustomValidationContextResource.new(post, nil)
+    err = assert_raises JSONAPI::Exceptions::ValidationErrors do
+      post_resource._save
+    end
+    assert_equal(err.error_messages[:base], ['Record is invalid'])
   end
 end
