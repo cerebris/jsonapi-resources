@@ -1877,6 +1877,10 @@ JSONAPI.configure do |config|
   config.top_level_meta_include_record_count = false
   config.top_level_meta_record_count_key = :record_count
 
+  # For :paged paginators, the following are also available
+  config.top_level_meta_include_page_count = false
+  config.top_level_meta_page_count_key = :page_count
+
   config.use_text_errors = false
 
   # List of classes that should not be rescued by the operations processor.
