@@ -31,7 +31,7 @@ module JSONAPI
         processor
       end
 
-      def transactional(operation_type)
+      def transactional_operation_type?(operation_type)
         case operation_type
           when :find, :show, :show_related_resource, :show_related_resources
             false

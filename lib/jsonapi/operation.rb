@@ -8,8 +8,8 @@ module JSONAPI
       @options = options
     end
 
-    def transactional
-      JSONAPI::Processor._processor_from_resource_type(resource_klass).transactional(operation_type)
+    def transactional?
+      JSONAPI::Processor._processor_from_resource_type(resource_klass).transactional_operation_type?(operation_type)
     end
 
     def process

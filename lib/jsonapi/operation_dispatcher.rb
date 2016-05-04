@@ -17,7 +17,7 @@ module JSONAPI
       # Even if transactional transactions won't be used unless the derived OperationsProcessor supports them.
       transactional = false
       operations.each do |operation|
-        transactional |= operation.transactional
+        transactional |= operation.transactional?
       end
 
       transaction(transactional) do
