@@ -32,12 +32,13 @@ module JSONAPI
   end
 
   class ResourcesOperationResult < OperationResult
-    attr_accessor :resources, :pagination_params, :record_count
+    attr_accessor :resources, :pagination_params, :record_count, :page_count
 
     def initialize(code, resources, options = {})
       @resources = resources
       @pagination_params = options.fetch(:pagination_params, {})
       @record_count = options[:record_count]
+      @page_count = options[:page_count]
       super(code, options)
     end
   end

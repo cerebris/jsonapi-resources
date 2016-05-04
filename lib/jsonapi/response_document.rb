@@ -54,6 +54,10 @@ module JSONAPI
         if JSONAPI.configuration.top_level_meta_include_record_count && result.respond_to?(:record_count)
           meta[JSONAPI.configuration.top_level_meta_record_count_key] = result.record_count
         end
+
+        if JSONAPI.configuration.top_level_meta_include_page_count && result.respond_to?(:page_count)
+          meta[JSONAPI.configuration.top_level_meta_page_count_key] = result.page_count
+        end
       end
 
       meta.deep_transform_keys { |key| @key_formatter.format(key) }

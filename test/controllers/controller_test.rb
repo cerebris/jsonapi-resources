@@ -367,6 +367,15 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration.top_level_meta_include_record_count = false
   end
 
+  def test_show_does_not_include_pages_count_in_meta
+    JSONAPI.configuration.top_level_meta_include_page_count = true
+    get :show, { id: Post.first.id }
+    assert_response :success
+    assert_equal json_response['meta'], nil
+  ensure
+    JSONAPI.configuration.top_level_meta_include_page_count = false
+  end
+
   def test_show_single_with_includes
     get :show, params: {id: '1', include: 'comments'}
     assert_response :success
@@ -2678,6 +2687,18 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
   end
 
+  def test_books_page_count_in_meta
+    Api::V2::BookResource.paginator :paged
+    JSONAPI.configuration.top_level_meta_include_page_count = true
+    get :index, params: {include: 'book-comments'}
+    JSONAPI.configuration.top_level_meta_include_page_count = false
+
+    assert_response :success
+    assert_equal 91, json_response['meta']['page-count']
+    assert_equal 10, json_response['data'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+  end
+
   def test_books_record_count_in_meta_custom_name
     Api::V2::BookResource.paginator :offset
     JSONAPI.configuration.top_level_meta_include_record_count = true
@@ -2689,6 +2710,21 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
     assert_response :success
     assert_equal 901, json_response['meta']['total-records']
+    assert_equal 10, json_response['data'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+  end
+
+  def test_books_page_count_in_meta_custom_name
+    Api::V2::BookResource.paginator :paged
+    JSONAPI.configuration.top_level_meta_include_page_count = true
+    JSONAPI.configuration.top_level_meta_page_count_key = 'total_pages'
+
+    get :index, params: {include: 'book-comments'}
+    JSONAPI.configuration.top_level_meta_include_page_count = false
+    JSONAPI.configuration.top_level_meta_page_count_key = :page_count
+
+    assert_response :success
+    assert_equal 91, json_response['meta']['total-pages']
     assert_equal 10, json_response['data'].size
     assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
   end
