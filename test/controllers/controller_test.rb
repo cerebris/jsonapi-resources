@@ -2687,6 +2687,21 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
   end
 
+  def test_books_page_count_in_meta
+    Api::V2::BookResource.paginator :paged
+    JSONAPI.configuration.top_level_meta_include_record_count = true
+    JSONAPI.configuration.top_level_meta_include_page_count = true
+    get :index, params: {include: 'book-comments'}
+    JSONAPI.configuration.top_level_meta_include_record_count = false
+    JSONAPI.configuration.top_level_meta_include_page_count = false
+
+    assert_response :success
+    assert_equal 901, json_response['meta']['record-count']
+    assert_equal 91, json_response['meta']['page-count']
+    assert_equal 10, json_response['data'].size
+    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+  end
+
   def test_books_record_count_in_meta_custom_name
     Api::V2::BookResource.paginator :offset
     JSONAPI.configuration.top_level_meta_include_record_count = true
