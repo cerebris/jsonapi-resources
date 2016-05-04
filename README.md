@@ -1390,7 +1390,7 @@ Defining a custom `Processor` allows for custom callback handling of each operat
 ```ruby
 class Api::V4::BookProcessor < JSONAPI::Processor
   after_find do
-    unless @results.is_a?(JSONAPI::ErrorsOperationResult)
+    unless @result.is_a?(JSONAPI::ErrorsOperationResult)
       @result.meta[:total_records_found] = @result.record_count
     end
   end
