@@ -32,11 +32,9 @@ module JSONAPI
 
       @resource_klass ||= Resource.resource_for(params[:controller]) if params[:controller]
 
-      unless params.nil?
-        setup_action_method_name = "setup_#{params[:action]}_action"
-        if respond_to?(setup_action_method_name)
-          send(setup_action_method_name, params)
-        end
+      setup_action_method_name = "setup_#{params[:action]}_action"
+      if respond_to?(setup_action_method_name)
+        send(setup_action_method_name, params)
       end
     rescue ActionController::ParameterMissing => e
       @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)
@@ -384,7 +382,8 @@ module JSONAPI
         }
       end
 
-      if !raw.is_a?(Hash) || raw.length != 2 || !(raw.key?('type') && raw.key?('id'))
+      if !(raw.is_a?(Hash) || raw.is_a?(ActionController::Parameters)) ||
+         raw.keys.length != 2 || !(raw.key?('type') && raw.key?('id'))
         fail JSONAPI::Exceptions::InvalidLinksObject.new
       end
 
@@ -478,7 +477,7 @@ module JSONAPI
     def parse_to_many_relationship(link_value, relationship, &add_result)
       if link_value.is_a?(Array) && link_value.length == 0
         linkage = []
-      elsif link_value.is_a?(Hash)
+      elsif (link_value.is_a?(Hash) || link_value.is_a?(ActionController::Parameters))
         linkage = link_value[:data]
       else
         fail JSONAPI::Exceptions::InvalidLinksObject.new
@@ -516,7 +515,7 @@ module JSONAPI
       params.each do |key, value|
         case key.to_s
         when 'relationships'
-          value.each_key do |links_key|
+          value.keys.each do |links_key|
             unless formatted_allowed_fields.include?(links_key.to_sym)
               params_not_allowed.push(links_key)
               unless JSONAPI.configuration.raise_if_parameters_not_allowed
@@ -586,8 +585,8 @@ module JSONAPI
       if relationship.is_a?(JSONAPI::Relationship::ToOne)
         if relationship.polymorphic?
           operation_args[1].merge!(
-            key_value: verified_params[:to_one].values[0][:id],
-            key_type: verified_params[:to_one].values[0][:type]
+            key_value: verified_params[:to_one].values[0] && verified_params[:to_one].values[0][:id],
+            key_type: verified_params[:to_one].values[0] && verified_params[:to_one].values[0][:type]
           )
 
           operation_klass = JSONAPI::ReplacePolymorphicToOneRelationshipOperation
@@ -610,7 +609,7 @@ module JSONAPI
     def parse_single_replace_operation(data, keys, id_key_presence_check_required: true)
       fail JSONAPI::Exceptions::MissingKey.new if data[:id].nil?
 
-      key = data[:id]
+      key = data[:id].to_s
       if id_key_presence_check_required && !keys.include?(key)
         fail JSONAPI::Exceptions::KeyNotIncludedInURL.new(key)
       end

@@ -12,11 +12,6 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.route_format = :underscored_route
   end
 
-  def assert_jsonapi_response(expected_status)
-    assert_equal JSONAPI::MEDIA_TYPE, response.content_type
-    assert_equal expected_status, status
-  end
-
   def test_get
     get '/posts'
     assert_jsonapi_response 200
@@ -105,7 +100,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_put_single_without_content_type
-    put '/posts/3',
+    put '/posts/3', params:
         {
           'data' => {
             'linkage' => {
@@ -122,13 +117,13 @@ class RequestTest < ActionDispatch::IntegrationTest
               ]
             }
           }
-        }.to_json, "CONTENT_TYPE" => "application/json"
+        }.to_json, headers: {"CONTENT_TYPE" => "application/json"}
 
     assert_equal 415, status
   end
 
   def test_put_single
-    put '/posts/3',
+    put '/posts/3', params:
         {
           'data' => {
             'type' => 'posts',
@@ -145,13 +140,16 @@ class RequestTest < ActionDispatch::IntegrationTest
               }
             }
           }
-        }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+        }.to_json,
+        headers: {
+          "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+        }
 
     assert_jsonapi_response 200
   end
 
   def test_post_single_without_content_type
-    post '/posts',
+    post '/posts', params:
       {
         'posts' => {
           'attributes' => {
@@ -166,13 +164,13 @@ class RequestTest < ActionDispatch::IntegrationTest
             }
           }
         }
-      }.to_json, "CONTENT_TYPE" => "application/json"
+      }.to_json, headers: {"CONTENT_TYPE" => "application/json"}
 
     assert_equal 415, status
   end
 
   def test_post_single
-    post '/posts',
+    post '/posts', params:
       {
         'data' => {
           'type' => 'posts',
@@ -184,28 +182,37 @@ class RequestTest < ActionDispatch::IntegrationTest
             'author' => {'data' => {type: 'people', id: '3'}}
           }
         }
-      }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+      }.to_json,
+      headers: {
+        "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+      }
 
     assert_jsonapi_response 201
   end
 
   def test_post_single_missing_data_contents
-    post '/posts',
+    post '/posts', params:
          {
            'data' => {
            }
-         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }.to_json,
+         headers: {
+           "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }
 
     assert_jsonapi_response 400
   end
 
   def test_post_single_minimal_valid
-    post '/comments',
+    post '/comments', params:
          {
            'data' => {
              'type' => 'comments'
            }
-         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }.to_json,
+         headers: {
+           "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }
 
     assert_jsonapi_response 201
     assert_nil json_response['data']['attributes']['body']
@@ -214,33 +221,43 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_post_single_minimal_invalid
-    post '/posts',
+    post '/posts', params:
       {
         'data' => {
           'type' => 'posts'
         }
-      }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+      }.to_json,
+      headers: {
+        "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+      }
 
     assert_jsonapi_response 422
   end
 
   def test_update_relationship_without_content_type
     ruby = Section.find_by(name: 'ruby')
-    patch '/posts/3/relationships/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json
+    patch '/posts/3/relationships/section', params: { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json
 
     assert_equal 415, status
   end
 
   def test_patch_update_relationship_to_one
     ruby = Section.find_by(name: 'ruby')
-    patch '/posts/3/relationships/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    patch '/posts/3/relationships/section', params:
+      { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json,
+          headers: {
+            "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+          }
 
     assert_equal 204, status
   end
 
   def test_put_update_relationship_to_one
     ruby = Section.find_by(name: 'ruby')
-    put '/posts/3/relationships/section', { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    put '/posts/3/relationships/section', params: { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json,
+        headers: {
+          "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+        }
 
     assert_equal 204, status
   end
@@ -249,14 +266,20 @@ class RequestTest < ActionDispatch::IntegrationTest
     # Comments are acts_as_set=false so PUT/PATCH should respond with 403
 
     rogue = Comment.find_by(body: 'Rogue Comment Here')
-    patch '/posts/5/relationships/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    patch '/posts/5/relationships/comments', params: { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json,
+          headers: {
+            "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+          }
 
     assert_jsonapi_response 403
   end
 
   def test_post_update_relationship_to_many
     rogue = Comment.find_by(body: 'Rogue Comment Here')
-    post '/posts/5/relationships/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    post '/posts/5/relationships/comments', params: { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json,
+         headers: {
+           "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }
 
     assert_equal 204, status
   end
@@ -265,7 +288,10 @@ class RequestTest < ActionDispatch::IntegrationTest
     # Comments are acts_as_set=false so PUT/PATCH should respond with 403. Note: JR currently treats PUT and PATCH as equivalent
 
     rogue = Comment.find_by(body: 'Rogue Comment Here')
-    put '/posts/5/relationships/comments', { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+    put '/posts/5/relationships/comments', params: { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json,
+        headers: {
+          "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+        }
 
     assert_jsonapi_response 403
   end
@@ -281,7 +307,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_put_content_type
-    put '/posts/3',
+    put '/posts/3', params:
         {
           'data' => {
             'type' => 'posts',
@@ -298,13 +324,16 @@ class RequestTest < ActionDispatch::IntegrationTest
               }
             }
           }
-        }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+        }.to_json,
+        headers: {
+          "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+        }
 
     assert_match JSONAPI::MEDIA_TYPE, headers['Content-Type']
   end
 
   def test_patch_content_type
-    patch '/posts/3',
+    patch '/posts/3', params:
         {
           'data' => {
             'type' => 'posts',
@@ -321,13 +350,16 @@ class RequestTest < ActionDispatch::IntegrationTest
               }
             }
           }
-        }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+        }.to_json,
+          headers: {
+            "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+          }
 
     assert_match JSONAPI::MEDIA_TYPE, headers['Content-Type']
   end
 
   def test_post_correct_content_type
-    post '/posts',
+    post '/posts', params:
       {
        'data' => {
          'type' => 'posts',
@@ -338,7 +370,10 @@ class RequestTest < ActionDispatch::IntegrationTest
            'author' => {'data' => {type: 'people', id: '3'}}
          }
        }
-     }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+     }.to_json,
+         headers: {
+           "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }
 
     assert_match JSONAPI::MEDIA_TYPE, headers['Content-Type']
   end
@@ -440,6 +475,22 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 26, json_response['meta']['record_count']
   ensure
     JSONAPI.configuration.top_level_meta_include_record_count = false
+  end
+
+  def test_page_count_meta
+    Api::V2::BookCommentResource.paginator :paged
+    JSONAPI.configuration.top_level_meta_include_record_count = true
+    JSONAPI.configuration.top_level_meta_include_page_count = true
+    get '/api/v2/books/1/book_comments'
+    assert_equal 26, json_response['meta']['record_count']
+    # based on default page size
+    assert_equal 3, json_response['meta']['page_count']
+    get '/api/v2/books/1/book_comments?page[size]=5'
+    assert_equal 26, json_response['meta']['record_count']
+    assert_equal 6, json_response['meta']['page_count']
+  ensure
+    JSONAPI.configuration.top_level_meta_include_record_count = false
+    JSONAPI.configuration.top_level_meta_include_page_count = false
   end
 
   def test_pagination_related_resources_without_related
@@ -546,9 +597,11 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_jsonapi_response 200
     post_1 = json_response['data'][4]
 
-    post post_1['relationships']['tags']['links']['self'],
+    post post_1['relationships']['tags']['links']['self'], params:
          {'data' => [{'type' => 'tags', 'id' => '10'}]}.to_json,
-         "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         headers: {
+           "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }
 
     assert_equal 204, status
 
@@ -620,7 +673,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
-    post '/api/v6/purchase-orders',
+    post '/api/v6/purchase-orders', params:
          {
            'data' => {
              'attributes' => {
@@ -628,7 +681,10 @@ class RequestTest < ActionDispatch::IntegrationTest
              },
              'type' => 'purchase-orders'
            }
-         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }.to_json,
+         headers: {
+           "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }
 
     assert_jsonapi_response 201
   ensure
@@ -639,7 +695,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :underscored_key
-    post '/api/v6/purchase-orders',
+    post '/api/v6/purchase-orders', params:
          {
            'data' => {
              'attributes' => {
@@ -647,7 +703,10 @@ class RequestTest < ActionDispatch::IntegrationTest
              },
              'type' => 'purchase_orders'
            }
-         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }.to_json,
+         headers: {
+           "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }
 
     assert_jsonapi_response 201
   ensure
@@ -658,7 +717,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :underscored_route
     JSONAPI.configuration.json_key_format = :dasherized_key
-    post '/api/v7/purchase_orders',
+    post '/api/v7/purchase_orders', params:
          {
            'data' => {
              'attributes' => {
@@ -666,7 +725,10 @@ class RequestTest < ActionDispatch::IntegrationTest
              },
              'type' => 'purchase-orders'
            }
-         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }.to_json,
+         headers: {
+           "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }
 
     assert_jsonapi_response 201
   ensure
@@ -677,7 +739,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
-    post '/api/v6/purchase-orders',
+    post '/api/v6/purchase-orders', params:
          {
            'data' => {
              'attributes' => {
@@ -685,7 +747,10 @@ class RequestTest < ActionDispatch::IntegrationTest
              },
              'type' => 'purchase-orders'
            }
-         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }.to_json,
+         headers: {
+           "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }
 
     assert_jsonapi_response 400
   ensure
@@ -696,7 +761,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
-    patch '/api/v6/purchase-orders/1',
+    patch '/api/v6/purchase-orders/1', params:
          {
            'data' => {
              'id' => '1',
@@ -705,7 +770,10 @@ class RequestTest < ActionDispatch::IntegrationTest
              },
              'type' => 'purchase-orders'
            }
-         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }.to_json,
+          headers: {
+            "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+          }
 
     assert_jsonapi_response 200
   end
@@ -714,7 +782,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
-    patch '/api/v6/line-items/1',
+    patch '/api/v6/line-items/1', params:
           {
             'data' => {
               'id' => '1',
@@ -728,7 +796,10 @@ class RequestTest < ActionDispatch::IntegrationTest
                 }
               }
             }
-          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+          }.to_json,
+          headers: {
+            "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+          }
 
     assert_jsonapi_response 200
   ensure
@@ -739,7 +810,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
-    patch '/api/v6/purchase-orders/2?include=line-items,order-flags',
+    patch '/api/v6/purchase-orders/2?include=line-items,order-flags', params:
           {
             'data' => {
               'id' => '2',
@@ -759,7 +830,10 @@ class RequestTest < ActionDispatch::IntegrationTest
                 }
               }
             }
-          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+          }.to_json,
+          headers: {
+            "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+          }
 
     assert_jsonapi_response 200
   ensure
@@ -772,7 +846,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
-    patch '/api/v6/purchase-orders/2?include=line-items,order-flags',
+    patch '/api/v6/purchase-orders/2?include=line-items,order-flags', params:
           {
             'data' => {
               'id' => '2',
@@ -792,7 +866,10 @@ class RequestTest < ActionDispatch::IntegrationTest
                 }
               }
             }
-          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+          }.to_json,
+          headers: {
+            "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+          }
 
     assert_jsonapi_response 200
   ensure
@@ -804,13 +881,16 @@ class RequestTest < ActionDispatch::IntegrationTest
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
-    post '/api/v6/purchase-orders/3/relationships/line-items',
+    post '/api/v6/purchase-orders/3/relationships/line-items', params:
           {
             'data' => [
               {'type' => 'line-items', 'id' => '3'},
               {'type' => 'line-items', 'id' => '4'}
             ]
-          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+          }.to_json,
+         headers: {
+           "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }
 
     assert_equal 204, status
   ensure
@@ -823,13 +903,16 @@ class RequestTest < ActionDispatch::IntegrationTest
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
-    post '/api/v6/purchase-orders/4/relationships/line-items',
+    post '/api/v6/purchase-orders/4/relationships/line-items', params:
          {
            'data' => [
              {'type' => 'line-items', 'id' => '5'},
              {'type' => 'line-items', 'id' => '6'}
            ]
-         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }.to_json,
+         headers: {
+           "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }
 
     assert_equal 204, status
   ensure
@@ -841,13 +924,16 @@ class RequestTest < ActionDispatch::IntegrationTest
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
-    patch '/api/v6/purchase-orders/3/relationships/order-flags',
+    patch '/api/v6/purchase-orders/3/relationships/order-flags', params:
          {
            'data' => [
              {'type' => 'order-flags', 'id' => '1'},
              {'type' => 'order-flags', 'id' => '2'}
            ]
-         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }.to_json,
+          headers: {
+            "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+          }
 
     assert_equal 204, status
   ensure
@@ -860,13 +946,16 @@ class RequestTest < ActionDispatch::IntegrationTest
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
-    patch '/api/v6/purchase-orders/4/relationships/order-flags',
+    patch '/api/v6/purchase-orders/4/relationships/order-flags', params:
           {
             'data' => [
               {'type' => 'order-flags', 'id' => '1'},
               {'type' => 'order-flags', 'id' => '2'}
             ]
-          }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+          }.to_json,
+          headers: {
+            "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+          }
 
     assert_equal 204, status
   ensure
@@ -878,10 +967,13 @@ class RequestTest < ActionDispatch::IntegrationTest
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
-    patch '/api/v6/line-items/5/relationships/purchase-order',
+    patch '/api/v6/line-items/5/relationships/purchase-order', params:
          {
            'data' => {'type' => 'purchase-orders', 'id' => '3'}
-         }.to_json, "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+         }.to_json,
+          headers: {
+            "CONTENT_TYPE" => JSONAPI::MEDIA_TYPE
+          }
 
     assert_equal 204, status
   ensure

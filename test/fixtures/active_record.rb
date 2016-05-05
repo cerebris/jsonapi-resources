@@ -28,6 +28,7 @@ ActiveRecord::Schema.define do
     t.string     :title
     t.text       :body
     t.integer    :author_id
+    t.integer    :parent_post_id
     t.belongs_to :section, index: true
     t.timestamps null: false
   end
@@ -279,9 +280,24 @@ class Post < ActiveRecord::Base
   has_many :special_post_tags, source: :tag
   has_many :special_tags, through: :special_post_tags, source: :tag
   belongs_to :section
+  has_one :parent_post, class_name: 'Post', foreign_key: 'parent_post_id'
 
   validates :author, presence: true
   validates :title, length: { maximum: 35 }
+
+  before_destroy :destroy_callback
+
+  def destroy_callback
+    if title == "can't destroy me"
+      errors.add(:title, "can't destroy me")
+
+      if Rails::VERSION::MAJOR >= 5
+        throw(:abort)
+      else
+        return false
+      end
+    end
+  end
 end
 
 class SpecialPostTag < ActiveRecord::Base
@@ -346,8 +362,14 @@ class Planet < ActiveRecord::Base
   def check_not_pluto
     # Pluto can't be a planet, so cancel the save
     if name.downcase == 'pluto'
-      return false
-    end
+      # :nocov:
+      if Rails::VERSION::MAJOR >= 5
+        throw(:abort)
+      else
+        return false
+      end
+      # :nocov:
+   end
   end
 end
 
@@ -368,8 +390,7 @@ class Crater < ActiveRecord::Base
 end
 
 class Preferences < ActiveRecord::Base
-  has_one :author, class_name: 'Person'
-  has_many :friends, class_name: 'Person'
+  has_one :author, class_name: 'Person', :inverse_of => 'preferences'
 end
 
 class Fact < ActiveRecord::Base
@@ -398,12 +419,12 @@ class Breed
     $breed_data.remove(@id)
   end
 
-  def valid?
+  def valid?(context = nil)
     @errors.clear
     if name.is_a?(String) && name.length > 0
       return true
     else
-      @errors.set(:name, ["can't be blank"])
+      @errors.add(:name, "can't be blank")
       return false
     end
   end
@@ -796,14 +817,17 @@ class PersonResource < BaseResource
   has_one :preferences
   has_one :hair_cut
 
-  filter :name, verify: ->(values, _context) {
+  filter :name, verify: :verify_name_filter
+
+  def self.verify_name_filter(values, _context)
     values.each do |value|
       if value.length < 3
         raise JSONAPI::Exceptions::InvalidFilterValue.new(:name, value)
       end
     end
     return values
-  }
+  end
+
 end
 
 class SpecialBaseResource < BaseResource
@@ -863,6 +887,14 @@ class SectionResource < JSONAPI::Resource
   attributes 'name'
 end
 
+module ParentApi
+  class PostResource < JSONAPI::Resource
+    model_name 'Post'
+    attributes :title
+    has_one :parent_post
+  end
+end
+
 class PostResource < JSONAPI::Resource
   attribute :title
   attribute :body
@@ -872,7 +904,6 @@ class PostResource < JSONAPI::Resource
   has_one :section
   has_many :tags, acts_as_set: true
   has_many :comments, acts_as_set: false
-
 
   # Not needed - just for testing
   primary_key :id
@@ -934,6 +965,14 @@ class PostResource < JSONAPI::Resource
            records.where('id IN (?)', value)
          }
 
+  filter :search,
+    verify: ->(values, context) {
+      values.all?{|v| (v.is_a?(Hash) || v.is_a?(ActionController::Parameters)) } && values
+    },
+    apply: -> (records, values, _options) {
+      records.where(title: values.first['title'])
+    }
+
   def self.updatable_fields(context)
     super(context) - [:author, :subject]
   end
@@ -943,9 +982,9 @@ class PostResource < JSONAPI::Resource
   end
 
   def self.sortable_fields(context)
-    super(context) - [:id]
+    super(context) - [:id] + [:"author.name"]
   end
-
+ 
   def self.verify_key(key, context = nil)
     super(key)
     raise JSONAPI::Exceptions::RecordNotFound.new(key) unless find_by_key(key, context: context)
@@ -977,9 +1016,6 @@ end
 class EmployeeResource < JSONAPI::Resource
   attributes :name, :email
   model_name 'Person'
-end
-
-class FriendResource < JSONAPI::Resource
 end
 
 class BreedResource < JSONAPI::Resource
@@ -1053,8 +1089,7 @@ end
 class PreferencesResource < JSONAPI::Resource
   attribute :advanced_mode
 
-  has_one :author, foreign_key: :person_id
-  has_many :friends
+  has_one :author, :foreign_key_on => :related
 
   def self.find_by_key(key, options = {})
     new(Preferences.first, nil)
@@ -1121,6 +1156,86 @@ class AuthorDetailResource < JSONAPI::Resource
   attributes :author_stuff
 end
 
+class SimpleCustomLinkResource < JSONAPI::Resource
+  model_name 'Post'
+  attributes :title, :body, :subject
+
+  def subject
+    @model.title
+  end
+
+  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+  has_one :section
+  has_many :comments, acts_as_set: false
+
+  filters :writer
+
+  def custom_links(options)
+    { raw: options[:serializer].link_builder.self_link(self) + "/raw" }
+  end
+end
+
+class CustomLinkWithRelativePathOptionResource < JSONAPI::Resource
+  model_name 'Post'
+  attributes :title, :body, :subject
+
+  def subject
+    @model.title
+  end
+
+  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+  has_one :section
+  has_many :comments, acts_as_set: false
+
+  filters :writer
+
+  def custom_links(options)
+    { raw: options[:serializer].link_builder.self_link(self) + "/super/duper/path.xml" }
+  end
+end
+
+class CustomLinkWithIfCondition < JSONAPI::Resource
+  model_name 'Post'
+  attributes :title, :body, :subject
+
+  def subject
+    @model.title
+  end
+
+  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+  has_one :section
+  has_many :comments, acts_as_set: false
+
+  filters :writer
+
+  def custom_links(options)
+    if title == "JR Solves your serialization woes!"
+      {conditional_custom_link: options[:serializer].link_builder.self_link(self) + "/conditional/link.json"}
+    end
+  end
+end
+
+class CustomLinkWithLambda < JSONAPI::Resource
+  model_name 'Post'
+  attributes :title, :body, :subject, :created_at
+
+  def subject
+    @model.title
+  end
+
+  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
+  has_one :section
+  has_many :comments, acts_as_set: false
+
+  filters :writer
+
+  def custom_links(options)
+    {
+      link_to_external_api: "http://external-api.com/posts/#{ created_at.year }/#{ created_at.month }/#{ created_at.day }-#{ subject.gsub(' ', '-') }"
+    }
+  end
+end
+
 module Api
   module V1
     class WriterResource < JSONAPI::Resource
@@ -1164,7 +1279,6 @@ module Api
     class CraterResource < CraterResource; end
     class PreferencesResource < PreferencesResource; end
     class EmployeeResource < EmployeeResource; end
-    class FriendResource < FriendResource; end
     class HairCutResource < HairCutResource; end
     class VehicleResource < VehicleResource; end
     class CarResource < CarResource; end
@@ -1196,15 +1310,7 @@ module Api
       has_many :aliased_comments, class_name: 'BookComments', relation_name: :approved_book_comments
 
       filters :book_comments
-      filter :banned, apply: ->(records, value, options) {
-        context = options[:context]
-        current_user = context ? context[:current_user] : nil
-
-        # Only book admins my filter for banned books
-        if current_user && current_user.book_admin
-          records.where('books.banned = ?', value[0] == 'true')
-        end
-      }
+      filter :banned, apply: :apply_filter_banned
 
       class << self
         def books
@@ -1226,6 +1332,17 @@ module Api
           end
           records
         end
+
+        def apply_filter_banned(records, value, options)
+          context = options[:context]
+          current_user = context ? context[:current_user] : nil
+
+          # Only book admins might filter for banned books
+          if current_user && current_user.book_admin
+            records.where('books.banned = ?', value[0] == 'true')
+          end
+        end
+
       end
     end
 

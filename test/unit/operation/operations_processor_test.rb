@@ -349,7 +349,7 @@ class OperationsProcessorTest < Minitest::Test
     assert_kind_of(JSONAPI::OperationResult, operation_results.results[0])
     assert_equal(:no_content, operation_results.results[0].code)
     assert_equal(:no_content, operation_results.results[1].code)
-    assert_equal(404, operation_results.results[2].code)
+    assert_equal('404', operation_results.results[2].code)
   end
 
   def test_show_operation
@@ -520,9 +520,9 @@ class OperationsProcessorTest < Minitest::Test
     error = StandardError.new
 
     callback = ->(error) { nil.explosions}
-    result = op.send(:safe_run_callback, callback, error) 
+    result = op.send(:safe_run_callback, callback, error)
 
     assert_instance_of(JSONAPI::ErrorsOperationResult, result)
-    assert_equal(result.code, 500)
+    assert_equal(result.code, '500')
   end
 end

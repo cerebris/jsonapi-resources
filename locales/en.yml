@@ -1,79 +1,80 @@
 en:
-  exceptions:
-    internal_server_error:
-      title: 'Internal Server Error'
-      detail: 'Internal Server Error'
-    invalid_resource:
-      title: 'Invalid resource'
-      detail: "%{resource} is not a valid resource."
-    record_not_found:
-      title: 'Record not found'
-      detail: "The record identified by %{id} could not be found."
-    unsupported_media_type:
-      title: 'Unsupported media type'
-      detail: "All requests that create or update must use the '%{needed_media_type}' Content-Type. This request specified '%{media_type}.'"
-    has_many_relation:
-      title: 'Relation exists'
-      detail: "The relation to %{id} already exists."
-    to_many_set_replacement_forbidden:
-      title: 'Complete replacement forbidden'
-      detail: 'Complete replacement forbidden for this relationship'
-    invalid_filter_syntax:
-      title: 'Invalid filters syntax'
-      detail: "%{filters} is not a valid syntax for filtering."
-    filter_not_allowed:
-      title: "Filter not allowed"
-      detail: "%{filter} is not allowed."
-    invalid_filter_value:
-      title: 'Invalid filter value'
-      detail: "%{value} is not a valid value for %{filter}."
-    invalid_field_value:
-      title: 'Invalid field value'
-      detail: "%{value} is not a valid value for %{field}."
-    invalid_field_format:
-      title: 'Invalid field format'
-      detail: 'Fields must specify a type.'
-    invalid_links_object:
-      title: 'Invalid Links Object'
-      detail: 'Data is not a valid Links Object.'
-    type_mismatch:
-      title: 'Type Mismatch'
-      detail: "%{type} is not a valid type for this operation."
-    invalid_field:
-      title: 'Invalid field'
-      detail: "%{field} is not a valid field for %{type}."
-    invalid_include:
-      title: 'Invalid field'
-      detail: "%{relationship} is not a valid relationship of %{resource}"
-    invalid_sort_criteria:
-      title: 'Invalid sort criteria'
-      detail: "%{sort_criteria} is not a valid sort criteria for %{resource}"
-    parameters_not_allowed:
-      title: 'Param not allowed'
-      detail: "%{param} is not allowed."
-    parameter_missing:
-      title: 'Missing Parameter'
-      detail: "The required parameter, %{param}, is missing."
-    count_mismatch:
-      title: 'Count to key mismatch'
-      detail: 'The resource collection does not contain the same number of objects as the number of keys.'
-    key_not_included_in_url:
-      title: 'Key is not included in URL'
-      detail: "The URL does not support the key %{key}"
-    missing_key:
-      title: 'A key is required'
-      detail: 'The resource object does not contain a key.'
-    record_locked:
-      title: 'Locked resource'
-    save_failed:
-      title: 'Save failed or was cancelled'
-      detail: 'Save failed or was cancelled'
-    invalid_page_object:
-      title: 'Invalid Page Object'
-      detail: 'Invalid Page Object.'
-    page_parameters_not_allowed:
-      title: 'Page parameter not allowed'
-      detail: "%{param} is not an allowed page parameter."
-    invalid_page_value:
-      title: 'Invalid page value'
-      detail: "%{value} is not a valid value for %{page} page parameter."
+  jsonapi-resources:
+    exceptions:
+      internal_server_error:
+        title: 'Internal Server Error'
+        detail: 'Internal Server Error'
+      invalid_resource:
+        title: 'Invalid resource'
+        detail: "%{resource} is not a valid resource."
+      record_not_found:
+        title: 'Record not found'
+        detail: "The record identified by %{id} could not be found."
+      unsupported_media_type:
+        title: 'Unsupported media type'
+        detail: "All requests that create or update must use the '%{needed_media_type}' Content-Type. This request specified '%{media_type}.'"
+      has_many_relation:
+        title: 'Relation exists'
+        detail: "The relation to %{id} already exists."
+      to_many_set_replacement_forbidden:
+        title: 'Complete replacement forbidden'
+        detail: 'Complete replacement forbidden for this relationship'
+      invalid_filter_syntax:
+        title: 'Invalid filters syntax'
+        detail: "%{filters} is not a valid syntax for filtering."
+      filter_not_allowed:
+        title: "Filter not allowed"
+        detail: "%{filter} is not allowed."
+      invalid_filter_value:
+        title: 'Invalid filter value'
+        detail: "%{value} is not a valid value for %{filter}."
+      invalid_field_value:
+        title: 'Invalid field value'
+        detail: "%{value} is not a valid value for %{field}."
+      invalid_field_format:
+        title: 'Invalid field format'
+        detail: 'Fields must specify a type.'
+      invalid_links_object:
+        title: 'Invalid Links Object'
+        detail: 'Data is not a valid Links Object.'
+      type_mismatch:
+        title: 'Type Mismatch'
+        detail: "%{type} is not a valid type for this operation."
+      invalid_field:
+        title: 'Invalid field'
+        detail: "%{field} is not a valid field for %{type}."
+      invalid_include:
+        title: 'Invalid field'
+        detail: "%{relationship} is not a valid relationship of %{resource}"
+      invalid_sort_criteria:
+        title: 'Invalid sort criteria'
+        detail: "%{sort_criteria} is not a valid sort criteria for %{resource}"
+      parameters_not_allowed:
+        title: 'Param not allowed'
+        detail: "%{param} is not allowed."
+      parameter_missing:
+        title: 'Missing Parameter'
+        detail: "The required parameter, %{param}, is missing."
+      count_mismatch:
+        title: 'Count to key mismatch'
+        detail: 'The resource collection does not contain the same number of objects as the number of keys.'
+      key_not_included_in_url:
+        title: 'Key is not included in URL'
+        detail: "The URL does not support the key %{key}"
+      missing_key:
+        title: 'A key is required'
+        detail: 'The resource object does not contain a key.'
+      record_locked:
+        title: 'Locked resource'
+      save_failed:
+        title: 'Save failed or was cancelled'
+        detail: 'Save failed or was cancelled'
+      invalid_page_object:
+        title: 'Invalid Page Object'
+        detail: 'Invalid Page Object.'
+      page_parameters_not_allowed:
+        title: 'Page parameter not allowed'
+        detail: "%{param} is not an allowed page parameter."
+      invalid_page_value:
+        title: 'Invalid page value'
+        detail: "%{value} is not a valid value for %{page} page parameter."

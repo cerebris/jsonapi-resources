@@ -1,4 +1,4 @@
-# JSONAPI::Resources [![Build Status](https://secure.travis-ci.org/cerebris/jsonapi-resources.svg?branch=master)](http://travis-ci.org/cerebris/jsonapi-resources) [![Code Climate](https://codeclimate.com/github/cerebris/jsonapi-resources/badges/gpa.svg)](https://codeclimate.com/github/cerebris/jsonapi-resources)
+# JSONAPI::Resources [![Gem Version](https://badge.fury.io/rb/jsonapi-resources.svg)](https://badge.fury.io/rb/jsonapi-resources) [![Build Status](https://secure.travis-ci.org/cerebris/jsonapi-resources.svg?branch=master)](http://travis-ci.org/cerebris/jsonapi-resources) [![Code Climate](https://codeclimate.com/github/cerebris/jsonapi-resources/badges/gpa.svg)](https://codeclimate.com/github/cerebris/jsonapi-resources)
 
 [![Join the chat at https://gitter.im/cerebris/jsonapi-resources](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cerebris/jsonapi-resources?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -19,14 +19,17 @@ backed by ActiveRecord models or by custom objects.
 * [Usage] (#usage)
   * [Resources] (#resources)
     * [JSONAPI::Resource] (#jsonapiresource)
+    * [Context] (#context)
     * [Attributes] (#attributes)
     * [Primary Key] (#primary-key)
     * [Model Name] (#model-name)
+    * [Model Hints] (#model-hints)
     * [Relationships] (#relationships)
     * [Filters] (#filters)
     * [Pagination] (#pagination)
     * [Included relationships (side-loading resources)] (#included-relationships-side-loading-resources)
     * [Resource meta] (#resource-meta)
+    * [Custom Links] (#custom-links)
     * [Callbacks] (#callbacks)
   * [Controllers] (#controllers)
     * [Namespaces] (#namespaces)
@@ -34,7 +37,11 @@ backed by ActiveRecord models or by custom objects.
     * [Handling Exceptions] (#handling-exceptions)
     * [Action Callbacks] (#action-callbacks)
   * [Serializer] (#serializer)
+    * [Serializer options] (#serializer-options)
+    * [Formatting] (#formatting)
+    * [Key Format] (#key-format)
   * [Routing] (#routing)
+    * [Nested Routes] (#nested-routes)
 * [Configuration] (#configuration)
 * [Contributing] (#contributing)
 * [License] (#license)
@@ -69,8 +76,7 @@ Or install it yourself as:
 Resources define the public interface to your API. A resource defines which attributes are exposed, as well as
 relationships to other resources.
 
-Resource definitions should by convention be placed in a directory under app named resources, `app/resources`. The class
-name should be the single underscored name of the model that backs the resource with `_resource.rb` appended. For example,
+Resource definitions should by convention be placed in a directory under app named resources, `app/resources`. The file name should be the single underscored name of the model that backs the resource with `_resource.rb` appended. For example,
 a `Contact` model's resource should have a class named `ContactResource` defined in a file named `contact_resource.rb`.
 
 #### JSONAPI::Resource
@@ -115,7 +121,7 @@ generate routes for `index`, `show` and `show_relationship`.
 
 ###### Immutable for Readonly
 
-Some resources are read-only and are not to be modified through the API. Declaring a resource as immutable prevents 
+Some resources are read-only and are not to be modified through the API. Declaring a resource as immutable prevents
 creation of routes that allow modification of the resource.
 
 ###### Immutable Heterogeneous Collections
@@ -152,6 +158,36 @@ In the above example vehicles are immutable. A call to `/vehicles` or `/vehicles
 of either `car` or `boat`. But calls to PUT or POST a `car` must be made to `/cars`. The rails models backing the above
 code use Single Table Inheritance.
 
+#### Context
+
+Sometimes you will want to access things such as the current logged in user (and other state only available within your controllers) from within your resource classes. To make this state available to a resource class you need to put it into the context hash - this can be done via a `context` method on one of your controllers or across all controllers using ApplicationController.
+
+For example:
+
+```ruby
+class ApplicationController < JSONAPI::ResourceController
+  def context
+    {current_user: current_user}
+  end
+end
+
+# Specific resource controllers derive from ApplicationController
+# and share its context
+class PeopleController < ApplicationController
+
+end
+
+# Assuming you don't permit user_id (so the client won't assign a wrong user to own the object)
+# you can ensure the current user is assigned the record by using the controller's context hash.
+class PeopleResource < JSONAPI::Resource
+  before_save do
+    @model.user_id = context[:current_user].id if @model.new_record?
+  end
+end
+```
+
+You can put things that affect serialization and resource configuration into the context.
+
 #### Attributes
 
 Any of a resource's attributes that are accessible must be explicitly declared. Single attributes can be declared using
@@ -182,6 +218,18 @@ class ContactResource < JSONAPI::Resource
   def full_name
     "#{@model.name_first}, #{@model.name_last}"
   end
+end
+```
+
+##### Attribute Delegation
+
+Normally resource attributes map to an attribute on the model of the same name. Using the `delegate` option allows a resource
+attribute to map to a differently named model attribute. For example:
+
+```ruby
+class ContactResource < JSONAPI::Resource
+  attribute :name_first, delegate: :first_name
+  attribute :name_last, delegate: :last_name
 end
 ```
 
@@ -256,6 +304,32 @@ class PostResource < JSONAPI::Resource
     super(context) - [:body]
   end
 end
+```
+
+JR also supports sorting primary resources by fields on relationships.
+
+Here's an example of sorting books by the author name:
+
+```ruby
+class Book < ActiveRecord::Base
+    belongs_to :author
+end
+
+class Author < ActiveRecord::Base
+    has_many :books
+end
+
+class BookResource < JSONAPI::Resource
+  attributes :title, :body
+
+  def self.sortable_fields(context)
+    super(context) << :"author.name"
+   end
+end
+```
+The request will look something like:
+```
+GET /books?include=author&sort=author.name
 ```
 
 ##### Attribute Formatting
@@ -366,7 +440,7 @@ end
 #### Model Hints
 
 Resource instances are created from model records. The determination of the correct resource type is performed using a
-simple rule based on the model's name. The name is used to find a resource in the same module (as the originating 
+simple rule based on the model's name. The name is used to find a resource in the same module (as the originating
 resource) that matches the name. This usually works quite well, however it can fail when model names do not match
 resource names. It can also fail when using namespaced models. In this case a `model_hint` can be created to map model
 names to resources. For example:
@@ -392,7 +466,7 @@ end
 ```
 
 Model hints inherit from parent resources, but are not global in scope. The `model_hint` method accepts `model` and
-`resource` named parameters. `model` takes an ActiveRecord class or class name (defaults to the model name), and 
+`resource` named parameters. `model` takes an ActiveRecord class or class name (defaults to the model name), and
 `resource` takes a resource type or a resource class (defaults to the current resource's type).
 
 #### Relationships
@@ -547,8 +621,8 @@ The default value is used as if it came from the request.
 ##### Applying Filters
 
 You may customize how a filter behaves by supplying a callable to the `:apply` option. This callable will be used to
-apply that filter. The callable is passed the `records`, which is an `ActiveRecord::Relation`, the `value`, and an 
-`_options` hash. It is expected to return an `ActiveRecord::Relation`. 
+apply that filter. The callable is passed the `records`, which is an `ActiveRecord::Relation`, the `value`, and an
+`_options` hash. It is expected to return an `ActiveRecord::Relation`.
 
 This example shows how you can implement different approaches for different filters.
 
@@ -582,7 +656,7 @@ end
 
 ##### Verifying Filters
 
-Because filters typically come straight from the request, it's prudent to verify their values. To do so, provide a 
+Because filters typically come straight from the request, it's prudent to verify their values. To do so, provide a
 callable to the `verify` option. This callable will be passed the `value` and the `context`. Verify should return the
 verified value, which may be modified.
 
@@ -601,7 +675,7 @@ verified value, which may be modified.
 
 Basic finding by filters is supported by resources. This is implemented in the `find` and `find_by_key` finder methods.
 Currently this is implemented for `ActiveRecord` based resources. The finder methods rely on the `records` method to get
-an `ActiveRecord::Relation` relation. It is therefore possible to override `records` to affect the three find related 
+an `ActiveRecord::Relation` relation. It is therefore possible to override `records` to affect the three find related
 methods.
 
 ###### Customizing base records for finder methods
@@ -670,7 +744,7 @@ default any other error that you raise will return a `500` status code
 for a general internal server error.
 
 To return useful error codes that represent application errors you
-should set the `exception_class_whitelist` config varible, and then you
+should set the `exception_class_whitelist` config variable, and then you
 should use the Rails `rescue_from` macro to render a status code.
 
 For example, this config setting allows the `NotAuthorizedError` to bubble up out of
@@ -732,12 +806,12 @@ like to base the sorting on variables in your context.
 Example:
 
 ```ruby
-def self.apply_sort(records, order_options, context = {})  
+def self.apply_sort(records, order_options, context = {})
   if order_options.has?(:trending)
     records = records.order_by_trending_scope
     order_options - [:trending]
   end
-  
+
   super(records, order_options, context)
 end
 ```
@@ -785,11 +859,21 @@ The `paged` `paginator` returns results based on pages of a fixed size. Valid `p
 If `number` is omitted the first page is returned. If `size` is omitted the `default_page_size` from the configuration
 settings is used.
 
+```
+GET /articles?page%5Bnumber%5D=10&page%5Bsize%5D=10 HTTP/1.1
+Accept: application/vnd.api+json
+```
+
 ###### Offset Paginator
 
 The `offset` `paginator` returns results based on an offset from the beginning of the resultset. Valid `page` parameters
 are `offset` and `limit`. If `offset` is omitted a value of 0 will be used. If `limit` is omitted the `default_page_size`
 from the configuration settings is used.
+
+```
+GET /articles?page%5Blimit%5D=10&page%5Boffset%5D=10 HTTP/1.1
+Accept: application/vnd.api+json
+```
 
 ###### Custom Paginators
 
@@ -914,7 +998,7 @@ class BookResource < JSONAPI::Resource
   def meta(options)
     {
       copyright: 'API Copyright 2015 - XYZ Corp.',
-      computed_copyright: options[:serialization_options][:copyright]
+      computed_copyright: options[:serialization_options][:copyright],
       last_updated_at: _model.updated_at
     }
    end
@@ -923,11 +1007,77 @@ end
 ```
 
 The `meta` method will be called for each resource instance. Override the `meta` method on a resource class to control
-the meta information for the resource. If a non empty hash is returned from `meta` this will be serialized. The `meta` 
+the meta information for the resource. If a non empty hash is returned from `meta` this will be serialized. The `meta`
 method is called with an `options` has. The `options` hash will contain the following:
 
  * `:serializer` -> the serializer instance
  * `:serialization_options` -> the contents of the `serialization_options` method on the controller.
+
+#### Custom Links
+
+Custom links can be included for each resource by overriding the `custom_links` method. If a non empty hash is returned from `custom_links`, it will be merged with the default links hash containing the resource's `self` link. The `custom_links` method is called with the same `options` hash used by for [resource meta information](#resource-meta). The `options` hash contains the following:
+
+ * `:serializer` -> the serializer instance
+ * `:serialization_options` -> the contents of the `serialization_options` method on the controller.
+
+For example:
+
+```ruby
+class CityCouncilMeeting < JSONAPI::Resource
+  attribute :title, :location, :approved
+
+  def custom_links(options)
+    { minutes: options[:serializer].link_builder.self_link(self) + "/minutes" }
+  end
+end
+```
+
+This will create a custom link with the key `minutes`, which will be merged with the default `self` link, like so:
+
+```json
+{
+  "data": [
+    {
+      "id": "1",
+      "type": "cityCouncilMeetings",
+      "links": {
+        "self": "http://city.gov/api/city-council-meetings/1",
+        "minutes": "http://city.gov/api/city-council-meetings/1/minutes"
+      },
+      "attributes": {...}
+    },
+    //...
+  ]
+}
+```
+
+Of course, the `custom_links` method can include logic to include links only when relevant:
+
+````ruby
+class CityCouncilMeeting < JSONAPI::Resource
+  attribute :title, :location, :approved
+
+  delegate :approved?, to: :model
+
+  def custom_links(options)
+    extra_links = {}
+    if approved?
+      extra_links[:minutes] = options[:serializer].link_builder.self_link(self) + "/minutes"
+    end
+    extra_links
+  end
+end
+```
+
+It's also possibly to suppress the default `self` link by returning a hash with `{self: nil}`:
+
+````ruby
+class Selfless < JSONAPI::Resource
+  def custom_links(options)
+    {self: nil}
+  end
+end
+```
 
 #### Callbacks
 
@@ -1018,6 +1168,14 @@ JSONAPI.configure do |config|
 end
 ```
 
+To use a specific `OperationsProcessor` in a `ResourceController`, override the `create_operations_processor` method:
+
+```ruby
+def create_operations_processor
+  CountingActiveRecordOperationsProcessor.new
+end
+```
+
 The callback code will be called after each find. It will use the same options as the find operation, without the
 pagination, to collect the record count. This is stored in the `operation_meta`, which will be returned in the top level
 meta element.
@@ -1043,25 +1201,9 @@ end
 
 Of course you are free to extend this as needed and override action handlers or other methods.
 
-
-###### Context
-
-The context that's used for serialization and resource configuration is set by the controller's `context` method.
-
-For example:
-
-```ruby
-class ApplicationController < JSONAPI::ResourceController
-  def context
-    {current_user: current_user}
-  end
-end
-
-# Specific resource controllers derive from ApplicationController
-# and share its context
-class PeopleController < ApplicationController
-
-end
+A jsonapi-controller generator is avaliable
+```
+rails generate jsonapi:controller contact
 ```
 
 ###### Serialization Options
@@ -1190,31 +1332,31 @@ Error codes are provided for each error object returned, based on the error. The
 
 ```ruby
 module JSONAPI
-  VALIDATION_ERROR = 100
-  INVALID_RESOURCE = 101
-  FILTER_NOT_ALLOWED = 102
-  INVALID_FIELD_VALUE = 103
-  INVALID_FIELD = 104
-  PARAM_NOT_ALLOWED = 105
-  PARAM_MISSING = 106
-  INVALID_FILTER_VALUE = 107
-  COUNT_MISMATCH = 108
-  KEY_ORDER_MISMATCH = 109
-  KEY_NOT_INCLUDED_IN_URL = 110
-  INVALID_INCLUDE = 112
-  RELATION_EXISTS = 113
-  INVALID_SORT_CRITERIA = 114
-  INVALID_LINKS_OBJECT = 115
-  TYPE_MISMATCH = 116
-  INVALID_PAGE_OBJECT = 117
-  INVALID_PAGE_VALUE = 118
-  INVALID_FIELD_FORMAT = 119
-  INVALID_FILTERS_SYNTAX = 120
-  SAVE_FAILED = 121
-  FORBIDDEN = 403
-  RECORD_NOT_FOUND = 404
-  UNSUPPORTED_MEDIA_TYPE = 415
-  LOCKED = 423
+  VALIDATION_ERROR = '100'
+  INVALID_RESOURCE = '101'
+  FILTER_NOT_ALLOWED = '102'
+  INVALID_FIELD_VALUE = '103'
+  INVALID_FIELD = '104'
+  PARAM_NOT_ALLOWED = '105'
+  PARAM_MISSING = '106'
+  INVALID_FILTER_VALUE = '107'
+  COUNT_MISMATCH = '108'
+  KEY_ORDER_MISMATCH = '109'
+  KEY_NOT_INCLUDED_IN_URL = '110'
+  INVALID_INCLUDE = '112'
+  RELATION_EXISTS = '113'
+  INVALID_SORT_CRITERIA = '114'
+  INVALID_LINKS_OBJECT = '115'
+  TYPE_MISMATCH = '116'
+  INVALID_PAGE_OBJECT = '117'
+  INVALID_PAGE_VALUE = '118'
+  INVALID_FIELD_FORMAT = '119'
+  INVALID_FILTERS_SYNTAX = '120'
+  SAVE_FAILED = '121'
+  FORBIDDEN = '403'
+  RECORD_NOT_FOUND = '404'
+  UNSUPPORTED_MEDIA_TYPE = '415'
+  LOCKED = '423'
 end
 ```
 
@@ -1735,6 +1877,10 @@ JSONAPI.configure do |config|
   config.top_level_meta_include_record_count = false
   config.top_level_meta_record_count_key = :record_count
 
+  # For :paged paginators, the following are also available
+  config.top_level_meta_include_page_count = false
+  config.top_level_meta_page_count_key = :page_count
+
   config.use_text_errors = false
 
   # List of classes that should not be rescued by the operations processor.
@@ -1763,4 +1909,4 @@ end
 
 ## License
 
-Copyright 2014 Cerebris Corporation. MIT License (see LICENSE for details).
+Copyright 2014-2016 Cerebris Corporation. MIT License (see LICENSE for details).

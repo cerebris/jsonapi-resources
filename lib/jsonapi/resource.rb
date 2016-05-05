@@ -120,12 +120,44 @@ module JSONAPI
       _model.errors.messages
     end
 
+    # Add metadata to validation error objects.
+    #
+    # Suppose `model_error_messages` returned the following error messages
+    # hash:
+    #
+    #   {password: ["too_short", "format"]}
+    #
+    # Then to add data to the validation error `validation_error_metadata`
+    # could return:
+    #
+    #   {
+    #     password: {
+    #       "too_short": {"minimum_length" => 6},
+    #       "format": {"requirement" => "must contain letters and numbers"}
+    #     }
+    #   }
+    #
+    # The specified metadata is then be merged into the validation error
+    # object.
+    def validation_error_metadata
+      {}
+    end
+
     # Override this to return resource level meta data
     # must return a hash, and if the hash is empty the meta section will not be serialized with the resource
     # meta keys will be not be formatted with the key formatter for the serializer by default. They can however use the
     # serializer's format_key and format_value methods if desired
     # the _options hash will contain the serializer and the serialization_options
     def meta(_options)
+      {}
+    end
+
+    # Override this to return custom links
+    # must return a hash, which will be merged with the default { self: 'self-url' } links hash
+    # links keys will be not be formatted with the key formatter for the serializer by default.
+    # They can however use the serializer's format_key and format_value methods if desired
+    # the _options hash will contain the serializer and the serialization_options
+    def custom_links(_options)
       {}
     end
 
@@ -150,8 +182,8 @@ module JSONAPI
     #   return :accepted
     # end
     # ```
-    def _save
-      unless @model.valid?
+    def _save(validation_context = nil)
+      unless @model.valid?(validation_context)
         fail JSONAPI::Exceptions::ValidationErrors.new(self)
       end
 
@@ -174,8 +206,9 @@ module JSONAPI
     end
 
     def _remove
-      @model.destroy
-
+      unless @model.destroy
+        fail JSONAPI::Exceptions::ValidationErrors.new(self)
+      end
       :completed
     end
 
@@ -366,11 +399,11 @@ module JSONAPI
         @_attributes ||= {}
         @_attributes[attr] = options
         define_method attr do
-          @model.public_send(attr)
+          @model.public_send(options[:delegate] ? options[:delegate].to_sym : attr)
         end unless method_defined?(attr)
 
         define_method "#{attr}=" do |value|
-          @model.public_send "#{attr}=", value
+          @model.public_send("#{options[:delegate] ? options[:delegate].to_sym : attr}=", value)
         end unless method_defined?("#{attr}=")
       end
 
@@ -497,17 +530,57 @@ module JSONAPI
 
       def apply_sort(records, order_options, _context = {})
         if order_options.any?
-          records.order(order_options)
-        else
-          records
+           order_options.each_pair do |field, direction|
+            if field.to_s.include?(".")
+              *model_names, column_name = field.split(".")
+
+              associations = _lookup_association_chain([records.model.to_s, *model_names])
+              joins_query = _build_joins([records.model, *associations])
+
+              # _sorting is appended to avoid name clashes with manual joins eg. overriden filters
+              order_by_query = "#{associations.last.name}_sorting.#{column_name} #{direction}"
+              records = records.joins(joins_query).order(order_by_query)
+            else
+              records = records.order(field => direction)
+            end
+          end
         end
+
+        records
+      end
+
+      def _lookup_association_chain(model_names)
+        associations = []
+        model_names.inject do |prev, current|
+          association = prev.classify.constantize.reflect_on_all_associations.detect do |assoc|
+            assoc.name.to_s.downcase == current.downcase
+          end
+          associations << association
+          association.class_name
+        end
+
+        associations
+      end
+
+      def _build_joins(associations)
+        joins = []
+
+        associations.inject do |prev, current|
+          joins << "LEFT JOIN #{current.table_name} AS #{current.name}_sorting ON #{current.name}_sorting.id = #{prev.table_name}.#{current.foreign_key}"
+          current
+        end
+        joins.join("\n")
       end
 
       def apply_filter(records, filter, value, options = {})
         strategy = _allowed_filters.fetch(filter.to_sym, Hash.new)[:apply]
 
         if strategy
-          strategy.call(records, value, options)
+          if strategy.is_a?(Symbol) || strategy.is_a?(String)
+            send(strategy, records, value, options)
+          else
+            strategy.call(records, value, options)
+          end
         else
           records.where(filter => value)
         end
@@ -519,11 +592,11 @@ module JSONAPI
         if filters
           filters.each do |filter, value|
             if _relationships.include?(filter)
-              if _relationships[filter].is_a?(JSONAPI::Relationship::ToMany)
-                required_includes.push(filter.to_s)
-                records = apply_filter(records, "#{filter}.#{_relationships[filter].primary_key}", value, options)
+              if _relationships[filter].belongs_to?
+                records = apply_filter(records, _relationships[filter].foreign_key, value, options)
               else
-                records = apply_filter(records, "#{_relationships[filter].foreign_key}", value, options)
+                required_includes.push(filter.to_s)
+                records = apply_filter(records, "#{_relationships[filter].table_name}.#{_relationships[filter].primary_key}", value, options)
               end
             else
               records = apply_filter(records, filter, value, options)
@@ -564,8 +637,10 @@ module JSONAPI
         records = apply_pagination(records, options[:paginator], order_options)
 
         resources = []
+        resource_classes = {}
         records.each do |model|
-          resources.push self.resource_for_model(model).new(model, context)
+          resource_class = resource_classes[model.class] ||= self.resource_for_model(model)
+          resources.push resource_class.new(model, context)
         end
 
         resources
@@ -583,7 +658,7 @@ module JSONAPI
       # Override this method if you want to customize the relation for
       # finder methods (find, find_by_key)
       def records(_options = {})
-        _model_class
+        _model_class.all
       end
 
       def verify_filters(filters, context = nil)
@@ -601,12 +676,19 @@ module JSONAPI
 
       def verify_filter(filter, raw, context = nil)
         filter_values = []
-        filter_values += CSV.parse_line(raw) unless raw.nil? || raw.empty?
+        if raw.present?
+          filter_values += raw.is_a?(String) ? CSV.parse_line(raw) : [raw]
+        end
 
         strategy = _allowed_filters.fetch(filter, Hash.new)[:verify]
 
         if strategy
-          [filter, strategy.call(filter_values, context)]
+          if strategy.is_a?(Symbol) || strategy.is_a?(String)
+            values = send(strategy, filter_values, context)
+          else
+            values = strategy.call(filter_values, context)
+          end
+          [filter, values]
         else
           if is_filter_relationship?(filter)
             verify_relationship_filter(filter, filter_values, context)
@@ -621,7 +703,7 @@ module JSONAPI
       end
 
       def resource_key_type
-        @_resource_key_type || JSONAPI.configuration.resource_key_type
+        @_resource_key_type ||= JSONAPI.configuration.resource_key_type
       end
 
       def verify_key(key, context = nil)
@@ -690,6 +772,10 @@ module JSONAPI
 
       def _primary_key
         @_primary_key ||= _model_class.respond_to?(:primary_key) ? _model_class.primary_key : :id
+      end
+
+      def _table_name
+        @_table_name ||= _model_class.respond_to?(:table_name) ? _model_class.table_name : _model_name.tableize
       end
 
       def _as_parent_key
