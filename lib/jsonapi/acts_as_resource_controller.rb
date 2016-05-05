@@ -2,10 +2,12 @@ require 'csv'
 
 module JSONAPI
   module ActsAsResourceController
+    MEDIA_TYPE_MATCHER = /(.+".+"[^,]*|[^,]+)/
 
     def self.included(base)
       base.extend ClassMethods
       base.before_action :ensure_correct_media_type, only: [:create, :update, :create_relationship, :update_relationship]
+      base.before_action :ensure_valid_accept_media_type
       base.cattr_reader :server_error_callbacks
     end
 
@@ -97,6 +99,29 @@ module JSONAPI
       end
     rescue => e
       handle_exceptions(e)
+    end
+
+    def ensure_valid_accept_media_type
+      if invalid_accept_media_type?
+        fail JSONAPI::Exceptions::NotAcceptableError.new(request.accept)
+      end
+    rescue => e
+      handle_exceptions(e)
+    end
+
+    def invalid_accept_media_type?
+      jsonapi_media_types = media_types('Accept').select do |media_type|
+        media_type.include?(JSONAPI::MEDIA_TYPE)
+      end
+
+      jsonapi_media_types.size > 0 &&
+        jsonapi_media_types.none? do |media_type|
+          media_type.strip == JSONAPI::MEDIA_TYPE
+        end
+    end
+
+    def media_types(header)
+      (request.headers[header] || '').match(MEDIA_TYPE_MATCHER).to_a
     end
 
     # override to set context
