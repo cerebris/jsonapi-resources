@@ -1862,6 +1862,15 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     assert_match /employees is not a valid relationship of expenseEntries/, json_response['errors'][1]['detail']
   end
 
+  def test_expense_entries_show_bad_include_missing_relationship_ignored
+    JSONAPI.configuration.validate_includes = false
+    get :show, params: {id: 1, include: 'isoCurrencies,employees'}
+    assert_response :success
+    assert json_response['data'].is_a?(Hash)
+  ensure
+    JSONAPI.configuration.validate_includes = true
+  end
+
   def test_expense_entries_show_bad_include_missing_sub_relationship
     get :show, params: {id: 1, include: 'isoCurrency,employee.post'}
     assert_response :bad_request

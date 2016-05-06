@@ -502,18 +502,19 @@ module JSONAPI
           when Array
             return model_includes.map do |value|
               resolve_relationship_names_to_relations(resource_klass, value, options)
-            end
+            end.compact
           when Hash
             model_includes.keys.each do |key|
               relationship = resource_klass._relationships[key]
               value = model_includes[key]
               model_includes.delete(key)
-              model_includes[relationship.relation_name(options)] = resolve_relationship_names_to_relations(relationship.resource_klass, value, options)
+              relationship_names = resolve_relationship_names_to_relations(relationship.resource_klass, value, options)
+              model_includes[relationship.relation_name(options)] = relationship_names unless relationship_names.nil?
             end
             return model_includes
           when Symbol
             relationship = resource_klass._relationships[model_includes]
-            return relationship.relation_name(options)
+            return relationship.relation_name(options) unless relationship.nil?
         end
       end
 
@@ -521,7 +522,7 @@ module JSONAPI
         include_directives = options[:include_directives]
         if include_directives
           model_includes = resolve_relationship_names_to_relations(self, include_directives.model_includes, options)
-          records = records.includes(model_includes)
+          records = records.includes(model_includes) unless model_includes.nil? || model_includes.empty?
         end
 
         records

@@ -211,7 +211,7 @@ module JSONAPI
 
     def parse_include_directives(include)
       return if include.nil?
-
+      validate_includes = JSONAPI.configuration.validate_includes
       unless JSONAPI.configuration.allow_include
         fail JSONAPI::Exceptions::ParametersNotAllowed.new([:include])
       end
@@ -221,7 +221,7 @@ module JSONAPI
 
       include = []
       included_resources.each do |included_resource|
-        check_include(@resource_klass, included_resource.partition('.'))
+        check_include(@resource_klass, included_resource.partition('.')) if validate_includes
         include.push(unformat_key(included_resource).to_s)
       end
 

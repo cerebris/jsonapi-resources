@@ -25,7 +25,8 @@ module JSONAPI
                 :exception_class_whitelist,
                 :always_include_to_one_linkage_data,
                 :always_include_to_many_linkage_data,
-                :cache_formatters
+                :cache_formatters,
+                :validate_includes
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -44,6 +45,7 @@ module JSONAPI
       self.allow_include = true
       self.allow_sort = true
       self.allow_filter = true
+      self.validate_includes = true
 
       self.raise_if_parameters_not_allowed = true
 
@@ -153,7 +155,7 @@ module JSONAPI
       @exception_class_whitelist.flatten.any? { |k| e.class.ancestors.include?(k) }
     end
 
-    attr_writer :allow_include, :allow_sort, :allow_filter
+    attr_writer :allow_include, :allow_sort, :allow_filter, :validate_includes
 
     attr_writer :default_paginator
 
