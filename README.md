@@ -525,8 +525,9 @@ class ContactResource < JSONAPI::Resource
 end
 ```
 
-Then a request could pass in a filter like for example `http://example.com/contacts?filter[name_last]=Smith` and the system
-would find all people whose last name exactly matches Smith.
+Then a request could pass in an attribute to be filtered. For the given example,
+the system would respond to `http://example.com/contacts?filter[name_last]=Smith`
+finding and returning all people whose last name exactly matches Smith.
 
 ##### Default Filters
 
