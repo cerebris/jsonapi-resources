@@ -161,6 +161,10 @@ module JSONAPI
       {}
     end
 
+    def _relationships
+      self.class._relationships
+    end
+
     private
 
     def save
@@ -213,7 +217,7 @@ module JSONAPI
     end
 
     def _create_to_many_links(relationship_type, relationship_key_values)
-      relationship = self.class._relationships[relationship_type]
+      relationship = _relationships[relationship_type]
 
       relationship_key_values.each do |relationship_key_value|
         related_resource = relationship.resource_klass.find_by_key(relationship_key_value, context: @context)
@@ -232,7 +236,7 @@ module JSONAPI
     end
 
     def _replace_to_many_links(relationship_type, relationship_key_values)
-      relationship = self.class._relationships[relationship_type]
+      relationship = _relationships[relationship_type]
       send("#{relationship.foreign_key}=", relationship_key_values)
       @save_needed = true
 
@@ -240,7 +244,7 @@ module JSONAPI
     end
 
     def _replace_to_one_link(relationship_type, relationship_key_value)
-      relationship = self.class._relationships[relationship_type]
+      relationship = _relationships[relationship_type]
 
       send("#{relationship.foreign_key}=", relationship_key_value)
       @save_needed = true
@@ -249,7 +253,7 @@ module JSONAPI
     end
 
     def _replace_polymorphic_to_one_link(relationship_type, key_value, key_type)
-      relationship = self.class._relationships[relationship_type.to_sym]
+      relationship = _relationships[relationship_type.to_sym]
 
       _model.public_send("#{relationship.foreign_key}=", key_value)
       _model.public_send("#{relationship.polymorphic_type}=", key_type.to_s.classify)
@@ -260,7 +264,7 @@ module JSONAPI
     end
 
     def _remove_to_many_link(relationship_type, key)
-      relation_name = self.class._relationships[relationship_type].relation_name(context: @context)
+      relation_name = _relationships[relationship_type].relation_name(context: @context)
 
       @model.public_send(relation_name).delete(key)
 
@@ -268,7 +272,7 @@ module JSONAPI
     end
 
     def _remove_to_one_link(relationship_type)
-      relationship = self.class._relationships[relationship_type]
+      relationship = _relationships[relationship_type]
 
       send("#{relationship.foreign_key}=", nil)
       @save_needed = true
@@ -875,7 +879,7 @@ module JSONAPI
           end unless method_defined?("#{foreign_key}=")
 
           define_method associated_records_method_name do
-            relationship = self.class._relationships[relationship_name]
+            relationship = _relationships[relationship_name]
             relation_name = relationship.relation_name(context: @context)
             records_for(relation_name)
           end unless method_defined?(associated_records_method_name)
@@ -887,7 +891,7 @@ module JSONAPI
               end unless method_defined?(foreign_key)
 
               define_method relationship_name do |options = {}|
-                relationship = self.class._relationships[relationship_name]
+                relationship = _relationships[relationship_name]
 
                 if relationship.polymorphic?
                   associated_model = public_send(associated_records_method_name)
@@ -903,7 +907,7 @@ module JSONAPI
               end unless method_defined?(relationship_name)
             else
               define_method foreign_key do
-                relationship = self.class._relationships[relationship_name]
+                relationship = _relationships[relationship_name]
 
                 record = public_send(associated_records_method_name)
                 return nil if record.nil?
@@ -911,7 +915,7 @@ module JSONAPI
               end unless method_defined?(foreign_key)
 
               define_method relationship_name do |options = {}|
-                relationship = self.class._relationships[relationship_name]
+                relationship = _relationships[relationship_name]
 
                 resource_klass = relationship.resource_klass
                 if resource_klass
@@ -929,7 +933,7 @@ module JSONAPI
             end unless method_defined?(foreign_key)
 
             define_method relationship_name do |options = {}|
-              relationship = self.class._relationships[relationship_name]
+              relationship = _relationships[relationship_name]
 
               resource_klass = relationship.resource_klass
               records = public_send(associated_records_method_name)

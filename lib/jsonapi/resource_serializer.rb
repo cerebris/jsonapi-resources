@@ -189,7 +189,7 @@ module JSONAPI
     end
 
     def relationships_hash(source, include_directives)
-      relationships = source.class._relationships
+      relationships = source._relationships
       requested = requested_fields(source.class)
       fields = relationships.keys
       fields = requested & fields unless requested.nil?
