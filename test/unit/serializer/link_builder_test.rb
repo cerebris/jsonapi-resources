@@ -4,6 +4,11 @@ require 'json'
 
 class LinkBuilderTest < ActionDispatch::IntegrationTest
   def setup
+    # the route format is being set directly in test_helper and is being set differently depending on
+    # the order in which the namespaces get loaded. in order to prevent random test seeds to fail we need to set the
+    # default configuration in the test 'setup'.
+    JSONAPI.configuration.route_format = :underscored_route
+
     @base_url        = "http://example.com"
     @route_formatter = JSONAPI.configuration.route_formatter
     @steve           = Person.create(name: "Steve Rogers", date_joined: "1941-03-01")
