@@ -1,4 +1,5 @@
 require 'jsonapi/callbacks'
+require 'jsonapi/associated_resources'
 
 module JSONAPI
   class Resource
@@ -165,6 +166,17 @@ module JSONAPI
       self.class._relationships
     end
 
+    def associated_records_for(relationship_name)
+      relationship = _relationships[relationship_name]
+      relation_name = relationship.relation_name(context: @context)
+      records_for(relation_name)
+    end
+
+    def associated_foreign_keys_for(relationship_name)
+      relationship = _relationships[relationship_name]
+      _model.send(relationship.foreign_key)
+    end
+
     private
 
     def save
@@ -311,6 +323,8 @@ module JSONAPI
 
       :completed
     end
+
+
 
     class << self
       def inherited(subclass)
@@ -880,87 +894,35 @@ module JSONAPI
           end unless method_defined?("#{foreign_key}=")
 
           define_method associated_records_method_name do
-            relationship = _relationships[relationship_name]
-            relation_name = relationship.relation_name(context: @context)
-            records_for(relation_name)
+            associated_records_for(relationship_name)
           end unless method_defined?(associated_records_method_name)
 
           if relationship.is_a?(JSONAPI::Relationship::ToOne)
             if relationship.belongs_to?
               define_method foreign_key do
-                @model.method(foreign_key).call
+                AssociatedResources.associated_foreign_keys_for(self, relationship_name)
               end unless method_defined?(foreign_key)
 
               define_method relationship_name do |options = {}|
-                relationship = _relationships[relationship_name]
+                AssociatedResources.associated_resources_for(self, relationship_name, options)
 
-                if relationship.polymorphic?
-                  associated_model = public_send(associated_records_method_name)
-                  resource_klass = self.class.resource_for_model(associated_model) if associated_model
-                  return resource_klass.new(associated_model, @context) if resource_klass
-                else
-                  resource_klass = relationship.resource_klass
-                  if resource_klass
-                    associated_model = public_send(associated_records_method_name)
-                    return associated_model ? resource_klass.new(associated_model, @context) : nil
-                  end
-                end
               end unless method_defined?(relationship_name)
             else
               define_method foreign_key do
-                relationship = _relationships[relationship_name]
-
-                record = public_send(associated_records_method_name)
-                return nil if record.nil?
-                record.public_send(relationship.resource_klass._primary_key)
+                AssociatedResources.associated_foreign_keys_for(self, relationship_name)
               end unless method_defined?(foreign_key)
 
               define_method relationship_name do |options = {}|
-                relationship = _relationships[relationship_name]
-
-                resource_klass = relationship.resource_klass
-                if resource_klass
-                  associated_model = public_send(associated_records_method_name)
-                  return associated_model ? resource_klass.new(associated_model, @context) : nil
-                end
+                AssociatedResources.associated_resources_for(self, relationship_name, options)
               end unless method_defined?(relationship_name)
             end
           elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
             define_method foreign_key do
-              records = public_send(associated_records_method_name)
-              return records.collect do |record|
-                record.public_send(relationship.resource_klass._primary_key)
-              end
+              AssociatedResources.associated_foreign_keys_for(self, relationship_name)
             end unless method_defined?(foreign_key)
 
             define_method relationship_name do |options = {}|
-              relationship = _relationships[relationship_name]
-
-              resource_klass = relationship.resource_klass
-              records = public_send(associated_records_method_name)
-
-              filters = options.fetch(:filters, {})
-              unless filters.nil? || filters.empty?
-                records = resource_klass.apply_filters(records, filters, options)
-              end
-
-              sort_criteria =  options.fetch(:sort_criteria, {})
-              unless sort_criteria.nil? || sort_criteria.empty?
-                order_options = relationship.resource_klass.construct_order_options(sort_criteria)
-                records = resource_klass.apply_sort(records, order_options, @context)
-              end
-
-              paginator = options[:paginator]
-              if paginator
-                records = resource_klass.apply_pagination(records, paginator, order_options)
-              end
-
-              return records.collect do |record|
-                if relationship.polymorphic?
-                  resource_klass = self.class.resource_for_model(record)
-                end
-                resource_klass.new(record, @context)
-              end
+              AssociatedResources.associated_resources_for(self, relationship_name, options)
             end unless method_defined?(relationship_name)
           end
         end
