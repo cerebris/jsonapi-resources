@@ -51,17 +51,14 @@ module JSONAPI
     end
 
     def setup_get_related_resource_action(params)
-      initialize_source(params)
-      parse_fields(params[:fields])
-      parse_include_directives(params[:include])
-      set_default_filters
-      parse_filters(params[:filter])
-      parse_sort_criteria(params[:sort])
-      parse_pagination(params[:page])
-      add_show_related_resource_operation(params[:relationship])
+      setup_get_related_action(params, :add_show_related_resource_operation)
     end
 
     def setup_get_related_resources_action(params)
+      setup_get_related_action(params, :add_show_related_resources_operation)
+    end
+
+    def setup_get_related_action(params, action)
       initialize_source(params)
       parse_fields(params[:fields])
       parse_include_directives(params[:include])
@@ -69,7 +66,7 @@ module JSONAPI
       parse_filters(params[:filter])
       parse_sort_criteria(params[:sort])
       parse_pagination(params[:page])
-      add_show_related_resources_operation(params[:relationship])
+      public_send(action, params[:relationship])
     end
 
     def setup_show_action(params)

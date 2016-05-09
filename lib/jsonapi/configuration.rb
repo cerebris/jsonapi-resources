@@ -111,18 +111,7 @@ module JSONAPI
     end
 
     def key_formatter
-      if self.cache_formatters
-        formatter = @key_formatter_tlv.value
-        return formatter if formatter
-      end
-
-      formatter = JSONAPI::Formatter.formatter_for(self.json_key_format)
-
-      if self.cache_formatters
-        formatter = @key_formatter_tlv.value = formatter.cached
-      end
-
-      return formatter
+      get_formatter_for(@key_formatter_tlv, :json_key_format)
     end
 
     def resource_key_type=(key_type)
@@ -130,18 +119,7 @@ module JSONAPI
     end
 
     def route_formatter
-      if self.cache_formatters
-        formatter = @route_formatter_tlv.value
-        return formatter if formatter
-      end
-
-      formatter = JSONAPI::Formatter.formatter_for(self.route_format)
-
-      if self.cache_formatters
-        formatter = @route_formatter_tlv.value = formatter.cached
-      end
-
-      return formatter
+      get_formatter_for(@route_formatter_tlv, :route_format)
     end
 
     def exception_class_whitelisted?(e)
@@ -179,6 +157,22 @@ module JSONAPI
     attr_writer :always_include_to_many_linkage_data
 
     attr_writer :raise_if_parameters_not_allowed
+
+    private
+    def get_formatter_for(formatter_tlv, key)
+      if self.cache_formatters
+        formatter = formatter_tlv.value
+        return formatter if formatter
+      end
+
+      formatter = JSONAPI::Formatter.formatter_for(self.public_send(key))
+
+      if self.cache_formatters
+        formatter = formatter_tlv.value = formatter.cached
+      end
+
+      formatter
+    end
   end
 
   class << self
