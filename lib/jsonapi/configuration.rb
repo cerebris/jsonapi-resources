@@ -26,7 +26,11 @@ module JSONAPI
                 :always_include_to_one_linkage_data,
                 :always_include_to_many_linkage_data,
                 :cache_formatters,
-                :use_relationship_reflection
+                :use_relationship_reflection,
+                :resource_cache,
+                :default_resource_cache_field,
+                :resource_cache_digest_function,
+                :resource_cache_usage_report_function
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -88,12 +92,35 @@ module JSONAPI
 
       # Formatter Caching
       # Set to false to disable caching of string operations on keys and links.
+      # Note that unlike the resource cache, formatter caching is always done
+      # internally in-memory and per-thread; no ActiveSupport::Cache is used.
       self.cache_formatters = true
 
       # Relationship reflection invokes the related resource when updates
       # are made to a has_many relationship. By default relationship_reflection
       # is turned off because it imposes a small performance penalty.
       self.use_relationship_reflection = false
+
+      # Resource cache
+      # An ActiveSupport::Cache::Store or similar, used by Resources with caching enabled.
+      # Set to `nil` (the default) to disable caching, or to `Rails.cache` to use the
+      # Rails cache store.
+      self.resource_cache = nil
+
+      # Default resource cache field
+      # On Resources with caching enabled, this field will be used to check for out-of-date
+      # cache entries, unless overridden on a specific Resource. Defaults to "updated_at".
+      self.default_resource_cache_field = :updated_at
+
+      # Resource cache digest function
+      # Provide a callable that returns a unique value for string inputs with
+      # low chance of collision. The default is SHA256 base64.
+      self.resource_cache_digest_function = Digest::SHA2.new.method(:base64digest)
+
+      # Resource cache usage reporting
+      # Optionally provide a callable which JSONAPI will call with information about cache
+      # performance. Should accept three arguments: resource name, hits count, misses count.
+      self.resource_cache_usage_report_function = nil
     end
 
     def cache_formatters=(bool)
@@ -109,14 +136,14 @@ module JSONAPI
 
     def json_key_format=(format)
       @json_key_format = format
-      if @cache_formatters
+      if defined?(@cache_formatters)
         @key_formatter_tlv = Concurrent::ThreadLocalVar.new
       end
     end
 
     def route_format=(format)
       @route_format = format
-      if @cache_formatters
+      if defined?(@cache_formatters)
         @route_formatter_tlv = Concurrent::ThreadLocalVar.new
       end
     end
@@ -194,6 +221,14 @@ module JSONAPI
     attr_writer :raise_if_parameters_not_allowed
 
     attr_writer :use_relationship_reflection
+
+    attr_writer :resource_cache
+
+    attr_writer :default_resource_cache_field
+
+    attr_writer :resource_cache_digest_function
+
+    attr_writer :resource_cache_usage_report_function
   end
 
   class << self

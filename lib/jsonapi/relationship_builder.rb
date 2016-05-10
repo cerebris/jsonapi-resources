@@ -53,10 +53,30 @@ module JSONAPI
       }
       .fetch(type)
 
-      define_on_resource associated_records_method_name do
+      define_on_resource associated_records_method_name do |options = {}|
         relationship = self.class._relationships[relationship_name]
         relation_name = relationship.relation_name(context: @context)
-        records_for(relation_name)
+        records = records_for(relation_name)
+
+        resource_klass = relationship.resource_klass
+
+        filters = options.fetch(:filters, {})
+        unless filters.nil? || filters.empty?
+          records = resource_klass.apply_filters(records, filters, options)
+        end
+
+        sort_criteria =  options.fetch(:sort_criteria, {})
+        unless sort_criteria.nil? || sort_criteria.empty?
+          order_options = relationship.resource_klass.construct_order_options(sort_criteria)
+          records = resource_klass.apply_sort(records, order_options, @context)
+        end
+
+        paginator = options[:paginator]
+        if paginator
+          records = resource_klass.apply_pagination(records, paginator, order_options)
+        end
+
+        records
       end
 
       associated_records_method_name
@@ -122,23 +142,7 @@ module JSONAPI
         relationship = self.class._relationships[relationship_name]
 
         resource_klass = relationship.resource_klass
-        records = public_send(associated_records_method_name)
-
-        filters = options.fetch(:filters, {})
-        unless filters.nil? || filters.empty?
-          records = resource_klass.apply_filters(records, filters, options)
-        end
-
-        sort_criteria =  options.fetch(:sort_criteria, {})
-        unless sort_criteria.nil? || sort_criteria.empty?
-          order_options = relationship.resource_klass.construct_order_options(sort_criteria)
-          records = resource_klass.apply_sort(records, order_options, @context)
-        end
-
-        paginator = options[:paginator]
-        if paginator
-          records = resource_klass.apply_pagination(records, paginator, order_options)
-        end
+        records = public_send(associated_records_method_name, options)
 
         return records.collect do |record|
           if relationship.polymorphic?
