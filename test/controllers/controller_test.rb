@@ -456,6 +456,28 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal json_response['data']['links']['self'], response.location
   end
 
+  def test_create_simple_id_not_allowed
+    set_content_type_header!
+    post :create, params:
+      {
+        data: {
+          type: 'posts',
+          id: 'asdfg',
+          attributes: {
+            title: 'JR is Great',
+            body: 'JSONAPIResources is the greatest thing since unsliced bread.'
+          },
+          relationships: {
+            author: {data: {type: 'people', id: '3'}}
+          }
+        }
+      }
+
+    assert_response :bad_request
+    assert_match /id is not allowed/, response.body
+    assert_equal nil,response.location
+  end
+
   def test_create_link_to_missing_object
     set_content_type_header!
     post :create, params:
@@ -508,6 +530,7 @@ class PostsControllerTest < ActionController::TestCase
       {
         data: {
           type: 'posts',
+          id: 'my_id',
           attributes: {
             asdfg: 'aaaa',
             title: 'JR is Great',
@@ -526,10 +549,13 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 'JR is Great', json_response['data']['attributes']['title']
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
 
-    assert_equal 1, json_response['meta']["warnings"].count
+    assert_equal 2, json_response['meta']["warnings"].count
     assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
-    assert_equal "asdfg is not allowed.", json_response['meta']["warnings"][0]["detail"]
+    assert_equal "id is not allowed.", json_response['meta']["warnings"][0]["detail"]
     assert_equal '105', json_response['meta']["warnings"][0]["code"]
+    assert_equal "Param not allowed", json_response['meta']["warnings"][1]["title"]
+    assert_equal "asdfg is not allowed.", json_response['meta']["warnings"][1]["detail"]
+    assert_equal '105', json_response['meta']["warnings"][1]["code"]
     assert_equal json_response['data']['links']['self'], response.location
   ensure
     JSONAPI.configuration.raise_if_parameters_not_allowed = true
