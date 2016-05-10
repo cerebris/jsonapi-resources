@@ -60,7 +60,9 @@ class PostsControllerTest < ActionController::TestCase
     @request.headers['Accept'] = 'text/plain'
 
     get :index
-    assert_response :success
+    assert_response 406
+    assert_equal 'Not acceptable', json_response['errors'][0]['title']
+    assert_equal "All requests must use the '#{JSONAPI::MEDIA_TYPE}' Accept without media type parameters. This request specified '#{@request.headers['Accept']}'.", json_response['errors'][0]['detail']
   end
 
   def test_exception_class_whitelist
