@@ -203,7 +203,7 @@ module JSONAPI
         fail JSONAPI::Exceptions::ValidationErrors.new(self)
       end
 
-      if defined? @model.save
+      if @model.respond_to?(:save)
         saved = @model.save(validate: false)
         unless saved
           if @model.errors.present?
