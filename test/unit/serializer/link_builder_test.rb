@@ -4,6 +4,11 @@ require 'json'
 
 class LinkBuilderTest < ActionDispatch::IntegrationTest
   def setup
+    # the route format is being set directly in test_helper and is being set differently depending on
+    # the order in which the namespaces get loaded. in order to prevent random test seeds to fail we need to set the
+    # default configuration in the test 'setup'.
+    JSONAPI.configuration.route_format = :underscored_route
+
     @base_url        = "http://example.com"
     @route_formatter = JSONAPI.configuration.route_formatter
     @steve           = Person.create(name: "Steve Rogers", date_joined: "1941-03-01")
@@ -214,6 +219,20 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
     assert_equal expected_link, builder.query_link(query)
   end
 
+  def test_query_link_for_regular_app_with_dasherized_scope
+    config = {
+        base_url: @base_url,
+        route_formatter: DasherizedRouteFormatter,
+        primary_resource_klass: DasherizedNamespace::V1::PersonResource
+    }
+
+    query         = { page: { offset: 0, limit: 12 } }
+    builder       = JSONAPI::LinkBuilder.new(config)
+    expected_link = "#{ @base_url }/dasherized-namespace/v1/people?page%5Blimit%5D=12&page%5Boffset%5D=0"
+
+    assert_equal expected_link, builder.query_link(query)
+  end
+
   def test_query_link_for_engine
     config = {
       base_url: @base_url,
@@ -224,6 +243,20 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
     query         = { page: { offset: 0, limit: 12 } }
     builder       = JSONAPI::LinkBuilder.new(config)
     expected_link = "#{ @base_url }/boomshaka/api/v1/people?page%5Blimit%5D=12&page%5Boffset%5D=0"
+
+    assert_equal expected_link, builder.query_link(query)
+  end
+
+  def test_query_link_for_engine_with_dasherized_scope
+    config = {
+        base_url: @base_url,
+        route_formatter: DasherizedRouteFormatter,
+        primary_resource_klass: MyEngine::DasherizedNamespace::V1::PersonResource
+    }
+
+    query         = { page: { offset: 0, limit: 12 } }
+    builder       = JSONAPI::LinkBuilder.new(config)
+    expected_link = "#{ @base_url }/boomshaka/dasherized-namespace/v1/people?page%5Blimit%5D=12&page%5Boffset%5D=0"
 
     assert_equal expected_link, builder.query_link(query)
   end

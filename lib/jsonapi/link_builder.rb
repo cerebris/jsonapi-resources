@@ -106,7 +106,7 @@ module JSONAPI
       scopes = module_scopes_from_class(klass)
 
       unless scopes.empty?
-        "/#{ scopes.map(&:underscore).join('/') }/"
+        "/#{ scopes.map{ |scope| format_route(scope.to_s.underscore) }.join('/') }/"
       else
         "/"
       end
