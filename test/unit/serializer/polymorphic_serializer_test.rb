@@ -250,7 +250,7 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
   end
 
   def test_polymorphic_get_related_resource
-    get '/pictures/1/imageable'
+    get '/pictures/1/imageable', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
     serialized_data = JSON.parse(response.body)
       assert_hash_equals(
       {
@@ -301,7 +301,8 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
         }
       }.to_json,
       headers: {
-        'Content-Type' => JSONAPI::MEDIA_TYPE
+        'Content-Type' => JSONAPI::MEDIA_TYPE,
+        'Accept' => JSONAPI::MEDIA_TYPE
       }
     assert_equal 201, response.status
     picture = Picture.find(json_response["data"]["id"])
@@ -324,7 +325,8 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
             }
           }.to_json,
           headers: {
-            'Content-Type' => JSONAPI::MEDIA_TYPE
+            'Content-Type' => JSONAPI::MEDIA_TYPE,
+            'Accept' => JSONAPI::MEDIA_TYPE
           }
     assert_response :no_content
     picture = Picture.find(3)
@@ -349,7 +351,8 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
             }
           }.to_json,
           headers: {
-            'Content-Type' => JSONAPI::MEDIA_TYPE
+            'Content-Type' => JSONAPI::MEDIA_TYPE,
+            'Accept' => JSONAPI::MEDIA_TYPE
           }
     assert_response :no_content
     picture = Picture.find(1)
@@ -370,7 +373,8 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
              relationship: 'imageable'
            }.to_json,
            headers: {
-             'Content-Type' => JSONAPI::MEDIA_TYPE
+             'Content-Type' => JSONAPI::MEDIA_TYPE,
+             'Accept' => JSONAPI::MEDIA_TYPE
            }
     assert_response :no_content
     picture = Picture.find(1)

@@ -15,6 +15,56 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['data'].is_a?(Array)
   end
 
+  def test_accept_header_missing
+    @request.headers['Accept'] = nil
+
+    get :index
+    assert_response :success
+  end
+
+  def test_accept_header_jsonapi_mixed
+    @request.headers['Accept'] =
+      "#{JSONAPI::MEDIA_TYPE},#{JSONAPI::MEDIA_TYPE};charset=test"
+
+    get :index
+    assert_response :success
+  end
+
+  def test_accept_header_jsonapi_modified
+    @request.headers['Accept'] = "#{JSONAPI::MEDIA_TYPE};charset=test"
+
+    get :index
+    assert_response 406
+    assert_equal 'Not acceptable', json_response['errors'][0]['title']
+    assert_equal "All requests must use the '#{JSONAPI::MEDIA_TYPE}' Accept without media type parameters. This request specified '#{@request.headers['Accept']}'.", json_response['errors'][0]['detail']
+  end
+
+  def test_accept_header_jsonapi_multiple_modified
+    @request.headers['Accept'] =
+      "#{JSONAPI::MEDIA_TYPE};charset=test,#{JSONAPI::MEDIA_TYPE};charset=test"
+
+    get :index
+    assert_response 406
+    assert_equal 'Not acceptable', json_response['errors'][0]['title']
+    assert_equal "All requests must use the '#{JSONAPI::MEDIA_TYPE}' Accept without media type parameters. This request specified '#{@request.headers['Accept']}'.", json_response['errors'][0]['detail']
+  end
+
+  def test_accept_header_all
+    @request.headers['Accept'] = "*/*"
+
+    get :index
+    assert_response :success
+  end
+
+  def test_accept_header_not_jsonapi
+    @request.headers['Accept'] = 'text/plain'
+
+    get :index
+    assert_response 406
+    assert_equal 'Not acceptable', json_response['errors'][0]['title']
+    assert_equal "All requests must use the '#{JSONAPI::MEDIA_TYPE}' Accept without media type parameters. This request specified '#{@request.headers['Accept']}'.", json_response['errors'][0]['detail']
+  end
+
   def test_exception_class_whitelist
     original_config = JSONAPI.configuration.dup
     $PostProcessorRaisesErrors = true
