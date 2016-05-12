@@ -10,6 +10,9 @@ en:
       record_not_found:
         title: 'Record not found'
         detail: "The record identified by %{id} could not be found."
+      not_acceptable:
+        title: 'Not acceptable'
+        detail: "All requests must use the '%{needed_media_type}' Accept without media type parameters. This request specified '%{media_type}'."
       unsupported_media_type:
         title: 'Unsupported media type'
         detail: "All requests that create or update must use the '%{needed_media_type}' Content-Type. This request specified '%{media_type}.'"
