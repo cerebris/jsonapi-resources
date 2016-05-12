@@ -4,7 +4,7 @@ class CatResource < JSONAPI::Resource
   attribute :name
   attribute :breed
 
-  has_one :mother, class_name: 'Cat'
+  belongs_to :mother, class_name: 'Cat'
   has_one :father, class_name: 'Cat'
 
   filters :name

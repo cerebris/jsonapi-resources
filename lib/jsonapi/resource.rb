@@ -429,6 +429,7 @@ module JSONAPI
       def has_one(*attrs)
         _add_relationship(Relationship::ToOne, *attrs)
       end
+      alias_method :belongs_to, :has_one
 
       def has_many(*attrs)
         _add_relationship(Relationship::ToMany, *attrs)
