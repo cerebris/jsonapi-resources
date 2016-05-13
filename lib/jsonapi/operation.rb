@@ -14,7 +14,7 @@ module JSONAPI
   end
 
   class FindOperation < Operation
-    attr_reader :filters, :include_directives, :sort_criteria, :paginator
+    attr_reader :filters, :include_directives, :sort_criteria, :paginator, :fields
 
     def initialize(resource_klass, options = {})
       super(resource_klass, options)
@@ -22,6 +22,7 @@ module JSONAPI
       @include_directives = options[:include_directives]
       @sort_criteria = options.fetch(:sort_criteria, [])
       @paginator = options[:paginator]
+      @fields = options[:fields]
       @transactional = false
     end
 
@@ -52,7 +53,8 @@ module JSONAPI
                                               context: @context,
                                               include_directives: @include_directives,
                                               sort_criteria: @sort_criteria,
-                                              paginator: @paginator)
+                                              paginator: @paginator,
+                                              fields: @fields)
 
       options = {}
       if JSONAPI.configuration.top_level_links_include_pagination
@@ -77,12 +79,13 @@ module JSONAPI
   end
 
   class ShowOperation < Operation
-    attr_reader :id, :include_directives
+    attr_reader :id, :include_directives, :fields
 
     def initialize(resource_klass, options = {})
       super(resource_klass, options)
       @id = options.fetch(:id)
       @include_directives = options[:include_directives]
+      @fields = options[:fields]
       @transactional = false
     end
 
@@ -91,7 +94,8 @@ module JSONAPI
 
       resource_record = @resource_klass.find_by_key(key,
                                                     context: @context,
-                                                    include_directives: @include_directives)
+                                                    include_directives: @include_directives,
+                                                    fields: @fields)
 
       return JSONAPI::ResourceOperationResult.new(:ok, resource_record)
 
@@ -123,18 +127,19 @@ module JSONAPI
   end
 
   class ShowRelatedResourceOperation < Operation
-    attr_reader :source_klass, :source_id, :relationship_type
+    attr_reader :source_klass, :source_id, :relationship_type, :fields
 
     def initialize(resource_klass, options = {})
       super(resource_klass, options)
       @source_klass = options.fetch(:source_klass)
       @source_id = options.fetch(:source_id)
       @relationship_type = options.fetch(:relationship_type)
+      @fields = options[:fields]
       @transactional = false
     end
 
     def apply
-      source_resource = @source_klass.find_by_key(@source_id, context: @context)
+      source_resource = @source_klass.find_by_key(@source_id, context: @context, fields: @fields)
 
       related_resource = source_resource.public_send(@relationship_type)
 
@@ -146,7 +151,7 @@ module JSONAPI
   end
 
   class ShowRelatedResourcesOperation < Operation
-    attr_reader :source_klass, :source_id, :relationship_type, :filters, :sort_criteria, :paginator
+    attr_reader :source_klass, :source_id, :relationship_type, :filters, :sort_criteria, :paginator, :fields
 
     def initialize(resource_klass, options = {})
       super(resource_klass, options)
@@ -156,6 +161,7 @@ module JSONAPI
       @filters = options[:filters]
       @sort_criteria = options[:sort_criteria]
       @paginator = options[:paginator]
+      @fields = options[:fields]
       @transactional = false
     end
 
@@ -170,7 +176,7 @@ module JSONAPI
     end
 
     def source_resource
-      @_source_resource ||= @source_klass.find_by_key(@source_id, context: @context)
+      @_source_resource ||= @source_klass.find_by_key(@source_id, context: @context, fields: @fields)
     end
 
     def records
@@ -200,7 +206,8 @@ module JSONAPI
       related_resource = source_resource.public_send(@relationship_type,
                                               filters:  @filters,
                                               sort_criteria: @sort_criteria,
-                                              paginator: @paginator)
+                                              paginator: @paginator,
+                                              fields: @fields)
 
       return JSONAPI::RelatedResourcesOperationResult.new(:ok, source_resource, @relationship_type, related_resource, options)
 
@@ -210,11 +217,12 @@ module JSONAPI
   end
 
   class CreateResourceOperation < Operation
-    attr_reader :data
+    attr_reader :data, :fields
 
     def initialize(resource_klass, options = {})
       super(resource_klass, options)
       @data = options.fetch(:data)
+      @fields = options[:fields]
     end
 
     def apply
@@ -247,12 +255,13 @@ module JSONAPI
   end
 
   class ReplaceFieldsOperation < Operation
-    attr_reader :data, :resource_id
+    attr_reader :data, :resource_id, :fields
 
     def initialize(resource_klass, options = {})
       super(resource_klass, options)
       @resource_id = options.fetch(:resource_id)
       @data = options.fetch(:data)
+      @fields = options[:fields]
     end
 
     def apply

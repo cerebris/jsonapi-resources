@@ -295,7 +295,8 @@ module JSONAPI
         filters: @filters,
         include_directives: @include_directives,
         sort_criteria: @sort_criteria,
-        paginator: @paginator
+        paginator: @paginator,
+        fields: @fields
       )
     end
 
@@ -304,7 +305,8 @@ module JSONAPI
         @resource_klass,
         context: @context,
         id: @id,
-        include_directives: @include_directives
+        include_directives: @include_directives,
+        fields: @fields
       )
     end
 
@@ -323,7 +325,8 @@ module JSONAPI
         context: @context,
         relationship_type: relationship_type,
         source_klass: @source_klass,
-        source_id: @source_id
+        source_id: @source_id,
+        fields: @fields
       )
     end
 
@@ -336,7 +339,8 @@ module JSONAPI
         source_id: @source_id,
         filters: @source_klass.verify_filters(@filters, @context),
         sort_criteria: @sort_criteria,
-        paginator: @paginator
+        paginator: @paginator,
+        fields: @fields
       )
     end
 
@@ -359,7 +363,8 @@ module JSONAPI
         @operations.push JSONAPI::CreateResourceOperation.new(
           @resource_klass,
           context: @context,
-          data: data
+          data: data,
+          fields: @fields
         )
       end
     rescue JSONAPI::Exceptions::Error => e
@@ -622,7 +627,8 @@ module JSONAPI
         @resource_klass,
         context: @context,
         resource_id: key,
-        data: parse_params(data, updatable_fields)
+        data: parse_params(data, updatable_fields),
+        fields: @fields
       )
     end
 
