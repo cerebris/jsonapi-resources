@@ -528,7 +528,10 @@ module JSONAPI
             return model_includes
           when Symbol
             relationship = resource_klass._relationships[model_includes]
-            return relationship.relation_name(options) unless relationship.nil?
+            return nil if relationship.nil?
+            relationship_name = relationship.relation_name(options)
+            return nil if resource_klass._model_class.respond_to?(:reflect_on_association) && resource_klass._model_class.reflect_on_association(relationship_name).nil?
+            relationship_name
         end
       end
 
