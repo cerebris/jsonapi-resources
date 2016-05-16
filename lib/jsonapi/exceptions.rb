@@ -18,9 +18,9 @@ module JSONAPI
 
         [JSONAPI::Error.new(code: JSONAPI::INTERNAL_SERVER_ERROR,
                             status: :internal_server_error,
-                            title: I18n.t('jsonapi-resources.exceptions.internal_server_error.title', 
+                            title: I18n.t('jsonapi-resources.exceptions.internal_server_error.title',
                                           default: 'Internal Server Error'),
-                            detail: I18n.t('jsonapi-resources.exceptions.internal_server_error.detail', 
+                            detail: I18n.t('jsonapi-resources.exceptions.internal_server_error.detail',
                                            default: 'Internal Server Error'),
                             meta: meta)]
       end
@@ -35,9 +35,9 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_RESOURCE,
                             status: :bad_request,
-                            title: I18n.t('jsonapi-resources.exceptions.invalid_resource.title', 
+                            title: I18n.t('jsonapi-resources.exceptions.invalid_resource.title',
                                           default: 'Invalid resource'),
-                            detail: I18n.t('jsonapi-resources.exceptions.invalid_resource.detail', 
+                            detail: I18n.t('jsonapi-resources.exceptions.invalid_resource.detail',
                                            default: "#{resource} is not a valid resource.", resource: resource))]
       end
     end
@@ -51,9 +51,9 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::RECORD_NOT_FOUND,
                             status: :not_found,
-                            title: I18n.translate('jsonapi-resources.exceptions.record_not_found.title', 
+                            title: I18n.translate('jsonapi-resources.exceptions.record_not_found.title',
                                                   default: 'Record not found'),
-                            detail: I18n.translate('jsonapi-resources.exceptions.record_not_found.detail', 
+                            detail: I18n.translate('jsonapi-resources.exceptions.record_not_found.detail',
                                                    default: "The record identified by #{id} could not be found.", id: id))]
       end
     end
@@ -67,7 +67,7 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::UNSUPPORTED_MEDIA_TYPE,
                             status: :unsupported_media_type,
-                            title: I18n.translate('jsonapi-resources.exceptions.unsupported_media_type.title', 
+                            title: I18n.translate('jsonapi-resources.exceptions.unsupported_media_type.title',
                                                   default: 'Unsupported media type'),
                             detail: I18n.translate('jsonapi-resources.exceptions.unsupported_media_type.detail',
                                                    default: "All requests that create or update must use the '#{JSONAPI::MEDIA_TYPE}' Content-Type. This request specified '#{media_type}'.",
@@ -75,6 +75,26 @@ module JSONAPI
                                                    media_type: media_type))]
       end
     end
+
+    class NotAcceptableError < Error
+      attr_accessor :media_type
+
+      def initialize(media_type)
+        @media_type = media_type
+      end
+
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::NOT_ACCEPTABLE,
+                            status: :not_acceptable,
+                            title: I18n.translate('jsonapi-resources.exceptions.not_acceptable.title',
+                                                  default: 'Not acceptable'),
+                            detail: I18n.translate('jsonapi-resources.exceptions.not_acceptable.detail',
+                                                   default: "All requests must use the '#{JSONAPI::MEDIA_TYPE}' Accept without media type parameters. This request specified '#{media_type}'.",
+                                                   needed_media_type: JSONAPI::MEDIA_TYPE,
+                                                   media_type: media_type))]
+      end
+    end
+
 
     class HasManyRelationExists < Error
       attr_accessor :id
@@ -85,7 +105,7 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::RELATION_EXISTS,
                             status: :bad_request,
-                            title: I18n.translate('jsonapi-resources.exceptions.has_many_relation.title', 
+                            title: I18n.translate('jsonapi-resources.exceptions.has_many_relation.title',
                                                   default: 'Relation exists'),
                             detail: I18n.translate('jsonapi-resources.exceptions.has_many_relation.detail',
                                                    default: "The relation to #{id} already exists.",
@@ -97,7 +117,7 @@ module JSONAPI
       def errors
         [JSONAPI::Error.new(code: JSONAPI::FORBIDDEN,
                             status: :forbidden,
-                            title: I18n.translate('jsonapi-resources.exceptions.to_many_set_replacement_forbidden.title', 
+                            title: I18n.translate('jsonapi-resources.exceptions.to_many_set_replacement_forbidden.title',
                                                   default: 'Complete replacement forbidden'),
                             detail: I18n.translate('jsonapi-resources.exceptions.to_many_set_replacement_forbidden.detail',
                                                    default: 'Complete replacement forbidden for this relationship'))]
