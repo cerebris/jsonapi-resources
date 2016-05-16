@@ -1079,7 +1079,9 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_include_parameter_not_validated
     JSONAPI.configuration.validate_includes = false
-    get '/api/v2/books/1/book_comments?include=author'
+    get '/api/v2/books/1/book_comments?include=author', headers: {
+        'Accept' => JSONAPI::MEDIA_TYPE
+    }
     assert_jsonapi_response 200
   ensure
     JSONAPI.configuration.validate_includes = true
