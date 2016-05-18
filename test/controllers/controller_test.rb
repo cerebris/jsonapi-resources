@@ -374,7 +374,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_desc_sorting_by_relationship_field
     post  = create_alphabetically_first_user_and_post
-    get :index, {sort: '-author.name'}
+    get :index, params: {sort: '-author.name'}
 
     assert_response :success
     assert json_response['data'].length > 10, 'there are enough records to show sort'
@@ -424,7 +424,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_show_does_not_include_pages_count_in_meta
     JSONAPI.configuration.top_level_meta_include_page_count = true
-    get :show, { id: Post.first.id }
+    get :show, params: { id: Post.first.id }
     assert_response :success
     assert_equal json_response['meta'], nil
   ensure
