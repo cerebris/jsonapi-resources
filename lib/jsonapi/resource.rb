@@ -309,10 +309,10 @@ module JSONAPI
           remove_to_one_link(relationship_type)
         else
           case value
-          when Hash
-            replace_polymorphic_to_one_link(relationship_type.to_s, value.fetch(:id), value.fetch(:type))
-          else
-            replace_to_one_link(relationship_type, value)
+            when Hash
+              replace_polymorphic_to_one_link(relationship_type.to_s, value.fetch(:id), value.fetch(:type))
+            else
+              replace_to_one_link(relationship_type, value)
           end
         end
       end if field_data[:to_one]
@@ -439,7 +439,7 @@ module JSONAPI
                   else
                     #:nocov:#
                     fail ArgumentError.new('to: must be either :one or :many')
-                    #:nocov:#
+                  #:nocov:#
                 end
         _add_relationship(klass, *attrs, options.except(:to))
       end
@@ -522,8 +522,11 @@ module JSONAPI
               relationship = resource_klass._relationships[key]
               value = model_includes[key]
               model_includes.delete(key)
-              relationship_names = resolve_relationship_names_to_relations(relationship.resource_klass, value, options)
-              model_includes[relationship.relation_name(options)] = relationship_names unless relationship_names.nil?
+              relationship_name = relationship.relation_name(options)
+              if resource_klass._model_class.respond_to?(:reflect_on_association) && resource_klass._model_class.reflect_on_association(relationship_name).present?
+                relationship_names = resolve_relationship_names_to_relations(relationship.resource_klass, value, options)
+                model_includes[relationship_name] = relationship_names unless relationship_names.nil?
+              end
             end
             return model_includes
           when Symbol
@@ -552,7 +555,7 @@ module JSONAPI
 
       def apply_sort(records, order_options, _context = {})
         if order_options.any?
-           order_options.each_pair do |field, direction|
+          order_options.each_pair do |field, direction|
             if field.to_s.include?(".")
               *model_names, column_name = field.split(".")
 
@@ -732,25 +735,25 @@ module JSONAPI
         key_type = resource_key_type
 
         case key_type
-        when :integer
-          return if key.nil?
-          Integer(key)
-        when :string
-          return if key.nil?
-          if key.to_s.include?(',')
-            raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
+          when :integer
+            return if key.nil?
+            Integer(key)
+          when :string
+            return if key.nil?
+            if key.to_s.include?(',')
+              raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
+            else
+              key
+            end
+          when :uuid
+            return if key.nil?
+            if key.to_s.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
+              key
+            else
+              raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
+            end
           else
-            key
-          end
-        when :uuid
-          return if key.nil?
-          if key.to_s.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-            key
-          else
-            raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
-          end
-        else
-          key_type.call(key, context)
+            key_type.call(key, context)
         end
       rescue
         raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
@@ -886,8 +889,8 @@ module JSONAPI
           @_relationships[relationship_name] = relationship = klass.new(relationship_name, options)
 
           associated_records_method_name = case relationship
-                                           when JSONAPI::Relationship::ToOne then "record_for_#{relationship_name}"
-                                           when JSONAPI::Relationship::ToMany then "records_for_#{relationship_name}"
+                                             when JSONAPI::Relationship::ToOne then "record_for_#{relationship_name}"
+                                             when JSONAPI::Relationship::ToMany then "records_for_#{relationship_name}"
                                            end
 
           foreign_key = relationship.foreign_key
