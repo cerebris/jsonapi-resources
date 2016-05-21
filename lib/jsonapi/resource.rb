@@ -522,22 +522,24 @@ module JSONAPI
               relationship = resource_klass._relationships[key]
               value = model_includes[key]
               model_includes.delete(key)
-              relationship_name = relationship.relation_name(options)
-              if resource_klass._model_class.respond_to?(:reflect_on_association) && resource_klass._model_class.reflect_on_association(relationship_name).present?
-                relationship_names = resolve_relationship_names_to_relations(relationship.resource_klass, value, options)
-                model_includes[relationship_name] = relationship_names unless relationship_names.nil?
-              end
+              parent_relation_name = relationship.relation_name(options)
+              next if _exclude_relationship(resource_klass, parent_relation_name)
+              relationship_names = resolve_relationship_names_to_relations(relationship.resource_klass, value, options)
+              model_includes[parent_relation_name] = relationship_names unless relationship_names.nil?
             end
             return model_includes
           when Symbol
             relationship = resource_klass._relationships[model_includes]
             return nil if relationship.nil?
             relationship_name = relationship.relation_name(options)
-            return nil if resource_klass._model_class.respond_to?(:reflect_on_association) && resource_klass._model_class.reflect_on_association(relationship_name).nil?
+            return nil if _exclude_relationship(resource_klass, relationship_name)
             relationship_name
         end
       end
 
+      def _exclude_relationship(resource_klass, relationship_name)
+        resource_klass._model_class.respond_to?(:reflect_on_association) && resource_klass._model_class.reflect_on_association(relationship_name).nil?
+      end
       def apply_includes(records, options = {})
         include_directives = options[:include_directives]
         if include_directives
