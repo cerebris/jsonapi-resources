@@ -673,7 +673,7 @@ module JSONAPI
 
       def find_by_key(key, options = {})
         context = options[:context]
-        records = records(options)
+        records = find_scope(options)
         records = apply_includes(records, options)
         model = records.where({_primary_key => key}).first
         fail JSONAPI::Exceptions::RecordNotFound.new(key) if model.nil?
@@ -684,6 +684,13 @@ module JSONAPI
       # finder methods (find, find_by_key)
       def records(_options = {})
         _model_class.all
+      end
+
+      # Override this method if you want the find scope to not use the collection scope (records)
+      # useful if the records scope is particularly expensive and you do not really care if the
+      # root scope is used instead (i.e. the AR model)
+      def find_scope(options)
+        records(options)
       end
 
       def verify_filters(filters, context = nil)
