@@ -644,6 +644,10 @@ module JSONAPI
 
         records = apply_pagination(records, options[:paginator], order_options)
 
+        resources_for(records, context)
+      end
+
+      def resources_for(records, context)
         resources = []
         resource_classes = {}
         records.each do |model|
