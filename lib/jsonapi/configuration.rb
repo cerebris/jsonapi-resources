@@ -1,6 +1,5 @@
 require 'jsonapi/formatter'
-require 'jsonapi/operations_processor'
-require 'jsonapi/active_record_operations_processor'
+require 'jsonapi/processor'
 require 'concurrent'
 
 module JSONAPI
@@ -9,13 +8,13 @@ module JSONAPI
                 :resource_key_type,
                 :route_format,
                 :raise_if_parameters_not_allowed,
-                :operations_processor,
                 :allow_include,
                 :allow_sort,
                 :allow_filter,
                 :default_paginator,
                 :default_page_size,
                 :maximum_page_size,
+                :default_processor_klass,
                 :use_text_errors,
                 :top_level_links_include_pagination,
                 :top_level_meta_include_record_count,
@@ -33,9 +32,6 @@ module JSONAPI
 
       #:underscored_route, :camelized_route, :dasherized_route, or custom
       self.route_format = :dasherized_route
-
-      #:basic, :active_record, or custom
-      self.operations_processor = :active_record
 
       #:integer, :uuid, :string, or custom (provide a proc)
       self.resource_key_type = :integer
@@ -79,6 +75,10 @@ module JSONAPI
       # NOTE: always_include_to_many_linkage_data is not currently implemented
       self.always_include_to_one_linkage_data = false
       self.always_include_to_many_linkage_data = false
+
+      # The default Operation Processor to use if one is not defined specifically
+      # for a Resource.
+      self.default_processor_klass = JSONAPI::Processor
 
       # Formatter Caching
       # Set to false to disable caching of string operations on keys and links.
@@ -144,13 +144,12 @@ module JSONAPI
       return formatter
     end
 
-    def operations_processor=(operations_processor)
-      @operations_processor_name = operations_processor
-      @operations_processor = JSONAPI::OperationsProcessor.operations_processor_for(@operations_processor_name)
-    end
-
     def exception_class_whitelisted?(e)
       @exception_class_whitelist.flatten.any? { |k| e.class.ancestors.include?(k) }
+    end
+
+    def default_processor_klass=(default_processor_klass)
+      @default_processor_klass = default_processor_klass
     end
 
     attr_writer :allow_include, :allow_sort, :allow_filter
