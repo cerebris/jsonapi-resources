@@ -611,4 +611,9 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
     end
     assert_equal(err.error_messages[:base], ['Record is invalid'])
   end
+
+  def test_resources_for_transforms_records_into_resources
+    resources = PostResource.resources_for([Post.first], {})
+    assert_equal(PostResource, resources.first.class)
+  end
 end

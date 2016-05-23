@@ -210,6 +210,9 @@ module JSONAPI
         fail JSONAPI::Exceptions::ValidationErrors.new(self)
       end
       :completed
+
+    rescue ActiveRecord::DeleteRestrictionError => e
+      fail JSONAPI::Exceptions::RecordLocked.new(e.message)
     end
 
     def _create_to_many_links(relationship_type, relationship_key_values)
@@ -265,6 +268,11 @@ module JSONAPI
       @model.public_send(relation_name).delete(key)
 
       :completed
+
+    rescue ActiveRecord::DeleteRestrictionError => e
+      fail JSONAPI::Exceptions::RecordLocked.new(e.message)
+    rescue ActiveRecord::RecordNotFound
+      fail JSONAPI::Exceptions::RecordNotFound.new(key)
     end
 
     def _remove_to_one_link(relationship_type)
@@ -636,6 +644,10 @@ module JSONAPI
 
         records = apply_pagination(records, options[:paginator], order_options)
 
+        resources_for(records, context)
+      end
+
+      def resources_for(records, context)
         resources = []
         resource_classes = {}
         records.each do |model|

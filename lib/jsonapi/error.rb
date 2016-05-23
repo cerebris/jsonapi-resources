@@ -18,6 +18,12 @@ module JSONAPI
       @status         = Rack::Utils::SYMBOL_TO_STATUS_CODE[options[:status]].to_s
       @meta           = options[:meta]
     end
+
+    def to_hash
+      hash = {}
+      instance_variables.each {|var| hash[var.to_s.delete('@')] = instance_variable_get(var) unless instance_variable_get(var).nil? }
+      hash
+    end
   end
 
   class Warning
@@ -30,6 +36,12 @@ module JSONAPI
                         else
                           options[:code]
                         end
+    end
+
+    def to_hash
+      hash = {}
+      instance_variables.each {|var| hash[var.to_s.delete('@')] = instance_variable_get(var) unless instance_variable_get(var).nil? }
+      hash
     end
   end
 end
