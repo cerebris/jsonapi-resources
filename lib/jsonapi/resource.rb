@@ -628,8 +628,13 @@ module JSONAPI
         apply_sort(records, order_options, context)
       end
 
+      # Assumes ActiveRecord's counting. Override if you need a different counting method
+      def count_records(records)
+        records.count(:all)
+      end
+
       def find_count(filters, options = {})
-        filter_records(filters, options).count(:all)
+        count_records(filter_records(filters, options))
       end
 
       # Override this method if you have more complex requirements than this basic find method provides
