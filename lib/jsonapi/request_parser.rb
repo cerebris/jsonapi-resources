@@ -537,7 +537,14 @@ module JSONAPI
               end
             end
           end
-        when 'type', 'id'
+        when 'type'
+        when 'id'
+          unless formatted_allowed_fields.include?(:id)
+            params_not_allowed.push(:id)
+            unless JSONAPI.configuration.raise_if_parameters_not_allowed
+              params.delete :id
+            end
+          end
         else
           params_not_allowed.push(key)
         end

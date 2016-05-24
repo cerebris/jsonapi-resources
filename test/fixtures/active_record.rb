@@ -959,7 +959,7 @@ class PostResource < JSONAPI::Resource
   end
 
   def self.creatable_fields(context)
-    super(context) - [:subject]
+    super(context) - [:subject, :id]
   end
 
   def self.sortable_fields(context)
