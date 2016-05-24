@@ -24,7 +24,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       }
     )
 
-    request = JSONAPI::Request.new(
+    request = JSONAPI::RequestParser.new(
       params,
       {
         context: nil,
@@ -44,7 +44,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       }
     )
 
-    request = JSONAPI::Request.new(
+    request = JSONAPI::RequestParser.new(
       params,
       {
         context: nil,
@@ -64,7 +64,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       }
     )
 
-    request = JSONAPI::Request.new(
+    request = JSONAPI::RequestParser.new(
       params,
       {
         context: nil,
@@ -85,7 +85,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       }
     )
 
-    request = JSONAPI::Request.new(
+    request = JSONAPI::RequestParser.new(
       params,
       {
         context: nil,
@@ -107,7 +107,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       }
     )
 
-    request = JSONAPI::Request.new(
+    request = JSONAPI::RequestParser.new(
       params,
       {
         context: nil,
@@ -129,7 +129,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       }
     )
 
-    request = JSONAPI::Request.new(
+    request = JSONAPI::RequestParser.new(
       params,
       {
         context: nil,
@@ -152,7 +152,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       }
     )
 
-    request = JSONAPI::Request.new(
+    request = JSONAPI::RequestParser.new(
       params,
       {
         context: nil,
@@ -213,7 +213,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
   private
 
   def setup_request
-    @request = JSONAPI::Request.new
+    @request = JSONAPI::RequestParser.new
     @request.resource_klass = CatResource
   end
 end

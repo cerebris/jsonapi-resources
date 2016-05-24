@@ -7,9 +7,11 @@ module JSONAPI
 
     def self.included(base)
       base.extend ClassMethods
+      base.include Callbacks
       base.before_action :ensure_correct_media_type, only: [:create, :update, :create_relationship, :update_relationship]
       base.before_action :ensure_valid_accept_media_type
       base.cattr_reader :server_error_callbacks
+      base.define_jsonapi_resources_callbacks :process_operations
     end
 
     def index
@@ -57,23 +59,44 @@ module JSONAPI
     end
 
     def process_request
-      @request = JSONAPI::Request.new(params, context: context,
-                                      key_formatter: key_formatter,
-                                      server_error_callbacks: (self.class.server_error_callbacks || []))
+      @request = JSONAPI::RequestParser.new(params, context: context,
+                                            key_formatter: key_formatter,
+                                            server_error_callbacks: (self.class.server_error_callbacks || []))
       unless @request.errors.empty?
         render_errors(@request.errors)
       else
-        operation_results = create_operations_processor.process(@request)
-        render_results(operation_results)
+        process_operations
+        render_results(@operation_results)
       end
 
     rescue => e
       handle_exceptions(e)
     end
 
-    # set the operations processor in the configuration or override this to use another operations processor
-    def create_operations_processor
-      JSONAPI.configuration.operations_processor.new
+    def process_operations
+      run_callbacks :process_operations do
+        @operation_results = operation_dispatcher.process(@request.operations)
+      end
+    end
+
+    def transaction
+      lambda { |&block|
+        ActiveRecord::Base.transaction do
+          block.yield
+        end
+      }
+    end
+
+    def rollback
+      lambda {
+        fail ActiveRecord::Rollback
+      }
+    end
+
+    def operation_dispatcher
+      @operation_dispatcher ||= JSONAPI::OperationDispatcher.new(transaction: transaction,
+                                                                 rollback: rollback,
+                                                                 server_error_callbacks: @request.server_error_callbacks)
     end
 
     private

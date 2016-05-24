@@ -111,27 +111,27 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_put_single_without_content_type
     put '/posts/3', params:
-        {
-          'data' => {
-            'linkage' => {
-              'type' => 'posts',
-              'id' => '3',
-            },
-            'attributes' => {
-              'title' => 'A great new Post'
-            },
-            'links' => {
-              'tags' => [
-                {type: 'tags', id: 3},
-                {type: 'tags', id: 4}
+      {
+        'data' => {
+          'type' => 'posts',
+          'id' => '3',
+          'attributes' => {
+            'title' => 'A great new Post'
+          },
+          'relationships' => {
+            'tags' => {
+              'data' => [
+                {'type' => 'tags', 'id' => '3'},
+                {'type' => 'tags', 'id' => '4'}
               ]
             }
           }
-        }.to_json,
-        headers: {
-          'CONTENT_TYPE' => 'application/json',
-          'Accept' => JSONAPI::MEDIA_TYPE
         }
+      }.to_json,
+      headers: {
+        'CONTENT_TYPE' => 'application/json',
+        'Accept' => JSONAPI::MEDIA_TYPE
+      }
 
     assert_equal 415, status
   end
@@ -148,8 +148,8 @@ class RequestTest < ActionDispatch::IntegrationTest
             'relationships' => {
               'tags' => {
                 'data' => [
-                  {type: 'tags', id: 3},
-                  {type: 'tags', id: 4}
+                  {'type' => 'tags', 'id' => '3'},
+                  {'type' => 'tags', 'id' => '4'}
                 ]
               }
             }
@@ -163,7 +163,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_jsonapi_response 200
   end
 
-  def test_post_single_without_content_type
+  def test_post_single_with_wrong_content_type
     post '/posts', params:
       {
         'posts' => {
@@ -173,9 +173,9 @@ class RequestTest < ActionDispatch::IntegrationTest
           'relationships' => {
             'tags' => {
               'data' => [
-                  {type: 'tags', id: 3},
-                  {type: 'tags', id: 4}
-                ]
+                {'type' => 'tags', 'id' => '3'},
+                {'type' => 'tags', 'id' => '4'}
+              ]
             }
           }
         }
@@ -198,7 +198,7 @@ class RequestTest < ActionDispatch::IntegrationTest
             'body' => 'JSONAPIResources is the greatest thing since unsliced bread.'
           },
           'relationships' => {
-            'author' => {'data' => {type: 'people', id: '3'}}
+            'author' => {'data' => {'type' => 'people', 'id' => '3'}}
           }
         }
       }.to_json,
@@ -259,7 +259,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_update_relationship_without_content_type
     ruby = Section.find_by(name: 'ruby')
-    patch '/posts/3/relationships/section', params: { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json
+    patch '/posts/3/relationships/section', params: { 'data' => {'type' => 'sections', 'id' => ruby.id.to_s }}.to_json
 
     assert_equal 415, status
   end
@@ -267,7 +267,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_patch_update_relationship_to_one
     ruby = Section.find_by(name: 'ruby')
     patch '/posts/3/relationships/section', params:
-      { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json,
+      { 'data' => {'type' => 'sections', 'id' => ruby.id.to_s }}.to_json,
           headers: {
             'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
             'Accept' => JSONAPI::MEDIA_TYPE
@@ -278,7 +278,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_put_update_relationship_to_one
     ruby = Section.find_by(name: 'ruby')
-    put '/posts/3/relationships/section', params: { 'data' => {type: 'sections', id: ruby.id.to_s }}.to_json,
+    put '/posts/3/relationships/section', params: { 'data' => {'type' => 'sections', 'id' => ruby.id.to_s }}.to_json,
         headers: {
           'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
           'Accept' => JSONAPI::MEDIA_TYPE
@@ -291,7 +291,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     # Comments are acts_as_set=false so PUT/PATCH should respond with 403
 
     rogue = Comment.find_by(body: 'Rogue Comment Here')
-    patch '/posts/5/relationships/comments', params: { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json,
+    patch '/posts/5/relationships/comments', params: { 'data' => [{'type' => 'comments', 'id' => rogue.id.to_s }]}.to_json,
           headers: {
             'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
             'Accept' => JSONAPI::MEDIA_TYPE
@@ -302,7 +302,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_post_update_relationship_to_many
     rogue = Comment.find_by(body: 'Rogue Comment Here')
-    post '/posts/5/relationships/comments', params: { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json,
+    post '/posts/5/relationships/comments', params: { 'data' => [{'type' => 'comments', 'id' => rogue.id.to_s }]}.to_json,
          headers: {
            'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
            'Accept' => JSONAPI::MEDIA_TYPE
@@ -315,7 +315,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     # Comments are acts_as_set=false so PUT/PATCH should respond with 403. Note: JR currently treats PUT and PATCH as equivalent
 
     rogue = Comment.find_by(body: 'Rogue Comment Here')
-    put '/posts/5/relationships/comments', params: { 'data' => [{type: 'comments', id: rogue.id.to_s }]}.to_json,
+    put '/posts/5/relationships/comments', params: { 'data' => [{'type' => 'comments', 'id' => rogue.id.to_s }]}.to_json,
         headers: {
           'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
           'Accept' => JSONAPI::MEDIA_TYPE
@@ -346,8 +346,8 @@ class RequestTest < ActionDispatch::IntegrationTest
             'relationships' => {
               'tags' => {
                 'data' => [
-                  {type: 'tags', id: 3},
-                  {type: 'tags', id: 4}
+                  {'type' => 'tags', 'id' => '3'},
+                  {'type' => 'tags', 'id' => '4'}
                 ]
               }
             }
@@ -373,8 +373,8 @@ class RequestTest < ActionDispatch::IntegrationTest
             'relationships' => {
               'tags' => {
                 'data' => [
-                  {type: 'tags', id: 3},
-                  {type: 'tags', id: 4}
+                  {'type' => 'tags', 'id' => '3'},
+                  {'type' => 'tags', 'id' => '4'}
                 ]
               }
             }
@@ -397,7 +397,7 @@ class RequestTest < ActionDispatch::IntegrationTest
            'title' => 'A great new Post'
          },
          'relationships' => {
-           'author' => {'data' => {type: 'people', id: '3'}}
+           'author' => {'data' => {'type' => 'people', 'id' => '3'}}
          }
        }
      }.to_json,
@@ -629,7 +629,7 @@ class RequestTest < ActionDispatch::IntegrationTest
                                         'self' => 'http://www.example.com/posts/1/relationships/author',
                                         'related' => 'http://www.example.com/posts/1/author'
                                       },
-                                      'data' => {type: 'people', id: '1'}
+                                      'data' => {'type' => 'people', 'id' => '1'}
                                     })
   end
 
@@ -649,9 +649,9 @@ class RequestTest < ActionDispatch::IntegrationTest
                            'related' => 'http://www.example.com/posts/1/tags'
                           },
                           'data' => [
-                            {type: 'tags', id: '1'},
-                            {type: 'tags', id: '2'},
-                            {type: 'tags', id: '3'}
+                            {'type' => 'tags', 'id' => '1'},
+                            {'type' => 'tags', 'id' => '2'},
+                            {'type' => 'tags', 'id' => '3'}
                           ]
                        })
   end
@@ -681,7 +681,7 @@ class RequestTest < ActionDispatch::IntegrationTest
                            'related' => 'http://www.example.com/posts/5/tags'
                          },
                          'data' => [
-                           {type: 'tags', id: '10'}
+                           {'type' => 'tags', 'id' => '10'}
                          ]
                        })
   end
