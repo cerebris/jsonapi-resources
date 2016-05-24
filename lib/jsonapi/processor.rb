@@ -68,13 +68,15 @@ module JSONAPI
       include_directives = params[:include_directives]
       sort_criteria = params.fetch(:sort_criteria, [])
       paginator = params[:paginator]
+      fields = params[:fields]
 
       verified_filters = resource_klass.verify_filters(filters, context)
       resource_records = resource_klass.find(verified_filters,
                                              context: context,
                                              include_directives: include_directives,
                                              sort_criteria: sort_criteria,
-                                             paginator: paginator)
+                                             paginator: paginator,
+                                             fields: fields)
 
       page_options = {}
       if (JSONAPI.configuration.top_level_meta_include_record_count ||
@@ -97,13 +99,15 @@ module JSONAPI
 
     def show
       include_directives = params[:include_directives]
+      fields = params[:fields]
       id = params[:id]
 
       key = resource_klass.verify_key(id, context)
 
       resource_record = resource_klass.find_by_key(key,
                                                    context: context,
-                                                   include_directives: include_directives)
+                                                   include_directives: include_directives,
+                                                   fields: fields)
 
       return JSONAPI::ResourceOperationResult.new(:ok, resource_record)
     end
@@ -123,8 +127,9 @@ module JSONAPI
       source_klass = params[:source_klass]
       source_id = params[:source_id]
       relationship_type = params[:relationship_type].to_sym
+      fields = params[:fields]
 
-      source_resource = source_klass.find_by_key(source_id, context: context)
+      source_resource = source_klass.find_by_key(source_id, context: context, fields: fields)
 
       related_resource = source_resource.public_send(relationship_type)
 
@@ -138,13 +143,15 @@ module JSONAPI
       filters = params[:filters]
       sort_criteria = params[:sort_criteria]
       paginator = params[:paginator]
+      fields = params[:fields]
 
-      source_resource ||= source_klass.find_by_key(source_id, context: context)
+      source_resource ||= source_klass.find_by_key(source_id, context: context, fields: fields)
 
       related_resources = source_resource.public_send(relationship_type,
                                                       filters:  filters,
                                                       sort_criteria: sort_criteria,
-                                                      paginator: paginator)
+                                                      paginator: paginator,
+                                                      fields: fields)
 
       if ((JSONAPI.configuration.top_level_meta_include_record_count) ||
           (paginator && paginator.class.requires_record_count) ||
@@ -182,7 +189,6 @@ module JSONAPI
 
     def create_resource
       data = params[:data]
-
       resource = resource_klass.create(context)
       result = resource.replace_fields(data)
 
