@@ -1171,6 +1171,22 @@ A jsonapi-controller generator is avaliable
 rails generate jsonapi:controller contact
 ```
 
+###### ResourceControllerMetal
+
+`JSONAPI::Resources` also provides an alternative class to `ResourceController` called `ResourceControllerMetal`.
+In order to provide a lighter weight controller option this strips the controller down to just the classes needed 
+to work with `JSONAPI::Resources`.
+
+For example:
+
+```ruby
+class PeopleController < JSONAPI::ResourceControllerMetal
+
+end
+```
+
+Note: This may not provide all of the expected controller capabilities if you are using additional gems such as DoorKeeper.
+ 
 ###### Serialization Options
 
 Additional options can be passed to the serializer using the `serialization_options` method.
