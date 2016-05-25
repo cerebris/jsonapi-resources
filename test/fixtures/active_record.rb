@@ -546,7 +546,7 @@ module Api
 end
 
 ### CONTROLLERS
-class AuthorsController < JSONAPI::ResourceController
+class AuthorsController < JSONAPI::ResourceControllerMetal
 end
 
 class PeopleController < JSONAPI::ResourceController

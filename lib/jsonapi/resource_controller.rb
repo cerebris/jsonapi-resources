@@ -1,17 +1,5 @@
 module JSONAPI
-  class ResourceController < ActionController::Metal
-    MODULES = [
-      AbstractController::Rendering,
-      ActionController::Rendering,
-      ActionController::Renderers::All,
-      ActionController::StrongParameters,
-      ActionController::ForceSSL,
-      ActionController::Instrumentation,
-      JSONAPI::ActsAsResourceController
-    ].freeze
-
-    MODULES.each do |mod|
-      include mod
-    end
+  class ResourceController < ActionController::Base
+    include JSONAPI::ActsAsResourceController
   end
 end
