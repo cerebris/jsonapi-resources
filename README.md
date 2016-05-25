@@ -770,6 +770,9 @@ class ApiController < ApplicationController
 end
 ```
 
+Note that if your controller inherits from `JSONAPI::ResourceController`,
+you will need to add `include ActionController::Rescue` to it for `rescue_from`
+to work.
 
 ###### Applying Filters
 
