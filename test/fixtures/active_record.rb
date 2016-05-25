@@ -633,9 +633,6 @@ end
 class BooksController < JSONAPI::ResourceController
 end
 
-class AuthorsController < JSONAPI::ResourceController
-end
-
 ### CONTROLLERS
 module Api
   module V1
