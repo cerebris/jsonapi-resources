@@ -1136,7 +1136,7 @@ Callbacks can also be defined for `JSONAPI::Processor` events:
 - `:remove_to_many_relationship`: A `remove_to_many_relationship` operation is being processed.
 - `:remove_to_one_relationship`: A `remove_to_one_relationship` operation is being processed.
 
-See [Operation Processors] (#operation-processors) for details on using OperationPprocessors
+See [Operation Processors] (#operation-processors) for details on using OperationProcessors
 
 ##### `JSONAPI::OperationsProcessor` Callbacks (a removed feature)
 
