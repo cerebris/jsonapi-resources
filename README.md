@@ -1009,7 +1009,7 @@ end
 
 The `meta` method will be called for each resource instance. Override the `meta` method on a resource class to control
 the meta information for the resource. If a non empty hash is returned from `meta` this will be serialized. The `meta`
-method is called with an `options` has. The `options` hash will contain the following:
+method is called with an `options` hash. The `options` hash will contain the following:
 
  * `:serializer` -> the serializer instance
  * `:serialization_options` -> the contents of the `serialization_options` method on the controller.
