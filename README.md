@@ -2,8 +2,6 @@
 
 [![Join the chat at https://gitter.im/cerebris/jsonapi-resources](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cerebris/jsonapi-resources?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**_NOTE: There is a Rails 5 branch that is a work in progress. In addition to some changes for Rails 5 support it contains some monkey patches (in `test_helper.rb`) to allow existing tests to pass with Rails 5.0.0.beta1.1_. Things may break with future changes to Rails. If you are using RAILS 5 it is recommended that you use the rails 5 branch.**
-
 `JSONAPI::Resources`, or "JR", provides a framework for developing a server that complies with the
 [JSON API](http://jsonapi.org/) specification.
 
@@ -21,6 +19,7 @@ backed by ActiveRecord models or by custom objects.
 * [Usage] (#usage)
   * [Resources] (#resources)
     * [JSONAPI::Resource] (#jsonapiresource)
+    * [Context] (#context)
     * [Attributes] (#attributes)
     * [Primary Key] (#primary-key)
     * [Model Name] (#model-name)
@@ -37,6 +36,7 @@ backed by ActiveRecord models or by custom objects.
     * [Error Codes] (#error-codes)
     * [Handling Exceptions] (#handling-exceptions)
     * [Action Callbacks] (#action-callbacks)
+  * [Operation Processors] (#operation-processors)
   * [Serializer] (#serializer)
     * [Serializer options] (#serializer-options)
     * [Formatting] (#formatting)
@@ -77,8 +77,7 @@ Or install it yourself as:
 Resources define the public interface to your API. A resource defines which attributes are exposed, as well as
 relationships to other resources.
 
-Resource definitions should by convention be placed in a directory under app named resources, `app/resources`. The class
-name should be the single underscored name of the model that backs the resource with `_resource.rb` appended. For example,
+Resource definitions should by convention be placed in a directory under app named resources, `app/resources`. The file name should be the single underscored name of the model that backs the resource with `_resource.rb` appended. For example,
 a `Contact` model's resource should have a class named `ContactResource` defined in a file named `contact_resource.rb`.
 
 #### JSONAPI::Resource
@@ -160,6 +159,36 @@ In the above example vehicles are immutable. A call to `/vehicles` or `/vehicles
 of either `car` or `boat`. But calls to PUT or POST a `car` must be made to `/cars`. The rails models backing the above
 code use Single Table Inheritance.
 
+#### Context
+
+Sometimes you will want to access things such as the current logged in user (and other state only available within your controllers) from within your resource classes. To make this state available to a resource class you need to put it into the context hash - this can be done via a `context` method on one of your controllers or across all controllers using ApplicationController.
+
+For example:
+
+```ruby
+class ApplicationController < JSONAPI::ResourceController
+  def context
+    {current_user: current_user}
+  end
+end
+
+# Specific resource controllers derive from ApplicationController
+# and share its context
+class PeopleController < ApplicationController
+
+end
+
+# Assuming you don't permit user_id (so the client won't assign a wrong user to own the object)
+# you can ensure the current user is assigned the record by using the controller's context hash.
+class PeopleResource < JSONAPI::Resource
+  before_save do
+    @model.user_id = context[:current_user].id if @model.new_record?
+  end
+end
+```
+
+You can put things that affect serialization and resource configuration into the context.
+
 #### Attributes
 
 Any of a resource's attributes that are accessible must be explicitly declared. Single attributes can be declared using
@@ -190,6 +219,18 @@ class ContactResource < JSONAPI::Resource
   def full_name
     "#{@model.name_first}, #{@model.name_last}"
   end
+end
+```
+
+##### Attribute Delegation
+
+Normally resource attributes map to an attribute on the model of the same name. Using the `delegate` option allows a resource
+attribute to map to a differently named model attribute. For example:
+
+```ruby
+class ContactResource < JSONAPI::Resource
+  attribute :name_first, delegate: :first_name
+  attribute :name_last, delegate: :last_name
 end
 ```
 
@@ -264,6 +305,32 @@ class PostResource < JSONAPI::Resource
     super(context) - [:body]
   end
 end
+```
+
+JR also supports sorting primary resources by fields on relationships.
+
+Here's an example of sorting books by the author name:
+
+```ruby
+class Book < ActiveRecord::Base
+    belongs_to :author
+end
+
+class Author < ActiveRecord::Base
+    has_many :books
+end
+
+class BookResource < JSONAPI::Resource
+  attributes :title, :body
+
+  def self.sortable_fields(context)
+    super(context) << :"author.name"
+   end
+end
+```
+The request will look something like:
+```
+GET /books?include=author&sort=author.name
 ```
 
 ##### Attribute Formatting
@@ -678,7 +745,7 @@ default any other error that you raise will return a `500` status code
 for a general internal server error.
 
 To return useful error codes that represent application errors you
-should set the `exception_class_whitelist` config varible, and then you
+should set the `exception_class_whitelist` config variable, and then you
 should use the Rails `rescue_from` macro to render a status code.
 
 For example, this config setting allows the `NotAuthorizedError` to bubble up out of
@@ -932,7 +999,7 @@ class BookResource < JSONAPI::Resource
   def meta(options)
     {
       copyright: 'API Copyright 2015 - XYZ Corp.',
-      computed_copyright: options[:serialization_options][:copyright]
+      computed_copyright: options[:serialization_options][:copyright],
       last_updated_at: _model.updated_at
     }
    end
@@ -942,7 +1009,7 @@ end
 
 The `meta` method will be called for each resource instance. Override the `meta` method on a resource class to control
 the meta information for the resource. If a non empty hash is returned from `meta` this will be serialized. The `meta`
-method is called with an `options` has. The `options` hash will contain the following:
+method is called with an `options` hash. The `options` hash will contain the following:
 
  * `:serializer` -> the serializer instance
  * `:serialization_options` -> the contents of the `serialization_options` method on the controller.
@@ -961,7 +1028,7 @@ class CityCouncilMeeting < JSONAPI::Resource
   attribute :title, :location, :approved
 
   def custom_links(options)
-    { minutes: options[:serialzer].link_builder.self_link(self) + "/minutes" }
+    { minutes: options[:serializer].link_builder.self_link(self) + "/minutes" }
   end
 end
 ```
@@ -996,7 +1063,7 @@ class CityCouncilMeeting < JSONAPI::Resource
   def custom_links(options)
     extra_links = {}
     if approved?
-      extra_links[:minutes] = options[:serialzer].link_builder.self_link(self) + "/minutes"
+      extra_links[:minutes] = options[:serializer].link_builder.self_link(self) + "/minutes"
     end
     extra_links
   end
@@ -1051,68 +1118,31 @@ Callbacks can be defined for the following `JSONAPI::Resource` events:
 - `:remove_to_one_link`
 - `:replace_fields`
 
-##### `JSONAPI::OperationsProcessor` Callbacks
+##### `JSONAPI::Processor` Callbacks
 
-Callbacks can also be defined for `JSONAPI::OperationsProcessor` events:
-- `:operations`: The set of operations.
+Callbacks can also be defined for `JSONAPI::Processor` events:
 - `:operation`: Any individual operation.
-- `:find_operation`: A `find_operation`.
-- `:show_operation`: A `show_operation`.
-- `:show_relationship_operation`: A `show_relationship_operation`.
-- `:show_related_resource_operation`: A `show_related_resource_operation`.
-- `:show_related_resources_operation`: A `show_related_resources_operation`.
-- `:create_resource_operation`: A `create_resource_operation`.
-- `:remove_resource_operation`: A `remove_resource_operation`.
-- `:replace_fields_operation`: A `replace_fields_operation`.
-- `:replace_to_one_relationship_operation`: A `replace_to_one_relationship_operation`.
-- `:create_to_many_relationship_operation`: A `create_to_many_relationship_operation`.
-- `:replace_to_many_relationship_operation`: A `replace_to_many_relationship_operation`.
-- `:remove_to_many_relationship_operation`: A `remove_to_many_relationship_operation`.
-- `:remove_to_one_relationship_operation`: A `remove_to_one_relationship_operation`.
+- `:find`: A `find` operation is being processed.
+- `:show`: A `show` operation is being processed.
+- `:show_relationship`: A `show_relationship` operation is being processed.
+- `:show_related_resource`: A `show_related_resource` operation is being processed.
+- `:show_related_resources`: A `show_related_resources` operation is being processed.
+- `:create_resource`: A `create_resource` operation is being processed.
+- `:remove_resource`: A `remove_resource` operation is being processed.
+- `:replace_fields`: A `replace_fields` operation is being processed.
+- `:replace_to_one_relationship`: A `replace_to_one_relationship` operation is being processed.
+- `:create_to_many_relationship`: A `create_to_many_relationship` operation is being processed.
+- `:replace_to_many_relationship`: A `replace_to_many_relationship` operation is being processed.
+- `:remove_to_many_relationship`: A `remove_to_many_relationship` operation is being processed.
+- `:remove_to_one_relationship`: A `remove_to_one_relationship` operation is being processed.
 
-The operation callbacks have access to two meta data hashes, `@operations_meta` and `@operation_meta`, two links hashes,
-`@operations_links` and `@operation_links`, the full list of `@operations`, each individual `@operation` and the
-`@result` variables.
+See [Operation Processors] (#operation-processors) for details on using OperationProcessors
 
-##### Custom `OperationsProcessor` Example to Return total_count in Meta
+##### `JSONAPI::OperationsProcessor` Callbacks (a removed feature)
 
-Note: this can also be accomplished with the `top_level_meta_include_record_count` option, and in most cases that will
-be the better option.
-
-To return the total record count of a find operation in the meta data of a find operation you can create a custom
-OperationsProcessor. For example:
-
-```ruby
-# lib/jsonapi/counting_active_record_operations_processor.rb
-class CountingActiveRecordOperationsProcessor < ActiveRecordOperationsProcessor
-  after_find_operation do
-    @operation_meta[:total_records] = @operation.record_count
-  end
-end
-```
-
-Set the configuration option `operations_processor` to use the new `CountingActiveRecordOperationsProcessor` by
-specifying the snake cased name of the class (without the `OperationsProcessor`).
-
-```ruby
-require 'jsonapi/counting_active_record_operations_processor'
-
-JSONAPI.configure do |config|
-  config.operations_processor = :counting_active_record
-end
-```
-
-To use a specific `OperationsProcessor` in a `ResourceController`, override the `create_operations_processor` method:
-
-```ruby
-def create_operations_processor
-  CountingActiveRecordOperationsProcessor.new
-end
-```
-
-The callback code will be called after each find. It will use the same options as the find operation, without the
-pagination, to collect the record count. This is stored in the `operation_meta`, which will be returned in the top level
-meta element.
+Note: The `JSONAPI::OperationsProcessor` has been removed and replaced with the `JSONAPI::OperationDispatcher`
+and `Processor` classes per resource. The callbacks have been renamed and moved to the
+`Processor`s, with the exception of the `operations` callback which is now on the controller.
 
 ### Controllers
 
@@ -1136,30 +1166,27 @@ end
 Of course you are free to extend this as needed and override action handlers or other methods.
 
 A jsonapi-controller generator is avaliable
+
 ```
 rails generate jsonapi:controller contact
 ```
 
-###### Context
+###### ResourceControllerMetal
 
-The context that's used for serialization and resource configuration is set by the controller's `context` method.
+`JSONAPI::Resources` also provides an alternative class to `ResourceController` called `ResourceControllerMetal`.
+In order to provide a lighter weight controller option this strips the controller down to just the classes needed 
+to work with `JSONAPI::Resources`.
 
 For example:
 
 ```ruby
-class ApplicationController < JSONAPI::ResourceController
-  def context
-    {current_user: current_user}
-  end
-end
-
-# Specific resource controllers derive from ApplicationController
-# and share its context
-class PeopleController < ApplicationController
+class PeopleController < JSONAPI::ResourceControllerMetal
 
 end
 ```
 
+Note: This may not provide all of the expected controller capabilities if you are using additional gems such as DoorKeeper.
+ 
 ###### Serialization Options
 
 Additional options can be passed to the serializer using the `serialization_options` method.
@@ -1309,6 +1336,7 @@ module JSONAPI
   SAVE_FAILED = '121'
   FORBIDDEN = '403'
   RECORD_NOT_FOUND = '404'
+  NOT_ACCEPTABLE = '406'
   UNSUPPORTED_MEDIA_TYPE = '415'
   LOCKED = '423'
 end
@@ -1369,6 +1397,56 @@ class UsersController < JSONAPI::ResourceController
   end
 end
 ```
+
+### Operation Processors
+
+Operation Processors are called to perform the operation(s) that make up a request. The controller (through the `OperationDispatcher`), creates an `OperatorProcessor` to handle each operation. The processor is created based on the resource name, including the namespace. If a processor does not exist for a resource (namespace matters) the default operation processor is used instead. The default processor can be changed by a configuration setting.
+
+Defining a custom `Processor` allows for custom callback handling of each operation type for each resource type. For example:
+
+```ruby
+class Api::V4::BookProcessor < JSONAPI::Processor
+  after_find do
+    unless @result.is_a?(JSONAPI::ErrorsOperationResult)
+      @result.meta[:total_records_found] = @result.record_count
+    end
+  end
+end
+```
+
+This simple example uses a callback to update the result's meta property with the total count of records (a redundant
+feature only for example purposes), if there wasn't an error in the operation.  It is also possible to override the
+`find` method as well if a different behavior is needed, for example:
+
+```ruby
+class Api::V4::BookProcessor < JSONAPI::Processor
+  def find
+    filters = params[:filters]
+    include_directives = params[:include_directives]
+    sort_criteria = params.fetch(:sort_criteria, [])
+    paginator = params[:paginator]
+
+    verified_filters = resource_klass.verify_filters(filters, context)
+    resource_records = resource_klass.find(verified_filters,
+                                           context: context,
+                                           include_directives: include_directives,
+                                           sort_criteria: sort_criteria,
+                                           paginator: paginator)
+
+    page_options = {}
+    # Overriding the default record count logic to always include it in the meta
+    #if (JSONAPI.configuration.top_level_meta_include_record_count ||
+    #  (paginator && paginator.class.requires_record_count))
+      page_options[:record_count] = resource_klass.find_count(verified_filters,
+                                                              context: context,
+                                                              include_directives: include_directives)
+    #end
+end
+```
+
+Note: The authors of this gem expect the most common uses cases to be handled using the callbacks. It is likely that the
+internal functionality of the operation processing methods will change, at least for several revisions. Effort will be
+made to call this out in release notes. You have been warned.
 
 ### Serializer
 
@@ -1790,8 +1868,7 @@ JR has a few configuration options. Some have already been mentioned above. To s
 initializer and add the options you wish to set. All options have defaults, so you only need to set the options that
 are different. The default options are shown below.
 
-If using custom classes (such as the CountingActiveRecordOperationsProcessor, or a CustomPaginator),
-be sure to require them at the top of the initializer before usage.
+If using custom classes (such as a CustomPaginator), be sure to require them at the top of the initializer before usage.
 
 ```ruby
 JSONAPI.configure do |config|
@@ -1801,8 +1878,9 @@ JSONAPI.configure do |config|
   #:underscored_route, :camelized_route, :dasherized_route, or custom
   config.route_format = :dasherized_route
 
-  #:basic, :active_record, or custom
-  config.operations_processor = :active_record
+  # Default Processor, used if a resource specific one is not defined.
+  # Must be a class
+  config.default_processor_klass = JSONAPI::Processor
 
   #:integer, :uuid, :string, or custom (provide a proc)
   config.resource_key_type = :integer
@@ -1830,6 +1908,10 @@ JSONAPI.configure do |config|
   # Output the record count in top level meta data for find operations
   config.top_level_meta_include_record_count = false
   config.top_level_meta_record_count_key = :record_count
+
+  # For :paged paginators, the following are also available
+  config.top_level_meta_include_page_count = false
+  config.top_level_meta_page_count_key = :page_count
 
   config.use_text_errors = false
 

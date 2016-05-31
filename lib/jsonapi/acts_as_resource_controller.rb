@@ -2,11 +2,16 @@ require 'csv'
 
 module JSONAPI
   module ActsAsResourceController
+    MEDIA_TYPE_MATCHER = /(.+".+"[^,]*|[^,]+)/
+    ALL_MEDIA_TYPES = '*/*'
 
     def self.included(base)
       base.extend ClassMethods
+      base.include Callbacks
       base.before_action :ensure_correct_media_type, only: [:create, :update, :create_relationship, :update_relationship]
+      base.before_action :ensure_valid_accept_media_type
       base.cattr_reader :server_error_callbacks
+      base.define_jsonapi_resources_callbacks :process_operations
     end
 
     def index
@@ -54,27 +59,44 @@ module JSONAPI
     end
 
     def process_request
-      @request = JSONAPI::Request.new(params, context: context,
-                                      key_formatter: key_formatter,
-                                      server_error_callbacks: (self.class.server_error_callbacks || []))
+      @request = JSONAPI::RequestParser.new(params, context: context,
+                                            key_formatter: key_formatter,
+                                            server_error_callbacks: (self.class.server_error_callbacks || []))
       unless @request.errors.empty?
         render_errors(@request.errors)
       else
-        operation_results = create_operations_processor.process(@request)
-        render_results(operation_results)
+        process_operations
+        render_results(@operation_results)
       end
 
     rescue => e
       handle_exceptions(e)
-    ensure
-      if response.body.size > 0
-        response.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
+    end
+
+    def process_operations
+      run_callbacks :process_operations do
+        @operation_results = operation_dispatcher.process(@request.operations)
       end
     end
 
-    # set the operations processor in the configuration or override this to use another operations processor
-    def create_operations_processor
-      JSONAPI.configuration.operations_processor.new
+    def transaction
+      lambda { |&block|
+        ActiveRecord::Base.transaction do
+          block.yield
+        end
+      }
+    end
+
+    def rollback
+      lambda {
+        fail ActiveRecord::Rollback
+      }
+    end
+
+    def operation_dispatcher
+      @operation_dispatcher ||= JSONAPI::OperationDispatcher.new(transaction: transaction,
+                                                                 rollback: rollback,
+                                                                 server_error_callbacks: @request.server_error_callbacks)
     end
 
     private
@@ -103,6 +125,36 @@ module JSONAPI
       handle_exceptions(e)
     end
 
+    def ensure_valid_accept_media_type
+      if invalid_accept_media_type?
+        fail JSONAPI::Exceptions::NotAcceptableError.new(request.accept)
+      end
+    rescue => e
+      handle_exceptions(e)
+    end
+
+    def invalid_accept_media_type?
+      media_types = media_types_for('Accept')
+
+      return false if media_types.blank? || media_types.include?(ALL_MEDIA_TYPES)
+
+      jsonapi_media_types = media_types.select do |media_type|
+        media_type.include?(JSONAPI::MEDIA_TYPE)
+      end
+
+      jsonapi_media_types.size.zero? ||
+        jsonapi_media_types.none? do |media_type|
+          media_type == JSONAPI::MEDIA_TYPE
+        end
+    end
+
+    def media_types_for(header)
+      (request.headers[header] || '')
+        .match(MEDIA_TYPE_MATCHER)
+        .to_a
+        .map(&:strip)
+    end
+
     # override to set context
     def context
       {}
@@ -117,7 +169,7 @@ module JSONAPI
     #     JSONAPI.configuration.route = :camelized_route
     #
     # Override if you want to set a per controller key format.
-    # Must return a class derived from KeyFormatter.
+    # Must return an instance of a class derived from KeyFormatter.
     def key_formatter
       JSONAPI.configuration.key_formatter
     end
@@ -155,7 +207,8 @@ module JSONAPI
 
       render_options = {
         status: response_doc.status,
-        json:   response_doc.contents
+        json:   response_doc.contents,
+        content_type: JSONAPI::MEDIA_TYPE
       }
 
       render_options[:location] = response_doc.contents[:data]["links"][:self] if (

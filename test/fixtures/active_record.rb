@@ -28,6 +28,7 @@ ActiveRecord::Schema.define do
     t.string     :title
     t.text       :body
     t.integer    :author_id
+    t.integer    :parent_post_id
     t.belongs_to :section, index: true
     t.timestamps null: false
   end
@@ -279,6 +280,7 @@ class Post < ActiveRecord::Base
   has_many :special_post_tags, source: :tag
   has_many :special_tags, through: :special_post_tags, source: :tag
   belongs_to :section
+  has_one :parent_post, class_name: 'Post', foreign_key: 'parent_post_id'
 
   validates :author, presence: true
   validates :title, length: { maximum: 35 }
@@ -288,7 +290,14 @@ class Post < ActiveRecord::Base
   def destroy_callback
     if title == "can't destroy me"
       errors.add(:title, "can't destroy me")
-      return false
+
+      # :nocov:
+      if Rails::VERSION::MAJOR >= 5
+        throw(:abort)
+      else
+        return false
+      end
+      # :nocov:
     end
   end
 end
@@ -355,8 +364,14 @@ class Planet < ActiveRecord::Base
   def check_not_pluto
     # Pluto can't be a planet, so cancel the save
     if name.downcase == 'pluto'
-      return false
-    end
+      # :nocov:
+      if Rails::VERSION::MAJOR >= 5
+        throw(:abort)
+      else
+        return false
+      end
+      # :nocov:
+   end
   end
 end
 
@@ -406,12 +421,12 @@ class Breed
     $breed_data.remove(@id)
   end
 
-  def valid?
+  def valid?(context = nil)
     @errors.clear
     if name.is_a?(String) && name.length > 0
       return true
     else
-      @errors.set(:name, ["can't be blank"])
+      @errors.add(:name, "can't be blank")
       return false
     end
   end
@@ -530,29 +545,8 @@ module Api
   end
 end
 
-### OperationsProcessor
-class CountingActiveRecordOperationsProcessor < ActiveRecordOperationsProcessor
-  after_find_operation do
-    @operation_meta[:total_records] = @operation.record_count
-    @operation_links['spec'] = 'https://test_corp.com'
-  end
-end
-
-# This processor swaps in a mock for the operation that will raise an exception
-# when it receives the :apply method. This is used to test the
-# exception_class_whitelist configuration.
-class ErrorRaisingOperationsProcessor < ActiveRecordOperationsProcessor
-  def process_operation(operation)
-    mock_operation = Minitest::Mock.new
-    mock_operation.expect(:apply, true) do
-      raise PostsController::SubSpecialError
-    end
-    super(mock_operation)
-  end
-end
-
 ### CONTROLLERS
-class AuthorsController < JSONAPI::ResourceController
+class AuthorsController < JSONAPI::ResourceControllerMetal
 end
 
 class PeopleController < JSONAPI::ResourceController
@@ -568,7 +562,7 @@ class PostsController < BaseController
   class SubSpecialError < PostsController::SpecialError; end
 
   # This is used to test that classes that are whitelisted are reraised by
-  # the operations processor.
+  # the operations dispatcher.
   rescue_from PostsController::SpecialError do
     head :forbidden
   end
@@ -637,9 +631,6 @@ class BoatsController < JSONAPI::ResourceController
 end
 
 class BooksController < JSONAPI::ResourceController
-end
-
-class AuthorsController < JSONAPI::ResourceController
 end
 
 ### CONTROLLERS
@@ -874,6 +865,14 @@ class SectionResource < JSONAPI::Resource
   attributes 'name'
 end
 
+module ParentApi
+  class PostResource < JSONAPI::Resource
+    model_name 'Post'
+    attributes :title
+    has_one :parent_post
+  end
+end
+
 class PostResource < JSONAPI::Resource
   attribute :title
   attribute :body
@@ -883,7 +882,6 @@ class PostResource < JSONAPI::Resource
   has_one :section
   has_many :tags, acts_as_set: true
   has_many :comments, acts_as_set: false
-
 
   # Not needed - just for testing
   primary_key :id
@@ -947,7 +945,7 @@ class PostResource < JSONAPI::Resource
 
   filter :search,
     verify: ->(values, context) {
-      values.all?{|v| v.is_a?(Hash) } && values
+      values.all?{|v| (v.is_a?(Hash) || v.is_a?(ActionController::Parameters)) } && values
     },
     apply: -> (records, values, _options) {
       records.where(title: values.first['title'])
@@ -958,13 +956,13 @@ class PostResource < JSONAPI::Resource
   end
 
   def self.creatable_fields(context)
-    super(context) - [:subject]
+    super(context) - [:subject, :id]
   end
 
   def self.sortable_fields(context)
-    super(context) - [:id]
+    super(context) - [:id] + [:"author.name"]
   end
-
+ 
   def self.verify_key(key, context = nil)
     super(key)
     raise JSONAPI::Exceptions::RecordNotFound.new(key) unless find_by_key(key, context: context)
@@ -1215,7 +1213,6 @@ class CustomLinkWithLambda < JSONAPI::Resource
     }
   end
 end
-
 
 module Api
   module V1
@@ -1540,6 +1537,13 @@ module AdminApi
   end
 end
 
+module DasherizedNamespace
+  module V1
+    class PersonResource < JSONAPI::Resource
+    end
+  end
+end
+
 module MyEngine
   module Api
     module V1
@@ -1549,6 +1553,13 @@ module MyEngine
   end
 
   module AdminApi
+    module V1
+      class PersonResource < JSONAPI::Resource
+      end
+    end
+  end
+
+  module DasherizedNamespace
     module V1
       class PersonResource < JSONAPI::Resource
       end
@@ -1571,6 +1582,58 @@ class FlatPostResource < JSONAPI::Resource
 end
 
 class FlatPostsController < JSONAPI::ResourceController
+end
+
+# CustomProcessors
+class Api::V4::BookProcessor < JSONAPI::Processor
+  after_find do
+    unless @results.is_a?(JSONAPI::ErrorsOperationResult)
+      @result.meta[:total_records] = @result.record_count
+      @result.links['spec'] = 'https://test_corp.com'
+    end
+  end
+end
+
+class PostProcessor < JSONAPI::Processor
+  def find
+    if $PostProcessorRaisesErrors
+      raise PostsController::SubSpecialError
+    end
+    # puts("In custom Operations Processor without Namespace")
+    super
+  end
+
+  after_find do
+    unless @results.is_a?(JSONAPI::ErrorsOperationResult)
+      @result.meta[:total_records] = @result.record_count
+      @result.links['spec'] = 'https://test_corp.com'
+    end
+  end
+end
+
+module Api
+  module V7
+    class CategoryProcessor < JSONAPI::Processor
+      def show
+        if $PostProcessorRaisesErrors
+          raise PostsController::SubSpecialError
+        end
+        # puts("In custom Operations Processor without Namespace")
+        super
+      end
+    end
+  end
+end
+
+module Api
+  module V1
+    class PostProcessor < JSONAPI::Processor
+      def show
+        # puts("In custom Operations Processor with Namespace")
+        super
+      end
+    end
+  end
 end
 
 ### PORO Data - don't do this in a production app

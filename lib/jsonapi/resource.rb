@@ -182,8 +182,8 @@ module JSONAPI
     #   return :accepted
     # end
     # ```
-    def _save
-      unless @model.valid?
+    def _save(validation_context = nil)
+      unless @model.valid?(validation_context)
         fail JSONAPI::Exceptions::ValidationErrors.new(self)
       end
 
@@ -210,6 +210,9 @@ module JSONAPI
         fail JSONAPI::Exceptions::ValidationErrors.new(self)
       end
       :completed
+
+    rescue ActiveRecord::DeleteRestrictionError => e
+      fail JSONAPI::Exceptions::RecordLocked.new(e.message)
     end
 
     def _create_to_many_links(relationship_type, relationship_key_values)
@@ -265,6 +268,11 @@ module JSONAPI
       @model.public_send(relation_name).delete(key)
 
       :completed
+
+    rescue ActiveRecord::DeleteRestrictionError => e
+      fail JSONAPI::Exceptions::RecordLocked.new(e.message)
+    rescue ActiveRecord::RecordNotFound
+      fail JSONAPI::Exceptions::RecordNotFound.new(key)
     end
 
     def _remove_to_one_link(relationship_type)
@@ -399,11 +407,11 @@ module JSONAPI
         @_attributes ||= {}
         @_attributes[attr] = options
         define_method attr do
-          @model.public_send(attr)
+          @model.public_send(options[:delegate] ? options[:delegate].to_sym : attr)
         end unless method_defined?(attr)
 
         define_method "#{attr}=" do |value|
-          @model.public_send "#{attr}=", value
+          @model.public_send("#{options[:delegate] ? options[:delegate].to_sym : attr}=", value)
         end unless method_defined?("#{attr}=")
       end
 
@@ -530,10 +538,46 @@ module JSONAPI
 
       def apply_sort(records, order_options, _context = {})
         if order_options.any?
-          records.order(order_options)
-        else
-          records
+           order_options.each_pair do |field, direction|
+            if field.to_s.include?(".")
+              *model_names, column_name = field.split(".")
+
+              associations = _lookup_association_chain([records.model.to_s, *model_names])
+              joins_query = _build_joins([records.model, *associations])
+
+              # _sorting is appended to avoid name clashes with manual joins eg. overriden filters
+              order_by_query = "#{associations.last.name}_sorting.#{column_name} #{direction}"
+              records = records.joins(joins_query).order(order_by_query)
+            else
+              records = records.order(field => direction)
+            end
+          end
         end
+
+        records
+      end
+
+      def _lookup_association_chain(model_names)
+        associations = []
+        model_names.inject do |prev, current|
+          association = prev.classify.constantize.reflect_on_all_associations.detect do |assoc|
+            assoc.name.to_s.downcase == current.downcase
+          end
+          associations << association
+          association.class_name
+        end
+
+        associations
+      end
+
+      def _build_joins(associations)
+        joins = []
+
+        associations.inject do |prev, current|
+          joins << "LEFT JOIN #{current.table_name} AS #{current.name}_sorting ON #{current.name}_sorting.id = #{prev.table_name}.#{current.foreign_key}"
+          current
+        end
+        joins.join("\n")
       end
 
       def apply_filter(records, filter, value, options = {})
@@ -584,8 +628,13 @@ module JSONAPI
         apply_sort(records, order_options, context)
       end
 
+      # Assumes ActiveRecord's counting. Override if you need a different counting method
+      def count_records(records)
+        records.count(:all)
+      end
+
       def find_count(filters, options = {})
-        filter_records(filters, options).count(:all)
+        count_records(filter_records(filters, options))
       end
 
       # Override this method if you have more complex requirements than this basic find method provides
@@ -600,9 +649,15 @@ module JSONAPI
 
         records = apply_pagination(records, options[:paginator], order_options)
 
+        resources_for(records, context)
+      end
+
+      def resources_for(records, context)
         resources = []
+        resource_classes = {}
         records.each do |model|
-          resources.push self.resource_for_model(model).new(model, context)
+          resource_class = resource_classes[model.class] ||= self.resource_for_model(model)
+          resources.push resource_class.new(model, context)
         end
 
         resources
@@ -665,7 +720,7 @@ module JSONAPI
       end
 
       def resource_key_type
-        @_resource_key_type || JSONAPI.configuration.resource_key_type
+        @_resource_key_type ||= JSONAPI.configuration.resource_key_type
       end
 
       def verify_key(key, context = nil)
