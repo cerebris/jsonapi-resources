@@ -74,7 +74,7 @@ module JSONAPI
       end
 
       def polymorphic_type
-        "#{type.to_s.singularize}_type" if polymorphic?
+        "#{name}_type" if polymorphic?
       end
     end
 
