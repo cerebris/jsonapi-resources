@@ -1,6 +1,5 @@
 require 'jsonapi/formatter'
-require 'jsonapi/operations_processor'
-require 'jsonapi/active_record_operations_processor'
+require 'jsonapi/processor'
 require 'concurrent'
 
 module JSONAPI
