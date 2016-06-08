@@ -91,7 +91,7 @@ class ContactResource < JSONAPI::Resource
 end
 ```
 
-A jsonapi-resource generator is avaliable
+A jsonapi-resource generator is available
 ```
 rails generate jsonapi:resource contact
 ```
