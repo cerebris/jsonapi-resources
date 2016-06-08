@@ -25,7 +25,8 @@ module JSONAPI
                 :exception_class_whitelist,
                 :always_include_to_one_linkage_data,
                 :always_include_to_many_linkage_data,
-                :cache_formatters
+                :cache_formatters,
+                :use_relationship_reflection
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -88,6 +89,11 @@ module JSONAPI
       # Formatter Caching
       # Set to false to disable caching of string operations on keys and links.
       self.cache_formatters = true
+
+      # Relationship reflection invokes the related resource when updates
+      # are made to a has_many relationship. By default relationship_reflection
+      # is turned off because it imposes a small performance penalty.
+      self.use_relationship_reflection = false
     end
 
     def cache_formatters=(bool)
@@ -186,6 +192,8 @@ module JSONAPI
     attr_writer :always_include_to_many_linkage_data
 
     attr_writer :raise_if_parameters_not_allowed
+
+    attr_writer :use_relationship_reflection
   end
 
   class << self

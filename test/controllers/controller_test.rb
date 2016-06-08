@@ -1277,6 +1277,22 @@ class PostsControllerTest < ActionController::TestCase
     assert matches_array? [2, 3, 5], post_object.tags.collect { |tag| tag.id }
   end
 
+  def test_create_relationship_to_many_join_table_reflect
+    JSONAPI.configuration.use_relationship_reflection = true
+    set_content_type_header!
+    post_object = Post.find(15)
+    assert_equal 5, post_object.tags.collect { |tag| tag.id }.length
+
+    put :update_relationship, params: {post_id: 15, relationship: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}, {type: 'tags', id: 4}]}
+
+    assert_response :no_content
+    post_object = Post.find(15)
+    assert_equal 3, post_object.tags.collect { |tag| tag.id }.length
+    assert matches_array? [2, 3, 4], post_object.tags.collect { |tag| tag.id }
+  ensure
+    JSONAPI.configuration.use_relationship_reflection = false
+  end
+
   def test_create_relationship_to_many_mismatched_type
     set_content_type_header!
     post :create_relationship, params: {post_id: 3, relationship: 'tags', data: [{type: 'comments', id: 5}]}
@@ -1309,10 +1325,64 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /The required parameter, data, is missing./, response.body
   end
 
-  def test_create_relationship_to_many_join
+  def test_create_relationship_to_many_join_table_no_reflection
+    JSONAPI.configuration.use_relationship_reflection = false
     set_content_type_header!
+    p = Post.find(4)
+    assert_equal [], p.tag_ids
+
     post :create_relationship, params: {post_id: 4, relationship: 'tags', data: [{type: 'tags', id: 1}, {type: 'tags', id: 2}, {type: 'tags', id: 3}]}
     assert_response :no_content
+
+    p.reload
+    assert_equal [1,2,3], p.tag_ids
+  ensure
+    JSONAPI.configuration.use_relationship_reflection = false
+  end
+
+  def test_create_relationship_to_many_join_table_reflection
+    JSONAPI.configuration.use_relationship_reflection = true
+    set_content_type_header!
+    p = Post.find(4)
+    assert_equal [], p.tag_ids
+
+    post :create_relationship, params: {post_id: 4, relationship: 'tags', data: [{type: 'tags', id: 1}, {type: 'tags', id: 2}, {type: 'tags', id: 3}]}
+    assert_response :no_content
+
+    p.reload
+    assert_equal [1,2,3], p.tag_ids
+  ensure
+    JSONAPI.configuration.use_relationship_reflection = false
+  end
+
+  def test_create_relationship_to_many_no_reflection
+    JSONAPI.configuration.use_relationship_reflection = false
+    set_content_type_header!
+    p = Post.find(4)
+    assert_equal [], p.comment_ids
+
+    post :create_relationship, params: {post_id: 4, relationship: 'comments', data: [{type: 'comments', id: 7}, {type: 'comments', id: 8}]}
+
+    assert_response :no_content
+    p.reload
+    assert_equal [7,8], p.comment_ids
+  ensure
+    JSONAPI.configuration.use_relationship_reflection = false
+  end
+
+  def test_create_relationship_to_many_reflection
+    JSONAPI.configuration.use_relationship_reflection = true
+    set_content_type_header!
+    p = Post.find(4)
+    assert_equal [], p.comment_ids
+
+    post :create_relationship, params: {post_id: 4, relationship: 'comments', data: [{type: 'comments', id: 7}, {type: 'comments', id: 8}]}
+
+    assert_response :no_content
+    p.reload
+    assert_equal [7,8], p.comment_ids
+  ensure
+    JSONAPI.configuration.use_relationship_reflection = false
   end
 
   def test_create_relationship_to_many_join_table_record_exists
@@ -1354,7 +1424,8 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_delete_relationship_to_many_with_relationship_url_not_matching_type
     set_content_type_header!
-    PostResource.has_many :special_tags, relation_name: :special_tags, class_name: "Tag"
+    # Reflection turned off since tags doesn't have the inverse relationship
+    PostResource.has_many :special_tags, relation_name: :special_tags, class_name: "Tag", reflect: false
     post :create_relationship, params: {post_id: 14, relationship: 'special_tags', data: [{type: 'tags', id: 2}]}
 
     #check the relationship was created successfully
@@ -1594,7 +1665,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /body is not allowed/, response.body
   end
 
-  def test_update_multiple
+  def test_update_multiple_sucess
     set_content_type_header!
     javascript = Section.find_by(name: 'javascript')
 
@@ -2405,6 +2476,31 @@ class BooksControllerTest < ActionController::TestCase
     assert_response :success
     assert_equal 'authors', json_response['included'][0]['type']
   end
+
+  def test_destroy_relationship_has_and_belongs_to_many
+    JSONAPI.configuration.use_relationship_reflection = false
+
+    assert_equal 2, Book.find(2).authors.count
+
+    delete :destroy_relationship, params: {book_id: 2, relationship: 'authors', data: [{type: 'authors', id: 1}]}
+    assert_response :no_content
+    assert_equal 1, Book.find(2).authors.count
+  ensure
+    JSONAPI.configuration.use_relationship_reflection = false
+  end
+
+  def test_destroy_relationship_has_and_belongs_to_many_refect
+    JSONAPI.configuration.use_relationship_reflection = true
+
+    assert_equal 2, Book.find(2).authors.count
+
+    delete :destroy_relationship, params: {book_id: 2, relationship: 'authors', data: [{type: 'authors', id: 1}]}
+    assert_response :no_content
+    assert_equal 1, Book.find(2).authors.count
+
+  ensure
+    JSONAPI.configuration.use_relationship_reflection = false
+  end
 end
 
 class Api::V5::AuthorsControllerTest < ActionController::TestCase
@@ -3150,6 +3246,19 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_response :no_content
 
   ensure
+    book_comment.delete
+  end
+
+  def test_books_delete_approved_comment_limited_user_using_relation_name_reflected
+    JSONAPI.configuration.use_relationship_reflection = true
+    $test_user = Person.find(1)
+
+    book_comment = BookComment.create(book_id: 1, body: 'Approved dummy comment', approved: true)
+    delete :destroy_relationship, params: {book_id: 1, relationship: 'book_comments', data: [{type: 'book_comments', id: book_comment.id}]}
+    assert_response :no_content
+
+  ensure
+    JSONAPI.configuration.use_relationship_reflection = false
     book_comment.delete
   end
 end

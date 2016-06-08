@@ -79,10 +79,14 @@ module JSONAPI
     end
 
     class ToMany < Relationship
+      attr_reader :reflect, :inverse_relationship
+
       def initialize(name, options = {})
         super
         @class_name = options.fetch(:class_name, name.to_s.camelize.singularize)
         @foreign_key ||= "#{name.to_s.singularize}_ids".to_sym
+        @reflect = options.fetch(:reflect, true) == true
+        @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type.to_s.singularize.to_sym) if parent_resource
       end
     end
   end

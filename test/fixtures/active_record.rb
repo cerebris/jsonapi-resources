@@ -880,8 +880,8 @@ class PostResource < JSONAPI::Resource
 
   has_one :author, class_name: 'Person'
   has_one :section
-  has_many :tags, acts_as_set: true
-  has_many :comments, acts_as_set: false
+  has_many :tags, acts_as_set: true, inverse_relationship: :posts
+  has_many :comments, acts_as_set: false, inverse_relationship: :post
 
   # Not needed - just for testing
   primary_key :id
@@ -1042,7 +1042,7 @@ end
 
 class PlanetTypeResource < JSONAPI::Resource
   attributes :name
-  has_many :planets
+  has_many :planets, inverse_relationship: :planet_type
 end
 
 class MoonResource < JSONAPI::Resource
@@ -1124,10 +1124,12 @@ end
 class AuthorResource < JSONAPI::Resource
   model_name 'Person'
   attributes :name
+
+  has_many :books, inverse_relationship: :authors
 end
 
 class BookResource < JSONAPI::Resource
-  has_many :authors, class_name: 'Author'
+  has_many :authors, class_name: 'Author', inverse_relationship: :books
 end
 
 class AuthorDetailResource < JSONAPI::Resource
@@ -1287,7 +1289,7 @@ module Api
         else
           :book_comments
         end
-      }
+      }, reflect: true
 
       has_many :aliased_comments, class_name: 'BookComments', relation_name: :approved_book_comments
 
@@ -1468,7 +1470,8 @@ module Api
                             else
                               :admin_line_items
                             end
-                          }
+                          },
+               reflect: false
 
       has_many :order_flags, acts_as_set: true,
                relation_name: -> (options = {}) {
@@ -1486,7 +1489,7 @@ module Api
     class OrderFlagResource < JSONAPI::Resource
       attributes :name
 
-      has_many :purchase_orders
+      has_many :purchase_orders, reflect: false
     end
 
     class LineItemResource < JSONAPI::Resource

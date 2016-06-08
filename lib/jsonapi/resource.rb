@@ -22,6 +22,9 @@ module JSONAPI
     def initialize(model, context)
       @model = model
       @context = context
+      @reload_needed = false
+      @changing = false
+      @save_needed = false
     end
 
     def _model
@@ -63,39 +66,39 @@ module JSONAPI
       end
     end
 
-    def create_to_many_links(relationship_type, relationship_key_values)
+    def create_to_many_links(relationship_type, relationship_key_values, options = {})
       change :create_to_many_link do
-        _create_to_many_links(relationship_type, relationship_key_values)
+        _create_to_many_links(relationship_type, relationship_key_values, options)
       end
     end
 
-    def replace_to_many_links(relationship_type, relationship_key_values)
+    def replace_to_many_links(relationship_type, relationship_key_values, options = {})
       change :replace_to_many_links do
-        _replace_to_many_links(relationship_type, relationship_key_values)
+        _replace_to_many_links(relationship_type, relationship_key_values, options)
       end
     end
 
-    def replace_to_one_link(relationship_type, relationship_key_value)
+    def replace_to_one_link(relationship_type, relationship_key_value, options = {})
       change :replace_to_one_link do
-        _replace_to_one_link(relationship_type, relationship_key_value)
+        _replace_to_one_link(relationship_type, relationship_key_value, options)
       end
     end
 
-    def replace_polymorphic_to_one_link(relationship_type, relationship_key_value, relationship_key_type)
+    def replace_polymorphic_to_one_link(relationship_type, relationship_key_value, relationship_key_type, options = {})
       change :replace_polymorphic_to_one_link do
-        _replace_polymorphic_to_one_link(relationship_type, relationship_key_value, relationship_key_type)
+        _replace_polymorphic_to_one_link(relationship_type, relationship_key_value, relationship_key_type, options)
       end
     end
 
-    def remove_to_many_link(relationship_type, key)
+    def remove_to_many_link(relationship_type, key, options = {})
       change :remove_to_many_link do
-        _remove_to_many_link(relationship_type, key)
+        _remove_to_many_link(relationship_type, key, options)
       end
     end
 
-    def remove_to_one_link(relationship_type)
+    def remove_to_one_link(relationship_type, options = {})
       change :remove_to_one_link do
-        _remove_to_one_link(relationship_type)
+        _remove_to_one_link(relationship_type, options)
       end
     end
 
@@ -189,6 +192,7 @@ module JSONAPI
 
       if defined? @model.save
         saved = @model.save(validate: false)
+
         unless saved
           if @model.errors.present?
             fail JSONAPI::Exceptions::ValidationErrors.new(self)
@@ -199,6 +203,8 @@ module JSONAPI
       else
         saved = true
       end
+      @model.reload if @reload_needed
+      @reload_needed = false
 
       @save_needed = !saved
 
@@ -215,34 +221,87 @@ module JSONAPI
       fail JSONAPI::Exceptions::RecordLocked.new(e.message)
     end
 
-    def _create_to_many_links(relationship_type, relationship_key_values)
+    def reflect_relationship?(relationship, options)
+      return false if !relationship.reflect ||
+        (!JSONAPI.configuration.use_relationship_reflection || options[:reflected_source])
+
+      inverse_relationship = relationship.resource_klass._relationships[relationship.inverse_relationship]
+      if inverse_relationship.nil?
+        warn "Inverse relationship could not be found for #{self.class.name}.#{relationship.name}. Relationship reflection disabled."
+        return false
+      end
+      true
+    end
+
+    def _create_to_many_links(relationship_type, relationship_key_values, options)
       relationship = self.class._relationships[relationship_type]
 
-      relationship_key_values.each do |relationship_key_value|
-        related_resource = relationship.resource_klass.find_by_key(relationship_key_value, context: @context)
+      # check if relationship_key_values are already members of this relationship
+      relation_name = relationship.relation_name(context: @context)
+      existing_relations = @model.public_send(relation_name).where(relationship.primary_key => relationship_key_values)
+      if existing_relations.count > 0
+        # todo: obscure id so not to leak info
+        fail JSONAPI::Exceptions::HasManyRelationExists.new(existing_relations.first.id)
+      end
 
-        relation_name = relationship.relation_name(context: @context)
-        # TODO: Add option to skip relations that already exist instead of returning an error?
-        relation = @model.public_send(relation_name).where(relationship.primary_key => relationship_key_value).first
-        if relation.nil?
-          @model.public_send(relation_name) << related_resource._model
+      if options[:reflected_source]
+        @model.public_send(relation_name) << options[:reflected_source]._model
+        return :completed
+      end
+
+      # load requested related resources
+      # make sure they all exist (also based on context) and add them to relationship
+
+      related_resources = relationship.resource_klass.find_by_keys(relationship_key_values, context: @context)
+
+      if related_resources.count != relationship_key_values.count
+        # todo: obscure id so not to leak info
+        fail JSONAPI::Exceptions::RecordNotFound.new('unspecified')
+      end
+
+      reflect = reflect_relationship?(relationship, options)
+
+      related_resources.each do |related_resource|
+        if reflect
+          if related_resource.class._relationships[relationship.inverse_relationship].is_a?(JSONAPI::Relationship::ToMany)
+            related_resource.create_to_many_links(relationship.inverse_relationship, [id], reflected_source: self)
+          else
+            related_resource.replace_to_one_link(relationship.inverse_relationship, id, reflected_source: self)
+          end
+          @reload_needed = true
         else
-          fail JSONAPI::Exceptions::HasManyRelationExists.new(relationship_key_value)
+          @model.public_send(relation_name) << related_resource._model
         end
       end
 
       :completed
     end
 
-    def _replace_to_many_links(relationship_type, relationship_key_values)
+    def _replace_to_many_links(relationship_type, relationship_key_values, options)
       relationship = self.class._relationships[relationship_type]
-      send("#{relationship.foreign_key}=", relationship_key_values)
-      @save_needed = true
+
+      reflect = reflect_relationship?(relationship, options)
+
+      if reflect
+        existing = send("#{relationship.foreign_key}")
+        to_delete = existing - (relationship_key_values & existing)
+        to_delete.each do |key|
+          _remove_to_many_link(relationship_type, key, reflected_source: self)
+        end
+
+        to_add = relationship_key_values - (relationship_key_values & existing)
+        _create_to_many_links(relationship_type, to_add, {})
+
+        @reload_needed = true
+      else
+        send("#{relationship.foreign_key}=", relationship_key_values)
+        @save_needed = true
+      end
 
       :completed
     end
 
-    def _replace_to_one_link(relationship_type, relationship_key_value)
+    def _replace_to_one_link(relationship_type, relationship_key_value, options)
       relationship = self.class._relationships[relationship_type]
 
       send("#{relationship.foreign_key}=", relationship_key_value)
@@ -251,7 +310,7 @@ module JSONAPI
       :completed
     end
 
-    def _replace_polymorphic_to_one_link(relationship_type, key_value, key_type)
+    def _replace_polymorphic_to_one_link(relationship_type, key_value, key_type, options)
       relationship = self.class._relationships[relationship_type.to_sym]
 
       _model.public_send("#{relationship.foreign_key}=", key_value)
@@ -262,10 +321,29 @@ module JSONAPI
       :completed
     end
 
-    def _remove_to_many_link(relationship_type, key)
-      relation_name = self.class._relationships[relationship_type].relation_name(context: @context)
+    def _remove_to_many_link(relationship_type, key, options)
+      relationship = self.class._relationships[relationship_type]
 
-      @model.public_send(relation_name).delete(key)
+      reflect = reflect_relationship?(relationship, options)
+
+      if reflect
+
+        related_resource = relationship.resource_klass.find_by_key(key, context: @context)
+
+        if related_resource.nil?
+          fail JSONAPI::Exceptions::RecordNotFound.new(key)
+        else
+          if related_resource.class._relationships[relationship.inverse_relationship].is_a?(JSONAPI::Relationship::ToMany)
+            related_resource.remove_to_many_link(relationship.inverse_relationship, id, reflected_source: self)
+          else
+            related_resource.remove_to_one_link(relationship.inverse_relationship, reflected_source: self)
+          end
+        end
+
+        @reload_needed = true
+      else
+        @model.public_send(relationship.relation_name(context: @context)).delete(key)
+      end
 
       :completed
 
@@ -275,7 +353,7 @@ module JSONAPI
       fail JSONAPI::Exceptions::RecordNotFound.new(key)
     end
 
-    def _remove_to_one_link(relationship_type)
+    def _remove_to_one_link(relationship_type, options)
       relationship = self.class._relationships[relationship_type]
 
       send("#{relationship.foreign_key}=", nil)
@@ -662,14 +740,21 @@ module JSONAPI
       end
 
       def resources_for(records, context)
-        resources = []
         resource_classes = {}
-        records.each do |model|
+        records.collect do |model|
           resource_class = resource_classes[model.class] ||= self.resource_for_model(model)
-          resources.push resource_class.new(model, context)
+          resource_class.new(model, context)
         end
+      end
 
-        resources
+      def find_by_keys(keys, options = {})
+        context = options[:context]
+        records = records(options)
+        records = apply_includes(records, options)
+        models = records.where({_primary_key => keys})
+        models.collect do |model|
+          self.resource_for_model(model).new(model, context)
+        end
       end
 
       def find_by_key(key, options = {})
