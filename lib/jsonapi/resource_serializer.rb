@@ -219,7 +219,8 @@ module JSONAPI
             resources.each do |resource|
               next if self_referential_and_already_in_source(resource)
               id = resource.id
-              relationships_only = already_serialized?(relationship.type, id)
+              type = resource.class.resource_for_model(resource._model)
+              relationships_only = already_serialized?(type, id)
               if include_linkage && !relationships_only
                 add_included_object(id, object_hash(resource, ia))
               elsif include_linked_children || relationships_only
