@@ -19,6 +19,8 @@ module JSONAPI
       @primary_class_name = primary_resource_klass._type
       @fields             = options.fetch(:fields, {})
       @include            = options.fetch(:include, [])
+      @include_links      = options.fetch(:include_links, [])
+      @include_relationship_links = options.fetch(:include_relationship_links, [])
       @include_directives = options[:include_directives]
       @key_formatter      = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
       @id_formatter       = ValueFormatter.value_formatter_for(:id)
@@ -47,6 +49,7 @@ module JSONAPI
 
       included_objects = []
       primary_objects = []
+
       @included_objects.each_value do |objects|
         objects.each_value do |object|
           if object[:primary]
@@ -109,6 +112,15 @@ module JSONAPI
       end
     end
 
+    def include_links_for?(source)
+      if primary_class_name.to_s == source._model.class.name.downcase.pluralize
+        # when the object is the top level primary object
+        !!@include_links
+      else
+        !!@include_relationship_links
+      end
+    end
+
     # Returns a serialized hash for the source model
     def object_hash(source, include_directives)
       obj_hash = {}
@@ -120,7 +132,7 @@ module JSONAPI
 
       obj_hash['type'] = format_key(source.class._type.to_s)
 
-      links = links_hash(source)
+      links = include_links_for?(source) ? links_hash(source) : []
       obj_hash['links'] = links unless links.empty?
 
       attributes = attributes_hash(source)
@@ -209,7 +221,9 @@ module JSONAPI
           resources = (include_linkage || include_linked_children) && [source.public_send(name)].flatten.compact
 
           if field_set.include?(name)
-            hash[format_key(name)] = link_object(source, relationship, include_linkage)
+            relationship_object = link_object(source, relationship, include_linkage)
+            relationship_object.delete(:links) unless @include_relationship_links
+            hash[format_key(name)] = relationship_object
           end
 
           # If the object has been serialized once it will be in the related objects list,
