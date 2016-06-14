@@ -437,6 +437,15 @@ module JSONAPI
       def has_one(*attrs)
         _add_relationship(Relationship::ToOne, *attrs)
       end
+      
+      def belongs_to(*attrs)
+        ActiveSupport::Deprecation.warn "In #{name} you exposed a `has_one` relationship "\
+                                        " using the `belongs_to` class method. We think `has_one`" \
+                                        " is more appropriate. If you know what you're doing," \
+                                        " and don't want to see this warning again, override the" \
+                                        " `belongs_to` class method on your resource."
+        _add_relationship(Relationship::ToOne, *attrs)
+      end
 
       def has_many(*attrs)
         _add_relationship(Relationship::ToMany, *attrs)
