@@ -404,6 +404,8 @@ module JSONAPI
           ActiveSupport::Deprecation.warn('Id without format is no longer supported. Please remove ids from attributes, or specify a format.')
         end
 
+        check_duplicate_attribute_name(attr) if options[:format].nil?
+
         @_attributes ||= {}
         @_attributes[attr] = options
         define_method attr do
@@ -879,6 +881,8 @@ module JSONAPI
 
           check_reserved_relationship_name(relationship_name)
 
+          check_duplicate_relationship_name(relationship_name)
+
           # Initialize from an ActiveRecord model's properties
           if _model_class && _model_class.ancestors.collect{|ancestor| ancestor.name}.include?('ActiveRecord::Base')
             model_association = _model_class.reflect_on_association(relationship_name)
@@ -1007,6 +1011,18 @@ module JSONAPI
       def check_reserved_relationship_name(name)
         if [:id, :ids, :type, :types].include?(name.to_sym)
           warn "[NAME COLLISION] `#{name}` is a reserved relationship name in #{_resource_name_from_type(_type)}."
+        end
+      end
+
+      def check_duplicate_relationship_name(name)
+        if _relationships.include?(name.to_sym)
+          warn "[DUPLICATE RELATIONSHIP] `#{name}` has already been defined in #{_resource_name_from_type(_type)}."
+        end
+      end
+
+      def check_duplicate_attribute_name(name)
+        if _attributes.include?(name.to_sym)
+          warn "[DUPLICATE ATTRIBUTE] `#{name}` has already been defined in #{_resource_name_from_type(_type)}."
         end
       end
     end
