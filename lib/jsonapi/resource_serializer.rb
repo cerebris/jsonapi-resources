@@ -298,9 +298,9 @@ module JSONAPI
 
     # Extracts the foreign key value for a to_one relationship.
     def foreign_key_value(source, relationship)
-      foreign_key = relationship.foreign_key
-      value = source.public_send(foreign_key)
-      @id_formatter.format(value)
+      related_resource = source.public_send(relationship.name)
+      return nil unless related_resource
+      @id_formatter.format(related_resource.id)
     end
 
     def foreign_key_types_and_values(source, relationship)
