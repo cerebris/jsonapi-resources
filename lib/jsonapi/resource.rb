@@ -968,15 +968,24 @@ module JSONAPI
         options = attrs.extract_options!
         options[:parent_resource] = self
 
-        JSONAPI::RelationshipBuilder.new(klass, options, _model_class, @_relationships, self)
-          .build_relationship(attrs)
+        attrs.each do |relationship_name|
+          check_reserved_relationship_name(relationship_name)
 
+          JSONAPI::RelationshipBuilder.new(klass, _model_class, options)
+            .define_relationship_methods(relationship_name.to_sym)
+        end
       end
 
-      #added
-      def inject_class_method(name, body)
+      # Allows JSONAPI::RelationshipBuilder to access metaprogramming hooks
+      def inject_method_definition(name, body)
         define_method(name, body)
       end
+
+      def register_relationship(name, relationship_object)
+        @_relationships[name] = relationship_object
+      end
+
+      private
 
       def check_reserved_resource_name(type, name)
         if [:ids, :types, :hrefs, :links].include?(type)
