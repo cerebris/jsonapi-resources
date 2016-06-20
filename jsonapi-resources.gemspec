@@ -28,4 +28,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'concurrent-ruby-ext'
   spec.add_dependency 'rails', '>= 4.0'
   spec.add_dependency 'concurrent-ruby'
+  spec.add_dependency 'jsonapi'
 end
