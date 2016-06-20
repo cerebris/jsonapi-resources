@@ -16,7 +16,7 @@ module JSONAPI
       @operations = []
       @fields = {}
       @filters = {}
-      @sort_criteria = [{ field: 'id', direction: :asc }]
+      @sort_criteria = []
       @source_klass = nil
       @source_id = nil
       @include_directives = nil
@@ -24,13 +24,14 @@ module JSONAPI
       @id = nil
       @server_error_callbacks = options.fetch(:server_error_callbacks, [])
 
-      setup_action(@params)
+      setup_action
     end
 
-    def setup_action(params)
+    def setup_action
       return if params.nil?
 
-      @resource_klass ||= Resource.resource_for(params[:controller]) if params[:controller]
+      set_resource_klass
+      set_default_sort_criteria
 
       setup_action_method_name = "setup_#{params[:action]}_action"
       if respond_to?(setup_action_method_name)
@@ -38,6 +39,14 @@ module JSONAPI
       end
     rescue ActionController::ParameterMissing => e
       @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)
+    end
+
+    def set_resource_klass
+      @resource_klass = Resource.resource_for(params[:controller]) if params[:controller]
+    end
+
+    def set_default_sort_criteria
+      @sort_criteria = [{ field: resource_klass._primary_key, direction: :asc }] if resource_klass
     end
 
     def setup_index_action(params)
