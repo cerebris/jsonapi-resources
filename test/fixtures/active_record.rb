@@ -263,6 +263,9 @@ class Person < ActiveRecord::Base
 
   has_and_belongs_to_many :books, join_table: :book_authors
 
+  has_many :even_posts, -> { where('posts.id % 2 = 0') }, class_name: 'Post', foreign_key: 'author_id'
+  has_many :odd_posts, -> { where('posts.id % 2 = 1') }, class_name: 'Post', foreign_key: 'author_id'
+
   ### Validations
   validates :name, presence: true
   validates :date_joined, presence: true
@@ -806,6 +809,13 @@ class PersonResource < BaseResource
     return values
   end
 
+end
+
+class PersonWithEvenAndOddPostsResource < JSONAPI::Resource
+  model_name 'Person'
+
+  has_many :even_posts, foreign_key: 'author_id', class_name: 'Post', relation_name: :even_posts
+  has_many :odd_posts, foreign_key: 'author_id', class_name: 'Post', relation_name: :odd_posts
 end
 
 class SpecialBaseResource < BaseResource

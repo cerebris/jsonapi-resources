@@ -2175,5 +2175,169 @@ class SerializerTest < ActionDispatch::IntegrationTest
     assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
   end
 
+  def test_includes_two_relationships_with_same_foreign_key
+    serialized_resource = JSONAPI::ResourceSerializer
+      .new(PersonWithEvenAndOddPostsResource, include: ['even_posts','odd_posts'])
+      .serialize_to_hash(PersonWithEvenAndOddPostsResource.new(Person.first, nil))
+
+    assert_hash_equals(
+      {
+        data: {
+          id: "1",
+          type: "personWithEvenAndOddPosts",
+          links: {
+            self: "/personWithEvenAndOddPosts/1"
+          },
+          relationships: {
+            evenPosts: {
+              links: {
+                self: "/personWithEvenAndOddPosts/1/relationships/evenPosts",
+                related: "/personWithEvenAndOddPosts/1/evenPosts"
+              },
+              data: [
+                {
+                  type: "posts",
+                  id: "2"
+                }
+              ]
+            },
+            oddPosts: {
+              links: {
+                self: "/personWithEvenAndOddPosts/1/relationships/oddPosts",
+                related: "/personWithEvenAndOddPosts/1/oddPosts"
+              },
+              data:[
+                {
+                  type: "posts",
+                  id: "1"
+                },
+                {
+                  type: "posts",
+                  id: "11"
+                }
+              ]
+            }
+          }
+        },
+        included:[
+          {
+            id: "2",
+            type: "posts",
+            links: {
+              self: "/posts/2"
+            },
+            attributes: {
+              title: "JR Solves your serialization woes!",
+              body: "Use JR",
+              subject: "JR Solves your serialization woes!"
+            },
+            relationships: {
+              author: {
+                links: {
+                  self: "/posts/2/relationships/author",
+                  related: "/posts/2/author"
+                }
+              },
+              section: {
+                links: {
+                  self: "/posts/2/relationships/section",
+                  related: "/posts/2/section"
+                }
+              },
+              tags: {
+                links: {
+                  self: "/posts/2/relationships/tags",
+                  related: "/posts/2/tags"
+                }
+              },
+              comments: {
+                links: {
+                  self: "/posts/2/relationships/comments",
+                  related: "/posts/2/comments"
+                }
+              }
+            }
+          },
+          {
+            id: "1",
+            type: "posts",
+            links: {
+              self: "/posts/1"
+            },
+            attributes: {
+              title: "New post",
+              body: "A body!!!",
+              subject: "New post"
+            },
+            relationships: {
+              author: {
+                links: {
+                  self: "/posts/1/relationships/author",
+                  related: "/posts/1/author"
+                }
+              },
+              section: {
+                links: {
+                  self: "/posts/1/relationships/section",
+                  related: "/posts/1/section"
+                }
+              },
+              tags: {
+                links: {
+                  self: "/posts/1/relationships/tags",
+                  related: "/posts/1/tags"
+                }
+              },
+              comments: {
+                links: {
+                  self: "/posts/1/relationships/comments",
+                  related: "/posts/1/comments"
+                }
+              }
+            }
+          },
+          {
+            id: "11",
+            type: "posts",
+            links: {
+              self: "/posts/11"
+            },
+            attributes: {
+              title: "JR How To",
+              body: "Use JR to write API apps",
+              subject: "JR How To"
+            },
+            relationships: {
+              author: {
+                links: {
+                  self: "/posts/11/relationships/author",
+                  related: "/posts/11/author"
+                }
+              },
+              section: {
+                links: {
+                  self: "/posts/11/relationships/section",
+                  related: "/posts/11/section"
+                }
+              },
+              tags: {
+                links: {
+                  self: "/posts/11/relationships/tags",
+                  related: "/posts/11/tags"
+                }
+              },
+              comments: {
+                links: {
+                  self: "/posts/11/relationships/comments",
+                  related: "/posts/11/comments"
+                }
+              }
+            }
+          }
+        ]
+      },
+      serialized_resource
+    )
+  end
 
 end
