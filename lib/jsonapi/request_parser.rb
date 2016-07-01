@@ -454,7 +454,7 @@ module JSONAPI
       end
 
       links_object = parse_to_one_links_object(linkage)
-      if !relationship.polymorphic? && links_object[:type] && (links_object[:type].to_s != relationship.type.to_s)
+      if (!relationship.polymorphic? && !relationship.sti?) && links_object[:type] && (links_object[:type].to_s != relationship.type.to_s)
         fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
       end
 
@@ -462,7 +462,7 @@ module JSONAPI
         resource = self.resource_klass || Resource
         relationship_resource = resource.resource_for(unformat_key(links_object[:type]).to_s)
         relationship_id = relationship_resource.verify_key(links_object[:id], @context)
-        if relationship.polymorphic?
+        if relationship.polymorphic? && !relationship.sti?
           { id: relationship_id, type: unformat_key(links_object[:type].to_s) }
         else
           relationship_id
