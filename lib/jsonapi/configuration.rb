@@ -21,6 +21,7 @@ module JSONAPI
                 :top_level_meta_record_count_key,
                 :top_level_meta_include_page_count,
                 :top_level_meta_page_count_key,
+                :allow_transactions,
                 :exception_class_whitelist,
                 :always_include_to_one_linkage_data,
                 :always_include_to_many_linkage_data,
@@ -79,6 +80,10 @@ module JSONAPI
       # The default Operation Processor to use if one is not defined specifically
       # for a Resource.
       self.default_processor_klass = JSONAPI::Processor
+
+      # Allows transactions for creating and updating records
+      # Set this to false if your backend does not support transactions (e.g. Mongodb)
+      self.allow_transactions = true
 
       # Formatter Caching
       # Set to false to disable caching of string operations on keys and links.
@@ -171,6 +176,8 @@ module JSONAPI
     attr_writer :top_level_meta_include_page_count
 
     attr_writer :top_level_meta_page_count_key
+
+    attr_writer :allow_transactions
 
     attr_writer :exception_class_whitelist
 
