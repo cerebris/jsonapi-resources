@@ -437,7 +437,7 @@ module JSONAPI
       def has_one(*attrs)
         _add_relationship(Relationship::ToOne, *attrs)
       end
-      
+
       def belongs_to(*attrs)
         ActiveSupport::Deprecation.warn "In #{name} you exposed a `has_one` relationship "\
                                         " using the `belongs_to` class method. We think `has_one`" \
@@ -629,6 +629,7 @@ module JSONAPI
       end
 
       def filter_records(filters, options, records = records(options))
+        records = records.all
         records = apply_filters(records, filters, options)
         apply_includes(records, options)
       end
