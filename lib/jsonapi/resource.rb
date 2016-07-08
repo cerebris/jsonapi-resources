@@ -530,6 +530,7 @@ module JSONAPI
               relationship = resource_klass._relationships[key]
               value = model_includes[key]
               model_includes.delete(key)
+              next if relationship.nil?
               parent_relation_name = relationship.relation_name(options)
               next if _exclude_relationship(resource_klass, parent_relation_name)
               relationship_names = resolve_relationship_names_to_relations(relationship.resource_klass, value, options)

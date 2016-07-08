@@ -146,6 +146,7 @@ module JSONAPI
 
     def parse_fields(fields)
       return if fields.nil?
+      validate_fields = JSONAPI.configuration.validate_fields
 
       extracted_fields = {}
 
@@ -180,7 +181,7 @@ module JSONAPI
           unless values.nil?
             valid_fields = type_resource.fields.collect { |key| format_key(key) }
             values.each do |field|
-              if valid_fields.include?(field)
+              if !validate_fields || valid_fields.include?(field)
                 extracted_fields[type].push unformat_key(field)
               else
                 @errors.concat(JSONAPI::Exceptions::InvalidField.new(type, field).errors)
