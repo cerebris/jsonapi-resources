@@ -1077,6 +1077,16 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.allow_include = true
   end
 
+  def test_include_parameter_not_validated
+    JSONAPI.configuration.validate_includes = false
+    get '/api/v2/books/1/book_comments?include=author', headers: {
+        'Accept' => JSONAPI::MEDIA_TYPE
+    }
+    assert_jsonapi_response 200
+  ensure
+    JSONAPI.configuration.validate_includes = true
+  end
+
   def test_filter_parameter_not_allowed
     JSONAPI.configuration.allow_filter = false
     get '/api/v2/books?filter[author]=1', headers: {

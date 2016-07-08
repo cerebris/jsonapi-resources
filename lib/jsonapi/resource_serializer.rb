@@ -1,3 +1,4 @@
+require 'jsonapi/associated_resources'
 module JSONAPI
   class ResourceSerializer
 
@@ -189,7 +190,7 @@ module JSONAPI
     end
 
     def relationships_hash(source, include_directives)
-      relationships = source.class._relationships
+      relationships = source._relationships
       requested = requested_fields(source.class)
       fields = relationships.keys
       fields = requested & fields unless requested.nil?
@@ -206,7 +207,7 @@ module JSONAPI
 
           include_linkage = ia && ia[:include]
           include_linked_children = ia && !ia[:include_related].empty?
-          resources = (include_linkage || include_linked_children) && [source.public_send(name)].flatten.compact
+          resources = (include_linkage || include_linked_children) && [AssociatedResources.associated_resources_for(source, name)].flatten.compact
 
           if field_set.include?(name)
             hash[format_key(name)] = link_object(source, relationship, include_linkage)
@@ -306,7 +307,7 @@ module JSONAPI
     def foreign_key_types_and_values(source, relationship)
       if relationship.is_a?(JSONAPI::Relationship::ToMany)
         if relationship.polymorphic?
-          assoc = source._model.public_send(relationship.name)
+          assoc = source._model.respond_to?(relationship.name) ? source._model.public_send(relationship.name) : source.records_for(relationship.name)
           # Avoid hitting the database again for values already pre-loaded
           if assoc.respond_to?(:loaded?) and assoc.loaded?
             assoc.map do |obj|
@@ -318,7 +319,7 @@ module JSONAPI
             end
           end
         else
-          source.public_send(relationship.foreign_key).map do |value|
+          AssociatedResources.associated_foreign_keys_for(source, relationship.name.to_sym).map do |value|
             [relationship.type, @id_formatter.format(value)]
           end
         end

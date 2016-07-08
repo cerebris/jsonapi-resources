@@ -380,7 +380,7 @@ module JSONAPI
       def initialize(resource)
         @error_messages = resource.model_error_messages
         @error_metadata = resource.validation_error_metadata
-        @resource_relationships = resource.class._relationships.keys
+        @resource_relationships = resource._relationships.keys
         @key_formatter = JSONAPI.configuration.key_formatter
       end
 
