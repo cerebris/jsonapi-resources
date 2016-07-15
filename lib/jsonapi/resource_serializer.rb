@@ -298,9 +298,18 @@ module JSONAPI
 
     # Extracts the foreign key value for a to_one relationship.
     def foreign_key_value(source, relationship)
-      related_resource = source.public_send(relationship.name)
-      return nil unless related_resource
-      @id_formatter.format(related_resource.id)
+      # If you have direct access to the underlying id, you don't have to load the relationship
+      # which can save quite a lot of time when loading a lot of data.
+      # This does not apply to e.g. has_one :through relationships.
+      if source._model.respond_to?("#{relationship.name}_id")
+        related_resource_id = source._model.public_send("#{relationship.name}_id")
+        return nil unless related_resource_id
+        @id_formatter.format(related_resource_id)
+      else
+        related_resource = source.public_send(relationship.name)
+        return nil unless related_resource
+        @id_formatter.format(related_resource.id)
+      end
     end
 
     def foreign_key_types_and_values(source, relationship)
