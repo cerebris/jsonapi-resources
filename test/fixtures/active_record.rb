@@ -890,7 +890,7 @@ class PostResource < JSONAPI::Resource
 
   has_one :author, class_name: 'Person'
   has_one :section
-  has_many :tags, acts_as_set: true, inverse_relationship: :posts
+  has_many :tags, acts_as_set: true, inverse_relationship: :posts, eager_load_on_include: false
   has_many :comments, acts_as_set: false, inverse_relationship: :post
 
   # Not needed - just for testing
