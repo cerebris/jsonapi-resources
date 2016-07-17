@@ -1222,7 +1222,7 @@ JSONAPI::Resources supports namespacing of controllers and resources. With names
 
 If you namespace your controller it will require a namespaced resource.
 
-In the following example we have a `resource` that isn't namespaced, and one the has now been namespaced. There are
+In the following example we have a `resource` that isn't namespaced, and one that has now been namespaced. There are
 slight differences between the two resources, as might be seen in a new version of an API:
 
 ```ruby
