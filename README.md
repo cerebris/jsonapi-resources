@@ -1928,6 +1928,14 @@ JSONAPI.configure do |config|
   # Controls the serialization of resource linkage for non compound documents
   # NOTE: always_include_to_many_linkage_data is not currently implemented
   config.always_include_to_one_linkage_data = false
+
+  # Allows transactions for creating and updating records
+  # Set this to false if your backend does not support transactions (e.g. Mongodb)
+  self.allow_transactions = true
+
+  # Formatter Caching
+  # Set to false to disable caching of string operations on keys and links.
+  self.cache_formatters = true
 end
 ```
 
