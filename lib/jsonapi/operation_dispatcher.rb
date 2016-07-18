@@ -16,9 +16,10 @@ module JSONAPI
       # Use transactions if more than one operation and if one of the operations can be transactional
       # Even if transactional transactions won't be used unless the derived OperationsProcessor supports them.
       transactional = false
+
       operations.each do |operation|
         transactional |= operation.transactional?
-      end
+      end if JSONAPI.configuration.allow_transactions
 
       transaction(transactional) do
         # Links and meta data global to the set of operations
