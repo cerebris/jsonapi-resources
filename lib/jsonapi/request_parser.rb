@@ -16,7 +16,7 @@ module JSONAPI
       @operations = []
       @fields = {}
       @filters = {}
-      @sort_criteria = [{ field: 'id', direction: :asc }]
+      @sort_criteria = nil
       @source_klass = nil
       @source_id = nil
       @include_directives = nil

@@ -861,11 +861,17 @@ module JSONAPI
         end
       end
 
+      def default_sort
+        [{field: 'id', direction: :asc}]
+      end
+
       def construct_order_options(sort_params)
+        sort_params ||= default_sort
+
         return {} unless sort_params
 
         sort_params.each_with_object({}) do |sort, order_hash|
-          field = sort[:field] == 'id' ? _primary_key : sort[:field]
+          field = sort[:field].to_s == 'id' ? _primary_key : sort[:field].to_s
           order_hash[field] = sort[:direction]
         end
       end

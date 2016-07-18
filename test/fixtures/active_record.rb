@@ -1237,6 +1237,10 @@ module Api
       has_one :section
       has_many :comments, acts_as_set: false
 
+      def self.default_sort
+        [{field: 'title', direction: :asc}, {field: 'id', direction: :desc}]
+      end
+
       def subject
         @model.title
       end

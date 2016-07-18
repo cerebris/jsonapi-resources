@@ -333,6 +333,21 @@ The request will look something like:
 GET /books?include=author&sort=author.name
 ```
 
+###### Default sorting
+
+By default JR sorts ascending on the `id` of the primary resource, unless the request specifies an alternate sort order.
+To override this you may override the `self.default_sort` on a `resource`. `default_sort` should return an array of
+`sort_param` hashes. A `sort_param` hash contains a `field` and a `direction`, with `direction` being either `:asc` or
+`:desc`.
+
+For example:
+
+```ruby
+  def self.default_sort
+    [{field: 'name_last', direction: :desc}, {field: 'name_first', direction: :desc}]
+  end
+```
+
 ##### Attribute Formatting
 
 Attributes can have a `Format`. By default all attributes use the default formatter. If an attribute has the `format`
