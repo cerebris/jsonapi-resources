@@ -202,6 +202,22 @@ class ResourceTest < ActiveSupport::TestCase
     assert_equal(relationships.size, 2)
   end
 
+  def test_duplicate_relationship_name
+    assert_output nil, "[DUPLICATE RELATIONSHIP] `mother` has already been defined in CatResource.\n" do
+      CatResource.instance_eval do
+        has_one :mother, class_name: 'Cat'
+      end
+    end
+  end
+
+  def test_duplicate_attribute_name
+    assert_output nil, "[DUPLICATE ATTRIBUTE] `name` has already been defined in CatResource.\n" do
+      CatResource.instance_eval do
+        attribute :name
+      end
+    end
+  end
+
   def test_find_with_customized_base_records
     author = Person.find(1)
     posts = ArticleResource.find([], context: author).map(&:_model)

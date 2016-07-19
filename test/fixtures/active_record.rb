@@ -1505,8 +1505,6 @@ module Api
 
     class CustomerResource < V6::CustomerResource
       model_name 'Api::V7::Customer'
-      attribute :name
-      has_many :purchase_orders
     end
 
     class ClientResource < JSONAPI::Resource
