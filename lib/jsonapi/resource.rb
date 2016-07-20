@@ -970,6 +970,7 @@ module JSONAPI
 
         attrs.each do |relationship_name|
           check_reserved_relationship_name(relationship_name)
+          check_duplicate_relationship_name(relationship_name)
 
           JSONAPI::RelationshipBuilder.new(klass, _model_class, options)
             .define_relationship_methods(relationship_name.to_sym)
