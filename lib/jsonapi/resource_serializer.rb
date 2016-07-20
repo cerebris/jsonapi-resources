@@ -327,8 +327,8 @@ module JSONAPI
             end
           end
         else
-          source.public_send(relationship.foreign_key).map do |value|
-            [relationship.type, @id_formatter.format(value)]
+          source.public_send(relationship.name).map do |value|
+            [relationship.type, @id_formatter.format(value.id)]
           end
         end
       end
