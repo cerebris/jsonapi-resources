@@ -752,6 +752,9 @@ module Api
   end
 
   module V6
+    class PostsController < JSONAPI::ResourceController
+    end
+
     class CustomersController < JSONAPI::ResourceController
     end
 
@@ -1443,6 +1446,18 @@ end
 
 module Api
   module V6
+    class PersonResource < PersonResource; end
+    class TagResource < TagResource; end
+    class SectionResource < SectionResource; end
+    class CommentResource < CommentResource; end
+
+    class PostResource < PostResource
+      # Test caching with SQL fragments
+      def self.records(options = {})
+        super.joins('INNER JOIN people on people.id = author_id')
+      end
+    end
+
     class CustomerResource < JSONAPI::Resource
       attribute :name
 
