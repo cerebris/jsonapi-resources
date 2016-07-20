@@ -1957,15 +1957,15 @@ JSONAPI.configure do |config|
   # Relationship reflection invokes the related resource when updates
   # are made to a has_many relationship. By default relationship_reflection
   # is turned off because it imposes a small performance penalty.
-  self.use_relationship_reflection = false
+  config.use_relationship_reflection = false
 
   # Allows transactions for creating and updating records
   # Set this to false if your backend does not support transactions (e.g. Mongodb)
-  self.allow_transactions = true
+  config.allow_transactions = true
 
   # Formatter Caching
   # Set to false to disable caching of string operations on keys and links.
-  self.cache_formatters = true
+  config.cache_formatters = true
 end
 ```
 
