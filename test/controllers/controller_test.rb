@@ -3575,3 +3575,15 @@ class Api::V7::CategoriesControllerTest < ActionController::TestCase
     $PostProcessorRaisesErrors = false
   end
 end
+
+class Api::V6::PostsControllerTest < ActionController::TestCase
+  def test_with_sql_fragment
+    get :index, params: {include: 'section'}
+    assert_response :success
+  end
+
+  def test_caching_with_sql_fragment
+    assert_cacheable_get :index, params: {include: 'section'}
+    assert_response :success
+  end
+end
