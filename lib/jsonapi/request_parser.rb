@@ -225,7 +225,7 @@ module JSONAPI
         include.push(unformat_key(included_resource).to_s)
       end
 
-      @include_directives = JSONAPI::IncludeDirectives.new(include)
+      @include_directives = JSONAPI::IncludeDirectives.new(@resource_klass, include)
     end
 
     def parse_filters(filters)

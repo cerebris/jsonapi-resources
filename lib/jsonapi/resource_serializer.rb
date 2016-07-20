@@ -16,13 +16,14 @@ module JSONAPI
     # serializer_options: additional options that will be passed to resource meta and links lambdas
 
     def initialize(primary_resource_klass, options = {})
-      @primary_class_name = primary_resource_klass._type
-      @fields             = options.fetch(:fields, {})
-      @include            = options.fetch(:include, [])
-      @include_directives = options[:include_directives]
-      @key_formatter      = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
-      @id_formatter       = ValueFormatter.value_formatter_for(:id)
-      @link_builder       = generate_link_builder(primary_resource_klass, options)
+      @primary_resource_klass = primary_resource_klass
+      @primary_class_name     = primary_resource_klass._type
+      @fields                 = options.fetch(:fields, {})
+      @include                = options.fetch(:include, [])
+      @include_directives     = options[:include_directives]
+      @key_formatter          = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
+      @id_formatter           = ValueFormatter.value_formatter_for(:id)
+      @link_builder           = generate_link_builder(primary_resource_klass, options)
       @always_include_to_one_linkage_data = options.fetch(:always_include_to_one_linkage_data,
                                                           JSONAPI.configuration.always_include_to_one_linkage_data)
       @always_include_to_many_linkage_data = options.fetch(:always_include_to_many_linkage_data,
@@ -41,7 +42,7 @@ module JSONAPI
       is_resource_collection = source.respond_to?(:to_ary)
 
       @included_objects = {}
-      @include_directives ||= JSONAPI::IncludeDirectives.new(@include)
+      @include_directives ||= JSONAPI::IncludeDirectives.new(@primary_resource_klass, @include)
 
       process_primary(source, @include_directives.include_directives)
 
