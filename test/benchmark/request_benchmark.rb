@@ -7,7 +7,9 @@ class RequestBenchmark < IntegrationBenchmark
 
   def bench_large_index_request
     10.times do
-      get '/api/v2/books?include=bookComments,bookComments.author'
+      get '/api/v2/books?include=bookComments,bookComments.author', headers: {
+        'Accept' => JSONAPI::MEDIA_TYPE
+      }
       assert_jsonapi_response 200
     end
   end

@@ -545,6 +545,9 @@ The relationship methods (`relationship`, `has_one`, and `has_many`) support the
 `to_one` relationships support the additional option:
  * `foreign_key_on` - defaults to `:self`. To indicate that the foreign key is on the related resource specify `:related`.
 
+`to_many` relationships support the additional option:
+ * `reflect` - defaults to `true`. To indicate that updates to the relationship are performed on the related resource, if relationship reflection is turned on. See [Configuration] (#configuration)
+
 Examples:
 
 ```ruby
@@ -1132,6 +1135,13 @@ Callbacks can be defined for the following `JSONAPI::Resource` events:
 - `:remove_to_many_link`
 - `:remove_to_one_link`
 - `:replace_fields`
+
+###### Relationship Reflection
+
+By default updates to relationships only invoke callbacks on the primary
+Resource. By setting the `use_relationship_reflection` [Configuration] (#configuration) option
+updates to `has_many` relationships will occur on the related resource, triggering
+callbacks on both resources.
 
 ##### `JSONAPI::Processor` Callbacks
 
@@ -1944,13 +1954,18 @@ JSONAPI.configure do |config|
   # NOTE: always_include_to_many_linkage_data is not currently implemented
   config.always_include_to_one_linkage_data = false
 
+  # Relationship reflection invokes the related resource when updates
+  # are made to a has_many relationship. By default relationship_reflection
+  # is turned off because it imposes a small performance penalty.
+  config.use_relationship_reflection = false
+
   # Allows transactions for creating and updating records
   # Set this to false if your backend does not support transactions (e.g. Mongodb)
-  self.allow_transactions = true
+  config.allow_transactions = true
 
   # Formatter Caching
   # Set to false to disable caching of string operations on keys and links.
-  self.cache_formatters = true
+  config.cache_formatters = true
 end
 ```
 

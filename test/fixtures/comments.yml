@@ -19,3 +19,13 @@ post_2_thanks_man:
 rogue_comment:
   body: Rogue Comment Here
   author_id: 3
+
+rogue_comment_2:
+  id: 7
+  body: Rogue Comment 2 Here
+  author_id: 1
+
+rogue_comment_3:
+  id: 8
+  body: Rogue Comment 3 Here
+  author_id: 1

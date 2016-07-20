@@ -37,3 +37,28 @@ wacky_tag:
 bad_tag:
   id: 10
   name: bad
+
+tag_11:
+  id: 11
+  name: Tag11
+
+tag_12:
+  id: 12
+  name: Tag12
+
+tag_13:
+  id: 13
+  name: Tag13
+
+tag_14:
+  id: 14
+  name: Tag14
+
+tag_15:
+  id: 15
+  name: Tag15
+
+tag_16:
+  id: 16
+  name: Tag16
+
