@@ -743,9 +743,8 @@ module JSONAPI
       end
 
       def resources_for(records, context)
-        resource_classes = {}
         records.collect do |model|
-          resource_class = resource_classes[model.class] ||= self.resource_for_model(model)
+          resource_class = self.resource_for_model(model)
           resource_class.new(model, context)
         end
       end
