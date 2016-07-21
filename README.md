@@ -43,6 +43,7 @@ backed by ActiveRecord models or by custom objects.
     * [Key Format] (#key-format)
   * [Routing] (#routing)
     * [Nested Routes] (#nested-routes)
+  * [Authorization](#authorization)
 * [Configuration] (#configuration)
 * [Contributing] (#contributing)
 * [License] (#license)
@@ -1200,7 +1201,7 @@ rails generate jsonapi:controller contact
 ###### ResourceControllerMetal
 
 `JSONAPI::Resources` also provides an alternative class to `ResourceController` called `ResourceControllerMetal`.
-In order to provide a lighter weight controller option this strips the controller down to just the classes needed 
+In order to provide a lighter weight controller option this strips the controller down to just the classes needed
 to work with `JSONAPI::Resources`.
 
 For example:
@@ -1212,7 +1213,7 @@ end
 ```
 
 Note: This may not provide all of the expected controller capabilities if you are using additional gems such as DoorKeeper.
- 
+
 ###### Serialization Options
 
 Additional options can be passed to the serializer using the `serialization_options` method.
@@ -1887,6 +1888,15 @@ phone_number_contact GET    /phone-numbers/:phone_number_id/contact(.:format) co
                      DELETE /phone-numbers/:id(.:format)                      phone_numbers#destroy
 
 ```
+
+### Authorization
+
+Currently `json-api-resources` doesn't come with built-in primitives for authorization. However multiple users of the framework have come up with different approaches, check out:
+
+- [jsonapi-authorization](https://github.com/venuu/jsonapi-authorization)
+- [pundit-resources](https://github.com/togglepro/pundit-resources)
+
+Refer to the comments/discussion [here](https://github.com/cerebris/jsonapi-resources/issues/16#issuecomment-222438975) for the differences between approaches
 
 ## Configuration
 
