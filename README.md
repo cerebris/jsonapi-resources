@@ -1890,7 +1890,7 @@ phone_number_contact GET    /phone-numbers/:phone_number_id/contact(.:format) co
 
 ### Authorization
 
-To this day `json-api-resources` doesn't come with built-in primitives for authorization. However multiple users of the framework have come up with different approaches, check out:
+Currently `json-api-resources` doesn't come with built-in primitives for authorization. However multiple users of the framework have come up with different approaches, check out:
 
 - [jsonapi-authorization](https://github.com/venuu/jsonapi-authorization)
 - [pundit-resources](https://github.com/togglepro/pundit-resources)
