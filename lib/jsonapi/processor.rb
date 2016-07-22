@@ -41,7 +41,7 @@ module JSONAPI
       end
     end
 
-    attr_reader :resource_klass, :operation_type, :params, :context, :result, :result_options
+    attr_reader :resource_klass, :operation_type, :params, :context, :result, :result_options, :errors
 
     def initialize(resource_klass, operation_type, params)
       @resource_klass = resource_klass
@@ -50,17 +50,19 @@ module JSONAPI
       @context = params[:context]
       @result = nil
       @result_options = {}
+      @errors = ActiveModel::Errors.new(self)
+    end
+
+    def validate
     end
 
     def process
-      run_callbacks :operation do
-        run_callbacks operation_type do
-          @result = send(operation_type)
-        end
+      validate
+      if errors.empty?
+        run_operation_callbacks
+      else
+        @result = JSONAPI::ErrorsOperationResult.new(:unprocessable_entity, errors)
       end
-
-    rescue JSONAPI::Exceptions::Error => e
-      @result = JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
     end
 
     def find
@@ -278,6 +280,20 @@ module JSONAPI
       result = resource.remove_to_one_link(relationship_type)
 
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+    end
+
+    private
+
+    def run_operation_callbacks
+      begin
+        run_callbacks :operation do
+          run_callbacks operation_type do
+            @result = send(operation_type)
+          end
+        end
+      rescue JSONAPI::Exceptions::Error => e
+        @result = JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
+      end
     end
   end
 end
