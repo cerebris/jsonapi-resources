@@ -1672,7 +1672,7 @@ not have a `format` set. You can do this by overriding the `default_attribute_op
 resource for a system wide change).
 
 ```ruby
-  def default_attribute_options
+  def self.default_attribute_options
     {format: :my_default}
   end
 ```
