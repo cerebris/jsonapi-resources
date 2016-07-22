@@ -662,12 +662,21 @@ module Api
     end
 
     class PlanetsController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
     end
 
     class PlanetTypesController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
     end
 
     class MoonsController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
     end
 
     class CratersController < JSONAPI::ResourceController
