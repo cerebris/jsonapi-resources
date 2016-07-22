@@ -58,6 +58,7 @@ module JSONAPI
 
     def process
       validate
+
       if errors.empty?
         run_operation_callbacks
       else

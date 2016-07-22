@@ -7,6 +7,10 @@ class ProcessorTest < Minitest::Test
     end
   end
 
+  def extend_instance(instance, &block)
+    instance.extend(Module.new(&block))
+  end
+
   def subject_record_id
     1
   end
@@ -24,10 +28,6 @@ class ProcessorTest < Minitest::Test
     JSONAPI::Processor.new(PlanetResource, :show, params)
   end
 
-  def extend_processor_instance(instance, &block)
-    instance.extend(Module.new(&block))
-  end
-
   def test_process_without_validation
     processor = build_processor
     subject   = processor.process
@@ -41,7 +41,7 @@ class ProcessorTest < Minitest::Test
   def test_process_with_validation
     processor = build_processor
 
-    extend_processor_instance processor do
+    extend_instance processor do
       def validate
         errors.add(:request, "Invalid request host") if context[:request].host.match(/foo/)
       end

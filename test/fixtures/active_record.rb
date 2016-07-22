@@ -706,6 +706,12 @@ module Api
   module V3
     class PostsController < JSONAPI::ResourceController
     end
+
+    class BooksController < JSONAPI::ResourceController
+      def context
+        { current_user: $test_user }
+      end
+    end
   end
 
   module V4
@@ -972,7 +978,7 @@ class PostResource < JSONAPI::Resource
   def self.sortable_fields(context)
     super(context) - [:id] + [:"author.name"]
   end
- 
+
   def self.verify_key(key, context = nil)
     super(key)
     raise JSONAPI::Exceptions::RecordNotFound.new(key) unless find_by_key(key, context: context)
@@ -1378,6 +1384,8 @@ module Api
   module V3
     class PostResource < PostResource; end
     class PreferencesResource < PreferencesResource; end
+    class BookResource < BookResource; end
+    class AuthorResource < AuthorResource; end
   end
 end
 
@@ -1607,6 +1615,9 @@ class Api::V4::BookProcessor < JSONAPI::Processor
       @result.links['spec'] = 'https://test_corp.com'
     end
   end
+end
+
+class Api::V3::BookProcessor < JSONAPI::Processor
 end
 
 class PostProcessor < JSONAPI::Processor

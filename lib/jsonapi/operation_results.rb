@@ -20,16 +20,44 @@ module JSONAPI
       @has_errors
     end
 
+    def custom_errors?
+      @has_errors &&
+      @results.all? do |result|
+        result.is_a?(JSONAPI::ErrorsOperationResult) && result.errors.is_a?(ActiveModel::Errors)
+      end
+    end
+
     def all_errors
       errors = []
-      if @has_errors
-        @results.each do |result|
-          if result.is_a?(JSONAPI::ErrorsOperationResult)
-            errors.concat(result.errors)
-          end
-        end
+
+      if concateable_errors?
+        concatenate_errors(errors)
+      elsif custom_errors?
+        collect_error_objects(errors)
       end
+
       errors
+    end
+
+    private
+
+    def concatenate_errors(collection)
+      @results.each do |result|
+        collection.concat(result.errors)
+      end
+    end
+
+    def collect_error_objects(collection)
+      @results.each do |result|
+        collection.push(result.errors)
+      end
+    end
+
+    def concateable_errors?
+      @has_errors &&
+      @results.all? do |result|
+        result.is_a?(JSONAPI::ErrorsOperationResult) && result.errors.is_a?(Array)
+      end
     end
   end
 end
