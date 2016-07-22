@@ -2,6 +2,13 @@
 
 [![Join the chat at https://gitter.im/cerebris/jsonapi-resources](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cerebris/jsonapi-resources?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+**NOTE:** This README is the documentation for `JSONAPI::Resources`. If you are viewing this at the
+[project page on Github](https://github.com/cerebris/jsonapi-resources) you are viewing the documentation for the `master`
+branch. This may contain information that is not relevant to the release you are using. Please see the README for the
+[version](https://github.com/cerebris/jsonapi-resources/releases) you are using.
+
+ ---
+
 `JSONAPI::Resources`, or "JR", provides a framework for developing a server that complies with the
 [JSON API](http://jsonapi.org/) specification.
 
