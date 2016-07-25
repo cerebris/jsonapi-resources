@@ -3577,13 +3577,15 @@ class Api::V7::CategoriesControllerTest < ActionController::TestCase
 end
 
 class Api::V6::PostsControllerTest < ActionController::TestCase
-  def test_with_sql_fragment
-    get :index, params: {include: 'section'}
+  def test_caching_with_join_from_resource_with_sql_fragment
+    assert_cacheable_get :index, params: {include: 'section'}
     assert_response :success
   end
+end
 
-  def test_caching_with_sql_fragment
-    assert_cacheable_get :index, params: {include: 'section'}
+class Api::V6::SectionsControllerTest < ActionController::TestCase
+  def test_caching_with_join_to_resource_with_sql_fragment
+    assert_cacheable_get :index, params: {include: 'posts'}
     assert_response :success
   end
 end

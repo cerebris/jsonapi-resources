@@ -54,6 +54,7 @@ ActiveRecord::Schema.define do
 
   create_table :sections, force: true do |t|
     t.string :name
+    t.timestamps null: false
   end
 
   create_table :posts_tags, force: true do |t|
@@ -343,6 +344,7 @@ class Tag < ActiveRecord::Base
 end
 
 class Section < ActiveRecord::Base
+  has_many :posts
 end
 
 class HairCut < ActiveRecord::Base
@@ -756,6 +758,9 @@ module Api
 
   module V6
     class PostsController < JSONAPI::ResourceController
+    end
+
+    class SectionsController < JSONAPI::ResourceController
     end
 
     class CustomersController < JSONAPI::ResourceController
@@ -1464,7 +1469,11 @@ module Api
   module V6
     class PersonResource < PersonResource; end
     class TagResource < TagResource; end
-    class SectionResource < SectionResource; end
+
+    class SectionResource < SectionResource
+      has_many :posts
+    end
+
     class CommentResource < CommentResource; end
 
     class PostResource < PostResource

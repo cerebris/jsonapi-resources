@@ -1153,7 +1153,7 @@ module JSONAPI
         target_resources = {}
         include_directives.paths.each do |path|
           # If path is [:posts, :comments, :author], then...
-          pluck_attrs = [] # [posts.id, comments.id, authors.id, authors.updated_at]
+          pluck_attrs = [] # ...will be [posts.id, comments.id, authors.id, authors.updated_at]
           pluck_attrs << self._model_class.arel_table[self._primary_key]
 
           relation = records
@@ -1179,7 +1179,10 @@ module JSONAPI
             ar_hash = assocs_path.reverse.reduce{|memo, step| { step => memo } }
             # We can't just look up the table name from the resource class, because Arel could
             # have used a table alias if the relation includes a self-reference.
-            table = relation.joins(ar_hash).arel.source.right.last.left
+            join_source = relation.joins(ar_hash).arel.source.right.reverse.find do |arel_node|
+              arel_node.is_a?(Arel::Nodes::InnerJoin)
+            end
+            table = join_source.left
             parent_klass = klass
             klass = relationship.resource_klass
             pluck_attrs << table[klass._primary_key]
