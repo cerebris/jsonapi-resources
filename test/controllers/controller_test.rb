@@ -3448,23 +3448,6 @@ class Api::V1::CratersControllerTest < ActionController::TestCase
                        }, json_response)
   end
 
-  def test_get_related_resources_filtered
-    $test_user = Person.find(1)
-    get :get_related_resources, params: {moon_id: '1', relationship: 'craters', source: "api/v1/moons", filter: {description: 'Small crater'}}
-    assert_response :success
-    assert_hash_equals({
-                           data: [
-                               {
-                                   id:"A4D3",
-                                   type:"craters",
-                                   links:{self: "http://test.host/api/v1/craters/A4D3"},
-                                   attributes:{code: "A4D3", description: "Small crater"},
-                                   relationships:{moon: {links: {self: "http://test.host/api/v1/craters/A4D3/relationships/moon", related: "http://test.host/api/v1/craters/A4D3/moon"}}}
-                               }
-                           ]
-                       }, json_response)
-  end
-
   def test_show_relationship
     get :show_relationship, params: {crater_id: 'S56D', relationship: 'moon'}
 

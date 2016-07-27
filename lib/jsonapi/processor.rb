@@ -148,7 +148,6 @@ module JSONAPI
       source_resource ||= source_klass.find_by_key(source_id, context: context, fields: fields)
 
       related_resources = source_resource.public_send(relationship_type,
-                                                      context: context,
                                                       filters:  filters,
                                                       sort_criteria: sort_criteria,
                                                       paginator: paginator,
