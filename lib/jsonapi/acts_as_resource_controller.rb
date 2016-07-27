@@ -126,26 +126,20 @@ module JSONAPI
     end
 
     def ensure_valid_accept_media_type
-      if invalid_accept_media_type?
+      unless valid_accept_media_type?
         fail JSONAPI::Exceptions::NotAcceptableError.new(request.accept)
       end
     rescue => e
       handle_exceptions(e)
     end
 
-    def invalid_accept_media_type?
+    def valid_accept_media_type?
       media_types = media_types_for('Accept')
 
-      return false if media_types.blank? || media_types.include?(ALL_MEDIA_TYPES)
-
-      jsonapi_media_types = media_types.select do |media_type|
-        media_type.include?(JSONAPI::MEDIA_TYPE)
-      end
-
-      jsonapi_media_types.size.zero? ||
-        jsonapi_media_types.none? do |media_type|
-          media_type == JSONAPI::MEDIA_TYPE
-        end
+      media_types.blank? ||
+          media_types.any? do |media_type|
+            (media_type == JSONAPI::MEDIA_TYPE || media_type == ALL_MEDIA_TYPES)
+          end
     end
 
     def media_types_for(header)
