@@ -339,7 +339,6 @@ module JSONAPI
         source_klass: @source_klass,
         source_id: @source_id,
         filters: @source_klass.verify_filters(@filters, @context),
-        include_directives: @include_directives,
         sort_criteria: @sort_criteria,
         paginator: @paginator,
         fields: @fields,

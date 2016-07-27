@@ -688,6 +688,9 @@ module Api
     end
 
     class CratersController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
     end
 
     class LikesController < JSONAPI::ResourceController
@@ -1091,6 +1094,11 @@ class CraterResource < JSONAPI::Resource
   attribute :description
 
   has_one :moon
+
+  filter :description, apply: -> (records, value, options) {
+    fail "context not set" unless options[:context][:current_user] != nil && options[:context][:current_user] == $test_user
+    records.where(:description => value)
+  }
 
   def self.verify_key(key, context = nil)
     key && String(key)
