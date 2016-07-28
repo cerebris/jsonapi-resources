@@ -15,47 +15,54 @@ module JSONAPI
     end
 
     def index
-      process_request
+      process_request_and_render(__method__)
     end
 
     def show
-      process_request
+      process_request_and_render(__method__)
     end
 
     def show_relationship
-      process_request
+      process_request_and_render(__method__)
     end
 
     def create
-      process_request
+      process_request_and_render(__method__)
     end
 
     def create_relationship
-      process_request
+      process_request_and_render(__method__)
     end
 
     def update_relationship
-      process_request
+      process_request_and_render(__method__)
     end
 
     def update
-      process_request
+      process_request_and_render(__method__)
     end
 
     def destroy
-      process_request
+      process_request_and_render(__method__)
     end
 
     def destroy_relationship
-      process_request
+      process_request_and_render(__method__)
     end
 
     def get_related_resource
-      process_request
+      process_request_and_render(__method__)
     end
 
     def get_related_resources
-      process_request
+      process_request_and_render(__method__)
+    end
+
+    # Override to introduce caching, action will be :index, :show, etc.
+    def process_request_and_render(action)
+      render(process_request)
+    rescue => e
+      handle_exceptions(e)
     end
 
     def process_request
@@ -63,14 +70,11 @@ module JSONAPI
                                             key_formatter: key_formatter,
                                             server_error_callbacks: (self.class.server_error_callbacks || []))
       unless @request.errors.empty?
-        render_errors(@request.errors)
+        pre_render_errors(@request.errors)
       else
         process_operations
-        render_results(@operation_results)
+        pre_render_results(@operation_results)
       end
-
-    rescue => e
-      handle_exceptions(e)
     end
 
     def process_operations
@@ -194,15 +198,15 @@ module JSONAPI
       {}
     end
 
-    def render_errors(errors)
+    def pre_render_errors(errors)
       operation_results = JSONAPI::OperationResults.new
       result = JSONAPI::ErrorsOperationResult.new(errors[0].status, errors)
       operation_results.add_result(result)
 
-      render_results(operation_results)
+      pre_render_results(operation_results)
     end
 
-    def render_results(operation_results)
+    def pre_render_results(operation_results)
       response_doc = create_response_document(operation_results)
 
       render_options = {
@@ -215,7 +219,7 @@ module JSONAPI
         response_doc.status == :created && response_doc.contents[:data].class != Array
       )
 
-      render(render_options)
+      render_options
     end
 
     def create_response_document(operation_results)
@@ -240,14 +244,14 @@ module JSONAPI
     def handle_exceptions(e)
       case e
       when JSONAPI::Exceptions::Error
-        render_errors(e.errors)
+        render(pre_render_errors(e.errors))
       else
         if JSONAPI.configuration.exception_class_whitelisted?(e)
           fail e
         else
           internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
           Rails.logger.error { "Internal Server Error: #{e.message} #{e.backtrace.join("\n")}" }
-          render_errors(internal_server_error.errors)
+          render(pre_render_errors(internal_server_error.errors))
         end
       end
     end
