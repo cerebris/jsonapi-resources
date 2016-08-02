@@ -353,16 +353,12 @@ module JSONAPI
     end
 
     def to_one_linkage(source, relationship)
-      linkage = {}
-      linkage_id = foreign_key_value(source, relationship)
-
-      if linkage_id
-        linkage[:type] = format_key(relationship.type_for_source(source))
-        linkage[:id] = linkage_id
-      else
-        linkage = nil
-      end
-      linkage
+      return unless linkage_id = foreign_key_value(source, relationship)
+      return unless linkage_type = format_key(relationship.type_for_source(source))
+      {
+        type: linkage_type,
+        id: linkage_id,
+      }
     end
 
     def to_many_linkage(source, relationship)
@@ -390,7 +386,9 @@ module JSONAPI
       end
 
       linkage_types_and_values.each do |type, value|
-        linkage.append({type: format_key(type), id: @id_formatter.format(value)})
+        if type && value
+          linkage.append({type: format_key(type), id: @id_formatter.format(value)})
+        end
       end
       linkage
     end
