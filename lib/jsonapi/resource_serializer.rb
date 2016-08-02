@@ -353,8 +353,10 @@ module JSONAPI
     end
 
     def to_one_linkage(source, relationship)
-      return unless linkage_id = foreign_key_value(source, relationship)
-      return unless linkage_type = format_key(relationship.type_for_source(source))
+      linkage_id = foreign_key_value(source, relationship)
+      linkage_type = format_key(relationship.type_for_source(source))
+      return unless linkage_id.present? && linkage_type.present?
+
       {
         type: linkage_type,
         id: linkage_id,
