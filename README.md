@@ -9,6 +9,57 @@ branch. This may contain information that is not relevant to the release you are
 
  ---
 
+<!-- toc -->
+
+- [Table of Contents](#table-of-contents)
+- [Demo App](#demo-app)
+- [Client Libraries](#client-libraries)
+- [Installation](#installation)
+- [Usage](#usage)
+  * [Resources](#resources)
+    + [JSONAPI::Resource](#jsonapiresource)
+      - [Abstract Resources](#abstract-resources)
+      - [Immutable Resources](#immutable-resources)
+        * [Immutable for Readonly](#immutable-for-readonly)
+        * [Immutable Heterogeneous Collections](#immutable-heterogeneous-collections)
+    + [Context](#context)
+    + [Attributes](#attributes)
+      - [Attribute Delegation](#attribute-delegation)
+      - [Fetchable Attributes](#fetchable-attributes)
+      - [Creatable and Updatable Attributes](#creatable-and-updatable-attributes)
+      - [Sortable Attributes](#sortable-attributes)
+        * [Default sorting](#default-sorting)
+      - [Attribute Formatting](#attribute-formatting)
+      - [Flattening a Rails relationship](#flattening-a-rails-relationship)
+    + [Primary Key](#primary-key)
+      - [Override key type on a resource](#override-key-type-on-a-resource)
+      - [Custom resource key validators](#custom-resource-key-validators)
+    + [Model Name](#model-name)
+    + [Model Hints](#model-hints)
+    + [Relationships](#relationships)
+      - [Options](#options)
+    + [Filters](#filters)
+      - [Default Filters](#default-filters)
+      - [Applying Filters](#applying-filters)
+      - [Verifying Filters](#verifying-filters)
+      - [Finders](#finders)
+        * [Customizing base records for finder methods](#customizing-base-records-for-finder-methods)
+        * [Raising Errors](#raising-errors)
+        * [Applying Filters](#applying-filters-1)
+        * [Applying Sorting](#applying-sorting)
+        * [Override finder methods](#override-finder-methods)
+    + [Pagination](#pagination)
+      - [Paginators](#paginators)
+        * [Paged Paginator](#paged-paginator)
+        * [Offset Paginator](#offset-paginator)
+        * [Custom Paginators](#custom-paginators)
+      - [Paginator Configuration](#paginator-configuration)
+    + [Included relationships (side-loading resources)](#included-relationships-side-loading-resources)
+    + [Resource Meta](#resource-meta)
+    + [Custom Links](#custom-links)
+
+<!-- tocstop -->
+
 `JSONAPI::Resources`, or "JR", provides a framework for developing a server that complies with the
 [JSON API](http://jsonapi.org/) specification.
 
