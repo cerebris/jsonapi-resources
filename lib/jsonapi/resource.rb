@@ -1085,22 +1085,6 @@ module JSONAPI
         records
       end
 
-      def cached_resources_for(records, serializer, options)
-        if records.is_a?(Array) && records.all?{|rec| rec.is_a?(JSONAPI::Resource)}
-          resources = records.map{|r| [r.id, r] }.to_h
-        elsif self.caching?
-          t = _model_class.arel_table
-          cache_ids = pluck_arel_attributes(records, t[_primary_key], t[_cache_field])
-          resources = CachedResourceFragment.fetch_fragments(self, serializer, options[:context], cache_ids)
-        else
-          resources = resources_for(records, options).map{|r| [r.id, r] }.to_h
-        end
-
-        preload_included_fragments(resources, records, serializer, options)
-
-        resources.values
-      end
-
       def check_reserved_resource_name(type, name)
         if [:ids, :types, :hrefs, :links].include?(type)
           warn "[NAME COLLISION] `#{name}` is a reserved resource name."
