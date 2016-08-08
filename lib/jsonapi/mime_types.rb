@@ -1,3 +1,5 @@
+require "multi_json"
+
 module JSONAPI
   MEDIA_TYPE = 'application/vnd.api+json'
 
@@ -19,7 +21,7 @@ module JSONAPI
 
     def self.parser
       lambda do |body|
-        data = JSON.parse(body)
+        data = MultiJson.load(body)
         data = {:_json => data} unless data.is_a?(Hash)
         data.with_indifferent_access
       end

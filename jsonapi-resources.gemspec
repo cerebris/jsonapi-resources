@@ -27,5 +27,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'pry'
   spec.add_development_dependency 'concurrent-ruby-ext'
   spec.add_dependency 'rails', '>= 4.0'
+  spec.add_dependency 'multi_json', '>= 1.0.0'
   spec.add_dependency 'concurrent-ruby'
 end
