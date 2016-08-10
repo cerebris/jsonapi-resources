@@ -1,6 +1,6 @@
 module JSONAPI
   class Error
-    attr_accessor :title, :detail, :id, :href, :code, :source, :links, :status
+    attr_accessor :title, :detail, :id, :href, :code, :source, :links, :status, :meta
 
     def initialize(options = {})
       @title          = options[:title]
@@ -16,6 +16,13 @@ module JSONAPI
       @links          = options[:links]
 
       @status         = Rack::Utils::SYMBOL_TO_STATUS_CODE[options[:status]].to_s
+      @meta           = options[:meta]
+    end
+
+    def to_hash
+      hash = {}
+      instance_variables.each {|var| hash[var.to_s.delete('@')] = instance_variable_get(var) unless instance_variable_get(var).nil? }
+      hash
     end
   end
 
@@ -29,6 +36,12 @@ module JSONAPI
                         else
                           options[:code]
                         end
+    end
+
+    def to_hash
+      hash = {}
+      instance_variables.each {|var| hash[var.to_s.delete('@')] = instance_variable_get(var) unless instance_variable_get(var).nil? }
+      hash
     end
   end
 end

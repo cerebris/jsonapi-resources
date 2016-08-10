@@ -1,29 +1,36 @@
 require 'jsonapi/formatter'
-require 'jsonapi/operations_processor'
-require 'jsonapi/active_record_operations_processor'
+require 'jsonapi/processor'
+require 'concurrent'
 
 module JSONAPI
   class Configuration
     attr_reader :json_key_format,
                 :resource_key_type,
-                :key_formatter,
                 :route_format,
-                :route_formatter,
                 :raise_if_parameters_not_allowed,
-                :operations_processor,
                 :allow_include,
                 :allow_sort,
                 :allow_filter,
                 :default_paginator,
                 :default_page_size,
                 :maximum_page_size,
+                :default_processor_klass,
                 :use_text_errors,
                 :top_level_links_include_pagination,
                 :top_level_meta_include_record_count,
                 :top_level_meta_record_count_key,
+                :top_level_meta_include_page_count,
+                :top_level_meta_page_count_key,
+                :allow_transactions,
                 :exception_class_whitelist,
                 :always_include_to_one_linkage_data,
-                :always_include_to_many_linkage_data
+                :always_include_to_many_linkage_data,
+                :cache_formatters,
+                :use_relationship_reflection,
+                :resource_cache,
+                :default_resource_cache_field,
+                :resource_cache_digest_function,
+                :resource_cache_usage_report_function
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -31,9 +38,6 @@ module JSONAPI
 
       #:underscored_route, :camelized_route, :dasherized_route, or custom
       self.route_format = :dasherized_route
-
-      #:basic, :active_record, or custom
-      self.operations_processor = :active_record
 
       #:integer, :uuid, :string, or custom (provide a proc)
       self.resource_key_type = :integer
@@ -59,6 +63,9 @@ module JSONAPI
       self.top_level_meta_include_record_count = false
       self.top_level_meta_record_count_key = :record_count
 
+      self.top_level_meta_include_page_count = false
+      self.top_level_meta_page_count_key = :page_count
+
       self.use_text_errors = false
 
       # List of classes that should not be rescued by the operations processor.
@@ -74,25 +81,113 @@ module JSONAPI
       # NOTE: always_include_to_many_linkage_data is not currently implemented
       self.always_include_to_one_linkage_data = false
       self.always_include_to_many_linkage_data = false
+
+      # The default Operation Processor to use if one is not defined specifically
+      # for a Resource.
+      self.default_processor_klass = JSONAPI::Processor
+
+      # Allows transactions for creating and updating records
+      # Set this to false if your backend does not support transactions (e.g. Mongodb)
+      self.allow_transactions = true
+
+      # Formatter Caching
+      # Set to false to disable caching of string operations on keys and links.
+      # Note that unlike the resource cache, formatter caching is always done
+      # internally in-memory and per-thread; no ActiveSupport::Cache is used.
+      self.cache_formatters = true
+
+      # Relationship reflection invokes the related resource when updates
+      # are made to a has_many relationship. By default relationship_reflection
+      # is turned off because it imposes a small performance penalty.
+      self.use_relationship_reflection = false
+
+      # Resource cache
+      # An ActiveSupport::Cache::Store or similar, used by Resources with caching enabled.
+      # Set to `nil` (the default) to disable caching, or to `Rails.cache` to use the
+      # Rails cache store.
+      self.resource_cache = nil
+
+      # Default resource cache field
+      # On Resources with caching enabled, this field will be used to check for out-of-date
+      # cache entries, unless overridden on a specific Resource. Defaults to "updated_at".
+      self.default_resource_cache_field = :updated_at
+
+      # Resource cache digest function
+      # Provide a callable that returns a unique value for string inputs with
+      # low chance of collision. The default is SHA256 base64.
+      self.resource_cache_digest_function = Digest::SHA2.new.method(:base64digest)
+
+      # Resource cache usage reporting
+      # Optionally provide a callable which JSONAPI will call with information about cache
+      # performance. Should accept three arguments: resource name, hits count, misses count.
+      self.resource_cache_usage_report_function = nil
+    end
+
+    def cache_formatters=(bool)
+      @cache_formatters = bool
+      if bool
+        @key_formatter_tlv = Concurrent::ThreadLocalVar.new
+        @route_formatter_tlv = Concurrent::ThreadLocalVar.new
+      else
+        @key_formatter_tlv = nil
+        @route_formatter_tlv = nil
+      end
     end
 
     def json_key_format=(format)
       @json_key_format = format
-      @key_formatter = JSONAPI::Formatter.formatter_for(format)
+      if defined?(@cache_formatters)
+        @key_formatter_tlv = Concurrent::ThreadLocalVar.new
+      end
+    end
+
+    def route_format=(format)
+      @route_format = format
+      if defined?(@cache_formatters)
+        @route_formatter_tlv = Concurrent::ThreadLocalVar.new
+      end
+    end
+
+    def key_formatter
+      if self.cache_formatters
+        formatter = @key_formatter_tlv.value
+        return formatter if formatter
+      end
+
+      formatter = JSONAPI::Formatter.formatter_for(self.json_key_format)
+
+      if self.cache_formatters
+        formatter = @key_formatter_tlv.value = formatter.cached
+      end
+
+      return formatter
     end
 
     def resource_key_type=(key_type)
       @resource_key_type = key_type
     end
 
-    def route_format=(format)
-      @route_format = format
-      @route_formatter = JSONAPI::Formatter.formatter_for(format)
+    def route_formatter
+      if self.cache_formatters
+        formatter = @route_formatter_tlv.value
+        return formatter if formatter
+      end
+
+      formatter = JSONAPI::Formatter.formatter_for(self.route_format)
+
+      if self.cache_formatters
+        formatter = @route_formatter_tlv.value = formatter.cached
+      end
+
+      return formatter
     end
 
-    def operations_processor=(operations_processor)
-      @operations_processor_name = operations_processor
-      @operations_processor = JSONAPI::OperationsProcessor.operations_processor_for(@operations_processor_name)
+    def exception_class_whitelisted?(e)
+      @exception_class_whitelist.flatten.any? { |k| e.class.ancestors.include?(k) }
+    end
+
+    def default_processor_klass=(default_processor_klass)
+      @default_processor_klass = default_processor_klass
     end
 
     attr_writer :allow_include, :allow_sort, :allow_filter
@@ -111,6 +206,12 @@ module JSONAPI
 
     attr_writer :top_level_meta_record_count_key
 
+    attr_writer :top_level_meta_include_page_count
+
+    attr_writer :top_level_meta_page_count_key
+
+    attr_writer :allow_transactions
+
     attr_writer :exception_class_whitelist
 
     attr_writer :always_include_to_one_linkage_data
@@ -118,6 +219,16 @@ module JSONAPI
     attr_writer :always_include_to_many_linkage_data
 
     attr_writer :raise_if_parameters_not_allowed
+
+    attr_writer :use_relationship_reflection
+
+    attr_writer :resource_cache
+
+    attr_writer :default_resource_cache_field
+
+    attr_writer :resource_cache_digest_function
+
+    attr_writer :resource_cache_usage_report_function
   end
 
   class << self

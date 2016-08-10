@@ -529,6 +529,23 @@ class SerializerTest < ActionDispatch::IntegrationTest
     )
   end
 
+  def test_serializer_keeps_sorted_order_of_objects_with_self_referential_relationships
+    post1, post2, post3 = Post.find(1), Post.find(2), Post.find(3)
+    post1.parent_post = post3
+    ordered_posts = [post1, post2, post3]
+    serialized_data = JSONAPI::ResourceSerializer.new(
+      ParentApi::PostResource,
+      include: ['parent_post'],
+      base_url: 'http://example.com').serialize_to_hash(ordered_posts.map {|p| ParentApi::PostResource.new(p, nil)}
+    )[:data]
+
+    assert_equal(3, serialized_data.length)
+    assert_equal("1", serialized_data[0]["id"])
+    assert_equal("2", serialized_data[1]["id"])
+    assert_equal("3", serialized_data[2]["id"])
+  end
+
+
   def test_serializer_different_foreign_key
     serialized = JSONAPI::ResourceSerializer.new(
       PersonResource,
@@ -1418,7 +1435,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
           id: '1',
           attributes: {
             transactionDate: '04/15/2014',
-            cost: 12.05
+            cost: '12.05'
           },
           links: {
             self: '/expenseEntries/1'
@@ -1638,12 +1655,6 @@ class SerializerTest < ActionDispatch::IntegrationTest
                 self: '/preferences/1/relationships/author',
                 related: '/preferences/1/author'
               }
-            },
-            friends: {
-              links: {
-                self: '/preferences/1/relationships/friends',
-                related: '/preferences/1/friends'
-              }
             }
           }
         }
@@ -1669,10 +1680,10 @@ class SerializerTest < ActionDispatch::IntegrationTest
             spouse_name: 'Jane Author',
             bio: 'First man to run across Antartica.',
             quality_rating: 23.89/45.6,
-            salary: BigDecimal('47000.56', 30),
-            date_time_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00'),
-            birthday: Date.parse('1965-06-30'),
-            bedtime: Time.parse('2000-01-01 20:00:00 UTC +00:00'), #DB seems to set the date to 2001-01-01 for time types
+            salary: BigDecimal('47000.56', 30).as_json,
+            date_time_joined: DateTime.parse('2013-08-07 20:25:00 UTC +00:00').in_time_zone('UTC').as_json,
+            birthday: Date.parse('1965-06-30').as_json,
+            bedtime: Time.parse('2000-01-01 20:00:00 UTC +00:00').as_json, #DB seems to set the date to 2000-01-01 for time types
             photo: "abc",
             cool: false
           },
@@ -1736,4 +1747,653 @@ class SerializerTest < ActionDispatch::IntegrationTest
       serialized
     )
   end
+
+  def test_serializer_resource_meta_fixed_value
+    Api::V5::AuthorResource.class_eval do
+      def meta(options)
+        {
+          fixed: 'Hardcoded value',
+          computed: "#{self.class._type.to_s}: #{options[:serializer].link_builder.self_link(self)}"
+        }
+      end
+    end
+
+    serialized = JSONAPI::ResourceSerializer.new(
+      Api::V5::AuthorResource,
+      include: ['author_detail']
+    ).serialize_to_hash(Api::V5::AuthorResource.new(Person.find(1), nil))
+
+    assert_hash_equals(
+      {
+        data: {
+          type: 'authors',
+          id: '1',
+          attributes: {
+            name: 'Joe Author',
+          },
+          links: {
+            self: '/api/v5/authors/1'
+          },
+          relationships: {
+            posts: {
+              links: {
+                self: '/api/v5/authors/1/relationships/posts',
+                related: '/api/v5/authors/1/posts'
+              }
+            },
+            authorDetail: {
+              links: {
+                self: '/api/v5/authors/1/relationships/authorDetail',
+                related: '/api/v5/authors/1/authorDetail'
+              },
+              data: {type: 'authorDetails', id: '1'}
+            }
+          },
+          meta: {
+            fixed: 'Hardcoded value',
+            computed: 'authors: /api/v5/authors/1'
+          }
+        },
+        included: [
+          {
+            type: 'authorDetails',
+            id: '1',
+            attributes: {
+              authorStuff: 'blah blah'
+            },
+            links: {
+              self: '/api/v5/authorDetails/1'
+            }
+          }
+        ]
+      },
+      serialized
+    )
+  ensure
+    Api::V5::AuthorResource.class_eval do
+      def meta(options)
+        # :nocov:
+        { }
+        # :nocov:
+      end
+    end
+  end
+
+  def test_serialize_model_attr
+    @make = Make.first
+    serialized = JSONAPI::ResourceSerializer.new(
+      MakeResource,
+    ).serialize_to_hash(MakeResource.new(@make, nil))
+
+    assert_hash_equals(
+      {
+        "model" => "A model attribute"
+      },
+      serialized[:data]["attributes"]
+    )
+  end
+
+  def test_confusingly_named_attrs
+    @wp = WebPage.first
+    serialized = JSONAPI::ResourceSerializer.new(
+      WebPageResource,
+    ).serialize_to_hash(WebPageResource.new(@wp, nil))
+
+    assert_hash_equals(
+      {
+        :data=>{
+          "id"=>"#{@wp.id}",
+          "type"=>"webPages",
+          "links"=>{
+            :self=>"/webPages/#{@wp.id}"
+          },
+          "attributes"=>{
+            "href"=>"http://example.com",
+            "link"=>"http://link.example.com"
+          }
+        }
+      },
+      serialized
+    )
+  end
+
+  def test_questionable_has_one
+    # has_one
+    out, err = capture_io do
+      eval <<-CODE
+          class ::Questionable < ActiveRecord::Base
+            has_one :link
+            has_one :href
+          end
+          class ::QuestionableResource < JSONAPI::Resource
+            model_name '::Questionable'
+            has_one :link
+            has_one :href
+          end
+          cn = ::Questionable.new id: 1
+          puts JSONAPI::ResourceSerializer.new(
+            ::QuestionableResource,
+          ).serialize_to_hash(::QuestionableResource.new(cn, nil))
+      CODE
+    end
+    assert err.blank?
+    assert_equal(
+      {
+        :data=>{
+          "id"=>"1",
+          "type"=>"questionables",
+          "links"=>{
+            :self=>"/questionables/1"
+          },
+          "relationships"=>{
+            "link"=>{
+              :links=>{
+                :self=>"/questionables/1/relationships/link",
+                :related=>"/questionables/1/link"
+              }
+            },
+            "href"=>{
+              :links=>{
+                :self=>"/questionables/1/relationships/href",
+                :related=>"/questionables/1/href"
+              }
+            }
+          }
+        }
+      }.to_s,
+      out.strip
+    )
+  end
+
+  def test_questionable_has_many
+    # has_one
+    out, err = capture_io do
+      eval <<-CODE
+          class ::Questionable2 < ActiveRecord::Base
+            self.table_name = 'questionables'
+            has_many :links
+            has_many :hrefs
+          end
+          class ::Questionable2Resource < JSONAPI::Resource
+            model_name '::Questionable2'
+            has_many :links
+            has_many :hrefs
+          end
+          cn = ::Questionable2.new id: 1
+          puts JSONAPI::ResourceSerializer.new(
+            ::Questionable2Resource,
+          ).serialize_to_hash(::Questionable2Resource.new(cn, nil))
+      CODE
+    end
+    assert err.blank?
+    assert_equal(
+      {
+        :data=>{
+          "id"=>"1",
+          "type"=>"questionable2s",
+          "links"=>{
+            :self=>"/questionable2s/1"
+          },
+          "relationships"=>{
+            "links"=>{
+              :links=>{
+                :self=>"/questionable2s/1/relationships/links",
+                :related=>"/questionable2s/1/links"
+              }
+            },
+            "hrefs"=>{
+              :links=>{
+                :self=>"/questionable2s/1/relationships/hrefs",
+                :related=>"/questionable2s/1/hrefs"
+              }
+            }
+          }
+        }
+      }.to_s,
+      out.strip
+    )
+  end
+
+  def test_simple_custom_links
+    serialized_custom_link_resource = JSONAPI::ResourceSerializer.new(SimpleCustomLinkResource, base_url: 'http://example.com').serialize_to_hash(SimpleCustomLinkResource.new(Post.first, {}))
+
+    custom_link_spec = {
+        data: {
+          type: 'simpleCustomLinks',
+          id: '1',
+          attributes: {
+            title: "New post",
+            body: "A body!!!",
+            subject: "New post"
+          },
+        links: {
+          self: "http://example.com/simpleCustomLinks/1",
+          raw: "http://example.com/simpleCustomLinks/1/raw"
+        },
+        relationships: {
+          writer: {
+            links: {
+              self: "http://example.com/simpleCustomLinks/1/relationships/writer",
+              related: "http://example.com/simpleCustomLinks/1/writer"
+            }
+          },
+          section: {
+            links: {
+              self: "http://example.com/simpleCustomLinks/1/relationships/section",
+              related: "http://example.com/simpleCustomLinks/1/section"
+            }
+          },
+          comments: {
+            links: {
+              self: "http://example.com/simpleCustomLinks/1/relationships/comments",
+              related: "http://example.com/simpleCustomLinks/1/comments"
+            }
+          }
+        }
+      }
+    }
+
+    assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
+  end
+
+  def test_custom_links_with_custom_relative_paths
+    serialized_custom_link_resource = JSONAPI::ResourceSerializer
+      .new(CustomLinkWithRelativePathOptionResource, base_url: 'http://example.com')
+      .serialize_to_hash(CustomLinkWithRelativePathOptionResource.new(Post.first, {}))
+
+    custom_link_spec = {
+        data: {
+          type: 'customLinkWithRelativePathOptions',
+          id: '1',
+          attributes: {
+            title: "New post",
+            body: "A body!!!",
+            subject: "New post"
+          },
+        links: {
+          self: "http://example.com/customLinkWithRelativePathOptions/1",
+          raw: "http://example.com/customLinkWithRelativePathOptions/1/super/duper/path.xml"
+        },
+        relationships: {
+          writer: {
+            links: {
+              self: "http://example.com/customLinkWithRelativePathOptions/1/relationships/writer",
+              related: "http://example.com/customLinkWithRelativePathOptions/1/writer"
+            }
+          },
+          section: {
+            links: {
+              self: "http://example.com/customLinkWithRelativePathOptions/1/relationships/section",
+              related: "http://example.com/customLinkWithRelativePathOptions/1/section"
+            }
+          },
+          comments: {
+            links: {
+              self: "http://example.com/customLinkWithRelativePathOptions/1/relationships/comments",
+              related: "http://example.com/customLinkWithRelativePathOptions/1/comments"
+            }
+          }
+        }
+      }
+    }
+
+    assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
+  end
+
+  def test_custom_links_with_if_condition_equals_false
+    serialized_custom_link_resource = JSONAPI::ResourceSerializer
+      .new(CustomLinkWithIfCondition, base_url: 'http://example.com')
+      .serialize_to_hash(CustomLinkWithIfCondition.new(Post.first, {}))
+
+    custom_link_spec = {
+        data: {
+          type: 'customLinkWithIfConditions',
+          id: '1',
+          attributes: {
+            title: "New post",
+            body: "A body!!!",
+            subject: "New post"
+          },
+        links: {
+          self: "http://example.com/customLinkWithIfConditions/1",
+        },
+        relationships: {
+          writer: {
+            links: {
+              self: "http://example.com/customLinkWithIfConditions/1/relationships/writer",
+              related: "http://example.com/customLinkWithIfConditions/1/writer"
+            }
+          },
+          section: {
+            links: {
+              self: "http://example.com/customLinkWithIfConditions/1/relationships/section",
+              related: "http://example.com/customLinkWithIfConditions/1/section"
+            }
+          },
+          comments: {
+            links: {
+              self: "http://example.com/customLinkWithIfConditions/1/relationships/comments",
+              related: "http://example.com/customLinkWithIfConditions/1/comments"
+            }
+          }
+        }
+      }
+    }
+
+    assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
+  end
+
+  def test_custom_links_with_if_condition_equals_true
+    serialized_custom_link_resource = JSONAPI::ResourceSerializer
+      .new(CustomLinkWithIfCondition, base_url: 'http://example.com')
+      .serialize_to_hash(CustomLinkWithIfCondition.new(Post.find_by(title: "JR Solves your serialization woes!"), {}))
+
+    custom_link_spec = {
+        data: {
+          type: 'customLinkWithIfConditions',
+          id: '2',
+          attributes: {
+            title: "JR Solves your serialization woes!",
+            body: "Use JR",
+            subject: "JR Solves your serialization woes!"
+          },
+        links: {
+          self: "http://example.com/customLinkWithIfConditions/2",
+          conditional_custom_link: "http://example.com/customLinkWithIfConditions/2/conditional/link.json"
+        },
+        relationships: {
+          writer: {
+            links: {
+              self: "http://example.com/customLinkWithIfConditions/2/relationships/writer",
+              related: "http://example.com/customLinkWithIfConditions/2/writer"
+            }
+          },
+          section: {
+            links: {
+              self: "http://example.com/customLinkWithIfConditions/2/relationships/section",
+              related: "http://example.com/customLinkWithIfConditions/2/section"
+            }
+          },
+          comments: {
+            links: {
+              self: "http://example.com/customLinkWithIfConditions/2/relationships/comments",
+              related: "http://example.com/customLinkWithIfConditions/2/comments"
+            }
+          }
+        }
+      }
+    }
+
+    assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
+  end
+
+
+  def test_custom_links_with_lambda
+    # custom link is based on created_at timestamp of Post
+    post_created_at = Post.first.created_at
+    serialized_custom_link_resource = JSONAPI::ResourceSerializer
+      .new(CustomLinkWithLambda, base_url: 'http://example.com')
+      .serialize_to_hash(CustomLinkWithLambda.new(Post.first, {}))
+
+    custom_link_spec = {
+        data: {
+          type: 'customLinkWithLambdas',
+          id: '1',
+          attributes: {
+            title: "New post",
+            body: "A body!!!",
+            subject: "New post",
+            createdAt: post_created_at.as_json
+          },
+        links: {
+          self: "http://example.com/customLinkWithLambdas/1",
+          link_to_external_api: "http://external-api.com/posts/#{post_created_at.year}/#{post_created_at.month}/#{post_created_at.day}-New-post"
+        },
+        relationships: {
+          writer: {
+            links: {
+              self: "http://example.com/customLinkWithLambdas/1/relationships/writer",
+              related: "http://example.com/customLinkWithLambdas/1/writer"
+            }
+          },
+          section: {
+            links: {
+              self: "http://example.com/customLinkWithLambdas/1/relationships/section",
+              related: "http://example.com/customLinkWithLambdas/1/section"
+            }
+          },
+          comments: {
+            links: {
+              self: "http://example.com/customLinkWithLambdas/1/relationships/comments",
+              related: "http://example.com/customLinkWithLambdas/1/comments"
+            }
+          }
+        }
+      }
+    }
+
+    assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
+  end
+
+  def test_includes_two_relationships_with_same_foreign_key
+    serialized_resource = JSONAPI::ResourceSerializer
+      .new(PersonWithEvenAndOddPostsResource, include: ['even_posts','odd_posts'])
+      .serialize_to_hash(PersonWithEvenAndOddPostsResource.new(Person.find(1), nil))
+
+    assert_hash_equals(
+      {
+        data: {
+          id: "1",
+          type: "personWithEvenAndOddPosts",
+          links: {
+            self: "/personWithEvenAndOddPosts/1"
+          },
+          relationships: {
+            evenPosts: {
+              links: {
+                self: "/personWithEvenAndOddPosts/1/relationships/evenPosts",
+                related: "/personWithEvenAndOddPosts/1/evenPosts"
+              },
+              data: [
+                {
+                  type: "posts",
+                  id: "2"
+                }
+              ]
+            },
+            oddPosts: {
+              links: {
+                self: "/personWithEvenAndOddPosts/1/relationships/oddPosts",
+                related: "/personWithEvenAndOddPosts/1/oddPosts"
+              },
+              data:[
+                {
+                  type: "posts",
+                  id: "1"
+                },
+                {
+                  type: "posts",
+                  id: "11"
+                }
+              ]
+            }
+          }
+        },
+        included:[
+          {
+            id: "2",
+            type: "posts",
+            links: {
+              self: "/posts/2"
+            },
+            attributes: {
+              title: "JR Solves your serialization woes!",
+              body: "Use JR",
+              subject: "JR Solves your serialization woes!"
+            },
+            relationships: {
+              author: {
+                links: {
+                  self: "/posts/2/relationships/author",
+                  related: "/posts/2/author"
+                }
+              },
+              section: {
+                links: {
+                  self: "/posts/2/relationships/section",
+                  related: "/posts/2/section"
+                }
+              },
+              tags: {
+                links: {
+                  self: "/posts/2/relationships/tags",
+                  related: "/posts/2/tags"
+                }
+              },
+              comments: {
+                links: {
+                  self: "/posts/2/relationships/comments",
+                  related: "/posts/2/comments"
+                }
+              }
+            }
+          },
+          {
+            id: "1",
+            type: "posts",
+            links: {
+              self: "/posts/1"
+            },
+            attributes: {
+              title: "New post",
+              body: "A body!!!",
+              subject: "New post"
+            },
+            relationships: {
+              author: {
+                links: {
+                  self: "/posts/1/relationships/author",
+                  related: "/posts/1/author"
+                }
+              },
+              section: {
+                links: {
+                  self: "/posts/1/relationships/section",
+                  related: "/posts/1/section"
+                }
+              },
+              tags: {
+                links: {
+                  self: "/posts/1/relationships/tags",
+                  related: "/posts/1/tags"
+                }
+              },
+              comments: {
+                links: {
+                  self: "/posts/1/relationships/comments",
+                  related: "/posts/1/comments"
+                }
+              }
+            }
+          },
+          {
+            id: "11",
+            type: "posts",
+            links: {
+              self: "/posts/11"
+            },
+            attributes: {
+              title: "JR How To",
+              body: "Use JR to write API apps",
+              subject: "JR How To"
+            },
+            relationships: {
+              author: {
+                links: {
+                  self: "/posts/11/relationships/author",
+                  related: "/posts/11/author"
+                }
+              },
+              section: {
+                links: {
+                  self: "/posts/11/relationships/section",
+                  related: "/posts/11/section"
+                }
+              },
+              tags: {
+                links: {
+                  self: "/posts/11/relationships/tags",
+                  related: "/posts/11/tags"
+                }
+              },
+              comments: {
+                links: {
+                  self: "/posts/11/relationships/comments",
+                  related: "/posts/11/comments"
+                }
+              }
+            }
+          }
+        ]
+      },
+      serialized_resource
+    )
+  end
+
+  def test_config_keys_stable
+    (serializer_a, serializer_b) = 2.times.map do
+      JSONAPI::ResourceSerializer.new(
+        PostResource,
+        include: ['comments', 'author', 'comments.tags', 'author.posts'],
+        fields: {
+          people: [:email, :comments],
+          posts: [:title],
+          tags: [:name],
+          comments: [:body, :post]
+        }
+      )
+    end
+
+    assert_equal serializer_a.config_key(PostResource), serializer_b.config_key(PostResource)
+  end
+
+  def test_config_keys_vary_with_relevant_config_changes
+    serializer_a = JSONAPI::ResourceSerializer.new(
+      PostResource,
+      fields: { posts: [:title] }
+    )
+    serializer_b = JSONAPI::ResourceSerializer.new(
+      PostResource,
+      fields: { posts: [:title, :body] }
+    )
+
+    assert_not_equal serializer_a.config_key(PostResource), serializer_b.config_key(PostResource)
+  end
+
+  def test_config_keys_stable_with_irrelevant_config_changes
+    serializer_a = JSONAPI::ResourceSerializer.new(
+      PostResource,
+      fields: { posts: [:title, :body], people: [:name, :email] }
+    )
+    serializer_b = JSONAPI::ResourceSerializer.new(
+      PostResource,
+      fields: { posts: [:title, :body], people: [:name] }
+    )
+
+    assert_equal serializer_a.config_key(PostResource), serializer_b.config_key(PostResource)
+  end
+
+  def test_config_keys_stable_with_different_primary_resource
+    serializer_a = JSONAPI::ResourceSerializer.new(
+      PostResource,
+      fields: { posts: [:title, :body], people: [:name, :email] }
+    )
+    serializer_b = JSONAPI::ResourceSerializer.new(
+      PersonResource,
+      fields: { posts: [:title, :body], people: [:name, :email] }
+    )
+
+    assert_equal serializer_a.config_key(PostResource), serializer_b.config_key(PostResource)
+  end
+
 end

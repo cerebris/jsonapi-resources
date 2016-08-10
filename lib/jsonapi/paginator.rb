@@ -58,7 +58,7 @@ class OffsetPaginator < JSONAPI::Paginator
 
       previous_offset = 0 if previous_offset < 0
 
-      links_page_params['previous'] = {
+      links_page_params['prev'] = {
         'offset' => previous_offset,
         'limit' => @limit
       }
@@ -131,6 +131,10 @@ class PagedPaginator < JSONAPI::Paginator
     true
   end
 
+  def calculate_page_count(record_count)
+    (record_count / @size.to_f).ceil
+  end
+
   def apply(relation, _order_options)
     offset = (@number - 1) * @size
     relation.offset(offset).limit(@size)
@@ -138,7 +142,7 @@ class PagedPaginator < JSONAPI::Paginator
 
   def links_page_params(options = {})
     record_count = options[:record_count]
-    page_count = (record_count / @size.to_f).ceil
+    page_count = calculate_page_count(record_count)
 
     links_page_params = {}
 
@@ -148,7 +152,7 @@ class PagedPaginator < JSONAPI::Paginator
     }
 
     if @number > 1
-      links_page_params['previous'] = {
+      links_page_params['prev'] = {
         'number' => @number - 1,
         'size' => @size
       }

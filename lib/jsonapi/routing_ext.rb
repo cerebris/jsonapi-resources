@@ -33,13 +33,27 @@ module ActionDispatch
           end
 
           resource @resource_type, options do
-            @scope[:jsonapi_resource] = @resource_type
+            # :nocov:
+            if @scope.respond_to? :[]=
+              # Rails 4
+              @scope[:jsonapi_resource] = @resource_type
 
-            if block_given?
-              yield
+              if block_given?
+                yield
+              else
+                jsonapi_relationships
+              end
             else
-              jsonapi_relationships
+              # Rails 5
+              jsonapi_resource_scope(SingletonResource.new(@resource_type, api_only?, @scope[:shallow], options), @resource_type) do
+                if block_given?
+                  yield
+                else
+                  jsonapi_relationships
+                end
+              end
             end
+            # :nocov:
           end
         end
 
@@ -69,7 +83,8 @@ module ActionDispatch
           options[:path] = format_route(@resource_type)
 
           if res.resource_key_type == :uuid
-            options[:constraints] = {id: /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(,[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})*/}
+            options[:constraints] ||= {}
+            options[:constraints][:id] ||= /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
           end
 
           if options[:except]
@@ -80,14 +95,33 @@ module ActionDispatch
             options[:except] = [:new, :edit]
           end
 
-          resources @resource_type, options do
-            @scope[:jsonapi_resource] = @resource_type
+          if res._immutable
+            options[:except] << :create
+            options[:except] << :update
+            options[:except] << :destroy
+          end
 
-            if block_given?
-              yield
+          resources @resource_type, options do
+            # :nocov:
+            if @scope.respond_to? :[]=
+              # Rails 4
+              @scope[:jsonapi_resource] = @resource_type
+              if block_given?
+                yield
+              else
+                jsonapi_relationships
+              end
             else
-              jsonapi_relationships
+              # Rails 5
+              jsonapi_resource_scope(Resource.new(@resource_type, api_only?, @scope[:shallow], options), @resource_type) do
+                if block_given?
+                  yield
+                else
+                  jsonapi_relationships
+                end
+              end
             end
+            # :nocov:
           end
         end
 
@@ -117,14 +151,16 @@ module ActionDispatch
                                                                   action: 'show_relationship', relationship: link_type.to_s, via: [:get]
           end
 
-          if methods.include?(:update)
-            match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                                                                  action: 'update_relationship', relationship: link_type.to_s, via: [:put, :patch]
-          end
+          if res.mutable?
+            if methods.include?(:update)
+              match "relationships/#{formatted_relationship_name}", controller: options[:controller],
+                                                                    action: 'update_relationship', relationship: link_type.to_s, via: [:put, :patch]
+            end
 
-          if methods.include?(:destroy)
-            match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                                                                  action: 'destroy_relationship', relationship: link_type.to_s, via: [:delete]
+            if methods.include?(:destroy)
+              match "relationships/#{formatted_relationship_name}", controller: options[:controller],
+                                                                    action: 'destroy_relationship', relationship: link_type.to_s, via: [:delete]
+            end
           end
         end
 
@@ -143,19 +179,21 @@ module ActionDispatch
                                                                   action: 'show_relationship', relationship: link_type.to_s, via: [:get]
           end
 
-          if methods.include?(:create)
-            match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                                                                  action: 'create_relationship', relationship: link_type.to_s, via: [:post]
-          end
+          if res.mutable?
+            if methods.include?(:create)
+              match "relationships/#{formatted_relationship_name}", controller: options[:controller],
+                                                                    action: 'create_relationship', relationship: link_type.to_s, via: [:post]
+            end
 
-          if methods.include?(:update)
-            match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                                                                  action: 'update_relationship', relationship: link_type.to_s, via: [:put, :patch]
-          end
+            if methods.include?(:update)
+              match "relationships/#{formatted_relationship_name}", controller: options[:controller],
+                                                                    action: 'update_relationship', relationship: link_type.to_s, via: [:put, :patch]
+            end
 
-          if methods.include?(:destroy)
-            match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                                                                        action: 'destroy_relationship', relationship: link_type.to_s, via: [:delete]
+            if methods.include?(:destroy)
+              match "relationships/#{formatted_relationship_name}", controller: options[:controller],
+                                                                          action: 'destroy_relationship', relationship: link_type.to_s, via: [:delete]
+            end
           end
         end
 
@@ -196,6 +234,16 @@ module ActionDispatch
                                                   action: 'get_related_resources', via: [:get]
         end
 
+        protected
+        # :nocov:
+        def jsonapi_resource_scope(resource, resource_type) #:nodoc:
+          @scope = @scope.new(scope_level_resource: resource, jsonapi_resource: resource_type)
+
+          controller(resource.resource_scope) { yield }
+        ensure
+          @scope = @scope.parent
+        end
+        # :nocov:
         private
 
         def resource_type_with_module_prefix(resource = nil)

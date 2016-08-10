@@ -57,3 +57,23 @@ post_14_whiny:
 post_14_grumpy:
   post_id: 14
   tag_id: 3
+
+post_15_11:
+  post_id: 15
+  tag_id: 11
+
+post_15_2:
+  post_id: 15
+  tag_id: 2
+
+post_15_4:
+  post_id: 15
+  tag_id: 4
+
+post_15_10:
+  post_id: 15
+  tag_id: 10
+
+post_15_16:
+  post_id: 15
+  tag_id: 16
