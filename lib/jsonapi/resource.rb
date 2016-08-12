@@ -433,7 +433,7 @@ module JSONAPI
       end
 
       def resource_for(type)
-        type_with_module = type.include?('/') ? type : module_path + type
+        type_with_module = module_path + type
 
         resource_name = _resource_name_from_type(type_with_module)
         resource = resource_name.safe_constantize if resource_name
@@ -554,10 +554,9 @@ module JSONAPI
         resource_type = ((resource.is_a?(Class)) && (resource < JSONAPI::Resource)) ? resource._type : resource.to_s
 
         _model_hints[model_name.to_s.gsub('::', '/').underscore] = resource_type.to_s
-      end
 
-      def model_type(type)
-        @_type = type.to_sym
+        # Using the resource hint to override the type
+        @_type = resource_type.to_s
       end
 
       def filters(*attrs)
@@ -1001,10 +1000,13 @@ module JSONAPI
       def module_path
         if name == 'JSONAPI::Resource'
           ''
-        elsif @_type =~ /\//
-          name.gsub('::', '/').chomp('Resource').underscore.gsub(@_type.to_s, '')
         else
-          name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').underscore : ''
+          model_name = _model_class.to_s.underscore
+          if _model_hints[model_name] && _model_hints[model_name].include?('/')
+            name.gsub('::', '/').chomp('Resource').underscore.gsub("#{_model_hints[model_name]}".underscore, '')
+          else
+            name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').underscore : ''
+          end
         end
       end
 
