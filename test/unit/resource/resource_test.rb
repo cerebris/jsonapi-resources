@@ -88,6 +88,13 @@ module MyModule
   class RelatedResource < JSONAPI::Resource
     model_name "Comment"
   end
+
+  class Project
+    class PersonResource < JSONAPI::Resource
+      model_name 'Project::Person'
+      model_type 'project/person'
+    end
+  end
 end
 
 module MyAPI
@@ -138,6 +145,18 @@ class ResourceTest < ActiveSupport::TestCase
     assert_raises NameError do
       JSONAPI::Resource.resource_for('related')
     end
+  end
+
+  def test_model_name_for_nested_model
+    assert_equal(MyModule::Project::PersonResource._model_name, :'Project::Person')
+  end
+
+  def test_module_path_for_nested_model
+    assert_equal(MyModule::Project::PersonResource.module_path, 'my_module/')
+  end
+
+  def test_module_type_for_nested_model
+    assert_equal(MyModule::Project::PersonResource._type, :'project/person')
   end
 
   def test_resource_for_namespaced_resource

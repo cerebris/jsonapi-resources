@@ -209,7 +209,7 @@ module ActionDispatch
           if relationship.polymorphic?
             options[:controller] ||= relationship.class_name.underscore.pluralize
           else
-            related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(relationship.class_name.underscore.pluralize))
+            related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(relationship.class_name.underscore.pluralize, source.module_path.chomp('/')))
             options[:controller] ||= related_resource._type.to_s
           end
 
@@ -226,7 +226,7 @@ module ActionDispatch
           relationship = source._relationships[relationship_name]
 
           formatted_relationship_name = format_route(relationship.name)
-          related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(relationship.class_name.underscore))
+          related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(relationship.class_name.underscore, source.module_path.chomp('/')))
           options[:controller] ||= related_resource._type.to_s
 
           match "#{formatted_relationship_name}", controller: options[:controller],
@@ -246,9 +246,10 @@ module ActionDispatch
         # :nocov:
         private
 
-        def resource_type_with_module_prefix(resource = nil)
+        def resource_type_with_module_prefix(resource = nil, resource_path = nil)
           resource_name = resource || @scope[:jsonapi_resource]
-          [@scope[:module], resource_name].compact.collect(&:to_s).join('/')
+          resource_path = resource_path || @scope[:module]
+          [resource_path, resource_name].compact.collect(&:to_s).join('/')
         end
       end
     end
