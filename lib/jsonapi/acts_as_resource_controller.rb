@@ -8,8 +8,6 @@ module JSONAPI
     def self.included(base)
       base.extend ClassMethods
       base.include Callbacks
-      base.before_action :ensure_correct_media_type, only: [:create, :update, :create_relationship, :update_relationship]
-      base.before_action :ensure_valid_accept_media_type
       base.cattr_reader :server_error_callbacks
       base.define_jsonapi_resources_callbacks :process_operations
     end
@@ -27,18 +25,22 @@ module JSONAPI
     end
 
     def create
+      return unless verify_content_type_header
       process_request
     end
 
     def create_relationship
+      return unless verify_content_type_header
       process_request
     end
 
     def update_relationship
+      return unless verify_content_type_header
       process_request
     end
 
     def update
+      return unless verify_content_type_header
       process_request
     end
 
@@ -59,6 +61,8 @@ module JSONAPI
     end
 
     def process_request
+      return unless verify_accept_header
+
       @request = JSONAPI::RequestParser.new(params, context: context,
                                             key_formatter: key_formatter,
                                             server_error_callbacks: (self.class.server_error_callbacks || []))
@@ -134,20 +138,24 @@ module JSONAPI
       @resource_klass_name ||= "#{self.class.name.underscore.sub(/_controller$/, '').singularize}_resource".camelize
     end
 
-    def ensure_correct_media_type
+    def verify_content_type_header
       unless request.content_type == JSONAPI::MEDIA_TYPE
         fail JSONAPI::Exceptions::UnsupportedMediaTypeError.new(request.content_type)
       end
+      true
     rescue => e
       handle_exceptions(e)
+      false
     end
 
-    def ensure_valid_accept_media_type
+    def verify_accept_header
       unless valid_accept_media_type?
         fail JSONAPI::Exceptions::NotAcceptableError.new(request.accept)
       end
+      true
     rescue => e
       handle_exceptions(e)
+      false
     end
 
     def valid_accept_media_type?
