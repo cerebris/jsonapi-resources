@@ -96,7 +96,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_get_accepting_multiple_content_types
     get '/posts', headers:
       {
-        'Accept': "application/json, #{JSONAPI::MEDIA_TYPE}, */*"
+        'Accept' => "application/json, #{JSONAPI::MEDIA_TYPE}, */*"
       }
     assert_equal 200, status
   end
