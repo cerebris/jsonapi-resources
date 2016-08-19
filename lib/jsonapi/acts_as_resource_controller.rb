@@ -2,7 +2,7 @@ require 'csv'
 
 module JSONAPI
   module ActsAsResourceController
-    MEDIA_TYPE_MATCHER = /(.+".+"[^,]*|[^,]+)/
+    MEDIA_TYPE_MATCHER = /.+".+"[^,]*|[^,]+/
     ALL_MEDIA_TYPES = '*/*'
 
     def self.included(base)
@@ -169,7 +169,7 @@ module JSONAPI
 
     def media_types_for(header)
       (request.headers[header] || '')
-        .match(MEDIA_TYPE_MATCHER)
+        .scan(MEDIA_TYPE_MATCHER)
         .to_a
         .map(&:strip)
     end
