@@ -121,7 +121,7 @@ class RequestTest < ActionDispatch::IntegrationTest
         }
       }.to_json,
       headers: {
-        'CONTENT_TYPE' => 'application/json',
+        'CONTENT_TYPE' => nil,
         'Accept' => JSONAPI::MEDIA_TYPE
       }
 
