@@ -1652,6 +1652,11 @@ module MyEngine
   end
 end
 
+module ApiV2Engine
+  class PersonResource < JSONAPI::Resource
+  end
+end
+
 module Legacy
   class FlatPost < ActiveRecord::Base
     self.table_name = "posts"

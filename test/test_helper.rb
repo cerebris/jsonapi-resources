@@ -67,6 +67,12 @@ module MyEngine
   end
 end
 
+module ApiV2Engine
+  class Engine < ::Rails::Engine
+    isolate_namespace ApiV2Engine
+  end
+end
+
 # Patch RAILS 4.0 to not use millisecond precision
 if Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR < 1
   module ActiveSupport
@@ -389,6 +395,7 @@ TestApp.routes.draw do
   end
 
   mount MyEngine::Engine => "/boomshaka", as: :my_engine
+  mount ApiV2Engine::Engine => "/api_v2", as: :api_v2_engine
 end
 
 MyEngine::Engine.routes.draw do
@@ -409,6 +416,10 @@ MyEngine::Engine.routes.draw do
       jsonapi_resources :people
     end
   end
+end
+
+ApiV2Engine::Engine.routes.draw do
+  jsonapi_resources :people
 end
 
 # Ensure backward compatibility with Minitest 4
