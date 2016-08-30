@@ -1075,6 +1075,19 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal ruby.id, post_object.section_id
   end
 
+  def test_update_relationship_to_one_nil
+    set_content_type_header!
+    ruby = Section.find_by(name: 'ruby')
+    post_object = Post.find(4)
+    assert_not_equal ruby.id, post_object.section_id
+
+    put :update_relationship, params: {post_id: 4, relationship: 'section', data: nil}
+
+    assert_response :no_content
+    post_object = Post.find(4)
+    assert_equal nil, post_object.section_id
+  end
+
   def test_update_relationship_to_one_invalid_links_hash_keys_ids
     set_content_type_header!
     put :update_relationship, params: {post_id: 3, relationship: 'section', data: {type: 'sections', ids: 'foo'}}
