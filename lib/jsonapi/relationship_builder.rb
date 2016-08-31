@@ -129,7 +129,9 @@ module JSONAPI
           records = resource_klass.apply_filters(records, filters, options)
         end
 
-        sort_criteria =  options.fetch(:sort_criteria, {})
+        records = resource_klass.apply_includes(records, options)
+
+        sort_criteria = options.fetch(:sort_criteria, {})
         unless sort_criteria.nil? || sort_criteria.empty?
           order_options = relationship.resource_klass.construct_order_options(sort_criteria)
           records = resource_klass.apply_sort(records, order_options, @context)

@@ -141,6 +141,7 @@ module JSONAPI
       source_id = params[:source_id]
       relationship_type = params[:relationship_type]
       filters = params[:filters]
+      include_directives = params[:include_directives]
       sort_criteria = params[:sort_criteria]
       paginator = params[:paginator]
       fields = params[:fields]
@@ -149,7 +150,8 @@ module JSONAPI
 
       related_resources = source_resource.public_send(relationship_type,
                                                       context: context,
-                                                      filters:  filters,
+                                                      filters: filters,
+                                                      include_directives: include_directives,
                                                       sort_criteria: sort_criteria,
                                                       paginator: paginator,
                                                       fields: fields)
