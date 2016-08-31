@@ -93,7 +93,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration = original_config
   end
 
-  def test_get_accepting_multiple_content_types
+  def test_get_multiple_accept_media_types
     get '/posts', headers:
       {
         'Accept' => "application/json, #{JSONAPI::MEDIA_TYPE}, */*"
@@ -121,7 +121,7 @@ class RequestTest < ActionDispatch::IntegrationTest
         }
       }.to_json,
       headers: {
-        'CONTENT_TYPE' => 'application/json',
+        'CONTENT_TYPE' => nil,
         'Accept' => JSONAPI::MEDIA_TYPE
       }
 
