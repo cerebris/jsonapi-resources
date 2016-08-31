@@ -1041,20 +1041,6 @@ module JSONAPI
 
       private
 
-      def find_records(filters, options = {})
-        context = options[:context]
-
-        records = filter_records(filters, options)
-
-        sort_criteria = options.fetch(:sort_criteria) { [] }
-        order_options = construct_order_options(sort_criteria)
-        records = sort_records(records, order_options, context)
-
-        records = apply_pagination(records, options[:paginator], order_options)
-
-        records
-      end
-
       def cached_resources_for(records, serializer, options)
         if records.is_a?(Array) && records.all?{|rec| rec.is_a?(JSONAPI::Resource)}
           resources = records.map{|r| [r.id, r] }.to_h
