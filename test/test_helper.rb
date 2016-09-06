@@ -56,12 +56,19 @@ class TestApp < Rails::Application
   if Rails::VERSION::MAJOR >= 5
     config.active_support.halt_callback_chains_on_return_false = false
     config.active_record.time_zone_aware_types = [:time, :datetime]
+    config.active_record.belongs_to_required_by_default = false
   end
 end
 
 module MyEngine
   class Engine < ::Rails::Engine
     isolate_namespace MyEngine
+  end
+end
+
+module ApiV2Engine
+  class Engine < ::Rails::Engine
+    isolate_namespace ApiV2Engine
   end
 end
 
@@ -362,6 +369,7 @@ TestApp.routes.draw do
   end
 
   mount MyEngine::Engine => "/boomshaka", as: :my_engine
+  mount ApiV2Engine::Engine => "/api_v2", as: :api_v2_engine
 end
 
 MyEngine::Engine.routes.draw do
@@ -382,6 +390,10 @@ MyEngine::Engine.routes.draw do
       jsonapi_resources :people
     end
   end
+end
+
+ApiV2Engine::Engine.routes.draw do
+  jsonapi_resources :people
 end
 
 # Ensure backward compatibility with Minitest 4

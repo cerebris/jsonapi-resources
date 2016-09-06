@@ -95,7 +95,12 @@ module JSONAPI
       scopes         = module_scopes_from_class(klass)[1..-1]
       base_path_name = scopes.map { |scope| scope.underscore }.join("_")
       end_path_name  = klass._type.to_s
-      "#{ base_path_name }_#{ end_path_name }_path"
+
+      if base_path_name.blank?
+        "#{ end_path_name }_path"
+      else
+        "#{ base_path_name }_#{ end_path_name }_path"
+      end
     end
 
     def format_route(route)

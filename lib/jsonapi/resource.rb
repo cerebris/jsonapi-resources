@@ -698,7 +698,7 @@ module JSONAPI
         if strategy
           if strategy.is_a?(Symbol) || strategy.is_a?(String)
             send(strategy, records, value, options)
-          elsif strategy.is_a?(JSONAPI::Filter)
+          elsif strategy.respond_to?(:apply)
             strategy.apply(records, value, options)
           elsif strategy.respond_to?(:call)
             strategy.call(records, value, options)
@@ -835,7 +835,7 @@ module JSONAPI
         if strategy
           if strategy.is_a?(Symbol) || strategy.is_a?(String)
             values = send(strategy, filter_values, context)
-          elsif strategy.is_a?(JSONAPI::Filter)
+          elsif strategy.respond_to?(:verify)
             values = strategy.verify(filter_values, context)
           elsif strategy.respond_to?(:call)
             values = strategy.call(filter_values, context)
@@ -1060,20 +1060,6 @@ module JSONAPI
 
       private
 
-      def find_records(filters, options = {})
-        context = options[:context]
-
-        records = filter_records(filters, options)
-
-        sort_criteria = options.fetch(:sort_criteria) { [] }
-        order_options = construct_order_options(sort_criteria)
-        records = sort_records(records, order_options, context)
-
-        records = apply_pagination(records, options[:paginator], order_options)
-
-        records
-      end
-
       def cached_resources_for(records, serializer, options)
         if records.is_a?(Array) && records.all?{|rec| rec.is_a?(JSONAPI::Resource)}
           resources = records.map{|r| [r.id, r] }.to_h
@@ -1102,22 +1088,6 @@ module JSONAPI
         records = apply_pagination(records, options[:paginator], order_options)
 
         records
-      end
-
-      def cached_resources_for(records, serializer, options)
-        if records.is_a?(Array) && records.all?{|rec| rec.is_a?(JSONAPI::Resource)}
-          resources = records.map{|r| [r.id, r] }.to_h
-        elsif self.caching?
-          t = _model_class.arel_table
-          cache_ids = pluck_arel_attributes(records, t[_primary_key], t[_cache_field])
-          resources = CachedResourceFragment.fetch_fragments(self, serializer, options[:context], cache_ids)
-        else
-          resources = resources_for(records, options).map{|r| [r.id, r] }.to_h
-        end
-
-        preload_included_fragments(resources, records, serializer, options)
-
-        resources.values
       end
 
       # Determines what filter strategy to use for a specific filter/attribute

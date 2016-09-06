@@ -353,16 +353,14 @@ module JSONAPI
     end
 
     def to_one_linkage(source, relationship)
-      linkage = {}
       linkage_id = foreign_key_value(source, relationship)
+      linkage_type = format_key(relationship.type_for_source(source))
+      return unless linkage_id.present? && linkage_type.present?
 
-      if linkage_id
-        linkage[:type] = format_key(relationship.type_for_source(source))
-        linkage[:id] = linkage_id
-      else
-        linkage = nil
-      end
-      linkage
+      {
+        type: linkage_type,
+        id: linkage_id,
+      }
     end
 
     def to_many_linkage(source, relationship)
@@ -390,7 +388,9 @@ module JSONAPI
       end
 
       linkage_types_and_values.each do |type, value|
-        linkage.append({type: format_key(type), id: @id_formatter.format(value)})
+        if type && value
+          linkage.append({type: format_key(type), id: @id_formatter.format(value)})
+        end
       end
       linkage
     end
@@ -427,11 +427,11 @@ module JSONAPI
     def foreign_key_value(source, relationship)
       related_resource_id = if source.preloaded_fragments.has_key?(format_key(relationship.name))
         source.preloaded_fragments[format_key(relationship.name)].values.first.try(:id)
-      elsif source._model.respond_to?("#{relationship.name}_id")
+      elsif source.respond_to?("#{relationship.name}_id")
         # If you have direct access to the underlying id, you don't have to load the relationship
         # which can save quite a lot of time when loading a lot of data.
         # This does not apply to e.g. has_one :through relationships.
-        source._model.public_send("#{relationship.name}_id")
+        source.public_send("#{relationship.name}_id")
       else
         source.public_send(relationship.name).try(:id)
       end

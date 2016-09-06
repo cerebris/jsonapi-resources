@@ -184,7 +184,7 @@ module JSONAPI
     end
 
     def exception_class_whitelisted?(e)
-      @exception_class_whitelist.flatten.any? { |k| e.class.ancestors.include?(k) }
+      @exception_class_whitelist.flatten.any? { |k| e.class.ancestors.map(&:to_s).include?(k.to_s) }
     end
 
     def default_processor_klass=(default_processor_klass)
