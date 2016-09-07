@@ -1495,6 +1495,15 @@ post = Post.find(1)
 JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(PostResource.new(post, nil))
 ```
 
+Note: If your resource needs to access to state from a context hash, make sure to pass the context hash as the second argument of
+the resource class new method. For example:
+
+```ruby
+post = Post.find(1)
+context = { current_user: current_user }
+JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(PostResource.new(post, context))
+```
+
 This returns results like this:
 
 ```json
