@@ -580,6 +580,7 @@ class PostsController < BaseController
 
   class SpecialError < StandardError; end
   class SubSpecialError < PostsController::SpecialError; end
+  class SerializeError < StandardError; end
 
   # This is used to test that classes that are whitelisted are reraised by
   # the operations dispatcher.
@@ -599,6 +600,20 @@ class PostsController < BaseController
   #called by test_on_server_error
   def self.set_callback_message(error)
     @callback_message = "Sent from method"
+  end
+
+  def resource_serializer_klass
+    PostSerializer
+  end
+end
+
+class PostSerializer < JSONAPI::ResourceSerializer
+  def initialize(*)
+    if $PostSerializerRaisesErrors
+      raise PostsController::SerializeError
+    else
+      super
+    end
   end
 end
 
@@ -980,12 +995,12 @@ class PostResource < JSONAPI::Resource
          }
 
   filter :search,
-    verify: ->(values, context) {
+         verify: ->(values, context) {
       values.all?{|v| (v.is_a?(Hash) || v.is_a?(ActionController::Parameters)) } && values
-    },
-    apply: -> (records, values, _options) {
-      records.where(title: values.first['title'])
-    }
+         },
+         apply: -> (records, values, _options) {
+           records.where(title: values.first['title'])
+         }
 
   def self.updatable_fields(context)
     super(context) - [:author, :subject]
@@ -1252,7 +1267,7 @@ class CustomLinkWithLambda < JSONAPI::Resource
 
   def custom_links(options)
     {
-      link_to_external_api: "http://external-api.com/posts/#{ created_at.year }/#{ created_at.month }/#{ created_at.day }-#{ subject.gsub(' ', '-') }"
+        link_to_external_api: "http://external-api.com/posts/#{ created_at.year }/#{ created_at.month }/#{ created_at.day }-#{ subject.gsub(' ', '-') }"
     }
   end
 end
@@ -1513,28 +1528,28 @@ module Api
 
       has_one :customer
       has_many :line_items, relation_name: -> (options = {}) {
-                            context = options[:context]
-                            current_user = context ? context[:current_user] : nil
+        context = options[:context]
+        current_user = context ? context[:current_user] : nil
 
-                            unless current_user && current_user.book_admin
-                              :line_items
-                            else
-                              :admin_line_items
-                            end
-                          },
+        unless current_user && current_user.book_admin
+          :line_items
+        else
+          :admin_line_items
+        end
+      },
                reflect: false
 
       has_many :order_flags, acts_as_set: true,
                relation_name: -> (options = {}) {
-                             context = options[:context]
-                             current_user = context ? context[:current_user] : nil
+                 context = options[:context]
+                 current_user = context ? context[:current_user] : nil
 
-                             unless current_user && current_user.book_admin
-                               :order_flags
-                             else
-                               :admin_order_flags
-                             end
-                           }
+                 unless current_user && current_user.book_admin
+                   :order_flags
+                 else
+                   :admin_order_flags
+                 end
+               }
     end
 
     class OrderFlagResource < JSONAPI::Resource
