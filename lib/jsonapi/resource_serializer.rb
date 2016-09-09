@@ -171,9 +171,9 @@ module JSONAPI
     end
 
     def links_hash(source)
-      {
-        self: link_builder.self_link(source)
-      }.merge(custom_links_hash(source)).compact
+      links = custom_links_hash(source)
+      links[:self] = link_builder.self_link(source) unless links.key?(:self)
+      links.compact
     end
 
     def custom_links_hash(source)
