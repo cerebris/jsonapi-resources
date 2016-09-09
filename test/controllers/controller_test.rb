@@ -140,7 +140,6 @@ class PostsControllerTest < ActionController::TestCase
   ensure
     $PostSerializerRaisesErrors = false
     JSONAPI.configuration = original_config
-    JSONAPI.configuration.exception_class_whitelist = []
   end
 
   def test_on_server_error_callback_without_exception
