@@ -32,6 +32,12 @@ module ActionDispatch
             options[:except] = [:new, :edit]
           end
 
+          if res._immutable
+            options[:except] << :create  unless options[:except].include?(:create)  || options[:except].include?('create')
+            options[:except] << :update  unless options[:except].include?(:update)  || options[:except].include?('update')
+            options[:except] << :destroy unless options[:except].include?(:destroy) || options[:except].include?('destroy')
+          end
+
           resource @resource_type, options do
             # :nocov:
             if @scope.respond_to? :[]=
@@ -96,9 +102,9 @@ module ActionDispatch
           end
 
           if res._immutable
-            options[:except] << :create
-            options[:except] << :update
-            options[:except] << :destroy
+            options[:except] << :create  unless options[:except].include?(:create)  || options[:except].include?('create')
+            options[:except] << :update  unless options[:except].include?(:update)  || options[:except].include?('update')
+            options[:except] << :destroy unless options[:except].include?(:destroy) || options[:except].include?('destroy')
           end
 
           resources @resource_type, options do
