@@ -629,9 +629,9 @@ end
 Then a request could pass in a filter for example `http://example.com/contacts?filter[name_last]=Smith` and the system
 will find all people where the last name exactly matches Smith.
 
-##### Default Filters
+##### Default Filter Values
 
-A default filter may be defined for a resource using the `default` option on the `filter` method. This default is used
+A default filter value may be defined for a resource using the `default` option on the `filter` method. This default value is used
 unless the request overrides this value.
 
 For example:
@@ -648,6 +648,83 @@ end
 
 The default value is used as if it came from the request.
 
+##### Custom Filters
+
+You may provide custom filters to alter the behaviour of filtering by supplying a class/object that descends from
+the `JSONAPI::Filter` class.
+
+This example shows how you can implement a custom filter used for multiple attributes.
+
+```ruby
+class NameFilter < JSONAPI::Filter
+  def initialize(force_lowercase: false)
+    @force_lowercase = force_lowercase
+  end
+
+  def verify(values, context)
+    [*values].map do |value|
+      if @force_lowercase && value.respond_to?(:downcase)
+        value.downcase
+      else
+        value
+      end
+    end
+  end
+
+  def apply(records, value, _options)
+    records.where(filter => value)
+  end
+end
+
+# providing a filter class to one attribute
+filter :name, with: NameFilter
+
+# providing a filter instance to one attribute
+filter :middle_name, with: NameFilter.new(force_lowercase: true)
+
+# providing a filter to multiple attributes
+filters :first_name, :last_name, with: NameFilter
+```
+
+##### Resource Filter
+
+The default filter for a specific resource can be set using `resource_filter` in your resource. For example, in your
+resource:
+
+```ruby
+# providing a filter class
+resource_filter NameFilter
+
+# providing an filter instance
+resource_filter NameFilter.new(force_lowercase: true)
+
+filters :name, :first_name, :middle_name, :last_name
+```
+
+Alternately you can set a default filter only for the apply or verify filters as demonstrated in this example:
+
+```ruby
+# providing a filter class to be used for the `verify` step
+resource_filter verify: LowercaseStringFilter
+
+# providing a filter class to be used for the `apply` step
+resource_filter apply: NameFilter
+
+filters :name, :first_name, :middle_name, :last_name
+```
+
+##### Default Filter Configuration
+
+The default filter, which will be used for all resources, is set using `JSONAPI.configure`. For example, in your
+`config/initializers/jsonapi_resources.rb`:
+
+```ruby
+JSONAPI.configure do |config|
+  # filters must be a desdendent of the `JSONAPI::Filter` class
+  config.default_filter = MyCustomFilter
+end
+```
+
 ##### Applying Filters
 
 You may customize how a filter behaves by supplying a callable to the `:apply` option. This callable will be used to
@@ -657,7 +734,7 @@ apply that filter. The callable is passed the `records`, which is an `ActiveReco
 This example shows how you can implement different approaches for different filters.
 
 ```ruby
-filter :visibility, apply: ->(records, value, _options) {
+filter :visibility, apply: -> (records, value, _options) {
   records.where('users.publicly_visible = ?', value == :public)
 }
 ```
@@ -692,7 +769,7 @@ verified value, which may be modified.
 
 ```ruby
   filter :ids,
-         verify: ->(values, context) {
+         verify: -> (values, context) {
            verify_keys(values, context)
            return values
          },
