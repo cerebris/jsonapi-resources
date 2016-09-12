@@ -123,6 +123,25 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration = original_config
   end
 
+  def test_on_server_error_method_callback_with_exception_on_serialize
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.exception_class_whitelist = []
+    $PostSerializerRaisesErrors = true
+
+    #ignores methods that don't exist
+    @controller.class.on_server_error :set_callback_message, :a_bogus_method
+    @controller.class.instance_variable_set(:@callback_message, "none")
+
+    assert_cacheable_get :index
+    assert_equal "Sent from method", @controller.class.instance_variable_get(:@callback_message)
+
+    # test that it renders the default server error response
+    assert_equal "Internal Server Error", json_response['errors'][0]['title']
+  ensure
+    $PostSerializerRaisesErrors = false
+    JSONAPI.configuration = original_config
+  end
+
   def test_on_server_error_callback_without_exception
 
     callback = Proc.new { @controller.class.instance_variable_set(:@callback_message, "Sent from block") }

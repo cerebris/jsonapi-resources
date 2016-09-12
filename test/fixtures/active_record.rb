@@ -580,6 +580,7 @@ class PostsController < BaseController
 
   class SpecialError < StandardError; end
   class SubSpecialError < PostsController::SpecialError; end
+  class SerializeError < StandardError; end
 
   # This is used to test that classes that are whitelisted are reraised by
   # the operations dispatcher.
@@ -599,6 +600,20 @@ class PostsController < BaseController
   #called by test_on_server_error
   def self.set_callback_message(error)
     @callback_message = "Sent from method"
+  end
+
+  def resource_serializer_klass
+    PostSerializer
+  end
+end
+
+class PostSerializer < JSONAPI::ResourceSerializer
+  def initialize(*)
+    if $PostSerializerRaisesErrors
+      raise PostsController::SerializeError
+    else
+      super
+    end
   end
 end
 
