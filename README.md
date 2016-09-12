@@ -735,11 +735,13 @@ class PostResource < JSONAPI::Resource
   has_many :comments
 
   # def record_for_author
+  #   relationship = self.class._relationship(:author)
   #   relation_name = relationship.relation_name(context: @context)
   #   records_for(relation_name)
   # end
 
   # def records_for_comments
+  #   relationship = self.class._relationship(:comments)
   #   relation_name = relationship.relation_name(context: @context)
   #   records_for(relation_name)
   # end
