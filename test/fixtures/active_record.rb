@@ -264,6 +264,33 @@ ActiveRecord::Schema.define do
   create_table :questionables, force: true do |t|
     t.timestamps null: false
   end
+
+  create_table :boxes, force: true  do |t|
+    t.string :name
+    t.timestamps null: false
+  end
+
+  create_table :things, force: true  do |t|
+    t.string :name
+    t.references :user
+    t.references :box
+
+    t.timestamps null: false
+  end
+
+  create_table :users, force: true  do |t|
+    t.string :name
+    t.timestamps null: false
+  end
+
+  create_table :related_things, force: true  do |t|
+    t.string :name
+    t.references :from, references: :thing
+    t.references :to, references: :thing
+
+    t.timestamps null: false
+  end
+
   # special cases
 end
 
@@ -555,6 +582,27 @@ end
 class WebPage < ActiveRecord::Base
 end
 
+class Box < ActiveRecord::Base
+  has_many :things
+end
+
+class User < ActiveRecord::Base
+  has_many :things
+end
+
+class Thing < ActiveRecord::Base
+  belongs_to :box
+  belongs_to :user
+
+  has_many :related_things, foreign_key: :from_id
+  has_many :things, through: :related_things, source: :to
+end
+
+class RelatedThing < ActiveRecord::Base
+  belongs_to :from, class_name: Thing, foreign_key: :from_id
+  belongs_to :to, class_name: Thing, foreign_key: :to_id
+end
+
 module Api
   module V7
     class Client < Customer
@@ -820,6 +868,11 @@ module Api
   module V8
     class NumerosTelefoneController < JSONAPI::ResourceController
     end
+  end
+end
+
+module Api
+  class BoxesController < JSONAPI::ResourceController
   end
 end
 
@@ -1709,6 +1762,23 @@ module Api
         super
       end
     end
+  end
+end
+
+module Api
+  class BoxResource < JSONAPI::Resource
+    has_many :things
+  end
+
+  class ThingResource < JSONAPI::Resource
+    has_one :box
+    has_one :user
+
+    has_many :things
+  end
+
+  class UserResource < JSONAPI::Resource
+    has_many :things
   end
 end
 
