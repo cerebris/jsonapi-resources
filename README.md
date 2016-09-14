@@ -701,8 +701,21 @@ verified value, which may be modified.
       verify_keys(values, context)
       return values
     },
-    apply: -> (records, value, _options) {
+    apply: ->(records, value, _options) {
       records.where('id IN (?)', value)
+    }
+```
+
+```ruby
+# A more complex example, showing how to filter for any overlap between the
+# value array and the possible_ids, using both verify and apply callables.
+
+  filter :possible_ids,
+    verify: ->(values, context) {
+      values.map {|value| value.to_i}
+    },
+    apply: ->(records, value, _options) {
+      records.where('possible_ids && ARRAY[?]', value)
     }
 ```
 
