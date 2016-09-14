@@ -654,10 +654,10 @@ You may customize how a filter behaves by supplying a callable to the `:apply` o
 apply that filter. The callable is passed the `records`, which is an `ActiveRecord::Relation`, the `value`, and an
 `_options` hash. It is expected to return an `ActiveRecord::Relation`.
 
-This example shows how you can implement different approaches for different filters.
-
 Note: When a filter is not supplied a `verify` callable to modify the `value` that the `apply` callable receives,
 `value` defaults to an array of the string values provided to the filter parameter.
+
+This example shows how you can implement different approaches for different filters.
 
 ```ruby
 # When given the following parameter:'filter[visibility]': 'public'
