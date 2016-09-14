@@ -461,7 +461,7 @@ module JSONAPI
         end
       end
 
-      attr_accessor :_attributes, :_relationships, :_type, :_model_hints
+      attr_accessor :_attributes, :_relationships, :_type, :_model_hints, :always_includes
       attr_writer :_allowed_filters, :_paginator
 
       def create(context)
@@ -572,6 +572,10 @@ module JSONAPI
         @_cache_field = field.to_sym
       end
 
+      def always_include(*relationships)
+        _add_always_includes(*relationships)
+      end
+
       # Override in your resource to filter the updatable keys
       def updatable_fields(_context = nil)
         _updatable_relationships | _attributes.keys - [:id]
@@ -611,14 +615,64 @@ module JSONAPI
         end
       end
 
-      def apply_includes(records, options = {})
+      def _append_always_includes(resource_klass, model_include, options)
+        if resource_klass.present?
+          resource_klass.always_includes + model_include
+        else
+          model_include
+        end
+      end
+
+      def relationship_klass_from(resource_klass, key)
+        reflection = resource_klass._model_class._reflections[key.to_s]
+        if reflection.present?
+          relationship_klass = resource_klass.resource_for(reflection.class_name)
+        else
+          nil
+        end
+      end
+
+      def resolve_always_includes(resource_klass, model_includes, options = {})
+        case model_includes
+        when Array
+          model_includes.uniq.map do |value|
+            resolve_always_includes(resource_klass, value, options)
+          end
+        when Hash
+          Hash[model_includes.map do |key, value|
+            relationship_klass = relationship_klass_from(resource_klass, key)
+            if relationship_klass.present?
+              [key, resolve_always_includes(relationship_klass, _append_always_includes(relationship_klass, value, options), options)]
+            end
+          end.compact]
+        when Symbol
+          relationship_klass = relationship_klass_from(resource_klass, model_includes.to_s)
+          if relationship_klass.present? && relationship_klass.always_includes.present?
+            { model_includes => resolve_always_includes(relationship_klass, relationship_klass.always_includes, options)}
+          else
+            model_includes
+          end
+        end
+      end
+
+      def model_includes(options)
         include_directives = options[:include_directives]
         if include_directives
-          model_includes = resolve_relationship_names_to_relations(self, include_directives.model_includes, options)
-          records = records.includes(model_includes)
+          return resolve_relationship_names_to_relations(self, include_directives.model_includes, options)
         end
+        []
+      end
 
-        records
+      def get_includes(options = {})
+        model_includes = model_includes(options)
+        first_level_includes = model_includes.map{ |inc| inc.try(:keys) || inc }.flatten
+        includes = model_includes + ( always_includes - first_level_includes )
+
+        resolve_always_includes(self, includes, options)
+      end
+
+      def apply_includes(records, options = {})
+        records.includes(get_includes(options))
       end
 
       def apply_pagination(records, paginator, order_options)
@@ -1013,6 +1067,14 @@ module JSONAPI
           JSONAPI::RelationshipBuilder.new(klass, _model_class, options)
             .define_relationship_methods(relationship_name.to_sym)
         end
+      end
+
+      def always_includes
+        @always_includes ||= []
+      end
+
+      def _add_always_includes(*relationships)
+        always_includes.concat(Array(relationships))
       end
 
       # Allows JSONAPI::RelationshipBuilder to access metaprogramming hooks

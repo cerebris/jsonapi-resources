@@ -98,6 +98,77 @@ module MyAPI
   end
 end
 
+module Ai
+  class PersonResource < ::PersonResource
+    always_include :hair_cut, :comments
+  end
+
+  class CommentResource < ::CommentResource
+  end
+
+  class TagResource < ::TagResource
+    always_include :posts
+  end
+
+  class PostResource < ::PostResource
+  end
+
+  class VehicleResource < ::VehicleResource
+  end
+
+  class HairCutResource < ::HairCutResource
+  end
+
+  class SectionResource < ::SectionResource
+  end
+end
+
+class AlwaysIncludeTest < ActiveSupport::TestCase
+
+  def test_always_includes
+    assert_equal([:hair_cut, :comments], Ai::PersonResource.always_includes)
+  end
+
+  def test_resolve_always_includes
+    result = JSONAPI::Resource.resolve_always_includes(Ai::PersonResource, [:vehicles, :comments])
+    assert_equal([:vehicles, :comments], result)
+  end
+
+  def test_resolve_always_includes_nested
+    expected = {comments: [{tags: [:posts]}]}
+
+    result = JSONAPI::Resource.resolve_always_includes(Ai::PersonResource, comments: [:tags])
+    assert_equal(expected, result)
+
+    result = JSONAPI::Resource.resolve_always_includes(Ai::PersonResource, comments: [{tags: [:posts]}])
+    assert_equal(expected, result)
+  end
+
+  def test_get_includes
+    include_directive = JSONAPI::IncludeDirectives.new(Ai::PersonResource, ['comments'])
+    expected = [:comments, :hair_cut]
+
+    result = Ai::PersonResource.get_includes(include_directives: include_directive)
+    assert_equal(expected, result)
+  end
+
+  def test_get_includes_nested
+    include_directive = JSONAPI::IncludeDirectives.new(Ai::PersonResource, ['comments.tags'])
+    expected = [{comments: [{tags: [:posts]}]}, :hair_cut]
+
+    result = Ai::PersonResource.get_includes(include_directives: include_directive)
+    assert_equal(expected, result)
+  end
+
+  def test_get_includes_nested_more_complex
+    include_directive = JSONAPI::IncludeDirectives.new(Ai::PersonResource, ['comments.tags', 'posts.section'])
+    expected = [{comments: [{tags: [:posts]}]}, {posts: [:section]}, :hair_cut]
+
+    result = Ai::PersonResource.get_includes(include_directives: include_directive)
+    assert_equal(expected, result)
+  end
+end
+
 class ResourceTest < ActiveSupport::TestCase
   def setup
     @post = Post.first
