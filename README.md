@@ -654,11 +654,16 @@ You may customize how a filter behaves by supplying a callable to the `:apply` o
 apply that filter. The callable is passed the `records`, which is an `ActiveRecord::Relation`, the `value`, and an
 `_options` hash. It is expected to return an `ActiveRecord::Relation`.
 
+Note: When a filter is not supplied a `verify` callable to modify the `value` that the `apply` callable receives,
+`value` defaults to an array of the string values provided to the filter parameter.
+
 This example shows how you can implement different approaches for different filters.
 
 ```ruby
+# When given the following parameter:'filter[visibility]': 'public'
+
 filter :visibility, apply: ->(records, value, _options) {
-  records.where('users.publicly_visible = ?', value == :public)
+  records.where('users.publicly_visible = ?', value[0] == 'public')
 }
 ```
 
@@ -674,12 +679,12 @@ def self.apply_filter(records, filter, value, options)
         value.each do |val|
           records = records.where(_model_class.arel_table[filter].matches(val))
         end
-        return records
+        records
       else
         records.where(_model_class.arel_table[filter].matches(value))
       end
     else
-      return super(records, filter, value)
+      super(records, filter, value)
   end
 end
 ```
@@ -692,13 +697,26 @@ verified value, which may be modified.
 
 ```ruby
   filter :ids,
-         verify: ->(values, context) {
-           verify_keys(values, context)
-           return values
-         },
-         apply: -> (records, value, _options) {
-           records.where('id IN (?)', value)
-         }
+    verify: ->(values, context) {
+      verify_keys(values, context)
+      values
+    },
+    apply: ->(records, value, _options) {
+      records.where('id IN (?)', value)
+    }
+```
+
+```ruby
+# A more complex example, showing how to filter for any overlap between the
+# value array and the possible_ids, using both verify and apply callables.
+
+  filter :possible_ids,
+    verify: ->(values, context) {
+      values.map {|value| value.to_i}
+    },
+    apply: ->(records, value, _options) {
+      records.where('possible_ids && ARRAY[?]', value)
+    }
 ```
 
 ##### Finders
@@ -819,12 +837,12 @@ def self.apply_filter(records, filter, value, options)
         value.each do |val|
           records = records.where(_model_class.arel_table[filter].matches(val))
         end
-        return records
+        records
       else
         records.where(_model_class.arel_table[filter].matches(value))
       end
     else
-      return super(records, filter, value)
+      super(records, filter, value)
   end
 end
 ```
