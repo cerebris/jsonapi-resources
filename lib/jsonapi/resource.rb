@@ -423,6 +423,7 @@ module JSONAPI
       end
 
       def resource_for(type)
+        type = type.underscore
         type_with_module = type.include?('/') ? type : module_path + type
 
         resource_name = _resource_name_from_type(type_with_module)
