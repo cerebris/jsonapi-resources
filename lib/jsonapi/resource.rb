@@ -433,13 +433,11 @@ module JSONAPI
       end
 
       def resource_for(type)
-        type_with_module = type.include?('/') ? type : module_path + type
+        possible_types = [type.underscore, module_path + type.underscore].uniq
+        possible_klasses = possible_types.map { |t| _resource_name_from_type(t).safe_constantize }
 
-        resource_name = _resource_name_from_type(type_with_module)
-        resource = resource_name.safe_constantize if resource_name
-        if resource.nil?
-          fail NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
-        end
+        resource = possible_klasses.compact.first
+        fail NameError, "JSONAPI: Could not find resource '#{type}'" if resource.nil?
         resource
       end
 
