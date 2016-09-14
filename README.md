@@ -679,12 +679,12 @@ def self.apply_filter(records, filter, value, options)
         value.each do |val|
           records = records.where(_model_class.arel_table[filter].matches(val))
         end
-        return records
+        records
       else
         records.where(_model_class.arel_table[filter].matches(value))
       end
     else
-      return super(records, filter, value)
+      super(records, filter, value)
   end
 end
 ```
@@ -699,7 +699,7 @@ verified value, which may be modified.
   filter :ids,
     verify: ->(values, context) {
       verify_keys(values, context)
-      return values
+      values
     },
     apply: ->(records, value, _options) {
       records.where('id IN (?)', value)
@@ -837,12 +837,12 @@ def self.apply_filter(records, filter, value, options)
         value.each do |val|
           records = records.where(_model_class.arel_table[filter].matches(val))
         end
-        return records
+        records
       else
         records.where(_model_class.arel_table[filter].matches(value))
       end
     else
-      return super(records, filter, value)
+      super(records, filter, value)
   end
 end
 ```
