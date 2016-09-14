@@ -656,7 +656,7 @@ apply that filter. The callable is passed the `records`, which is an `ActiveReco
 
 This example shows how you can implement different approaches for different filters.
 
-Note: When a filter is not supplied a `verify` callable to modify the `value` that the `apply callable recieves,
+Note: When a filter is not supplied a `verify` callable to modify the `value` that the `apply` callable receives,
 `value` defaults to an array of the string values provided to the filter parameter.
 
 ```ruby
