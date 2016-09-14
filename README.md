@@ -697,13 +697,13 @@ verified value, which may be modified.
 
 ```ruby
   filter :ids,
-         verify: ->(values, context) {
-           verify_keys(values, context)
-           return values
-         },
-         apply: -> (records, value, _options) {
-           records.where('id IN (?)', value)
-         }
+    verify: ->(values, context) {
+      verify_keys(values, context)
+      return values
+    },
+    apply: -> (records, value, _options) {
+      records.where('id IN (?)', value)
+    }
 ```
 
 ##### Finders
