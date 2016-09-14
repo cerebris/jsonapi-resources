@@ -125,19 +125,22 @@ class ResourceTest < ActiveSupport::TestCase
     end
   end
 
-  def test_resource_for_with_namespaced_paths
+  def test_resource_for_resource_does_not_exist_at_root
+    assert_raises NameError do
+      ArticleResource.resource_for('related')
+    end
+  end
+
+  def test_resource_for_with_underscored_namespaced_paths
     assert_equal(JSONAPI::Resource.resource_for('my_module/related'), MyModule::RelatedResource)
     assert_equal(PostResource.resource_for('my_module/related'), MyModule::RelatedResource)
     assert_equal(MyModule::MyNamespacedResource.resource_for('my_module/related'), MyModule::RelatedResource)
   end
 
-  def test_resource_for_resource_does_not_exist_at_root
-    assert_raises NameError do
-      ArticleResource.resource_for('related')
-    end
-    assert_raises NameError do
-      JSONAPI::Resource.resource_for('related')
-    end
+  def test_resource_for_with_camelized_namespaced_paths
+    assert_equal(JSONAPI::Resource.resource_for('MyModule::Related'), MyModule::RelatedResource)
+    assert_equal(PostResource.resource_for('MyModule::Related'), MyModule::RelatedResource)
+    assert_equal(MyModule::MyNamespacedResource.resource_for('MyModule::Related'), MyModule::RelatedResource)
   end
 
   def test_resource_for_namespaced_resource
