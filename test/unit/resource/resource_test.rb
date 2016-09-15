@@ -98,32 +98,31 @@ module MyAPI
   end
 end
 
-module Ai
-  class PersonResource < ::PersonResource
-    always_include :hair_cut, :comments
-  end
-
-  class CommentResource < ::CommentResource
-  end
-
-  class TagResource < ::TagResource
-    always_include :posts
-  end
-
-  class PostResource < ::PostResource
-  end
-
-  class VehicleResource < ::VehicleResource
-  end
-
-  class HairCutResource < ::HairCutResource
-  end
-
-  class SectionResource < ::SectionResource
-  end
-end
-
 class AlwaysIncludeTest < ActiveSupport::TestCase
+  module Ai
+    class PersonResource < ::PersonResource
+      always_include :hair_cut, :comments
+    end
+
+    class CommentResource < ::CommentResource
+    end
+
+    class TagResource < ::TagResource
+      always_include :posts
+    end
+
+    class PostResource < ::PostResource
+    end
+
+    class VehicleResource < ::VehicleResource
+    end
+
+    class HairCutResource < ::HairCutResource
+    end
+
+    class SectionResource < ::SectionResource
+    end
+  end
 
   def test_always_includes
     assert_equal([:hair_cut, :comments], Ai::PersonResource.always_includes)
@@ -165,6 +164,32 @@ class AlwaysIncludeTest < ActiveSupport::TestCase
     expected = [{comments: [{tags: [:posts]}]}, {posts: [:section]}, :hair_cut]
 
     result = Ai::PersonResource.get_includes(include_directives: include_directive)
+    assert_equal(expected, result)
+  end
+end
+
+class AlwayIncludeCircularTest < ActiveSupport::TestCase
+  module Circular
+    class PersonResource < ::PersonResource
+      always_include :comments
+    end
+
+    class CommentResource < ::CommentResource
+      always_include :tags
+    end
+
+    class TagResource < ::TagResource
+      always_include :posts
+    end
+
+    class PostResource < ::PostResource
+      always_include :comments
+    end
+  end
+
+  def test_always_includes_circular
+    expected = [{comments: [{tags: [{posts: [:comments]}]}]}]
+    result = JSONAPI::Resource.resolve_always_includes(Circular::PersonResource, [:comments])
     assert_equal(expected, result)
   end
 end

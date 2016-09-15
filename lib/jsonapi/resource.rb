@@ -632,23 +632,24 @@ module JSONAPI
         end
       end
 
-      def resolve_always_includes(resource_klass, model_includes, options = {})
+      def resolve_always_includes(resource_klass, model_includes, options = {}, seen = [])
         case model_includes
         when Array
           model_includes.uniq.map do |value|
-            resolve_always_includes(resource_klass, value, options)
+            resolve_always_includes(resource_klass, value, options, seen)
           end
         when Hash
           Hash[model_includes.map do |key, value|
             relationship_klass = relationship_klass_from(resource_klass, key)
             if relationship_klass.present?
-              [key, resolve_always_includes(relationship_klass, _append_always_includes(relationship_klass, value, options), options)]
+              [key, resolve_always_includes(relationship_klass, _append_always_includes(relationship_klass, value, options), options, seen)]
             end
           end.compact]
         when Symbol
           relationship_klass = relationship_klass_from(resource_klass, model_includes.to_s)
-          if relationship_klass.present? && relationship_klass.always_includes.present?
-            { model_includes => resolve_always_includes(relationship_klass, relationship_klass.always_includes, options)}
+          if relationship_klass.present? && relationship_klass.always_includes.present? && !seen.include?(model_includes)
+            seen.push(model_includes)
+            { model_includes => resolve_always_includes(relationship_klass, relationship_klass.always_includes, options, seen)}
           else
             model_includes
           end
@@ -667,7 +668,6 @@ module JSONAPI
         model_includes = model_includes(options)
         first_level_includes = model_includes.map{ |inc| inc.try(:keys) || inc }.flatten
         includes = model_includes + ( always_includes - first_level_includes )
-
         resolve_always_includes(self, includes, options)
       end
 
