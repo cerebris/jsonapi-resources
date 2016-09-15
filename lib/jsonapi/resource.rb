@@ -630,6 +630,8 @@ module JSONAPI
         else
           nil
         end
+      rescue NameError => ex
+        nil
       end
 
       def resolve_always_includes(resource_klass, model_includes, options = {}, seen = [])

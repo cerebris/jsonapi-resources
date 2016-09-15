@@ -98,7 +98,7 @@ module MyAPI
   end
 end
 
-class AlwaysIncludeTest < ActiveSupport::TestCase
+class AlwaysIncludeTests < ActiveSupport::TestCase
   module Ai
     class PersonResource < ::PersonResource
       always_include :hair_cut, :comments
@@ -121,6 +121,7 @@ class AlwaysIncludeTest < ActiveSupport::TestCase
     end
 
     class SectionResource < ::SectionResource
+
     end
   end
 
@@ -168,7 +169,7 @@ class AlwaysIncludeTest < ActiveSupport::TestCase
   end
 end
 
-class AlwayIncludeCircularTest < ActiveSupport::TestCase
+class AlwayIncludeCircularTests < ActiveSupport::TestCase
   module Circular
     class PersonResource < ::PersonResource
       always_include :comments
@@ -191,6 +192,19 @@ class AlwayIncludeCircularTest < ActiveSupport::TestCase
     expected = [{comments: [{tags: [{posts: [:comments]}]}]}]
     result = JSONAPI::Resource.resolve_always_includes(Circular::PersonResource, [:comments])
     assert_equal(expected, result)
+  end
+end
+
+class AlwaysIncludeNoResourceTest < ActiveSupport::TestCase
+  module NoResource
+    class MoonResource < ::MoonResource
+      always_include :craters
+    end
+  end
+
+  def test_always_include_no_resource_no_error_raised
+    result = JSONAPI::Resource.resolve_always_includes(NoResource::MoonResource, [:craters])
+    assert_equal([:craters], result)
   end
 end
 
