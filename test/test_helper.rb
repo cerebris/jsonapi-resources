@@ -256,6 +256,8 @@ TestApp.routes.draw do
   jsonapi_resources :authors
 
   namespace :api do
+    jsonapi_resources :boxes
+
     namespace :v1 do
       jsonapi_resources :people
       jsonapi_resources :comments

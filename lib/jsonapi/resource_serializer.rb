@@ -173,7 +173,7 @@ module JSONAPI
         source.each { |resource| process_primary(resource, include_directives) }
       else
         return {} if source.nil?
-        add_included_object(object_hash(source, include_directives), true)
+        add_resource(source, include_directives, true)
       end
     end
 
@@ -285,9 +285,9 @@ module JSONAPI
             id = resource.id
             relationships_only = already_serialized?(relationship.type, id)
             if include_linkage && !relationships_only
-              add_included_object(object_hash(resource, ia))
+              add_resource(resource, ia)
             elsif include_linked_children || relationships_only
-              relationships_hash(resource, ia)
+              relationships_hash(resource, fetchable_fields, ia)
             end
           end
         end
@@ -311,12 +311,7 @@ module JSONAPI
           end
 
           source.preloaded_fragments[key].each do |id, f|
-            unless already_serialized?(relationship.type, id)
-              obj_hash = object_hash(f, ia)
-              unless self_referential_and_already_in_source(f)
-                add_included_object(obj_hash)
-              end
-            end
+            add_resource(f, ia)
 
             if h.has_key?(key)
               # The hash already has everything we need except the :data field
@@ -467,14 +462,29 @@ module JSONAPI
       @included_objects[type][id][:primary] = true
     end
 
-    # Collects the hashes for all objects processed by the serializer
-    def add_included_object(obj_hash, primary = false)
-      is_cached = obj_hash.is_a?(JSONAPI::CachedResourceFragment)
-      type = is_cached ? obj_hash.type : obj_hash['type']
-      id = is_cached ? obj_hash.id : obj_hash['id']
+    def add_resource(source, include_directives, primary = false)
+      type = source.is_a?(JSONAPI::CachedResourceFragment) ? source.type : source.class._type
+      id = source.id
 
       @included_objects[type] ||= {}
-      @included_objects[type][id] = { primary: primary, object_hash: obj_hash }
+      existing = @included_objects[type][id]
+
+      if existing.nil?
+        obj_hash = object_hash(source, include_directives)
+        @included_objects[type][id] = {
+            primary: primary,
+            object_hash: obj_hash,
+            includes: Set.new(include_directives[:include_related].keys)
+        }
+      else
+        include_related = Set.new(include_directives[:include_related].keys)
+        unless existing[:includes].superset?(include_related)
+          obj_hash = object_hash(source, include_directives)
+          @included_objects[type][id][:object_hash].deep_merge!(obj_hash)
+          @included_objects[type][id][:includes].add(include_related)
+          @included_objects[type][id][:primary] = existing[:primary] | primary
+        end
+      end
     end
 
     def generate_link_builder(primary_resource_klass, options)

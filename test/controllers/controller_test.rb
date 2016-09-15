@@ -3638,3 +3638,69 @@ class Api::V6::SectionsControllerTest < ActionController::TestCase
     assert_response :success
   end
 end
+
+class Api::BoxesControllerTest < ActionController::TestCase
+  def test_complex_includes_base
+    assert_cacheable_get :index
+    assert_response :success
+  end
+
+  def test_complex_includes_two_level
+    assert_cacheable_get :index, params: {include: 'things,things.user'}
+
+    assert_response :success
+
+    # The test is hardcoded with the include order. This should be changed at some point since either thing could come first and still be valid
+    assert_equal '1', json_response['included'][0]['id']
+    assert_equal 'things', json_response['included'][0]['type']
+    assert_equal '1',  json_response['included'][0]['relationships']['user']['data']['id']
+    assert_nil json_response['included'][0]['relationships']['things']['data']
+
+    assert_equal '2', json_response['included'][1]['id']
+    assert_equal 'things', json_response['included'][1]['type']
+    assert_equal '1', json_response['included'][1]['relationships']['user']['data']['id']
+    assert_nil json_response['included'][1]['relationships']['things']['data']
+
+    assert_equal '1', json_response['included'][2]['id']
+    assert_equal 'users', json_response['included'][2]['type']
+    assert_nil json_response['included'][2]['relationships']['things']['data']
+  end
+
+  def test_complex_includes_things_nested_things
+    assert_cacheable_get :index, params: {include: 'things,things.things'}
+
+    assert_response :success
+
+    # The test is hardcoded with the include order. This should be changed at some point since either thing could come first and still be valid
+    assert_equal '2', json_response['included'][0]['id']
+    assert_equal 'things', json_response['included'][0]['type']
+    assert_nil json_response['included'][0]['relationships']['user']['data']
+    assert_equal '1', json_response['included'][0]['relationships']['things']['data'][0]['id']
+
+    assert_equal '1', json_response['included'][1]['id']
+    assert_equal 'things', json_response['included'][1]['type']
+    assert_nil json_response['included'][1]['relationships']['user']['data']
+    assert_equal '2', json_response['included'][1]['relationships']['things']['data'][0]['id']
+  end
+
+  def test_complex_includes_nested_things_secondary_users
+    assert_cacheable_get :index, params: {include: 'things,things.user,things.things'}
+
+    assert_response :success
+
+    # The test is hardcoded with the include order. This should be changed at some point since either thing could come first and still be valid
+    assert_equal '1', json_response['included'][2]['id']
+    assert_equal 'users', json_response['included'][2]['type']
+    assert_nil json_response['included'][2]['relationships']['things']['data']
+
+    assert_equal '2', json_response['included'][0]['id']
+    assert_equal 'things', json_response['included'][0]['type']
+    assert_equal '1',  json_response['included'][0]['relationships']['user']['data']['id']
+    assert_equal '1',  json_response['included'][0]['relationships']['things']['data'][0]['id']
+
+    assert_equal '1', json_response['included'][1]['id']
+    assert_equal 'things', json_response['included'][1]['type']
+    assert_equal '1',  json_response['included'][1]['relationships']['user']['data']['id']
+    assert_equal '2',  json_response['included'][1]['relationships']['things']['data'][0]['id']
+  end
+end
