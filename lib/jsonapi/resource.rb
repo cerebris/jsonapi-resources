@@ -670,7 +670,16 @@ module JSONAPI
         model_includes = model_includes(options)
         first_level_includes = model_includes.map{ |inc| inc.try(:keys) || inc }.flatten
         includes = model_includes + ( always_includes - first_level_includes )
-        resolve_always_includes(self, includes, options)
+        includes = resolve_always_includes(self, includes, options)
+        filter_for_relationship_type(includes, options)
+      end
+
+      def filter_for_relationship_type(includes, options)
+        if options[:relationship_type].present?
+          includes.select{|v| (v.try(:keys).try(:first) || v) == options[:relationship_type] }
+        else
+          includes
+        end
       end
 
       def apply_includes(records, options = {})

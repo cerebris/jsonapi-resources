@@ -167,6 +167,14 @@ class AlwaysIncludeTests < ActiveSupport::TestCase
     result = Ai::PersonResource.get_includes(include_directives: include_directive)
     assert_equal(expected, result)
   end
+
+  def test_get_includes_for_relationship
+    include_directive = JSONAPI::IncludeDirectives.new(Ai::PersonResource, ['comments.tags', 'posts.section'])
+    expected = [{comments: [{tags: [:posts]}]}]
+
+    result = Ai::PersonResource.get_includes(include_directives: include_directive, relationship_type: :comments)
+    assert_equal(expected, result)
+  end
 end
 
 class AlwayIncludeCircularTests < ActiveSupport::TestCase
