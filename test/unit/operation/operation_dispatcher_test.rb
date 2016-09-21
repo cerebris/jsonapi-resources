@@ -104,7 +104,7 @@ class OperationDispatcherTest < Minitest::Test
     assert_equal(saturn.planet_type_id, 5)
   end
 
-  def test_create_to_many_relationship
+  def test_create_to_many_relationships
     op = JSONAPI::OperationDispatcher.new
 
     betax = Planet.find(5)
@@ -120,7 +120,7 @@ class OperationDispatcherTest < Minitest::Test
     betaz.save!
 
     operations = [
-      JSONAPI::Operation.new(:create_to_many_relationship,
+      JSONAPI::Operation.new(:create_to_many_relationships,
                              PlanetTypeResource,
                              {
                                resource_id: gas_giant.id,
@@ -149,7 +149,7 @@ class OperationDispatcherTest < Minitest::Test
     betaz.save!
   end
 
-  def test_replace_to_many_relationship
+  def test_replace_to_many_relationships
     op = JSONAPI::OperationDispatcher.new
 
     betax = Planet.find(5)
@@ -165,7 +165,7 @@ class OperationDispatcherTest < Minitest::Test
     betaz.save!
 
     operations = [
-      JSONAPI::Operation.new(:replace_to_many_relationship,
+      JSONAPI::Operation.new(:replace_to_many_relationships,
                              PlanetTypeResource,
                              {
                                resource_id: gas_giant.id,

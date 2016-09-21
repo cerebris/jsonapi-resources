@@ -11,9 +11,9 @@ module JSONAPI
                                        :replace_fields,
                                        :replace_to_one_relationship,
                                        :replace_polymorphic_to_one_relationship,
-                                       :create_to_many_relationship,
-                                       :replace_to_many_relationship,
-                                       :remove_to_many_relationship,
+                                       :create_to_many_relationships,
+                                       :replace_to_many_relationships,
+                                       :remove_to_many_relationships,
                                        :remove_to_one_relationship,
                                        :operation
 
@@ -276,7 +276,7 @@ module JSONAPI
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
 
-    def create_to_many_relationship
+    def create_to_many_relationships
       resource_id = params[:resource_id]
       relationship_type = params[:relationship_type].to_sym
       data = params[:data]
@@ -287,7 +287,7 @@ module JSONAPI
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
 
-    def replace_to_many_relationship
+    def replace_to_many_relationships
       resource_id = params[:resource_id]
       relationship_type = params[:relationship_type].to_sym
       data = params.fetch(:data)
@@ -298,15 +298,21 @@ module JSONAPI
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
     end
 
-    def remove_to_many_relationship
+    def remove_to_many_relationships
       resource_id = params[:resource_id]
       relationship_type = params[:relationship_type].to_sym
-      associated_key = params[:associated_key]
+      associated_keys = params[:associated_keys]
 
       resource = resource_klass.find_by_key(resource_id, context: context)
-      result = resource.remove_to_many_link(relationship_type, associated_key)
 
-      return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+      complete = true
+      associated_keys.each do |key|
+        result = resource.remove_to_many_link(relationship_type, key)
+        if complete && result != :completed
+          complete = false
+        end
+      end
+      return JSONAPI::OperationResult.new(complete ? :no_content : :accepted)
     end
 
     def remove_to_one_relationship

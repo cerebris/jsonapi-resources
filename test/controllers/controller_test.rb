@@ -688,46 +688,8 @@ class PostsControllerTest < ActionController::TestCase
         ]
       }
 
-    assert_response :created
-    assert json_response['data'].is_a?(Array)
-    assert_equal json_response['data'].size, 2
-    assert_nil json_response['data'][0]['relationships']['author']['data']
-    assert_match /JR is Great/, response.body
-    assert_match /Ember is Great/, response.body
-    assert_equal nil, response.location
-  end
-
-  def test_create_multiple_wrong_case
-    set_content_type_header!
-    post :create, params:
-      {
-        data: [
-          {
-            type: 'posts',
-            attributes: {
-              Title: 'JR is Great',
-              body: 'JSONAPIResources is the greatest thing since unsliced bread.'
-            },
-            relationships: {
-              author: {data: {type: 'people', id: '3'}}
-            }
-          },
-          {
-            type: 'posts',
-            attributes: {
-              title: 'Ember is Great',
-              BODY: 'Ember is the greatest thing since unsliced bread.'
-            },
-            relationships: {
-              author: {data: {type: 'people', id: '3'}}
-            }
-          }
-        ]
-      }
-
     assert_response :bad_request
-    assert_match /Title/, json_response['errors'][0]['detail']
-    assert_equal nil, response.location
+    assert_match /Invalid data format/, response.body
   end
 
   def test_create_simple_missing_posts
@@ -1448,12 +1410,30 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_delete_relationship_to_many
     set_content_type_header!
-    put :update_relationship, params: {post_id: 14, relationship: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
+    put :update_relationship,
+        params: {
+            post_id: 14,
+            relationship: 'tags',
+            data: [
+                {type: 'tags', id: 2},
+                {type: 'tags', id: 3},
+                {type: 'tags', id: 4}
+            ]
+        }
+
     assert_response :no_content
     p = Post.find(14)
-    assert_equal [2, 3], p.tag_ids
+    assert_equal [2, 3, 4], p.tag_ids
 
-    delete :destroy_relationship, params: {post_id: 14, relationship: 'tags', data: [{type: 'tags', id: 3}]}
+    delete :destroy_relationship,
+           params: {
+               post_id: 14,
+               relationship: 'tags',
+               data: [
+                   {type: 'tags', id: 3},
+                   {type: 'tags', id: 4}
+               ]
+           }
 
     p.reload
     assert_response :no_content
@@ -1703,157 +1683,55 @@ class PostsControllerTest < ActionController::TestCase
     assert_match /body is not allowed/, response.body
   end
 
-  def test_update_multiple_sucess
+  def test_update_multiple_ids
     set_content_type_header!
     javascript = Section.find_by(name: 'javascript')
 
-    put :update, params:
-      {
-        id: [3, 16],
-        data: [
-          {
+    put :update, params: {
+        id: '3,16',
+        data: {
             type: 'posts',
             id: 3,
             attributes: {
-              title: 'A great new Post QWERTY'
+                title: 'A great new Post QWERTY'
             },
             relationships: {
-              section: {data: {type: 'sections', id: "#{javascript.id}"}},
-              tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
+                section: { data: { type: 'sections', id: "#{javascript.id}" } },
+                tags: { data: [{ type: 'tags', id: 3 }, { type: 'tags', id: 4 }] }
             }
-          },
-          {
-            type: 'posts',
-            id: 16,
-            attributes: {
-              title: 'A great new Post ASDFG'
-            },
-            relationships: {
-              section: {data: {type: 'sections', id: "#{javascript.id}"}},
-              tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
-            }
-          }
-        ],
+        },
         include: 'tags'
-      }
-
-    assert_response :success
-    assert_equal json_response['data'].size, 2
-    assert_equal json_response['data'][0]['attributes']['title'], 'A great new Post QWERTY'
-    assert_equal json_response['data'][0]['attributes']['body'], 'AAAA'
-    assert matches_array?([{'type' => 'tags', 'id' => '3'}, {'type' => 'tags', 'id' => '4'}],
-                          json_response['data'][0]['relationships']['tags']['data'])
-
-    assert_equal json_response['data'][1]['attributes']['title'], 'A great new Post ASDFG'
-    assert_equal json_response['data'][1]['attributes']['body'], 'Not First!!!!'
-    assert matches_array?([{'type' => 'tags', 'id' => '3'}, {'type' => 'tags', 'id' => '4'}],
-                          json_response['data'][1]['relationships']['tags']['data'])
-  end
-
-  def test_update_multiple_missing_keys
-    set_content_type_header!
-    javascript = Section.find_by(name: 'javascript')
-
-    put :update, params:
-      {
-        id: [3, 9],
-        data: [
-          {
-            type: 'posts',
-            attributes: {
-              title: 'A great new Post ASDFG'
-            },
-            relationships: {
-              section: {type: 'sections', id: "#{javascript.id}"},
-              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
-            }
-          },
-          {
-            type: 'posts',
-            attributes: {
-              title: 'A great new Post QWERTY'
-            },
-            relationships: {
-              section: {type: 'sections', id: "#{javascript.id}"},
-              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
-            }
-          }
-        ]}
+    }
 
     assert_response :bad_request
-    assert_match /A key is required/, response.body
+    assert_match /The URL does not support the key 3/, response.body
   end
 
-  def test_update_mismatch_multiple_keys
+  def test_update_multiple_array
     set_content_type_header!
     javascript = Section.find_by(name: 'javascript')
 
     put :update, params:
-      {
-        id: [3, 9],
-        data: [
-          {
-            type: 'posts',
+        {
             id: 3,
-            attributes: {
-              title: 'A great new Post ASDFG'
-            },
-            relationships: {
-              section: {data: {type: 'sections', id: "#{javascript.id}"}},
-              tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
-            }
-          },
-          {
-            type: 'posts',
-            id: 8,
-            attributes: {
-              title: 'A great new Post QWERTY'
-            },
-            relationships: {
-              section: {data: {type: 'sections', id: "#{javascript.id}"}},
-              tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
-            }
-          }
-        ]}
+            data: [
+                {
+                    type: 'posts',
+                    id: 3,
+                    attributes: {
+                        title: 'A great new Post QWERTY'
+                    },
+                    relationships: {
+                        section: {data: {type: 'sections', id: "#{javascript.id}"}},
+                        tags: {data: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]}
+                    }
+                }
+            ],
+            include: 'tags'
+        }
 
     assert_response :bad_request
-    assert_match /The URL does not support the key 8/, response.body
-  end
-
-  def test_update_multiple_count_mismatch
-    set_content_type_header!
-    javascript = Section.find_by(name: 'javascript')
-
-    put :update, params:
-      {
-        id: [3, 9, 2],
-        data: [
-          {
-            type: 'posts',
-            id: 3,
-            attributes: {
-              title: 'A great new Post QWERTY'
-            },
-            relationships: {
-              section: {type: 'sections', id: "#{javascript.id}"},
-              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
-            }
-          },
-          {
-            type: 'posts',
-            id: 9,
-            attributes: {
-              title: 'A great new Post ASDFG'
-            },
-            relationships: {
-              section: {type: 'sections', id: "#{javascript.id}"},
-              tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
-            }
-          }
-        ]}
-
-    assert_response :bad_request
-    assert_match /Count to key mismatch/, response.body
+    assert_match /Invalid data format/, response.body
   end
 
   def test_update_unpermitted_attributes
@@ -1917,14 +1795,8 @@ class PostsControllerTest < ActionController::TestCase
   def test_delete_multiple
     initial_count = Post.count
     delete :destroy, params: {id: '5,6'}
-    assert_response :no_content
-    assert_equal initial_count - 2, Post.count
-  end
-
-  def test_delete_multiple_one_does_not_exist
-    initial_count = Post.count
-    delete :destroy, params: {id: '5,6,99999'}
-    assert_response :not_found
+    assert_response :bad_request
+    assert_match /5,6 is not a valid value for id/, response.body
     assert_equal initial_count, Post.count
   end
 

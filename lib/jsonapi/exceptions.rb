@@ -2,7 +2,9 @@ module JSONAPI
   module Exceptions
     class Error < RuntimeError
       def errors
+        # :nocov:
         raise NotImplementedError, "Subclass of Error must implement errors method"
+        # :nocov:
       end
     end
 
@@ -208,6 +210,17 @@ module JSONAPI
       end
     end
 
+    class InvalidDataFormat < Error
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::INVALID_DATA_FORMAT,
+                            status: :bad_request,
+                            title: I18n.translate('jsonapi-resources.exceptions.invalid_data_format.title',
+                                                  default: 'Invalid data format'),
+                            detail: I18n.translate('jsonapi-resources.exceptions.invalid_data_format.detail',
+                                                   default: 'Data must be a hash.'))]
+      end
+    end
+
     class InvalidLinksObject < Error
       def errors
         [JSONAPI::Error.new(code: JSONAPI::INVALID_LINKS_OBJECT,
@@ -321,17 +334,6 @@ module JSONAPI
                                                   default: 'Missing Parameter'),
                             detail: I18n.translate('jsonapi-resources.exceptions.parameter_missing.detail',
                                                    default: "The required parameter, #{param}, is missing.", param: param))]
-      end
-    end
-
-    class CountMismatch < Error
-      def errors
-        [JSONAPI::Error.new(code: JSONAPI::COUNT_MISMATCH,
-                            status: :bad_request,
-                            title: I18n.translate('jsonapi-resources.exceptions.count_mismatch.title',
-                                                  default: 'Count to key mismatch'),
-                            detail: I18n.translate('jsonapi-resources.exceptions.count_mismatch.detail',
-                                                   default: 'The resource collection does not contain the same number of objects as the number of keys.'))]
       end
     end
 
