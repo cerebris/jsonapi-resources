@@ -122,7 +122,7 @@ module JSONAPI
       if data_required
         data = params.fetch(:data)
         object_params = { relationships: { format_key(relationship.name) => { data: data } } }
-        verified_params = parse_params(object_params, updatable_fields)
+        verified_params = parse_params(object_params, @resource_klass.updatable_fields(@context))
 
         parse_arguments = [verified_params, relationship, parent_key]
       else
@@ -346,22 +346,11 @@ module JSONAPI
       )
     end
 
-    # TODO: Please remove after `createable_fields` is removed
-    # :nocov:
-    def creatable_fields
-      if @resource_klass.respond_to?(:createable_fields)
-        creatable_fields = @resource_klass.createable_fields(@context)
-      else
-        creatable_fields = @resource_klass.creatable_fields(@context)
-      end
-    end
-    # :nocov:
-
     def parse_add_operation(data)
       Array.wrap(data).each do |params|
         verify_type(params[:type])
 
-        data = parse_params(params, creatable_fields)
+        data = parse_params(params, @resource_klass.creatable_fields(@context))
         @operations.push JSONAPI::Operation.new(:create_resource,
           @resource_klass,
           context: @context,
@@ -567,17 +556,6 @@ module JSONAPI
       end
     end
 
-    # TODO: Please remove after `updateable_fields` is removed
-    # :nocov:
-    def updatable_fields
-      if @resource_klass.respond_to?(:updateable_fields)
-        @resource_klass.updateable_fields(@context)
-      else
-        @resource_klass.updatable_fields(@context)
-      end
-    end
-    # :nocov:
-
     def parse_add_relationship_operation(verified_params, relationship, parent_key)
       if relationship.is_a?(JSONAPI::Relationship::ToMany)
         @operations.push JSONAPI::Operation.new(:create_to_many_relationship,
@@ -634,7 +612,7 @@ module JSONAPI
         @resource_klass,
         context: @context,
         resource_id: key,
-        data: parse_params(data, updatable_fields),
+        data: parse_params(data, @resource_klass.updatable_fields(@context)),
         fields: @fields,
         include_directives: @include_directives
       )
