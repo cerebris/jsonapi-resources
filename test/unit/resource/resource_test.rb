@@ -146,7 +146,15 @@ class AlwaysIncludeTests < ActiveSupport::TestCase
 
   def test_get_includes
     include_directive = JSONAPI::IncludeDirectives.new(Ai::PersonResource, ['comments'])
-    expected = [:comments, :hair_cut]
+    expected = [:hair_cut, :comments]
+
+    result = Ai::PersonResource.get_includes(include_directives: include_directive)
+    assert_equal(expected, result)
+  end
+
+  def test_get_includes_again
+     include_directive = JSONAPI::IncludeDirectives.new(Ai::PersonResource, ['comments.tags', 'posts.section'])
+    expected = [:hair_cut, {comments: [{tags: [:posts]}], posts: [:section]}]
 
     result = Ai::PersonResource.get_includes(include_directives: include_directive)
     assert_equal(expected, result)
@@ -154,7 +162,7 @@ class AlwaysIncludeTests < ActiveSupport::TestCase
 
   def test_get_includes_nested
     include_directive = JSONAPI::IncludeDirectives.new(Ai::PersonResource, ['comments.tags'])
-    expected = [{comments: [{tags: [:posts]}]}, :hair_cut]
+    expected = [:hair_cut, {comments: [{tags: [:posts]}]}]
 
     result = Ai::PersonResource.get_includes(include_directives: include_directive)
     assert_equal(expected, result)
@@ -162,43 +170,67 @@ class AlwaysIncludeTests < ActiveSupport::TestCase
 
   def test_get_includes_nested_more_complex
     include_directive = JSONAPI::IncludeDirectives.new(Ai::PersonResource, ['comments.tags', 'posts.section'])
-    expected = [{comments: [{tags: [:posts]}]}, {posts: [:section]}, :hair_cut]
+    expected = [:hair_cut, {comments: [{tags: [:posts]}], posts: [:section]}]
 
     result = Ai::PersonResource.get_includes(include_directives: include_directive)
     assert_equal(expected, result)
   end
 
-  def test_get_includes_for_relationship
-    include_directive = JSONAPI::IncludeDirectives.new(Ai::PersonResource, ['comments.tags', 'posts.section'])
-    expected = [{comments: [{tags: [:posts]}]}]
+  def test_normalize_includes
+    result = JSONAPI::Resource.normalize_includes([{comments: [{tags: [:posts]}]}, {posts: [:section]}, :hair_cut])
+    assert_equal([:hair_cut, {comments: [{tags: [:posts]}], posts: [:section]}], result)
+  end
 
-    result = Ai::PersonResource.get_includes(include_directives: include_directive, relationship_type: :comments)
+  def test_merge_includes
+    includes_a = [:hair_cut, {comments: [{tags: [:posts]}]}, :posts]
+    includes_b = [{comments: :tags, posts: [:section]}, :hair_cut]
+    expected = [:hair_cut, {comments: [{tags: [:posts]}], posts: [:section]}]
+    result = JSONAPI::Resource.merge_includes(includes_a, includes_b)
     assert_equal(expected, result)
   end
 end
 
-class AlwayIncludeCircularTests < ActiveSupport::TestCase
-  module Circular
+class AlwaysIncludeRelationshipTest < ActiveSupport::TestCase
+  module AiRel
     class PersonResource < ::PersonResource
-      always_include :comments
+      always_include :hair_cut, :comments
     end
 
     class CommentResource < ::CommentResource
-      always_include :tags
     end
 
     class TagResource < ::TagResource
-      always_include :posts
+      always_include posts: [:section]
     end
 
     class PostResource < ::PostResource
-      always_include :comments
+    end
+
+    class SectionResource < ::SectionResource
     end
   end
 
-  def test_always_includes_circular
-    expected = [{comments: [{tags: [{posts: [:comments]}]}]}]
-    result = JSONAPI::Resource.resolve_always_includes(Circular::PersonResource, [:comments])
+  def test_get_includes_for_relationship
+    include_directive = JSONAPI::IncludeDirectives.new(AiRel::PersonResource, ['comments.tags', 'posts.section'])
+    expected = [{comments: [{tags: [{posts: [:section]}]}]}]
+
+    result = AiRel::PersonResource.get_includes(include_directives: include_directive, relationship_type: :comments)
+    assert_equal(expected, result)
+  end
+
+  def test_get_includes_for_relationship_2
+    include_directive = JSONAPI::IncludeDirectives.new(AiRel::PersonResource, ['posts.section'])
+    expected = [:comments]
+
+    result = AiRel::PersonResource.get_includes(include_directives: include_directive, relationship_type: :comments)
+    assert_equal(expected, result)
+  end
+
+  def test_get_include_for_relationship_no_model_includes
+    include_directive = JSONAPI::IncludeDirectives.new(AiRel::CommentResource, ['post'])
+    expected = [{tags: [{posts: [:section]}]}]
+
+    result = AiRel::CommentResource.get_includes(include_directives: include_directive, relationship_type: :tags)
     assert_equal(expected, result)
   end
 end

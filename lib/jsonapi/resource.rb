@@ -615,9 +615,9 @@ module JSONAPI
         end
       end
 
-      def _append_always_includes(resource_klass, model_include, options)
+      def merge_always_includes(resource_klass, model_include, options)
         if resource_klass.present?
-          resource_klass.always_includes + model_include
+          merge_includes(resource_klass.always_includes, model_include)
         else
           model_include
         end
@@ -634,24 +634,23 @@ module JSONAPI
         nil
       end
 
-      def resolve_always_includes(resource_klass, model_includes, options = {}, seen = [])
+      def resolve_always_includes(resource_klass, model_includes, options = {})
         case model_includes
         when Array
           model_includes.uniq.map do |value|
-            resolve_always_includes(resource_klass, value, options, seen)
+            resolve_always_includes(resource_klass, value, options)
           end
         when Hash
           Hash[model_includes.map do |key, value|
             relationship_klass = relationship_klass_from(resource_klass, key)
             if relationship_klass.present?
-              [key, resolve_always_includes(relationship_klass, _append_always_includes(relationship_klass, value, options), options, seen)]
+              [key, resolve_always_includes(relationship_klass, merge_always_includes(relationship_klass, value, options), options)]
             end
           end.compact]
         when Symbol
           relationship_klass = relationship_klass_from(resource_klass, model_includes.to_s)
-          if relationship_klass.present? && relationship_klass.always_includes.present? && !seen.include?(model_includes)
-            seen.push(model_includes)
-            { model_includes => resolve_always_includes(relationship_klass, relationship_klass.always_includes, options, seen)}
+          if relationship_klass.present? && relationship_klass.always_includes.present?
+            { model_includes => relationship_klass.always_includes }
           else
             model_includes
           end
@@ -667,19 +666,98 @@ module JSONAPI
       end
 
       def get_includes(options = {})
-        model_includes = model_includes(options)
-        first_level_includes = model_includes.map{ |inc| inc.try(:keys) || inc }.flatten
-        includes = model_includes + ( always_includes - first_level_includes )
-        includes = resolve_always_includes(self, includes, options)
+        model_includes = resolve_always_includes(self, model_includes(options), options)
+        includes = merge_includes(always_includes, model_includes)
         filter_for_relationship_type(includes, options)
+      end
+
+      def merge_includes(includes_a, includes_b)
+        includes_a = normalize_includes(includes_a)
+        includes_b = normalize_includes(includes_b)
+
+        hash_a = includes_a.detect{|inc| inc.is_a? Hash}
+        hash_b = includes_b.detect{|inc| inc.is_a? Hash}
+
+        merged_hash = merge_includes_hashes(hash_a, hash_b)
+        if merged_hash.empty?
+          (includes_a + includes_b).uniq
+        else
+          without_hash_keys = includes_a.reject{|inc| inc.is_a? Hash} + includes_b.reject{|inc| inc.is_a? Hash}
+          without_hash_keys = without_hash_keys.uniq - merged_hash.keys
+          without_hash_keys << merged_hash
+        end
+      end
+
+      def merge_includes_hashes(hash_a, hash_b)
+        if hash_a && hash_b
+          same_keys(hash_a, hash_b).inject(uniq_hash(hash_a, hash_b)) do |hsh, key|
+            hsh[key] = merge_includes(hash_a[key], hash_b[key])
+            hsh
+          end
+        else
+          hash_a || hash_b || {}
+        end
+      end
+
+      def uniq_keys(hash_a, hash_b)
+        (hash_a.keys - hash_b.keys) + (hash_b.keys - hash_a.keys)
+      end
+
+      def same_keys(hash_a, hash_b)
+        hash_a.keys - uniq_keys(hash_a, hash_b)
+      end
+
+      def uniq_hash(hash_a, hash_b)
+        uniq_keys(hash_a, hash_b).inject({}) do |hsh, key|
+          hsh[key] =  hash_a[key] || hash_b[key]
+          hsh
+        end
+      end
+
+      def normalize_includes(includes)
+        case includes
+        when Array
+          hsh = {}
+          arr = includes.inject([]) do |arr, inc|
+            case inc
+            when Hash
+              hsh.merge!(inc)
+            when Symbol
+              arr << inc
+            end
+            arr
+          end
+          arr << hsh unless hsh.empty?
+          arr
+        when Symbol
+          Array(includes)
+        end
       end
 
       def filter_for_relationship_type(includes, options)
         if options[:relationship_type].present?
-          includes.select{|v| (v.try(:keys).try(:first) || v) == options[:relationship_type] }
-        else
-          includes
+          relationship = self._relationships[options[:relationship_type].to_sym]
+          relation_name = relationship.relation_name(options)
+
+          includes = includes.reduce([]) do |arr, val|
+            if val == relation_name
+              arr << val
+            elsif val.try(:fetch, relation_name, nil).present?
+              arr << { relation_name => val[relation_name] }
+            end
+            arr
+          end
+
+          if includes.empty?
+            if relationship.resource_klass.always_include.present?
+              includes << { relation_name => relationship.resource_klass.always_include }
+            else
+              includes << relation_name
+            end
+          end
         end
+
+        includes
       end
 
       def apply_includes(records, options = {})
