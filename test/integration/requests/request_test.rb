@@ -408,7 +408,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_destroy_multiple
     delete '/posts/8,9', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
-    assert_equal 204, status
+    assert_equal 400, status
   end
 
   def test_pagination_none

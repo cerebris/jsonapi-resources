@@ -37,6 +37,9 @@ en:
       invalid_field_format:
         title: 'Invalid field format'
         detail: 'Fields must specify a type.'
+      invalid_data_format:
+        title: 'Invalid data format'
+        detail: 'Data must be a hash.'
       invalid_links_object:
         title: 'Invalid Links Object'
         detail: 'Data is not a valid Links Object.'
@@ -58,9 +61,6 @@ en:
       parameter_missing:
         title: 'Missing Parameter'
         detail: "The required parameter, %{param}, is missing."
-      count_mismatch:
-        title: 'Count to key mismatch'
-        detail: 'The resource collection does not contain the same number of objects as the number of keys.'
       key_not_included_in_url:
         title: 'Key is not included in URL'
         detail: "The URL does not support the key %{key}"

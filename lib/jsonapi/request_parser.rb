@@ -346,19 +346,19 @@ module JSONAPI
       )
     end
 
-    def parse_add_operation(data)
-      Array.wrap(data).each do |params|
-        verify_type(params[:type])
+    def parse_add_operation(params)
+      fail JSONAPI::Exceptions::InvalidDataFormat unless params.respond_to?(:each_pair)
 
-        data = parse_params(params, @resource_klass.creatable_fields(@context))
-        @operations.push JSONAPI::Operation.new(:create_resource,
-          @resource_klass,
-          context: @context,
-          data: data,
-          fields: @fields,
-          include_directives: @include_directives
-        )
-      end
+      verify_type(params[:type])
+
+      data = parse_params(params, @resource_klass.creatable_fields(@context))
+      @operations.push JSONAPI::Operation.new(:create_resource,
+        @resource_klass,
+        context: @context,
+        data: data,
+        fields: @fields,
+        include_directives: @include_directives
+      )
     rescue JSONAPI::Exceptions::Error => e
       @errors.concat(e.errors)
     end
@@ -558,7 +558,7 @@ module JSONAPI
 
     def parse_add_relationship_operation(verified_params, relationship, parent_key)
       if relationship.is_a?(JSONAPI::Relationship::ToMany)
-        @operations.push JSONAPI::Operation.new(:create_to_many_relationship,
+        @operations.push JSONAPI::Operation.new(:create_to_many_relationships,
           resource_klass,
           context: @context,
           resource_id: parent_key,
@@ -590,13 +590,15 @@ module JSONAPI
           fail JSONAPI::Exceptions::ToManySetReplacementForbidden.new
         end
         options[:data] = verified_params[:to_many].values[0]
-        operation_type = :replace_to_many_relationship
+        operation_type = :replace_to_many_relationships
       end
 
       @operations.push JSONAPI::Operation.new(operation_type, resource_klass, options)
     end
 
     def parse_single_replace_operation(data, keys, id_key_presence_check_required: true)
+      fail JSONAPI::Exceptions::InvalidDataFormat unless data.respond_to?(:each_pair)
+
       fail JSONAPI::Exceptions::MissingKey.new if data[:id].nil?
 
       key = data[:id].to_s
@@ -619,31 +621,16 @@ module JSONAPI
     end
 
     def parse_replace_operation(data, keys)
-      if data.is_a?(Array)
-        fail JSONAPI::Exceptions::CountMismatch if keys.count != data.count
-
-        data.each do |object_params|
-          parse_single_replace_operation(object_params, keys)
-        end
-      else
-        parse_single_replace_operation(data, [keys],
-                                       id_key_presence_check_required: keys.present?)
-      end
-
+      parse_single_replace_operation(data, [keys], id_key_presence_check_required: keys.present?)
     rescue JSONAPI::Exceptions::Error => e
       @errors.concat(e.errors)
     end
 
     def parse_remove_operation(params)
-      keys = parse_key_array(params.require(:id))
-
-      keys.each do |key|
-        @operations.push JSONAPI::Operation.new(:remove_resource,
-          @resource_klass,
-          context: @context,
-          resource_id: key
-        )
-      end
+      @operations.push JSONAPI::Operation.new(:remove_resource,
+        @resource_klass,
+        context: @context,
+        resource_id: @resource_klass.verify_key(params.require(:id), context))
     rescue JSONAPI::Exceptions::Error => e
       @errors.concat(e.errors)
     end
@@ -656,23 +643,13 @@ module JSONAPI
       )
 
       if relationship.is_a?(JSONAPI::Relationship::ToMany)
+        operation_args = operation_base_args.dup
         keys = params[:to_many].values[0]
-        keys.each do |key|
-          operation_args = operation_base_args.dup
-          operation_args[1] = operation_args[1].merge(associated_key: key)
-          @operations.push JSONAPI::Operation.new(:remove_to_many_relationship,
-            *operation_args
-          )
-        end
+        operation_args[1] = operation_args[1].merge(associated_keys: keys)
+        @operations.push JSONAPI::Operation.new(:remove_to_many_relationships, *operation_args)
       else
-        @operations.push JSONAPI::Operation.new(:remove_to_one_relationship,
-          *operation_base_args
-        )
+        @operations.push JSONAPI::Operation.new(:remove_to_one_relationship, *operation_base_args)
       end
-    end
-
-    def parse_key_array(raw)
-      @resource_klass.verify_keys(raw.split(/,/), context)
     end
 
     def format_key(key)
