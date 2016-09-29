@@ -17,7 +17,7 @@ when 'master'
   gem 'rails', { git: 'https://github.com/rails/rails.git' }
   gem 'arel', { git: 'https://github.com/rails/arel.git' }
 when 'default'
-  gem 'rails', '>= 4.2'
+  gem 'rails', '>= 5.0'
 else
   gem 'rails', "~> #{version}"
 end
