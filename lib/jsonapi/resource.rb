@@ -461,7 +461,7 @@ module JSONAPI
         end
       end
 
-      attr_accessor :_attributes, :_relationships, :_type, :_model_hints, :always_includes
+      attr_accessor :_attributes, :_relationships, :_type, :_model_hints, :always_loads
       attr_writer :_allowed_filters, :_paginator
 
       def create(context)
@@ -572,8 +572,8 @@ module JSONAPI
         @_cache_field = field.to_sym
       end
 
-      def always_include(*relationships)
-        _add_always_includes(*relationships)
+      def always_load(*relationships)
+        _add_always_loads(*relationships)
       end
 
       # Override in your resource to filter the updatable keys
@@ -615,9 +615,9 @@ module JSONAPI
         end
       end
 
-      def merge_always_includes(resource_klass, model_include, options)
+      def merge_always_loads(resource_klass, model_include, options)
         if resource_klass.present?
-          merge_includes(resource_klass.always_includes, model_include)
+          merge_loads(resource_klass.always_loads, model_include)
         else
           model_include
         end
@@ -634,23 +634,23 @@ module JSONAPI
         nil
       end
 
-      def resolve_always_includes(resource_klass, model_includes, options = {})
+      def resolve_always_loads(resource_klass, model_includes, options = {})
         case model_includes
         when Array
           model_includes.uniq.map do |value|
-            resolve_always_includes(resource_klass, value, options)
+            resolve_always_loads(resource_klass, value, options)
           end
         when Hash
           Hash[model_includes.map do |key, value|
             relationship_klass = relationship_klass_from(resource_klass, key)
             if relationship_klass.present?
-              [key, resolve_always_includes(relationship_klass, merge_always_includes(relationship_klass, value, options), options)]
+              [key, resolve_always_loads(relationship_klass, merge_always_loads(relationship_klass, value, options), options)]
             end
           end.compact]
         when Symbol
           relationship_klass = relationship_klass_from(resource_klass, model_includes.to_s)
-          if relationship_klass.present? && relationship_klass.always_includes.present?
-            { model_includes => relationship_klass.always_includes }
+          if relationship_klass.present? && relationship_klass.always_loads.present?
+            { model_includes => relationship_klass.always_loads }
           else
             model_includes
           end
@@ -665,33 +665,33 @@ module JSONAPI
         []
       end
 
-      def get_includes(options = {})
-        model_includes = resolve_always_includes(self, model_includes(options), options)
-        includes = merge_includes(always_includes, model_includes)
+      def get_loads(options = {})
+        model_includes = resolve_always_loads(self, model_includes(options), options)
+        includes = merge_loads(always_loads, model_includes)
         filter_for_relationship_type(includes, options)
       end
 
-      def merge_includes(includes_a, includes_b)
-        includes_a = normalize_includes(includes_a)
-        includes_b = normalize_includes(includes_b)
+      def merge_loads(loads_a, loads_b)
+        loads_a = normalize_loads(loads_a)
+        loads_b = normalize_loads(loads_b)
 
-        hash_a = includes_a.detect{|inc| inc.is_a? Hash}
-        hash_b = includes_b.detect{|inc| inc.is_a? Hash}
+        hash_a = loads_a.detect{|inc| inc.is_a? Hash}
+        hash_b = loads_b.detect{|inc| inc.is_a? Hash}
 
-        merged_hash = merge_includes_hashes(hash_a, hash_b)
+        merged_hash = merge_loads_hashes(hash_a, hash_b)
         if merged_hash.empty?
-          (includes_a + includes_b).uniq
+          (loads_a + loads_b).uniq
         else
-          without_hash_keys = includes_a.reject{|inc| inc.is_a? Hash} + includes_b.reject{|inc| inc.is_a? Hash}
+          without_hash_keys = loads_a.reject{|inc| inc.is_a? Hash} + loads_b.reject{|inc| inc.is_a? Hash}
           without_hash_keys = without_hash_keys.uniq - merged_hash.keys
           without_hash_keys << merged_hash
         end
       end
 
-      def merge_includes_hashes(hash_a, hash_b)
+      def merge_loads_hashes(hash_a, hash_b)
         if hash_a && hash_b
           same_keys(hash_a, hash_b).inject(uniq_hash(hash_a, hash_b)) do |hsh, key|
-            hsh[key] = merge_includes(hash_a[key], hash_b[key])
+            hsh[key] = merge_loads(hash_a[key], hash_b[key])
             hsh
           end
         else
@@ -714,11 +714,11 @@ module JSONAPI
         end
       end
 
-      def normalize_includes(includes)
-        case includes
+      def normalize_loads(loads)
+        case loads
         when Array
           hsh = {}
-          arr = includes.inject([]) do |arr, inc|
+          arr = loads.inject([]) do |arr, inc|
             case inc
             when Hash
               hsh.merge!(inc)
@@ -730,16 +730,16 @@ module JSONAPI
           arr << hsh unless hsh.empty?
           arr
         when Symbol
-          Array(includes)
+          Array(loads)
         end
       end
 
-      def filter_for_relationship_type(includes, options)
+      def filter_for_relationship_type(loads, options)
         if options[:relationship_type].present?
           relationship = self._relationships[options[:relationship_type].to_sym]
           relation_name = relationship.relation_name(options)
 
-          includes = includes.reduce([]) do |arr, val|
+          loads = loads.reduce([]) do |arr, val|
             if val == relation_name
               arr << val
             elsif val.try(:fetch, relation_name, nil).present?
@@ -748,20 +748,20 @@ module JSONAPI
             arr
           end
 
-          if includes.empty?
-            if relationship.resource_klass.always_include.present?
-              includes << { relation_name => relationship.resource_klass.always_include }
+          if loads.empty?
+            if relationship.resource_klass.always_load.present?
+              loads << { relation_name => relationship.resource_klass.always_load }
             else
-              includes << relation_name
+              loads << relation_name
             end
           end
         end
 
-        includes
+        loads
       end
 
-      def apply_includes(records, options = {})
-        records.includes(get_includes(options))
+      def apply_loads(records, options = {})
+        records.includes(get_loads(options))
       end
 
       def apply_pagination(records, paginator, order_options)
@@ -846,7 +846,7 @@ module JSONAPI
         end
 
         if required_includes.any?
-          records = apply_includes(records, options.merge(include_directives: IncludeDirectives.new(self, required_includes, force_eager_load: true)))
+          records = apply_loads(records, options.merge(include_directives: IncludeDirectives.new(self, required_includes, force_eager_load: true)))
         end
 
         records
@@ -854,7 +854,7 @@ module JSONAPI
 
       def filter_records(filters, options, records = records(options))
         records = apply_filters(records, filters, options)
-        apply_includes(records, options)
+        apply_loads(records, options)
       end
 
       def sort_records(records, order_options, context = {})
@@ -884,7 +884,7 @@ module JSONAPI
       def find_by_keys(keys, options = {})
         context = options[:context]
         records = records(options)
-        records = apply_includes(records, options)
+        records = apply_loads(records, options)
         models = records.where({_primary_key => keys})
         models.collect do |model|
           self.resource_for_model(model).new(model, context)
@@ -1158,12 +1158,12 @@ module JSONAPI
         end
       end
 
-      def always_includes
-        @always_includes ||= []
+      def always_loads
+        @always_loads ||= []
       end
 
-      def _add_always_includes(*relationships)
-        always_includes.concat(Array(relationships))
+      def _add_always_loads(*relationships)
+        always_loads.concat(Array(relationships))
       end
 
       # Allows JSONAPI::RelationshipBuilder to access metaprogramming hooks
