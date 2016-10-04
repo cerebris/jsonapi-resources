@@ -35,6 +35,7 @@ backed by ActiveRecord models or by custom objects.
     * [Filters] (#filters)
     * [Pagination] (#pagination)
     * [Included relationships (side-loading resources)] (#included-relationships-side-loading-resources)
+    * [Loaded relationships (eager-loading resources)] (#loaded-relationships-eager-loading-resources)
     * [Resource meta] (#resource-meta)
     * [Custom Links] (#custom-links)
     * [Callbacks] (#callbacks)
@@ -1034,6 +1035,40 @@ Will get you the following payload by default:
     }
   }]
 }
+```
+
+#### Loaded relationships (eager-loading resources)
+
+To avoid N+1 queries when a resource attribute relies on attributes of related model records to calculate it `always_load` can be used. [Included relationships](#included-relationships-side-loading-resources) have their `always_load` relationships loaded.
+
+```ruby
+class CompanyResource
+  attribute :plan_start_at
+
+  always_load :subscription
+
+  def plan_start_at
+    @model.subscription.created_at
+  end
+end
+```
+
+Nested records to eager load can be declared.
+
+```ruby
+class CompanyResource
+  attribute :plan_start_at
+
+  always_load subscription: [:settings]
+
+  def plan_start_at
+    @model.subscription.created_at
+  end
+
+  def needs_tokens
+    @model.subscription.settings.needs_tokens
+  end
+end
 ```
 
 #### Resource Meta
