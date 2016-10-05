@@ -212,7 +212,7 @@ module ActionDispatch
 
           formatted_relationship_name = format_route(relationship.name)
 
-          if relationship.polymorphic?
+          if relationship.polymorphic? || relationship.absolute?
             options[:controller] ||= relationship.class_name.underscore.pluralize
           else
             related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(relationship.class_name.underscore.pluralize))
@@ -232,8 +232,12 @@ module ActionDispatch
           relationship = source._relationships[relationship_name]
 
           formatted_relationship_name = format_route(relationship.name)
-          related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(relationship.class_name.underscore))
-          options[:controller] ||= related_resource._type.to_s
+          if relationship.absolute?
+            options[:controller] ||= relationship.class_name.underscore.pluralize
+          else
+            related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(relationship.class_name.underscore))
+            options[:controller] ||= related_resource._type.to_s
+          end
 
           match "#{formatted_relationship_name}", controller: options[:controller],
                                                   relationship: relationship.name, source: resource_type_with_module_prefix(source._type),
