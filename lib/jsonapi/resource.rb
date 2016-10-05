@@ -423,6 +423,7 @@ module JSONAPI
       end
 
       def resource_for(type)
+        type = type.underscore
         type_with_module = type.include?('/') ? type : module_path + type
 
         resource_name = _resource_name_from_type(type_with_module)
@@ -539,10 +540,9 @@ module JSONAPI
       end
 
       def model_hint(model: _model_name, resource: _type)
-        model_name = ((model.is_a?(Class)) && (model < ActiveRecord::Base)) ? model.name : model
         resource_type = ((resource.is_a?(Class)) && (resource < JSONAPI::Resource)) ? resource._type : resource.to_s
 
-        _model_hints[model_name.to_s.gsub('::', '/').underscore] = resource_type.to_s
+        _model_hints[model.to_s.gsub('::', '/').underscore] = resource_type.to_s
       end
 
       def filters(*attrs)
