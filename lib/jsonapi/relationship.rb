@@ -23,7 +23,13 @@ module JSONAPI
     end
 
     def resource_klass
-      @resource_klass ||= @parent_resource.resource_for(@class_name)
+      @resource_klass ||=
+        begin
+          if options[:resource_class]
+            klass = options[:resource_class].safe_constantize
+          end
+          klass || @parent_resource.resource_for(@class_name)
+        end
     end
 
     def table_name
