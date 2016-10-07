@@ -18,7 +18,7 @@ if ENV['COVERAGE']
   end
 end
 
-require 'rails/all'
+require 'active_record/railtie'
 require 'rails/test_help'
 require 'minitest/mock'
 require 'jsonapi-resources'
