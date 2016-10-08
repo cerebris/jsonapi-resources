@@ -2148,6 +2148,16 @@ end
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
 
+### Running Tests
+
+To run the tests for this project:
+
+- `rake test` or `bundle exec rake test`
+
+To run a single test:
+
+- `bundle exec ruby -I test test/controllers/controller_test.rb -n test_type_formatting`
+
 ## License
 
 Copyright 2014-2016 Cerebris Corporation. MIT License (see LICENSE for details).
