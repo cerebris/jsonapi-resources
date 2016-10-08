@@ -56,6 +56,13 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :success
   end
 
+  def test_accept_header_all_modified
+    @request.headers['Accept'] = "*/*;q=0.8"
+
+    assert_cacheable_get :index
+    assert_response :success
+  end
+
   def test_accept_header_not_jsonapi
     @request.headers['Accept'] = 'text/plain'
 
