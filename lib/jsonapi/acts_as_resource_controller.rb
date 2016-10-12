@@ -162,9 +162,9 @@ module JSONAPI
       media_types = media_types_for('Accept')
 
       media_types.blank? ||
-          media_types.any? do |media_type|
-            (media_type == JSONAPI::MEDIA_TYPE || media_type == ALL_MEDIA_TYPES)
-          end
+        media_types.any? do |media_type|
+          (media_type == JSONAPI::MEDIA_TYPE || media_type.start_with?(ALL_MEDIA_TYPES))
+        end
     end
 
     def media_types_for(header)
