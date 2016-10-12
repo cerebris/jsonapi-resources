@@ -15,7 +15,7 @@ module JSONAPI
     #              relationship ids in the links section for a resource. Fields are global for a resource type.
     #     Example: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}
     # key_formatter: KeyFormatter instance to override the default configuration
-    # serializer_options: additional options that will be passed to resource meta and links lambdas
+    # serialization_options: additional options that will be passed to resource meta and links lambdas
 
     def initialize(primary_resource_klass, options = {})
       @primary_resource_klass = primary_resource_klass
