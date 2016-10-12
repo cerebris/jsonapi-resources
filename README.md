@@ -1439,7 +1439,7 @@ Pass a block, refer to controller class methods, or both. Note that methods must
 ##### verify_content_type_header
 
 By default, when controllers extend functionalities from `jsonapi-resources`, the `ActsAsResourceController#verify_content_type_header`
-method will be triggered before `create`, `update`, `create_relationship` and `update_relationship` actions. This method is reponsible
+method will be triggered before `create`, `update`, `create_relationship` and `update_relationship` actions. This method is responsible
 for checking if client's request corresponds to the correct media type required by [JSON API](http://jsonapi.org/format/#content-negotiation-clients): `application/vnd.api+json`.
 
 In case you need to check the media type for custom actions, just make sure to call the method in your controller's `before_action`:
