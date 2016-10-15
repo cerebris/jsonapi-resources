@@ -807,7 +807,7 @@ JSONAPI.configure do |config|
 end
 ```
 
-Handling the error and rendering the appropriate code is now the resonsiblity of the
+Handling the error and rendering the appropriate code is now the responsibility of the
 application and could be handled like this:
 
 ```ruby
