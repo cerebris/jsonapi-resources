@@ -139,7 +139,7 @@ module JSONAPI
     end
 
     def verify_content_type_header
-      unless request.content_type == JSONAPI::MEDIA_TYPE
+      unless request.content_type == conten_type_mediatype
         fail JSONAPI::Exceptions::UnsupportedMediaTypeError.new(request.content_type)
       end
       true
@@ -162,8 +162,8 @@ module JSONAPI
       media_types = media_types_for('Accept')
 
       media_types.blank? ||
-        media_types.any? do |media_type|
-          (media_type == JSONAPI::MEDIA_TYPE || media_type.start_with?(ALL_MEDIA_TYPES))
+        media_types.any? do |type|
+          type == media_type || type.start_with?(ALL_MEDIA_TYPES)
         end
     end
 
@@ -195,6 +195,10 @@ module JSONAPI
 
     def route_formatter
       JSONAPI.configuration.route_formatter
+    end
+    
+    def media_type
+      @media_type || self.class.const_get('MEDIA_TYPE') || JSONAPI.configuration.media_type
     end
 
     def base_response_meta
