@@ -1036,6 +1036,9 @@ Will get you the following payload by default:
 }
 ```
 
+Note: When passing `include` with `fields` params, `relationships` object does not return.
+To include it, add `fields[posts]=comments` to request.
+
 #### Resource Meta
 
 Meta information can be included for each resource using the meta method in the resource declaration. For example:
