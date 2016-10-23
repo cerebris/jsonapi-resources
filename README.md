@@ -1036,8 +1036,7 @@ Will get you the following payload by default:
 }
 ```
 
-Note: When passing `include` with `fields` params, `relationships` object does not return.
-To include it, add `fields[posts]=comments` to request.
+Note: When passing `include` and `fields` params together, relationships not included in the `fields` parameter will not be serialized. This will have the side effect of not serializing the included resources. To ensure the related resources are properly side loaded specify them in the `fields`, like `fields[posts]=comments,title,&include=comments`.
 
 #### Resource Meta
 
