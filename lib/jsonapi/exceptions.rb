@@ -244,7 +244,7 @@ module JSONAPI
                             title: I18n.translate('jsonapi-resources.exceptions.type_mismatch.title',
                                                   default: 'Type Mismatch'),
                             detail: I18n.translate('jsonapi-resources.exceptions.type_mismatch.detail',
-                                                   default: "#{type} is not a valid type for this operation.", type: type))]
+                                                   default: "#{type} is not a valid type for this operation. Consider checking the spelling or pluralization of the type field.", type: type))]
       end
     end
 
@@ -261,7 +261,7 @@ module JSONAPI
                             title: I18n.translate('jsonapi-resources.exceptions.invalid_field.title',
                                                   default: 'Invalid field'),
                             detail: I18n.translate('jsonapi-resources.exceptions.invalid_field.detail',
-                                                   default: "#{field} is not a valid field for #{type}.",
+                                                   default: "#{field} is not a valid field for #{type}. Consider checking the spelling of the field name.",
                                                    field: field, type: type))]
       end
     end
