@@ -45,10 +45,10 @@ en:
         detail: 'Data is not a valid Links Object.'
       type_mismatch:
         title: 'Type Mismatch'
-        detail: "%{type} is not a valid type for this operation."
+        detail: "%{type} is not a valid type for this operation. Consider checking the spelling or pluralization of the type field."
       invalid_field:
         title: 'Invalid field'
-        detail: "%{field} is not a valid field for %{type}."
+        detail: "%{field} is not a valid field for %{type}. Consider checking the spelling of the field name."
       invalid_include:
         title: 'Invalid field'
         detail: "%{relationship} is not a valid relationship of %{resource}"
