@@ -1036,6 +1036,8 @@ Will get you the following payload by default:
 }
 ```
 
+Note: When passing `include` and `fields` params together, relationships not included in the `fields` parameter will not be serialized. This will have the side effect of not serializing the included resources. To ensure the related resources are properly side loaded specify them in the `fields`, like `fields[posts]=comments,title&include=comments`.
+
 #### Resource Meta
 
 Meta information can be included for each resource using the meta method in the resource declaration. For example:
