@@ -205,6 +205,14 @@ class ResourceTest < ActiveSupport::TestCase
     assert_equal(relationships.size, 2)
   end
 
+  def test_replace_polymorphic_to_one_link
+    picture_resource = PictureResource.find_by_key(Picture.first)
+    picture_resource.replace_polymorphic_to_one_link('imageable', '9', 'Topic')
+
+    assert Picture.first.imageable_id == 9
+    assert Picture.first.imageable_type == Document::Topic.to_s
+  end
+
   def test_duplicate_relationship_name
     assert_output nil, "[DUPLICATE RELATIONSHIP] `mother` has already been defined in CatResource.\n" do
       CatResource.instance_eval do
