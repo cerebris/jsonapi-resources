@@ -572,6 +572,9 @@ class Document < ActiveRecord::Base
   has_many :pictures, as: :imageable
 end
 
+class Document::Topic < Document
+end
+
 class Product < ActiveRecord::Base
   has_one :picture, as: :imageable
 end
@@ -1206,6 +1209,11 @@ end
 
 class DocumentResource < JSONAPI::Resource
   attribute :name
+  has_many :pictures
+end
+
+class TopicResource < JSONAPI::Resource
+  model_name 'Document::Topic'
   has_many :pictures
 end
 

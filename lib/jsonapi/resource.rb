@@ -324,7 +324,7 @@ module JSONAPI
       relationship = self.class._relationships[relationship_type.to_sym]
 
       _model.public_send("#{relationship.foreign_key}=", key_value)
-      _model.public_send("#{relationship.polymorphic_type}=", key_type.to_s.classify)
+      _model.public_send("#{relationship.polymorphic_type}=", _model_class_name(key_type))
 
       @save_needed = true
 
@@ -402,6 +402,12 @@ module JSONAPI
       end if field_data[:to_many]
 
       :completed
+    end
+
+    def _model_class_name(key_type)
+      type_class_name = key_type.to_s.classify
+      resource = self.class.resource_for(type_class_name)
+      resource ? resource._model_name.to_s : type_class_name
     end
 
     class << self
