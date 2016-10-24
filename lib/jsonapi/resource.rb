@@ -461,7 +461,7 @@ module JSONAPI
         end
       end
 
-      attr_accessor :_attributes, :_relationships, :_type, :_model_hints
+      attr_accessor :_attributes, :_relationships, :_type, :_model_hints, :always_loads
       attr_writer :_allowed_filters, :_paginator
 
       def create(context)
@@ -572,6 +572,10 @@ module JSONAPI
         @_cache_field = field.to_sym
       end
 
+      def always_load(*relationships)
+        _add_always_loads(*relationships)
+      end
+
       # Override in your resource to filter the updatable keys
       def updatable_fields(_context = nil)
         _updatable_relationships | _attributes.keys - [:id]
@@ -611,14 +615,153 @@ module JSONAPI
         end
       end
 
-      def apply_includes(records, options = {})
+      def merge_always_loads(resource_klass, model_include, options)
+        if resource_klass.present?
+          merge_loads(resource_klass.always_loads, model_include)
+        else
+          model_include
+        end
+      end
+
+      def relationship_klass_from(resource_klass, key)
+        reflection = resource_klass._model_class._reflections[key.to_s]
+        if reflection.present?
+          relationship_klass = resource_klass.resource_for(reflection.class_name)
+        else
+          nil
+        end
+      rescue NameError => ex
+        nil
+      end
+
+      def resolve_always_loads(resource_klass, model_includes, options = {})
+        case model_includes
+        when Array
+          model_includes.uniq.map do |value|
+            resolve_always_loads(resource_klass, value, options)
+          end
+        when Hash
+          Hash[model_includes.map do |key, value|
+            relationship_klass = relationship_klass_from(resource_klass, key)
+            if relationship_klass.present?
+              [key, resolve_always_loads(relationship_klass, merge_always_loads(relationship_klass, value, options), options)]
+            end
+          end.compact]
+        when Symbol
+          relationship_klass = relationship_klass_from(resource_klass, model_includes.to_s)
+          if relationship_klass.present? && relationship_klass.always_loads.present?
+            { model_includes => relationship_klass.always_loads }
+          else
+            model_includes
+          end
+        end
+      end
+
+      def model_includes(options)
         include_directives = options[:include_directives]
         if include_directives
-          model_includes = resolve_relationship_names_to_relations(self, include_directives.model_includes, options)
-          records = records.includes(model_includes)
+          return resolve_relationship_names_to_relations(self, include_directives.model_includes, options)
+        end
+        []
+      end
+
+      def get_loads(options = {})
+        model_includes = resolve_always_loads(self, model_includes(options), options)
+        includes = merge_loads(always_loads, model_includes)
+        filter_for_relationship_type(includes, options)
+      end
+
+      def merge_loads(loads_a, loads_b)
+        loads_a = normalize_loads(loads_a)
+        loads_b = normalize_loads(loads_b)
+
+        hash_a = loads_a.detect{|inc| inc.is_a? Hash}
+        hash_b = loads_b.detect{|inc| inc.is_a? Hash}
+
+        merged_hash = merge_loads_hashes(hash_a, hash_b)
+        if merged_hash.empty?
+          (loads_a + loads_b).uniq
+        else
+          without_hash_keys = loads_a.reject{|inc| inc.is_a? Hash} + loads_b.reject{|inc| inc.is_a? Hash}
+          without_hash_keys = without_hash_keys.uniq - merged_hash.keys
+          without_hash_keys << merged_hash
+        end
+      end
+
+      def merge_loads_hashes(hash_a, hash_b)
+        if hash_a && hash_b
+          same_keys(hash_a, hash_b).inject(uniq_hash(hash_a, hash_b)) do |hsh, key|
+            hsh[key] = merge_loads(hash_a[key], hash_b[key])
+            hsh
+          end
+        else
+          hash_a || hash_b || {}
+        end
+      end
+
+      def uniq_keys(hash_a, hash_b)
+        (hash_a.keys - hash_b.keys) + (hash_b.keys - hash_a.keys)
+      end
+
+      def same_keys(hash_a, hash_b)
+        hash_a.keys - uniq_keys(hash_a, hash_b)
+      end
+
+      def uniq_hash(hash_a, hash_b)
+        uniq_keys(hash_a, hash_b).inject({}) do |hsh, key|
+          hsh[key] =  hash_a[key] || hash_b[key]
+          hsh
+        end
+      end
+
+      def normalize_loads(loads)
+        case loads
+        when Array
+          hsh = {}
+          arr = loads.inject([]) do |arr, inc|
+            case inc
+            when Hash
+              hsh.merge!(inc)
+            when Symbol
+              arr << inc
+            end
+            arr
+          end
+          arr << hsh unless hsh.empty?
+          arr
+        when Symbol
+          Array(loads)
+        end
+      end
+
+      def filter_for_relationship_type(loads, options)
+        if options[:relationship_type].present?
+          relationship = self._relationships[options[:relationship_type].to_sym]
+          relation_name = relationship.relation_name(options)
+
+          loads = loads.reduce([]) do |arr, val|
+            if val == relation_name
+              arr << val
+            elsif val.try(:fetch, relation_name, nil).present?
+              arr << { relation_name => val[relation_name] }
+            end
+            arr
+          end
+
+          if loads.empty?
+            if relationship.resource_klass.always_load.present?
+              loads << { relation_name => relationship.resource_klass.always_load }
+            else
+              loads << relation_name
+            end
+          end
         end
 
-        records
+        loads
+      end
+
+      def apply_loads(records, options = {})
+        records.includes(get_loads(options))
       end
 
       def apply_pagination(records, paginator, order_options)
@@ -703,7 +846,7 @@ module JSONAPI
         end
 
         if required_includes.any?
-          records = apply_includes(records, options.merge(include_directives: IncludeDirectives.new(self, required_includes, force_eager_load: true)))
+          records = apply_loads(records, options.merge(include_directives: IncludeDirectives.new(self, required_includes, force_eager_load: true)))
         end
 
         records
@@ -711,7 +854,7 @@ module JSONAPI
 
       def filter_records(filters, options, records = records(options))
         records = apply_filters(records, filters, options)
-        apply_includes(records, options)
+        apply_loads(records, options)
       end
 
       def sort_records(records, order_options, context = {})
@@ -741,7 +884,7 @@ module JSONAPI
       def find_by_keys(keys, options = {})
         context = options[:context]
         records = records(options)
-        records = apply_includes(records, options)
+        records = apply_loads(records, options)
         models = records.where({_primary_key => keys})
         models.collect do |model|
           self.resource_for_model(model).new(model, context)
@@ -1013,6 +1156,14 @@ module JSONAPI
           JSONAPI::RelationshipBuilder.new(klass, _model_class, options)
             .define_relationship_methods(relationship_name.to_sym)
         end
+      end
+
+      def always_loads
+        @always_loads ||= []
+      end
+
+      def _add_always_loads(*relationships)
+        always_loads.concat(Array(relationships))
       end
 
       # Allows JSONAPI::RelationshipBuilder to access metaprogramming hooks

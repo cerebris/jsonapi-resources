@@ -148,7 +148,7 @@ module JSONAPI
       fields = params[:fields]
 
       # TODO Should fetch related_resource from cache if caching enabled
-      source_resource = source_klass.find_by_key(source_id, context: context, fields: fields)
+      source_resource = source_klass.find_by_key(source_id, context: context, fields: fields, relationship_type: relationship_type)
 
       related_resource = source_resource.public_send(relationship_type)
 
@@ -165,7 +165,7 @@ module JSONAPI
       fields = params[:fields]
       include_directives = params[:include_directives]
 
-      source_resource ||= source_klass.find_by_key(source_id, context: context, fields: fields)
+      source_resource ||= source_klass.find_by_key(source_id, context: context, fields: fields, relationship_type: relationship_type)
 
       rel_opts = {
         filters:  filters,
