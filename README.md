@@ -2099,6 +2099,10 @@ JSONAPI.configure do |config|
   # Subclasses of the whitelisted classes will also be whitelisted.
   config.exception_class_whitelist = []
 
+  # If enabled, will override configuration option `exception_class_whitelist`
+  # and whitelist all exceptions.
+  config.whitelist_all_exceptions = false
+
   # Resource Linkage
   # Controls the serialization of resource linkage for non compound documents
   # NOTE: always_include_to_many_linkage_data is not currently implemented
