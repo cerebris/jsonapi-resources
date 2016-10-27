@@ -110,7 +110,7 @@ class OffsetPaginator < JSONAPI::Paginator
       fail JSONAPI::Exceptions::InvalidPageValue.new(:limit, @limit)
     elsif @limit > JSONAPI.configuration.maximum_page_size
       fail JSONAPI::Exceptions::InvalidPageValue.new(:limit, @limit,
-                                                     "Limit exceeds maximum page size of #{JSONAPI.configuration.maximum_page_size}.")
+                                                     detail: "Limit exceeds maximum page size of #{JSONAPI.configuration.maximum_page_size}.")
     end
 
     if @offset < 0
@@ -199,7 +199,7 @@ class PagedPaginator < JSONAPI::Paginator
       fail JSONAPI::Exceptions::InvalidPageValue.new(:size, @size)
     elsif @size > JSONAPI.configuration.maximum_page_size
       fail JSONAPI::Exceptions::InvalidPageValue.new(:size, @size,
-                                                     "size exceeds maximum page size of #{JSONAPI.configuration.maximum_page_size}.")
+                                                     detail: "size exceeds maximum page size of #{JSONAPI.configuration.maximum_page_size}.")
     end
 
     if @number < 1
