@@ -197,6 +197,47 @@ class RoutesTest < ActionDispatch::IntegrationTest
                    {action: 'show', controller: 'iso_currencies', id: 'USD'})
   end
 
+  def test_routing_api_rest_people_show_relationship_comments
+    assert_routing({path: '/api_rest/people/1/relationships/comments', method: :get},
+                   {action: 'show_relationship', controller: 'api_rest/people', person_id: '1', relationship: 'comments'})
+  end
+
+  def test_routing_people_get_related_resources_comments
+    assert_routing({path: '/api_rest/people/1/comments', method: :get},
+                   {action: 'get_related_resources', controller: 'api_rest/comments', person_id: '1',
+                    relationship: 'comments', source: 'rest/people'})
+
+  end
+
+  def test_routing_api_rest_posts_index
+    assert_routing({path: '/api_rest/posts', method: :get},
+                   {action: 'index', controller: 'api_rest/people_posts'})
+  end
+
+  def test_routing_api_rest_posts_show_relationship_tags
+    assert_routing({path: '/api_rest/posts/1/relationships/tags', method: :get},
+                   {action: 'show_relationship', controller: 'api_rest/people_posts', post_id: '1', relationship: 'tags'})
+  end
+
+  def test_routing_api_rest_posts_show_relationship_section
+    assert_routing({path: '/api_rest/posts/1/relationships/section', method: :get},
+                   {action: 'show_relationship', controller: 'api_rest/people_posts', post_id: '1', relationship: 'section'})
+  end
+
+  def test_routing_posts_get_related_resources_tags
+    assert_routing({path: '/api_rest/posts/1/tags', method: :get},
+                   {action: 'get_related_resources', controller: 'api_rest/posts_tags', post_id: '1',
+                    relationship: 'tags', source: 'rest/posts'})
+
+  end
+
+  def test_routing_posts_get_related_resource_section
+    assert_routing({path: '/api_rest/posts/1/section', method: :get},
+                   {action: 'get_related_resource', controller: 'api_rest/post_section', post_id: '1',
+                    relationship: 'section', source: 'rest/posts'})
+
+  end
+
   # ToDo: Refute routing
   # def test_routing_v3_posts_delete
   #   assert_routing({ path: '/api/v3/posts/1', method: :delete },
