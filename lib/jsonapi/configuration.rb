@@ -82,7 +82,6 @@ module JSONAPI
       # the `Pundit::NotAuthorizedError` to the `exception_class_whitelist`.
       self.exception_class_whitelist = []
 
-
       # If enabled, will override configuration option `exception_class_whitelist`
       # and whitelist all exceptions.
       self.whitelist_all_exceptions = false
