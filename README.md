@@ -626,6 +626,10 @@ class ContactResource < JSONAPI::Resource
 end
 ```
 
+Included resources can also be filtered as long as filter is defined on the included resource. Url should look in such fashion
+
+`address/foos?include=bars&filter[bars.available]=true`
+
 Then a request could pass in a filter for example `http://example.com/contacts?filter[name_last]=Smith` and the system
 will find all people where the last name exactly matches Smith.
 
