@@ -225,7 +225,6 @@ end
 JSONAPI.configuration.route_format = :underscored_route
 TestApp.routes.draw do
   jsonapi_resources :people
-  jsonapi_resources :special_people
   jsonapi_resources :comments
   jsonapi_resources :firms
   jsonapi_resources :tags
@@ -237,11 +236,6 @@ TestApp.routes.draw do
   jsonapi_resources :iso_currencies
   jsonapi_resources :expense_entries
   jsonapi_resources :breeds
-  jsonapi_resources :planets
-  jsonapi_resources :planet_types
-  jsonapi_resources :moons
-  jsonapi_resources :craters
-  jsonapi_resources :preferences
   jsonapi_resources :facts
   jsonapi_resources :categories
   jsonapi_resources :pictures
@@ -260,10 +254,8 @@ TestApp.routes.draw do
 
     namespace :v1 do
       jsonapi_resources :people
-      jsonapi_resources :comments
       jsonapi_resources :tags
       jsonapi_resources :posts
-      jsonapi_resources :sections
       jsonapi_resources :iso_currencies
       jsonapi_resources :expense_entries
       jsonapi_resources :breeds
@@ -271,7 +263,6 @@ TestApp.routes.draw do
       jsonapi_resources :planet_types
       jsonapi_resources :moons
       jsonapi_resources :craters
-      jsonapi_resources :preferences
       jsonapi_resources :likes
     end
 
@@ -288,10 +279,6 @@ TestApp.routes.draw do
     end
 
     namespace :v3 do
-      jsonapi_resource :preferences do
-        # Intentionally empty block to skip relationship urls
-      end
-
       jsonapi_resources :posts, except: [:destroy] do
         jsonapi_link :author, except: [:destroy]
         jsonapi_links :tags, only: [:show, :create]
@@ -323,8 +310,6 @@ TestApp.routes.draw do
       jsonapi_resources :expense_entries
       jsonapi_resources :iso_currencies
 
-      jsonapi_resources :employees
-
     end
     JSONAPI.configuration.route_format = :underscored_route
 
@@ -352,21 +337,22 @@ TestApp.routes.draw do
     end
   end
 
-  namespace :admin_api do
-    namespace :v1 do
-      jsonapi_resources :people
-    end
-  end
-
-  namespace :dasherized_namespace, path: 'dasherized-namespace' do
-    namespace :v1 do
-      jsonapi_resources :people
-    end
-  end
-
   namespace :pets do
     namespace :v1 do
       jsonapi_resources :cats
+    end
+  end
+
+  namespace :api_rest do
+    jsonapi_resources :people do
+      jsonapi_related_resources :comments
+      jsonapi_links :comments
+    end
+    jsonapi_resources :posts, controller: 'people_posts' do
+      jsonapi_related_resources :tags, controller: 'posts_tags'
+      jsonapi_related_resource :section, controller: 'post_section'
+      jsonapi_links :tags
+      jsonapi_link :section
     end
   end
 

@@ -17,13 +17,13 @@ module ActionDispatch
         end
 
         def jsonapi_resource(*resources, &_block)
-          @resource_type = resources.first
-          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
-
+          resource_type = resources.first
           options = resources.extract_options!.dup
-          options[:controller] ||= @resource_type
+          options[:controller] ||= resource_type
+          res = jsonapi_controller(options[:controller]).resource_klass
+
           options.merge!(res.routing_resource_options)
-          options[:path] = format_route(@resource_type)
+          options[:path] = format_route(resource_type)
 
           if options[:except]
             options[:except] << :new unless options[:except].include?(:new) || options[:except].include?('new')
@@ -38,11 +38,11 @@ module ActionDispatch
             options[:except] << :destroy unless options[:except].include?(:destroy) || options[:except].include?('destroy')
           end
 
-          resource @resource_type, options do
+          resource resource_type, options do
             # :nocov:
             if @scope.respond_to? :[]=
               # Rails 4
-              @scope[:jsonapi_resource] = @resource_type
+              @scope[:jsonapi_controller] = options[:controller]
 
               if block_given?
                 yield
@@ -51,7 +51,7 @@ module ActionDispatch
               end
             else
               # Rails 5
-              jsonapi_resource_scope(SingletonResource.new(@resource_type, api_only?, @scope[:shallow], options), @resource_type) do
+              jsonapi_resource_scope(SingletonResource.new(resource_type, api_only?, @scope[:shallow], options)) do
                 if block_given?
                   yield
                 else
@@ -64,7 +64,7 @@ module ActionDispatch
         end
 
         def jsonapi_relationships(options = {})
-          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
+          res = jsonapi_controller.resource_klass
           res._relationships.each do |relationship_name, relationship|
             if relationship.is_a?(JSONAPI::Relationship::ToMany)
               jsonapi_links(relationship_name, options)
@@ -77,16 +77,16 @@ module ActionDispatch
         end
 
         def jsonapi_resources(*resources, &_block)
-          @resource_type = resources.first
-          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
-
+          resource_type = resources.first
           options = resources.extract_options!.dup
-          options[:controller] ||= @resource_type
+          options[:controller] ||= resource_type
+          res = jsonapi_controller(options[:controller]).resource_klass
+
           options.merge!(res.routing_resource_options)
 
           options[:param] = :id
 
-          options[:path] = format_route(@resource_type)
+          options[:path] = format_route(resource_type)
 
           if res.resource_key_type == :uuid
             options[:constraints] ||= {}
@@ -107,11 +107,12 @@ module ActionDispatch
             options[:except] << :destroy unless options[:except].include?(:destroy) || options[:except].include?('destroy')
           end
 
-          resources @resource_type, options do
+          resources resource_type, options do
             # :nocov:
             if @scope.respond_to? :[]=
               # Rails 4
-              @scope[:jsonapi_resource] = @resource_type
+              @scope[:jsonapi_controller] = options[:controller]
+
               if block_given?
                 yield
               else
@@ -119,7 +120,7 @@ module ActionDispatch
               end
             else
               # Rails 5
-              jsonapi_resource_scope(Resource.new(@resource_type, api_only?, @scope[:shallow], options), @resource_type) do
+              jsonapi_resource_scope(Resource.new(resource_type, api_only?, @scope[:shallow], options)) do
                 if block_given?
                   yield
                 else
@@ -147,8 +148,8 @@ module ActionDispatch
           formatted_relationship_name = format_route(link_type)
           options = links.extract_options!.dup
 
-          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix)
-          options[:controller] ||= res._type.to_s
+          res = jsonapi_controller.resource_klass
+          options[:controller] ||= jsonapi_default_controller
 
           methods = links_methods(options)
 
@@ -175,8 +176,8 @@ module ActionDispatch
           formatted_relationship_name = format_route(link_type)
           options = links.extract_options!.dup
 
-          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix)
-          options[:controller] ||= res._type.to_s
+          res = jsonapi_controller.resource_klass
+          options[:controller] ||= jsonapi_default_controller
 
           methods = links_methods(options)
 
@@ -204,46 +205,41 @@ module ActionDispatch
         end
 
         def jsonapi_related_resource(*relationship)
-          source = JSONAPI::Resource.resource_for(resource_type_with_module_prefix)
+          source = jsonapi_controller.resource_klass
           options = relationship.extract_options!.dup
 
           relationship_name = relationship.first
           relationship = source._relationships[relationship_name]
 
           formatted_relationship_name = format_route(relationship.name)
-
-          if relationship.polymorphic?
-            options[:controller] ||= relationship.class_name.underscore.pluralize
-          else
-            related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(relationship.class_name.underscore.pluralize))
-            options[:controller] ||= related_resource._type.to_s
-          end
+          options[:controller] ||= relationship.type.to_s
+          source_name = source.name.underscore.sub(/_resource$/, '').pluralize
 
           match "#{formatted_relationship_name}", controller: options[:controller],
-                                                  relationship: relationship.name, source: resource_type_with_module_prefix(source._type),
+                                                  relationship: relationship.name, source: source_name,
                                                   action: 'get_related_resource', via: [:get]
         end
 
         def jsonapi_related_resources(*relationship)
-          source = JSONAPI::Resource.resource_for(resource_type_with_module_prefix)
+          source = jsonapi_controller.resource_klass
           options = relationship.extract_options!.dup
 
           relationship_name = relationship.first
           relationship = source._relationships[relationship_name]
 
           formatted_relationship_name = format_route(relationship.name)
-          related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(relationship.class_name.underscore))
-          options[:controller] ||= related_resource._type.to_s
+          options[:controller] ||= relationship.type.to_s
+          source_name = source.name.underscore.sub(/_resource$/, '').pluralize
 
           match "#{formatted_relationship_name}", controller: options[:controller],
-                                                  relationship: relationship.name, source: resource_type_with_module_prefix(source._type),
+                                                  relationship: relationship.name, source: source_name,
                                                   action: 'get_related_resources', via: [:get]
         end
 
         protected
         # :nocov:
-        def jsonapi_resource_scope(resource, resource_type) #:nodoc:
-          @scope = @scope.new(scope_level_resource: resource, jsonapi_resource: resource_type)
+        def jsonapi_resource_scope(resource) #:nodoc:
+          @scope = @scope.new(scope_level_resource: resource)
 
           controller(resource.resource_scope) { yield }
         ensure
@@ -252,10 +248,16 @@ module ActionDispatch
         # :nocov:
         private
 
-        def resource_type_with_module_prefix(resource = nil)
-          resource_name = resource || @scope[:jsonapi_resource]
-          [@scope[:module], resource_name].compact.collect(&:to_s).join('/')
+        def jsonapi_controller(controller_name = nil)
+          controller_name ||= jsonapi_default_controller
+          controller_name_with_module = [@scope[:module], controller_name].compact.collect(&:to_s).join('/')
+          "#{controller_name_with_module}_controller".camelize.constantize
         end
+
+        def jsonapi_default_controller
+          @scope[:jsonapi_controller] || @scope[:scope_level_resource].try!(:controller)
+        end
+
       end
     end
   end

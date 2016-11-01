@@ -879,6 +879,70 @@ module Api
   end
 end
 
+module ApiV2Engine
+  class PeopleController < JSONAPI::ResourceController
+  end
+end
+
+module MyEngine
+
+  module Api
+    module V1
+      class PeopleController < JSONAPI::ResourceController
+      end
+    end
+  end
+
+  module AdminApi
+    module V1
+      class PeopleController < JSONAPI::ResourceController
+      end
+    end
+  end
+
+  module DasherizedNamespace
+    module V1
+      class PeopleController < JSONAPI::ResourceController
+      end
+    end
+  end
+
+end
+
+module ApiRest
+
+  class PeopleController < JSONAPI::ResourceController
+    def self.resource_klass_name
+      'Rest::PersonResource'
+    end
+  end
+
+  class CommentsController < JSONAPI::ResourceController
+    def self.resource_klass_name
+      'CommentResource'
+    end
+  end
+
+  class PeoplePostsController < JSONAPI::ResourceController
+    def self.resource_klass_name
+      'Rest::PostResource'
+    end
+  end
+
+  class PostsTagsController < JSONAPI::ResourceController
+    def self.resource_klass_name
+      'TagResource'
+    end
+  end
+
+  class PostSectionController < JSONAPI::ResourceController
+    def self.resource_klass_name
+      'SectionResource'
+    end
+  end
+
+end
+
 ### RESOURCES
 class BaseResource < JSONAPI::Resource
   abstract
@@ -926,6 +990,15 @@ class SpecialPersonResource < SpecialBaseResource
 
   def self.records(options = {})
     Person.where(special: true)
+  end
+end
+
+module Rest
+  class PersonResource < BaseResource
+    model_name 'Person'
+    attributes :name, :email
+    attribute :date_joined, format: :date_with_timezone
+    has_many :comments, class_name: '::Comment'
   end
 end
 
@@ -1074,6 +1147,15 @@ class PostResource < JSONAPI::Resource
     super(key)
     raise JSONAPI::Exceptions::RecordNotFound.new(key) unless find_by_key(key, context: context)
     return key
+  end
+end
+
+module Rest
+  class PostResource < BaseResource
+    model_name 'Post'
+    attributes :title, :body
+    has_one :section, class_name: '::Section'
+    has_many :tags, class_name: '::Tag'
   end
 end
 

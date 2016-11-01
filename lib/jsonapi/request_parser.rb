@@ -23,14 +23,13 @@ module JSONAPI
       @paginator = nil
       @id = nil
       @server_error_callbacks = options.fetch(:server_error_callbacks, [])
+      @resource_klass = options[:resource_klass]
 
       setup_action(@params)
     end
 
     def setup_action(params)
       return if params.nil?
-
-      @resource_klass ||= Resource.resource_for(params[:controller]) if params[:controller]
 
       setup_action_method_name = "setup_#{params[:action]}_action"
       if respond_to?(setup_action_method_name)
@@ -201,7 +200,7 @@ module JSONAPI
       relationship = resource_klass._relationship(relationship_name)
       if relationship && format_key(relationship_name) == include_parts.first
         unless include_parts.last.empty?
-          check_include(Resource.resource_for(@resource_klass.module_path + relationship.class_name.to_s.underscore), include_parts.last.partition('.'))
+          check_include(@resource_klass.resource_for(relationship.class_name.to_s.underscore), include_parts.last.partition('.'))
         end
       else
         @errors.concat(JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type),
@@ -458,8 +457,7 @@ module JSONAPI
       end
 
       unless links_object[:id].nil?
-        resource = self.resource_klass || Resource
-        relationship_resource = resource.resource_for(unformat_key(links_object[:type]).to_s)
+        relationship_resource = @resource_klass.resource_for(relationship.class_name.to_s.underscore)
         relationship_id = relationship_resource.verify_key(links_object[:id], @context)
         if relationship.polymorphic?
           { id: relationship_id, type: unformat_key(links_object[:type].to_s) }
@@ -493,8 +491,8 @@ module JSONAPI
           fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
         end
 
-        links_object.each_pair do |type, keys|
-          relationship_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(type).to_s)
+        links_object.each_pair do |_type, keys|
+          relationship_resource = @resource_klass.resource_for(relationship.class_name.to_s.underscore)
           add_result.call relationship_resource.verify_keys(keys, @context)
         end
       end

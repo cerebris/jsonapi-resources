@@ -28,6 +28,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       params,
       {
         context: nil,
+        resource_klass: ExpenseEntryResource,
         key_formatter: JSONAPI::Formatter.formatter_for(:underscored_key)
       }
     )
@@ -48,6 +49,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       params,
       {
         context: nil,
+        resource_klass: ExpenseEntryResource,
         key_formatter: JSONAPI::Formatter.formatter_for(:dasherized_key)
       }
     )
@@ -68,6 +70,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       params,
       {
         context: nil,
+        resource_klass: ExpenseEntryResource,
         key_formatter: JSONAPI::Formatter.formatter_for(:dasherized_key)
       }
     )
@@ -89,6 +92,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       params,
       {
         context: nil,
+        resource_klass: ExpenseEntryResource,
         key_formatter: JSONAPI::Formatter.formatter_for(:underscored_key)
       }
     )
@@ -111,6 +115,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       params,
       {
         context: nil,
+        resource_klass: ExpenseEntryResource,
         key_formatter: JSONAPI::Formatter.formatter_for(:dasherized_key)
       }
     )
@@ -133,6 +138,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       params,
       {
         context: nil,
+        resource_klass: ExpenseEntryResource,
         key_formatter: JSONAPI::Formatter.formatter_for(:dasherized_key)
       }
     )
@@ -156,6 +162,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       params,
       {
         context: nil,
+        resource_klass: ExpenseEntryResource,
         key_formatter: JSONAPI::Formatter.formatter_for(:dasherized_key)
       }
     )

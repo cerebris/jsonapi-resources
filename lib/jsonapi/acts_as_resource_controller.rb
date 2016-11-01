@@ -63,7 +63,9 @@ module JSONAPI
     def process_request
       return unless verify_accept_header
 
-      @request = JSONAPI::RequestParser.new(params, context: context,
+      @request = JSONAPI::RequestParser.new(params,
+                                            resource_klass: resource_klass,
+                                            context: context,
                                             key_formatter: key_formatter,
                                             server_error_callbacks: (self.class.server_error_callbacks || []))
 
@@ -110,7 +112,7 @@ module JSONAPI
     private
 
     def resource_klass
-      @resource_klass ||= resource_klass_name.safe_constantize
+      @resource_klass ||= self.class.resource_klass
     end
 
     def resource_serializer_klass
@@ -132,10 +134,6 @@ module JSONAPI
 
     def base_url
       @base_url ||= request.protocol + request.host_with_port
-    end
-
-    def resource_klass_name
-      @resource_klass_name ||= "#{self.class.name.underscore.sub(/_controller$/, '').singularize}_resource".camelize
     end
 
     def verify_content_type_header
@@ -313,6 +311,14 @@ module JSONAPI
         end.compact
         callbacks += method_callbacks
         self.class_variable_set :@@server_error_callbacks, callbacks
+      end
+
+      def resource_klass_name
+        "#{self.name.underscore.sub(/_controller$/, '').singularize}_resource".camelize
+      end
+
+      def resource_klass
+        self.resource_klass_name.safe_constantize
       end
 
     end

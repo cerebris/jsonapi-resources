@@ -3616,3 +3616,76 @@ class Api::BoxesControllerTest < ActionController::TestCase
     assert_equal '2',  json_response['included'][1]['relationships']['things']['data'][0]['id']
   end
 end
+
+
+class ApiRest::PeopleControllerTest < ActionController::TestCase
+  def setup
+    JSONAPI.configuration.json_key_format = :underscored_key
+  end
+
+  def test_people_index_with_include_comments_post
+    assert_cacheable_get :index, params: {include: 'comments,comments.post'}
+    assert_response :success
+  end
+
+  def test_people_create_with_comment
+    set_content_type_header!
+    post :create, params: {
+        data: {
+            type: 'people',
+            attributes: {
+                name: 'John Doe',
+                email: 'jd@example.com',
+                date_joined: DateTime.parse('2016-10-30 10:20:00 UTC +00:00')
+            },
+            relationships: {
+                comments: {data: [{type: 'comments', id: '8'}]}
+            }
+        }
+    }
+    assert_response :success
+  end
+
+  def test_people_show_relationship_comments
+    assert_cacheable_get :show_relationship, params: {person_id: '1', relationship: 'comments'}
+    assert_response :success
+  end
+end
+
+class ApiRest::CommentsControllerTest < ActionController::TestCase
+  def test_comments_get_related_resources_source_people
+    assert_cacheable_get :get_related_resources, params: {person_id: '1', relationship: 'comments', source: 'rest/people'}
+    assert_response :success
+  end
+end
+
+class ApiRest::PeoplePostsControllerTest < ActionController::TestCase
+  def test_posts_index_with_include_tags_and_section
+    assert_cacheable_get :index, params: {include: 'tags,section'}
+    assert_response :success
+  end
+
+  def test_posts_show_relationship_tags
+    assert_cacheable_get :show_relationship, params: {post_id: '1', relationship: 'tags'}
+    assert_response :success
+  end
+
+  def test_posts_show_relationship_section
+    assert_cacheable_get :show_relationship, params: {post_id: '1', relationship: 'section'}
+    assert_response :success
+  end
+end
+
+class ApiRest::PostsTagsControllerTest < ActionController::TestCase
+  def test_tags_get_related_resources_source_posts
+    assert_cacheable_get :get_related_resources, params: {post_id: '1', relationship: 'tags', source: 'rest/posts'}
+    assert_response :success
+  end
+end
+
+class ApiRest::PostSectionControllerTest < ActionController::TestCase
+  def test_section_get_related_resource_source_posts
+    assert_cacheable_get :get_related_resource, params: {post_id: '1', relationship: 'section', source: 'rest/posts'}
+    assert_response :success
+  end
+end
