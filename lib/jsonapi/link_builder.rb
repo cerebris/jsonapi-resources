@@ -77,14 +77,23 @@ module JSONAPI
 
     def engine_resource_path(source)
       resource_path_name = engine_resource_path_name_from_source(source)
-      engine_name.routes.url_helpers.public_send(resource_path_name, source.id)
+
+      path_parameters = source.context.try(:[], :path_parameters) || []
+      path_parameters << source.id
+      engine_name.routes.url_helpers.public_send(resource_path_name, *path_parameters)
     end
 
     def engine_resource_path_name_from_source(source)
-      scopes         = module_scopes_from_class(source.class)[1..-1]
-      base_path_name = scopes.map { |scope| scope.underscore }.join("_")
+      scopes         = scopes_from_source(source)
+      base_path_name = scopes.map(&:underscore).join("_")
       end_path_name  = source.class._type.to_s.singularize
       [base_path_name, end_path_name, "path"].reject(&:blank?).join("_")
+    end
+
+    # Allow overriding scopes, e.g. for nested resources.
+    # TODO: use this method for all path generation
+    def scopes_from_source(source)
+      source.custom_route_scopes || module_scopes_from_class(source.class)[1..-1]
     end
 
     def engine_resource_url(source)
@@ -93,7 +102,7 @@ module JSONAPI
 
     def engine_resources_path_name_from_class(klass)
       scopes         = module_scopes_from_class(klass)[1..-1]
-      base_path_name = scopes.map { |scope| scope.underscore }.join("_")
+      base_path_name = scopes.map(&:underscore).join("_")
       end_path_name  = klass._type.to_s
 
       if base_path_name.blank?
