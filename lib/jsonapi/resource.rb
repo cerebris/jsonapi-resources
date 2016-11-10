@@ -465,12 +465,8 @@ module JSONAPI
       end
 
       def resource_type_for(model)
-        resource_type_for_class(model.class)
-      end
-
-      def resource_type_for_class(klass)
-        model_name = klass.to_s.underscore
-        if _model_hints.try(:[], model_name)
+        model_name = model.class.to_s.underscore
+        if _model_hints[model_name]
           _model_hints[model_name]
         else
           model_name.rpartition('/').last
