@@ -171,7 +171,7 @@ module JSONAPI
 
     # Override this to add a custom route scope.  
     # e.g. to support nested resource routes.
-    def custom_route_scopes
+    def self.custom_route_scopes
       nil
     end
 
@@ -465,8 +465,12 @@ module JSONAPI
       end
 
       def resource_type_for(model)
-        model_name = model.class.to_s.underscore
-        if _model_hints[model_name]
+        resource_type_for_class(model.class)
+      end
+
+      def resource_type_for_class(klass)
+        model_name = klass.to_s.underscore
+        if _model_hints.try(:[], model_name)
           _model_hints[model_name]
         else
           model_name.rpartition('/').last
