@@ -84,16 +84,15 @@ module JSONAPI
     end
 
     def engine_resource_path_name_from_source(source)
-      scopes         = scopes_from_source(source)
+      scopes         = scopes_from_resource_class(source.class)
       base_path_name = scopes.map { |scope| scope.to_s.underscore }.join('_')
       end_path_name  = source.class._type.to_s.singularize
       [base_path_name, end_path_name, 'path'].reject(&:blank?).join('_')
     end
 
-    # Allow overriding scopes, e.g. for nested resources.
-    # TODO: use this method for all path generation
-    def scopes_from_source(source)
-      source.custom_route_scopes || module_scopes_from_class(source.class)[1..-1]
+    def scopes_from_resource_class(resource_klass)
+      # Extension point -- allow overriding scopes in Resource definition, e.g. for nested resources.
+      resource_klass.custom_route_scopes || module_scopes_from_class(resource_klass)[1..-1]
     end
 
     def engine_resource_url(source)
@@ -101,7 +100,7 @@ module JSONAPI
     end
 
     def engine_resources_path_name_from_class(klass)
-      scopes         = module_scopes_from_class(klass)[1..-1]
+      scopes         = scopes_from_resource_class(klass)
       base_path_name = scopes.map { |scope| scope.to_s.underscore }.join('_')
       end_path_name  = klass._type.to_s
 
