@@ -34,8 +34,10 @@ module JSONAPI
 
       setup_action_method_name = "setup_#{params[:action]}_action"
       if respond_to?(setup_action_method_name)
-        if params[:_exception]
-          @errors.concat(JSONAPI::Exceptions::InternalServerError.new(params[:_exception]).errors)
+        if params[:_invalid_request_format]
+          @errors.concat(params[:_invalid_request_format].errors)
+        elsif params[:_malformed_json]
+          @errors.concat(JSONAPI::Exceptions::BadRequest.new(params[:_malformed_json].message).errors)
         else
           send(setup_action_method_name, params)
         end

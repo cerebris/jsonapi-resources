@@ -23,10 +23,13 @@ module JSONAPI
       lambda do |body|
         begin
           data = JSON.parse(body)
-          data = {:_json => data} unless data.is_a?(Hash)
-          data.with_indifferent_access
+          if data.is_a?(Hash)
+            data.with_indifferent_access
+          else
+            { _invalid_request_format: JSONAPI::Exceptions::InvalidRequestFormat.new  }
+          end
         rescue JSON::ParserError => e
-          { _exception: e }
+          { _malformed_json: e }
         end
       end
     end
