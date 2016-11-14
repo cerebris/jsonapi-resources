@@ -37,7 +37,7 @@ module JSONAPI
         if params[:_invalid_request_format]
           @errors.concat(params[:_invalid_request_format].errors)
         elsif params[:_malformed_json]
-          @errors.concat(JSONAPI::Exceptions::BadRequest.new(params[:_malformed_json].message).errors)
+          @errors.concat(params[:_malformed_json].errors)
         else
           send(setup_action_method_name, params)
         end

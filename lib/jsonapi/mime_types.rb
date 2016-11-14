@@ -26,10 +26,12 @@ module JSONAPI
           if data.is_a?(Hash)
             data.with_indifferent_access
           else
-            { _invalid_request_format: JSONAPI::Exceptions::InvalidRequestFormat.new  }
+            fail JSONAPI::Exceptions::InvalidRequestFormat.new
           end
         rescue JSON::ParserError => e
-          { _malformed_json: e }
+          { _malformed_json: JSONAPI::Exceptions::BadRequest.new(e)  }
+        rescue JSONAPI::Exceptions::InvalidRequestFormat => e
+          { _invalid_request_format: e }
         end
       end
     end
