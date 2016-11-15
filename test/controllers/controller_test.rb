@@ -2451,6 +2451,12 @@ class BooksControllerTest < ActionController::TestCase
   ensure
     JSONAPI.configuration.use_relationship_reflection = false
   end
+
+  def test_index_with_caching_enabled_uses_context
+    assert_cacheable_get :index
+    assert_response :success
+    assert json_response['data'][0]['attributes']['title'] = 'Title'
+  end
 end
 
 class Api::V5::AuthorsControllerTest < ActionController::TestCase

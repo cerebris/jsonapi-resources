@@ -1040,7 +1040,7 @@ module JSONAPI
           cache_ids = pluck_arel_attributes(records, t[_primary_key], t[_cache_field])
           resources = CachedResourceFragment.fetch_fragments(self, serializer, options[:context], cache_ids)
         else
-          resources = resources_for(records, options).map{|r| [r.id, r] }.to_h
+          resources = resources_for(records, options[:context]).map{|r| [r.id, r] }.to_h
         end
 
         preload_included_fragments(resources, records, serializer, options)
