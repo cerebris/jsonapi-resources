@@ -717,6 +717,9 @@ class BoatsController < JSONAPI::ResourceController
 end
 
 class BooksController < JSONAPI::ResourceController
+  def context
+    { title: 'Title' }
+  end
 end
 
 ### CONTROLLERS
@@ -1246,7 +1249,13 @@ class AuthorResource < JSONAPI::Resource
 end
 
 class BookResource < JSONAPI::Resource
+  attribute :title
+
   has_many :authors, class_name: 'Author', inverse_relationship: :books
+
+  def title
+    context[:title]
+  end
 end
 
 class AuthorDetailResource < JSONAPI::Resource
