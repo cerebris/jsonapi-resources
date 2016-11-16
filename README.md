@@ -1053,7 +1053,7 @@ class BookResource < JSONAPI::Resource
       computed_copyright: options[:serialization_options][:copyright],
       last_updated_at: _model.updated_at
     }
-   end
+  end
 end
 
 ```
