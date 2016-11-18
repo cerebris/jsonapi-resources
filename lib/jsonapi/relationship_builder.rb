@@ -47,23 +47,31 @@ module JSONAPI
     end
 
     def define_resource_relationship_accessor(type, relationship_name)
+
       associated_records_method_name = {
         one:  "record_for_#{relationship_name}",
         many: "records_for_#{relationship_name}"
       }
       .fetch(type)
-
       define_on_resource associated_records_method_name do |options = {}|
         relationship = self.class._relationships[relationship_name]
         relation_name = relationship.relation_name(context: @context)
         records = records_for(relation_name)
 
         resource_klass = relationship.resource_klass
-
+        
         filters = options.fetch(:filters, {})
+        
+        included_filters = @options.fetch(:included_filters, {})
+        included_filters = included_filters.fetch(relation_name, {})
+        filters = filters.merge included_filters
         unless filters.nil? || filters.empty?
           records = resource_klass.apply_filters(records, filters, options)
         end
+
+        # unless included_filters.nil? || included_filters.empty?
+        #   records = resource_klass.apply_filters(records, included_filters, options)
+        # end
 
         sort_criteria =  options.fetch(:sort_criteria, {})
         unless sort_criteria.nil? || sort_criteria.empty?
@@ -140,7 +148,6 @@ module JSONAPI
       # Returns array of instantiated related resource objects
       define_on_resource relationship_name do |options = {}|
         relationship = self.class._relationships[relationship_name]
-
         resource_klass = relationship.resource_klass
         records = public_send(associated_records_method_name, options)
 
