@@ -1972,6 +1972,36 @@ class DocumentsControllerTest < ActionController::TestCase
   end
 end
 
+class PicturesControllerTest < ActionController::TestCase
+  def test_pictures_index
+    assert_cacheable_get :index
+    assert_response :success
+    assert_equal 3, json_response['data'].size
+  end
+
+  def test_pictures_index_with_polymorphic_include_one_level
+    assert_cacheable_get :index, params: {include: 'imageable'}
+    assert_response :success
+    assert_equal 3, json_response['data'].size
+    assert_equal 2, json_response['included'].size
+  end
+end
+
+class DocumentsControllerTest < ActionController::TestCase
+  def test_documents_index
+    assert_cacheable_get :index
+    assert_response :success
+    assert_equal 1, json_response['data'].size
+  end
+
+  def test_documents_index_with_polymorphic_include_one_level
+    assert_cacheable_get :index, params: {include: 'pictures'}
+    assert_response :success
+    assert_equal 1, json_response['data'].size
+    assert_equal 1, json_response['included'].size
+  end
+end
+
 class ExpenseEntriesControllerTest < ActionController::TestCase
   def setup
     JSONAPI.configuration.json_key_format = :camelized_key
