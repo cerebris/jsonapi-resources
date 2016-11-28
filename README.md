@@ -3,7 +3,7 @@
 [![Join the chat at https://gitter.im/cerebris/jsonapi-resources](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cerebris/jsonapi-resources?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 `JSONAPI::Resources`, or "JR", provides a framework for developing an API server that complies with the
-[JSON API](http://jsonapi.org/) specification.
+[JSON:API](http://jsonapi.org/) specification.
 
 Like JSON:API itself, JR's design is focused on the resources served by an API. JR needs little more than a definition
 of your resources, including their attributes and relationships, to make your server compliant with JSON API.
@@ -13,7 +13,7 @@ backed by ActiveRecord models or by custom objects.
 
 ## Documentation
 
-Full documentation can be found at [http://jsonapi-resources.com](http://jsonapi-resources.com). 
+Full documentation can be found at [http://jsonapi-resources.com](http://jsonapi-resources.com), including the [v0.8 Guide](http://jsonapi-resources.com/v0.8/guide/) specific to this version. 
 
 ## Demo App
 
