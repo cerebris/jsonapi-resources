@@ -70,7 +70,10 @@ which *should* be compatible with JSON API compliant server implementations such
 
 Add JR to your application's `Gemfile`:
 
-    gem 'jsonapi-resources'
+
+
+
+    gem 'jsonapi-resources', '~> 0.7.0'
 
 And then execute:
 
