@@ -353,39 +353,6 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_match JSONAPI::MEDIA_TYPE, headers['Content-Type']
   end
 
-  def test_put_valid_json
-    put '/posts/3', params: '{"data": { "type": "posts", "id": "3", "attributes": { "title": "A great new Post" } } }',
-        headers: {
-            'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
-            'Accept' => JSONAPI::MEDIA_TYPE
-        }
-
-    assert_equal 200, status
-  end
-
-  def test_put_invalid_json
-    put '/posts/3', params: '{"data": { "type": "posts", "id": "3" "attributes": { "title": "A great new Post" } } }',
-        headers: {
-            'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
-            'Accept' => JSONAPI::MEDIA_TYPE
-        }
-
-    assert_equal 400, status
-    assert_equal 'Bad Request', json_response['errors'][0]['title']
-    assert_match 'unexpected token at', json_response['errors'][0]['detail']
-  end
-
-  def test_put_valid_json_but_array
-    put '/posts/3', params: '[{"data": { "type": "posts", "id": "3", "attributes": { "title": "A great new Post" } } }]',
-        headers: {
-            'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
-            'Accept' => JSONAPI::MEDIA_TYPE
-        }
-
-    assert_equal 400, status
-    assert_equal 'Request must be a hash', json_response['errors'][0]['detail']
-  end
-
   def test_patch_content_type
     patch '/posts/3', params:
         {
