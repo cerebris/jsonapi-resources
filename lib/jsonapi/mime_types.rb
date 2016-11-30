@@ -1,3 +1,5 @@
+require 'json'
+
 module JSONAPI
   MEDIA_TYPE = 'application/vnd.api+json'
 
@@ -19,9 +21,18 @@ module JSONAPI
 
     def self.parser
       lambda do |body|
-        data = JSON.parse(body)
-        data = {:_json => data} unless data.is_a?(Hash)
-        data.with_indifferent_access
+        begin
+          data = JSON.parse(body)
+          if data.is_a?(Hash)
+            data.with_indifferent_access
+          else
+            fail JSONAPI::Exceptions::InvalidRequestFormat.new
+          end
+        rescue JSON::ParserError => e
+          { _parser_exception: JSONAPI::Exceptions::BadRequest.new(e.to_s)  }
+        rescue => e
+          { _parser_exception: e }
+        end
       end
     end
   end

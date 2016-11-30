@@ -119,6 +119,32 @@ module JSONAPI
       end
     end
 
+    class BadRequest < Error
+      def initialize(exception)
+        @exception = exception
+      end
+
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::BAD_REQUEST,
+                            status: :bad_request,
+                            title: I18n.translate('jsonapi-resources.exceptions.bad_request.title',
+                                                  default: 'Bad Request'),
+                            detail: I18n.translate('jsonapi-resources.exceptions.bad_request.detail',
+                                                   default: @exception))]
+      end
+    end
+
+    class InvalidRequestFormat < Error
+      def errors
+        [JSONAPI::Error.new(code: JSONAPI::BAD_REQUEST,
+                            status: :bad_request,
+                            title: I18n.translate('jsonapi-resources.exceptions.invalid_request_format.title',
+                                                  default: 'Bad Request'),
+                            detail: I18n.translate('jsonapi-resources.exceptions.invalid_request_format.detail',
+                                                   default: 'Request must be a hash'))]
+      end
+    end
+
     class ToManySetReplacementForbidden < Error
       def errors
         [JSONAPI::Error.new(code: JSONAPI::FORBIDDEN,
