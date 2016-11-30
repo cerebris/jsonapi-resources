@@ -34,7 +34,6 @@ module JSONAPI
 
       setup_action_method_name = "setup_#{params[:action]}_action"
       if respond_to?(setup_action_method_name)
-        raise params[:_parser_exception] if params[:_parser_exception]
         send(setup_action_method_name, params)
       end
     rescue ActionController::ParameterMissing => e
