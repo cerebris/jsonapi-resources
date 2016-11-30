@@ -34,13 +34,8 @@ module JSONAPI
 
       setup_action_method_name = "setup_#{params[:action]}_action"
       if respond_to?(setup_action_method_name)
-        if params[:_invalid_request_format]
-          @errors.concat(params[:_invalid_request_format].errors)
-        elsif params[:_malformed_json]
-          @errors.concat(params[:_malformed_json].errors)
-        else
-          send(setup_action_method_name, params)
-        end
+        raise params[:_parser_exception] if params[:_parser_exception]
+        send(setup_action_method_name, params)
       end
     rescue ActionController::ParameterMissing => e
       @errors.concat(JSONAPI::Exceptions::ParameterMissing.new(e.param).errors)
