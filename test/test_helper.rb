@@ -292,6 +292,8 @@ TestApp.routes.draw do
         # Intentionally empty block to skip relationship urls
       end
 
+      jsonapi_resource :books
+
       jsonapi_resources :posts, except: [:destroy] do
         jsonapi_link :author, except: [:destroy]
         jsonapi_links :tags, only: [:show, :create]

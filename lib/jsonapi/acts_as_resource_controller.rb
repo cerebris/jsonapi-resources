@@ -246,6 +246,18 @@ module JSONAPI
     end
 
     def create_response_document(operation_results)
+      if operation_results.custom_errors?
+        build_error_response_document(operation_results)
+      else
+        build_response_document(operation_results)
+      end
+    end
+
+    def build_error_response_document(operation_results)
+      fail NotImplementedError.new("TODO")
+    end
+
+    def build_response_document(operation_results)
       JSONAPI::ResponseDocument.new(
         operation_results,
         operation_results.has_errors? ? nil : resource_serializer,
