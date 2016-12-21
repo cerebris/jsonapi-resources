@@ -682,6 +682,8 @@ module JSONAPI
         if strategy
           if strategy.is_a?(Symbol) || strategy.is_a?(String)
             send(strategy, records, value, options)
+          elsif strategy.respond_to?(:apply)
+            strategy.apply(records, value, options)
           else
             strategy.call(records, value, options)
           end
@@ -813,10 +815,12 @@ module JSONAPI
         strategy = _allowed_filters.fetch(filter, Hash.new)[:verify]
 
         if strategy
-          if strategy.is_a?(Symbol) || strategy.is_a?(String)
-            values = send(strategy, filter_values, context)
+          values = if strategy.is_a?(Symbol) || strategy.is_a?(String)
+            send(strategy, filter_values, context)
+          elsif strategy.respond_to?(:verify)
+            strategy.verify(filter_values, context)
           else
-            values = strategy.call(filter_values, context)
+            strategy.call(filter_values, context)
           end
           [filter, values]
         else

@@ -1061,6 +1061,32 @@ class PostResource < JSONAPI::Resource
       records.where(title: values.first['title'])
     }
 
+  class TitleSearch
+    def self.verify(values, context)
+      values.all?{|v| (v.is_a?(Hash) || v.is_a?(ActionController::Parameters)) } && values
+    end
+
+    def self.apply(records, values, _options)
+      records.where(title: values.first['title'])
+    end
+  end
+
+  filter :search_by_object,
+    verify: TitleSearch,
+    apply: TitleSearch
+
+  filter :search_by_symbol,
+    verify: :verify_title_search,
+    apply: :apply_title_search
+
+  def self.verify_title_search(values, context)
+    values.all?{|v| (v.is_a?(Hash) || v.is_a?(ActionController::Parameters)) } && values
+  end
+
+  def self.apply_title_search(records, values, _options)
+    records.where(title: values.first['title'])
+  end
+
   def self.updatable_fields(context)
     super(context) - [:author, :subject]
   end
