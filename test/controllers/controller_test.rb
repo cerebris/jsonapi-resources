@@ -423,7 +423,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_cacheable_get :index, params: {sort: 'author.name'}
 
     assert_response :success
-    assert json_response['data'].length > 10, 'there are enough recordsto show sort'
+    assert json_response['data'].length > 10, 'there are enough records to show sort'
     assert_equal '17', json_response['data'][0]['id'], 'nil is at the top'
     assert_equal post.id.to_s, json_response['data'][1]['id'], 'alphabetically first user is second'
   end
@@ -436,6 +436,16 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['data'].length > 10, 'there are enough records to show sort'
     assert_equal '17', json_response['data'][-1]['id'], 'nil is at the bottom'
     assert_equal post.id.to_s, json_response['data'][-2]['id'], 'alphabetically first user is second last'
+  end
+
+  def test_sorting_by_relationship_field_include
+    post  = create_alphabetically_first_user_and_post
+    assert_cacheable_get :index, params: {include: 'author', sort: 'author.name'}
+
+    assert_response :success
+    assert json_response['data'].length > 10, 'there are enough records to show sort'
+    assert_equal '17', json_response['data'][0]['id'], 'nil is at the top'
+    assert_equal post.id.to_s, json_response['data'][1]['id'], 'alphabetically first user is second'
   end
 
   def test_invalid_sort_param
@@ -1920,6 +1930,15 @@ class TagsControllerTest < ActionController::TestCase
     assert_cacheable_get :show, params: {id: '99,9,100'}
     assert_response :bad_request
     assert_match /99,9,100 is not a valid value for id/, response.body
+  end
+
+  def test_nested_includes_sort
+    assert_cacheable_get :index, params: {filter: {id: '6,7,8,9'},
+                                          include: 'posts.tags,posts.author.posts',
+                                          sort: 'name'}
+    assert_response :success
+    assert_equal 4, json_response['data'].size
+    assert_equal 3, json_response['included'].size
   end
 end
 

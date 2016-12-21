@@ -1102,7 +1102,6 @@ module JSONAPI
         include_directives = options[:include_directives]
         return unless include_directives
 
-        relevant_options = options.except(:include_directives, :order, :paginator)
         context = options[:context]
 
         # For each association, including indirect associations, find the target record ids.
@@ -1196,7 +1195,7 @@ module JSONAPI
               .map(&:last)
               .reject{|id| target_resources[klass.name].has_key?(id) }
               .uniq
-            found = klass.find({klass._primary_key => sub_res_ids}, relevant_options)
+            found = klass.find({klass._primary_key => sub_res_ids}, context: options[:context])
             target_resources[klass.name].merge! found.map{|r| [r.id, r] }.to_h
           end
 
