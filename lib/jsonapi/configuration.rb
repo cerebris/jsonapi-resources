@@ -14,6 +14,7 @@ module JSONAPI
                 :default_paginator,
                 :default_page_size,
                 :maximum_page_size,
+                :default_filters,
                 :default_processor_klass,
                 :use_text_errors,
                 :top_level_links_include_pagination,
@@ -59,6 +60,16 @@ module JSONAPI
 
       self.default_page_size = 10
       self.maximum_page_size = 20
+
+      # Default filters
+      # filters specified here will be applied to all resources
+      self.default_filters = {
+          id: {
+              apply: -> (records, value, options) {
+                records.where("#{options[:resource_klass]._primary_key} IN (?)", value)
+              }
+          }
+      }
 
       # Metadata
       # Output record count in top level meta for find operation
@@ -208,6 +219,8 @@ module JSONAPI
     attr_writer :default_page_size
 
     attr_writer :maximum_page_size
+
+    attr_writer :default_filters
 
     attr_writer :use_text_errors
 

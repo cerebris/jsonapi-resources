@@ -924,7 +924,7 @@ module JSONAPI
       end
 
       def _allowed_filters
-        defined?(@_allowed_filters) ? @_allowed_filters : { id: {} }
+        defined?(@_allowed_filters) ? @_allowed_filters : JSONAPI.configuration.default_filters
       end
 
       def _paginator
@@ -1050,7 +1050,7 @@ module JSONAPI
 
       def find_records(filters, options = {})
         context = options[:context]
-
+        options[:resource_klass] = self
         records = filter_records(filters, options)
 
         sort_criteria = options.fetch(:sort_criteria) { [] }
