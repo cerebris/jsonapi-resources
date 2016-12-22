@@ -11,6 +11,7 @@ module JSONAPI
                 :allow_include,
                 :allow_sort,
                 :allow_filter,
+                :default_filter,
                 :default_paginator,
                 :default_page_size,
                 :maximum_page_size,
@@ -202,6 +203,8 @@ module JSONAPI
     end
 
     attr_writer :allow_include, :allow_sort, :allow_filter
+
+    attr_writer :default_filter
 
     attr_writer :default_paginator
 

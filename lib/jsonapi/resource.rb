@@ -422,7 +422,8 @@ module JSONAPI
           end
         end
 
-        subclass._allowed_filters = (_allowed_filters || Set.new).dup
+        subclass._allowed_filters = (_allowed_filters || {}).dup
+        subclass._resource_filter = (_resource_filter || {}).dup
 
         type = subclass.name.demodulize.sub(/Resource$/, '').underscore
         subclass._type = type.pluralize.to_sym
@@ -468,7 +469,7 @@ module JSONAPI
       end
 
       attr_accessor :_attributes, :_relationships, :_type, :_model_hints
-      attr_writer :_allowed_filters, :_paginator
+      attr_writer :_allowed_filters, :_resource_filter, :_paginator
 
       def create(context)
         new(create_model, context)
@@ -562,8 +563,14 @@ module JSONAPI
         _model_hints[model.to_s.gsub('::', '/').underscore] = resource_type.to_s
       end
 
-      def filters(*attrs)
-        @_allowed_filters.merge!(attrs.inject({}) { |h, attr| h[attr] = {}; h })
+      def resource_filter(filter = nil, apply: nil, verify: nil)
+        @_resource_filter[:with] = filter if filter
+        @_resource_filter[:apply] = apply if apply
+        @_resource_filter[:verify] = verify if verify
+      end
+
+      def filters(*attrs, **kwargs)
+        @_allowed_filters.merge!(attrs.inject({}) { |h, attr| h[attr] = kwargs || {}; h })
       end
 
       def filter(attr, *args)
@@ -677,15 +684,17 @@ module JSONAPI
       end
 
       def apply_filter(records, filter, value, options = {})
-        strategy = _allowed_filters.fetch(filter.to_sym, Hash.new)[:apply]
+        strategy = fetch_filter_strategy(filter.to_sym, :apply)
 
         if strategy
           if strategy.is_a?(Symbol) || strategy.is_a?(String)
             send(strategy, records, value, options)
           elsif strategy.respond_to?(:apply)
             strategy.apply(records, value, options)
-          else
+          elsif strategy.respond_to?(:call)
             strategy.call(records, value, options)
+          else
+            fail TypeError, "[INVALID FILTER] Apply filter supplied for `#{filter}` was not callable."
           end
         else
           records.where(filter => value)
@@ -812,15 +821,17 @@ module JSONAPI
           filter_values += raw.is_a?(String) ? CSV.parse_line(raw) : [raw]
         end
 
-        strategy = _allowed_filters.fetch(filter, Hash.new)[:verify]
+        strategy = fetch_filter_strategy(filter.to_sym, :verify)
 
         if strategy
           values = if strategy.is_a?(Symbol) || strategy.is_a?(String)
             send(strategy, filter_values, context)
           elsif strategy.respond_to?(:verify)
             strategy.verify(filter_values, context)
-          else
+          elsif strategy.respond_to?(:call)
             strategy.call(filter_values, context)
+          else
+            fail TypeError, "[INVALID FILTER] Verify filter supplied for `#{filter}` was not callable."
           end
           [filter, values]
         else
@@ -929,6 +940,10 @@ module JSONAPI
 
       def _allowed_filters
         defined?(@_allowed_filters) ? @_allowed_filters : { id: {} }
+      end
+
+      def _resource_filter
+        defined?(@_resource_filter) ? @_resource_filter : {}
       end
 
       def _paginator
@@ -1064,6 +1079,35 @@ module JSONAPI
         records = apply_pagination(records, options[:paginator], order_options)
 
         records
+      end
+
+      # Determines what filter strategy to use for a specific filter/attribute
+      #
+      # Order of importance is as follows:
+      # 1. Type filter for specific attribute (eg. `apply` for `:name` attribute)
+      # 2. Custom filter for specific attribute (eg. `CustomFilterInstance.apply` for `:name` attribute)
+      # 3. Type filter for resource (eg. `apply` for all attributes)
+      # 4. Custom filter for resource (eg. `ResourceFilterInstance.apply` for all attributes)
+      # 5. Custom filter for all resources (eg. `DefaultFilterInstance.apply` for all attribute on all resources)
+      # 6. No default/custom filter
+      def fetch_filter_strategy(filter, type)
+        strategy = _allowed_filters.fetch(filter.to_sym, Hash.new)[type.to_sym] ||
+                   _allowed_filters.fetch(filter.to_sym, Hash.new)[:with] ||
+                   _resource_filter[type.to_sym] ||
+                   _resource_filter[:with] ||
+                   JSONAPI.configuration.default_filter
+
+        # Use an instance of the strategy if it responds to `:new`
+        if strategy.respond_to?(:new)
+          strategy = strategy.new
+        end
+
+        # Provide the filter/attribute to the strategy if supported
+        if strategy.respond_to?(:filter=)
+          strategy.filter = filter
+        end
+
+        strategy
       end
 
       def check_reserved_resource_name(type, name)
