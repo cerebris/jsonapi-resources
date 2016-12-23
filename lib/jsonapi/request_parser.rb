@@ -211,7 +211,7 @@ module JSONAPI
     end
 
     def parse_include_directives(raw_include)
-      return if raw_include.nil?
+      return unless raw_include
 
       unless JSONAPI.configuration.allow_include
         fail JSONAPI::Exceptions::ParametersNotAllowed.new([:include])
