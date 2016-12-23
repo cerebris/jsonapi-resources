@@ -3606,6 +3606,23 @@ class Api::V6::SectionsControllerTest < ActionController::TestCase
   end
 end
 
+class AuthorsControllerTest < ActionController::TestCase
+  def test_show_author_recursive
+    get :show, params: {id: '2', include: 'books.authors'}
+    assert_response :success
+    assert_equal '2', json_response['data']['id']
+    assert_equal 'authors', json_response['data']['type']
+    assert_equal 'Fred Reader', json_response['data']['attributes']['name']
+
+    # The test is hardcoded with the include order. This should be changed at some
+    # point since either thing could come first and still be valid
+    assert_equal '1', json_response['included'][0]['id']
+    assert_equal 'authors', json_response['included'][0]['type']
+    assert_equal '2', json_response['included'][1]['id']
+    assert_equal 'books', json_response['included'][1]['type']
+  end
+end
+
 class Api::BoxesControllerTest < ActionController::TestCase
   def test_complex_includes_base
     assert_cacheable_get :index
@@ -3617,7 +3634,8 @@ class Api::BoxesControllerTest < ActionController::TestCase
 
     assert_response :success
 
-    # The test is hardcoded with the include order. This should be changed at some point since either thing could come first and still be valid
+    # The test is hardcoded with the include order. This should be changed at some
+    # point since either thing could come first and still be valid
     assert_equal '1', json_response['included'][0]['id']
     assert_equal 'things', json_response['included'][0]['type']
     assert_equal '1',  json_response['included'][0]['relationships']['user']['data']['id']
@@ -3638,7 +3656,8 @@ class Api::BoxesControllerTest < ActionController::TestCase
 
     assert_response :success
 
-    # The test is hardcoded with the include order. This should be changed at some point since either thing could come first and still be valid
+    # The test is hardcoded with the include order. This should be changed at some
+    # point since either thing could come first and still be valid
     assert_equal '2', json_response['included'][0]['id']
     assert_equal 'things', json_response['included'][0]['type']
     assert_nil json_response['included'][0]['relationships']['user']['data']
@@ -3655,7 +3674,8 @@ class Api::BoxesControllerTest < ActionController::TestCase
 
     assert_response :success
 
-    # The test is hardcoded with the include order. This should be changed at some point since either thing could come first and still be valid
+    # The test is hardcoded with the include order. This should be changed at some
+    # point since either thing could come first and still be valid
     assert_equal '1', json_response['included'][2]['id']
     assert_equal 'users', json_response['included'][2]['type']
     assert_nil json_response['included'][2]['relationships']['things']['data']
