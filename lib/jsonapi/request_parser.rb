@@ -210,14 +210,14 @@ module JSONAPI
       end
     end
 
-    def parse_include_directives(include_directives)
-      return if include_directives.nil?
+    def parse_include_directives(raw_include)
+      return if raw_include.nil?
 
       unless JSONAPI.configuration.allow_include
         fail JSONAPI::Exceptions::ParametersNotAllowed.new([:include])
       end
 
-      included_resources = CSV.parse_line(include_directives)
+      included_resources = CSV.parse_line(raw_include)
       return if included_resources.nil?
 
       result = included_resources.map do |included_resource|
