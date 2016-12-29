@@ -1,7 +1,7 @@
 require File.expand_path('../../test_helper', __FILE__)
 
 def set_content_type_header!
-  @request.headers['Content-Type'] = 'application/vnd.api+json'
+  @request.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
 end
 
 class PostsControllerTest < ActionController::TestCase
@@ -1656,8 +1656,8 @@ class PostsControllerTest < ActionController::TestCase
             title: 'A great new Post'
           },
           relationships: {
-            section: {type: 'sections', id: "#{javascript.id}"},
-            tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
+            section: { data: { type: 'sections', id: "#{javascript.id}" } },
+            tags: { data: [{ type: 'tags', id: 3 }, { type: 'tags', id: 4 }] }
           }
         }
       }
@@ -1698,8 +1698,8 @@ class PostsControllerTest < ActionController::TestCase
             title: 'A great new Post'
           },
           relationships: {
-            section: {type: 'sections', id: "#{javascript.id}"},
-            tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
+            section: { data: { type: 'sections', id: "#{javascript.id}" } },
+            tags: { data: [{ type: 'tags', id: 3 }, { type: 'tags', id: 4 }] }
           }
         }
       }

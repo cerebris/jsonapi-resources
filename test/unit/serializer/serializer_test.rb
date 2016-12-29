@@ -537,7 +537,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
       ParentApi::PostResource,
       include: ['parent_post'],
       base_url: 'http://example.com').serialize_to_hash(ordered_posts.map {|p| ParentApi::PostResource.new(p, nil)}
-    )[:data]
+    )['data']
 
     assert_equal(3, serialized_data.length)
     assert_equal("1", serialized_data[0]["id"])
@@ -1829,7 +1829,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
       {
         "model" => "A model attribute"
       },
-      serialized[:data]["attributes"]
+      serialized["data"]["attributes"]
     )
   end
 
@@ -1841,11 +1841,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     assert_hash_equals(
       {
-        :data=>{
+        "data"=>{
           "id"=>"#{@wp.id}",
           "type"=>"webPages",
           "links"=>{
-            :self=>"/webPages/#{@wp.id}"
+            "self"=>"/webPages/#{@wp.id}"
           },
           "attributes"=>{
             "href"=>"http://example.com",
@@ -1879,23 +1879,23 @@ class SerializerTest < ActionDispatch::IntegrationTest
     assert err.blank?
     assert_equal(
       {
-        :data=>{
+        "data"=>{
           "id"=>"1",
           "type"=>"questionables",
           "links"=>{
-            :self=>"/questionables/1"
+            "self"=>"/questionables/1"
           },
           "relationships"=>{
             "link"=>{
-              :links=>{
-                :self=>"/questionables/1/relationships/link",
-                :related=>"/questionables/1/link"
+              "links"=>{
+                "self"=>"/questionables/1/relationships/link",
+                "related"=>"/questionables/1/link"
               }
             },
             "href"=>{
-              :links=>{
-                :self=>"/questionables/1/relationships/href",
-                :related=>"/questionables/1/href"
+              "links"=>{
+                "self"=>"/questionables/1/relationships/href",
+                "related"=>"/questionables/1/href"
               }
             }
           }
@@ -1928,23 +1928,23 @@ class SerializerTest < ActionDispatch::IntegrationTest
     assert err.blank?
     assert_equal(
       {
-        :data=>{
+        "data"=>{
           "id"=>"1",
           "type"=>"questionable2s",
           "links"=>{
-            :self=>"/questionable2s/1"
+            "self"=>"/questionable2s/1"
           },
           "relationships"=>{
             "links"=>{
-              :links=>{
-                :self=>"/questionable2s/1/relationships/links",
-                :related=>"/questionable2s/1/links"
+              "links"=>{
+                "self"=>"/questionable2s/1/relationships/links",
+                "related"=>"/questionable2s/1/links"
               }
             },
             "hrefs"=>{
-              :links=>{
-                :self=>"/questionable2s/1/relationships/hrefs",
-                :related=>"/questionable2s/1/hrefs"
+              "links"=>{
+                "self"=>"/questionable2s/1/relationships/hrefs",
+                "related"=>"/questionable2s/1/hrefs"
               }
             }
           }
