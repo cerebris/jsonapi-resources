@@ -1,0 +1,6 @@
+question1:
+  id: 1
+  text: How are you feeling today?
+question2:
+  id: 2
+  text: How does the patient look today?

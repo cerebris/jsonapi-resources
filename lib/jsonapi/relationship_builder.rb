@@ -120,10 +120,16 @@ module JSONAPI
       define_on_resource relationship_name do |options = {}|
         relationship = self.class._relationships[relationship_name]
 
-        resource_klass = relationship.resource_klass
-        if resource_klass
+        if relationship.polymorphic?
           associated_model = public_send(associated_records_method_name)
-          return associated_model ? resource_klass.new(associated_model, @context) : nil
+          resource_klass = self.class.resource_for_model(associated_model) if associated_model
+          return resource_klass.new(associated_model, @context) if resource_klass && associated_model
+        else
+          resource_klass = relationship.resource_klass
+          if resource_klass
+            associated_model = public_send(associated_records_method_name)
+            return associated_model ? resource_klass.new(associated_model, @context) : nil
+          end
         end
       end
     end

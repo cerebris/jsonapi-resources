@@ -255,6 +255,11 @@ TestApp.routes.draw do
   jsonapi_resources :books
   jsonapi_resources :authors
 
+  jsonapi_resources :questions
+  jsonapi_resources :answers
+  jsonapi_resources :doctors
+  jsonapi_resources :patients
+
   namespace :api do
     jsonapi_resources :boxes
 

@@ -291,6 +291,25 @@ ActiveRecord::Schema.define do
     t.timestamps null: false
   end
 
+  create_table :questions, force: true do |t|
+    t.string :text
+  end
+
+  create_table :answers, force: true do |t|
+    t.references :question
+    t.integer :respondent_id
+    t.string  :respondent_type
+    t.string :text
+  end
+
+  create_table :patients, force: true do |t|
+    t.string :name
+  end
+
+  create_table :doctors, force: true do |t|
+    t.string :name
+  end
+
   # special cases
 end
 
@@ -606,6 +625,25 @@ class RelatedThing < ActiveRecord::Base
   belongs_to :to, class_name: Thing, foreign_key: :to_id
 end
 
+class Question < ActiveRecord::Base
+  has_one :answer
+
+  def respondent
+    answer.try(:respondent)
+  end
+end
+
+class Answer < ActiveRecord::Base
+  belongs_to :question
+  belongs_to :respondent, polymorphic: true
+end
+
+class Patient < ActiveRecord::Base
+end
+
+class Doctor < ActiveRecord::Base
+end
+
 module Api
   module V7
     class Client < Customer
@@ -880,6 +918,21 @@ end
 module Api
   class BoxesController < JSONAPI::ResourceController
   end
+end
+
+class QuestionsController < JSONAPI::ResourceController
+end
+
+class AnswersController < JSONAPI::ResourceController
+end
+
+class PatientsController < JSONAPI::ResourceController
+end
+
+class DoctorsController < JSONAPI::ResourceController
+end
+
+class RespondentController < JSONAPI::ResourceController
 end
 
 ### RESOURCES
@@ -1793,6 +1846,30 @@ module Api
   class UserResource < JSONAPI::Resource
     has_many :things
   end
+end
+
+class QuestionResource < JSONAPI::Resource
+  has_one :answer
+  has_one :respondent, polymorphic: true, class_name: "Respondent", foreign_key_on: :related
+
+  attributes :text
+end
+
+class AnswerResource < JSONAPI::Resource
+  has_one :question
+  has_one :respondent, polymorphic: true
+end
+
+class PatientResource < JSONAPI::Resource
+  attributes :name
+end
+
+class DoctorResource < JSONAPI::Resource
+  attributes :name
+end
+
+class RespondentResource < JSONAPI::Resource
+  abstract
 end
 
 ### PORO Data - don't do this in a production app
