@@ -1,0 +1,12 @@
+answer1:
+  id: 1
+  question_id: 1
+  text: Great thanks
+  respondent_id: 1
+  respondent_type: Patient
+answer2:
+  id: 2
+  question_id: 2
+  text: Better than last week
+  respondent_id: 1
+  respondent_type: Doctor
