@@ -13,72 +13,75 @@ module JSONAPI
     end
 
     def index
-      process_request
+      process_request(__method__)
     end
 
     def show
-      process_request
+      process_request(__method__)
     end
 
     def show_relationship
-      process_request
+      process_request(__method__)
     end
 
     def create
       return unless verify_content_type_header
-      process_request
+      process_request(__method__)
     end
 
     def create_relationship
       return unless verify_content_type_header
-      process_request
+      process_request(__method__)
     end
 
     def update_relationship
       return unless verify_content_type_header
-      process_request
+      process_request(__method__)
     end
 
     def update
       return unless verify_content_type_header
-      process_request
+      process_request(__method__)
     end
 
     def destroy
-      process_request
+      process_request(__method__)
     end
 
     def destroy_relationship
-      process_request
+      process_request(__method__)
     end
 
     def get_related_resource
-      process_request
+      process_request(__method__)
     end
 
     def get_related_resources
-      process_request
+      process_request(__method__)
     end
 
     def process_request
       return unless verify_accept_header
+      render(_process_request)
+    rescue => e
+      handle_exceptions(e)
+    end
 
+    def _process_request
       @request = JSONAPI::RequestParser.new(params, context: context,
                                             key_formatter: key_formatter,
                                             server_error_callbacks: (self.class.server_error_callbacks || []))
 
       unless @request.errors.empty?
-        render_errors(@request.errors)
+        prepare_errors(@request.errors)
       else
         operations = @request.operations
         unless JSONAPI.configuration.resource_cache.nil?
           operations.each {|op| op.options[:cache_serializer] = resource_serializer }
         end
         results = process_operations(operations)
-        render_results(results)
+        prepare_results(results)
       end
-    rescue => e
-      handle_exceptions(e)
     end
 
     def process_operations(operations)
@@ -213,15 +216,15 @@ module JSONAPI
       {}
     end
 
-    def render_errors(errors)
+    def prepare_errors(errors)
       operation_results = JSONAPI::OperationResults.new
       result = JSONAPI::ErrorsOperationResult.new(errors[0].status, errors)
       operation_results.add_result(result)
 
-      render_results(operation_results)
+      prepare_results(operation_results)
     end
 
-    def render_results(operation_results)
+    def prepare_results(operation_results)
       response_doc = create_response_document(operation_results)
       content = response_doc.contents
 
@@ -242,7 +245,7 @@ module JSONAPI
       response.status = response_doc.status
       response.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
 
-      render(render_options)
+      render_options
     end
 
     def create_response_document(operation_results)
@@ -261,7 +264,7 @@ module JSONAPI
     def handle_exceptions(e)
       case e
       when JSONAPI::Exceptions::Error
-        render_errors(e.errors)
+        render(prepare_errors(e.errors))
       else
         if JSONAPI.configuration.exception_class_whitelisted?(e)
           fail e
@@ -272,7 +275,7 @@ module JSONAPI
 
           internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
           Rails.logger.error { "Internal Server Error: #{e.message} #{e.backtrace.join("\n")}" }
-          render_errors(internal_server_error.errors)
+          render(prepare_errors(internal_server_error.errors))
         end
       end
     end
