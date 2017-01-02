@@ -63,9 +63,12 @@ module JSONAPI
     def process_request
       return unless verify_accept_header
 
-      @request = JSONAPI::RequestParser.new(params, context: context,
-                                            key_formatter: key_formatter,
-                                            server_error_callbacks: (self.class.server_error_callbacks || []))
+      @request ||= JSONAPI::RequestParser.new(
+        params,
+        context: context,
+        key_formatter: key_formatter,
+        server_error_callbacks: (self.class.server_error_callbacks || [])
+      )
 
       unless @request.errors.empty?
         render_errors(@request.errors)
