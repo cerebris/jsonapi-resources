@@ -139,7 +139,7 @@ module JSONAPI
     end
 
     def verify_content_type_header
-      unless request.content_type == JSONAPI::MEDIA_TYPE
+      unless media_types_for('Content-Type').first == JSONAPI::MEDIA_TYPE
         fail JSONAPI::Exceptions::UnsupportedMediaTypeError.new(request.content_type)
       end
       true
