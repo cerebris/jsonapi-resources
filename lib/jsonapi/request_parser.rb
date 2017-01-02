@@ -210,23 +210,28 @@ module JSONAPI
       end
     end
 
-    def parse_include_directives(include)
-      return if include.nil?
+    def parse_include_directives(raw_include)
+      return unless raw_include
 
       unless JSONAPI.configuration.allow_include
         fail JSONAPI::Exceptions::ParametersNotAllowed.new([:include])
       end
 
-      included_resources = CSV.parse_line(include)
-      return if included_resources.nil?
-
-      include = []
-      included_resources.each do |included_resource|
-        check_include(@resource_klass, included_resource.partition('.'))
-        include.push(unformat_key(included_resource).to_s)
+      included_resources = []
+      begin
+        included_resources += CSV.parse_line(raw_include)
+      rescue CSV::MalformedCSVError
+        fail JSONAPI::Exceptions::InvalidInclude.new(format_key(@resource_klass._type), raw_include)
       end
 
-      @include_directives = JSONAPI::IncludeDirectives.new(@resource_klass, include)
+      return if included_resources.empty?
+
+      result = included_resources.map do |included_resource|
+        check_include(@resource_klass, included_resource.partition('.'))
+        unformat_key(included_resource).to_s
+      end
+
+      @include_directives = JSONAPI::IncludeDirectives.new(@resource_klass, result)
     end
 
     def parse_filters(filters)
@@ -265,7 +270,15 @@ module JSONAPI
         fail JSONAPI::Exceptions::ParametersNotAllowed.new([:sort])
       end
 
-      @sort_criteria = CSV.parse_line(URI.unescape(sort_criteria)).collect do |sort|
+      sorts = []
+      begin
+        raw = URI.unescape(sort_criteria)
+        sorts += CSV.parse_line(raw)
+      rescue CSV::MalformedCSVError
+        fail JSONAPI::Exceptions::InvalidSortCriteria.new(format_key(@resource_klass._type), raw)
+      end
+
+      @sort_criteria = sorts.collect do |sort|
         if sort.start_with?('-')
           sort_criteria = { field: unformat_key(sort[1..-1]).to_s }
           sort_criteria[:direction] = :desc

@@ -45,6 +45,15 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration = original_config
   end
 
+  def test_filter_with_value_containing_double_quote
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.json_key_format = :underscored_key
+    get '/iso_currencies?filter[country_name]=%22'
+    assert_jsonapi_response 200
+  ensure
+    JSONAPI.configuration = original_config
+  end
+
   def test_get_underscored_key_filtered
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :underscored_key
@@ -1061,6 +1070,26 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_jsonapi_response 400
   ensure
     JSONAPI.configuration.allow_sort = true
+  end
+
+  def test_sort_parameter_quoted
+    get '/api/v2/books?sort=%22title%22', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 200
+  end
+
+  def test_sort_parameter_openquoted
+    get '/api/v2/books?sort=%22title', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 400
+  end
+
+  def test_include_parameter_quoted
+    get '/api/v2/posts?include=%22author%22', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 200
+  end
+
+  def test_include_parameter_openquoted
+    get '/api/v2/posts?include=%22author', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 400
   end
 
   def test_getting_different_resources_when_sti
