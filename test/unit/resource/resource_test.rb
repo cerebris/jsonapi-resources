@@ -98,6 +98,11 @@ module MyAPI
   end
 end
 
+class PostWithReadonlyAttributesResource < JSONAPI::Resource
+  attribute :title, readonly: true
+  has_one :author, readonly: true
+end
+
 class ResourceTest < ActiveSupport::TestCase
   def setup
     @post = Post.first
@@ -628,5 +633,13 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
   def test_resources_for_transforms_records_into_resources
     resources = PostResource.resources_for([Post.first], {})
     assert_equal(PostResource, resources.first.class)
+  end
+
+  def test_readonly_attribute
+    refute_includes(PostWithReadonlyAttributesResource.creatable_fields, :title)
+    refute_includes(PostWithReadonlyAttributesResource.updatable_fields, :title)
+
+    refute_includes(PostWithReadonlyAttributesResource.creatable_fields, :author)
+    refute_includes(PostWithReadonlyAttributesResource.updatable_fields, :author)
   end
 end
