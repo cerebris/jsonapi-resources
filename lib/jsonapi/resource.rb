@@ -410,9 +410,12 @@ module JSONAPI
         subclass.immutable(false)
         subclass.caching(false)
         subclass._attributes = (_attributes || {}).dup
+        subclass._readonly_attributes = (_readonly_attributes || []).dup
         subclass._model_hints = (_model_hints || {}).dup
 
         subclass._relationships = {}
+        subclass._readonly_relationships = []
+
         # Add the relationships from the base class to the subclass using the original options
         if _relationships.is_a?(Hash)
           _relationships.each_value do |relationship|
@@ -467,7 +470,7 @@ module JSONAPI
         resource ? resource._model_name.to_s : type_class_name
       end
 
-      attr_accessor :_attributes, :_relationships, :_type, :_model_hints
+      attr_accessor :_attributes, :_readonly_attributes, :_relationships, :_readonly_relationships, :_type, :_model_hints
       attr_writer :_allowed_filters, :_paginator
 
       def create(context)
@@ -504,7 +507,11 @@ module JSONAPI
         check_duplicate_attribute_name(attr) if options[:format].nil?
 
         @_attributes ||= {}
+        @_readonly_attributes ||= []
+
         @_attributes[attr] = options
+        @_readonly_attributes << attr if options[:readonly]
+
         define_method attr do
           @model.public_send(options[:delegate] ? options[:delegate].to_sym : attr)
         end unless method_defined?(attr)
@@ -580,12 +587,12 @@ module JSONAPI
 
       # Override in your resource to filter the updatable keys
       def updatable_fields(_context = nil)
-        _updatable_relationships | _attributes.keys - [:id]
+        _updatable_relationships | _updatable_attributes - [:id]
       end
 
       # Override in your resource to filter the creatable keys
       def creatable_fields(_context = nil)
-        _updatable_relationships | _attributes.keys
+        _updatable_relationships | _updatable_attributes
       end
 
       # Override in your resource to filter the sortable keys
@@ -891,13 +898,17 @@ module JSONAPI
         default_attribute_options.merge(@_attributes[attr])
       end
 
+      def _updatable_attributes
+        _attributes.keys - _readonly_attributes
+      end
+
       def _updatable_relationships
-        @_relationships.map { |key, _relationship| key }
+        _relationships.map { |key, _relationship| key } - _readonly_relationships
       end
 
       def _relationship(type)
         type = type.to_sym
-        @_relationships[type]
+        _relationships[type]
       end
 
       def _model_name
@@ -1016,12 +1027,16 @@ module JSONAPI
         options = attrs.extract_options!
         options[:parent_resource] = self
 
+        @_readonly_relationships ||= []
+
         attrs.each do |relationship_name|
           check_reserved_relationship_name(relationship_name)
           check_duplicate_relationship_name(relationship_name)
 
           JSONAPI::RelationshipBuilder.new(klass, _model_class, options)
             .define_relationship_methods(relationship_name.to_sym)
+
+          @_readonly_relationships << relationship_name if options[:readonly]
         end
       end
 
