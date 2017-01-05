@@ -4,12 +4,18 @@ module JSONAPI
     attr_accessor :meta
     attr_accessor :links
     attr_accessor :options
+    attr_accessor :warnings
 
     def initialize(code, options = {})
-      @code = code
+      @code = Rack::Utils.status_code(code)
       @options = options
       @meta = options.fetch(:meta, {})
       @links = options.fetch(:links, {})
+      @warnings = options.fetch(:warnings, {})
+    end
+
+    def to_hash(serializer = nil)
+      {}
     end
   end
 
@@ -20,6 +26,14 @@ module JSONAPI
       @errors = errors
       super(code, options)
     end
+
+    def to_hash(serializer = nil)
+      {
+          errors: errors.collect do |error|
+            error.to_hash
+          end
+      }
+    end
   end
 
   class ResourceOperationResult < OperationResult
@@ -28,6 +42,14 @@ module JSONAPI
     def initialize(code, resource, options = {})
       @resource = resource
       super(code, options)
+    end
+
+    def to_hash(serializer = nil)
+      if serializer
+        serializer.serialize_to_hash(resource)
+      else
+        {}
+      end
     end
   end
 
@@ -41,6 +63,14 @@ module JSONAPI
       @page_count = options[:page_count]
       super(code, options)
     end
+
+    def to_hash(serializer)
+      if serializer
+        serializer.serialize_to_hash(resources)
+      else
+        {}
+      end
+    end
   end
 
   class RelatedResourcesOperationResult < ResourcesOperationResult
@@ -51,6 +81,14 @@ module JSONAPI
       @_type = type
       super(code, resources, options)
     end
+
+    def to_hash(serializer = nil)
+      if serializer
+        serializer.serialize_to_hash(resources)
+      else
+        {}
+      end
+    end
   end
 
   class LinksObjectOperationResult < OperationResult
@@ -60,6 +98,14 @@ module JSONAPI
       @parent_resource = parent_resource
       @relationship = relationship
       super(code, options)
+    end
+
+    def to_hash(serializer = nil)
+      if serializer
+        serializer.serialize_to_links_hash(parent_resource, relationship)
+      else
+        {}
+      end
     end
   end
 end

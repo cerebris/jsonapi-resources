@@ -25,7 +25,7 @@ ActiveRecord::Schema.define do
   end
 
   create_table :posts, force: true do |t|
-    t.string     :title
+    t.string     :title, length: 255
     t.text       :body
     t.integer    :author_id
     t.integer    :parent_post_id
@@ -675,15 +675,6 @@ class PostsController < BaseController
   # the operations dispatcher.
   rescue_from PostsController::SpecialError do
     head :forbidden
-  end
-
-  def handle_exceptions(e)
-    case e
-      when PostsController::SpecialError
-        raise e
-      else
-        super(e)
-    end
   end
 
   #called by test_on_server_error
