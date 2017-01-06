@@ -671,6 +671,10 @@ class PostsController < BaseController
   class SubSpecialError < PostsController::SpecialError; end
   class SerializeError < StandardError; end
 
+  def allowed_operation_resource_types
+    super.push 'people'
+  end
+
   # This is used to test that classes that are whitelisted are reraised by
   # the operations dispatcher.
   rescue_from PostsController::SpecialError do

@@ -60,6 +60,10 @@ module JSONAPI
       process_request
     end
 
+    def operations
+      process_request
+    end
+
     def process_request
       @response_document = create_response_document
 
@@ -70,7 +74,10 @@ module JSONAPI
 
       request_parser = JSONAPI::RequestParser.new(
           params,
+          response_document: @response_document,
+          content_type: request.content_type,
           context: context,
+          allowed_resource_types: allowed_operation_resource_types,
           key_formatter: key_formatter,
           server_error_callbacks: (self.class.server_error_callbacks || []))
 
@@ -81,7 +88,7 @@ module JSONAPI
         begin
           run_callbacks :process_operations do
             begin
-              request_parser.each(response_document) do |op|
+              request_parser.each do |op|
                 op.options[:serializer] = resource_serializer_klass.new(
                     op.resource_klass,
                     include_directives: op.options[:include_directives],
@@ -165,9 +172,15 @@ module JSONAPI
     end
 
     def verify_content_type_header
-      if ['create', 'create_relationship', 'update_relationship', 'update'].include?(params[:action])
-        unless request.content_type == JSONAPI::MEDIA_TYPE
+      if params[:action] == 'operations'
+        unless request.content_type == JSONAPI::OPERATIONS_MEDIA_TYPE
           fail JSONAPI::Exceptions::UnsupportedMediaTypeError.new(request.content_type)
+        end
+      else
+        if ['create', 'create_relationship', 'update_relationship', 'update'].include?(params[:action])
+          unless request.content_type == JSONAPI::MEDIA_TYPE
+            fail JSONAPI::Exceptions::UnsupportedMediaTypeError.new(request.content_type)
+          end
         end
       end
       true
@@ -190,7 +203,11 @@ module JSONAPI
       media_types = media_types_for('Accept')
 
       media_types.blank? || media_types.any? do |media_type|
-        (media_type == JSONAPI::MEDIA_TYPE || media_type.start_with?(ALL_MEDIA_TYPES))
+        if request.content_type == JSONAPI::OPERATIONS_MEDIA_TYPE
+          (media_type == JSONAPI::OPERATIONS_MEDIA_TYPE || media_type.start_with?(ALL_MEDIA_TYPES))
+        else
+          (media_type == JSONAPI::MEDIA_TYPE || media_type.start_with?(ALL_MEDIA_TYPES))
+        end
       end
     end
 
@@ -204,6 +221,10 @@ module JSONAPI
     # override to set context
     def context
       {}
+    end
+
+    def allowed_operation_resource_types
+      [ resource_klass._type ]
     end
 
     def serialization_options
@@ -237,24 +258,44 @@ module JSONAPI
     end
 
     def render_response_document
-      content = response_document.contents
+      if request.content_type == JSONAPI::OPERATIONS_MEDIA_TYPE
+        content = response_document.contents
 
-      render_options = {}
-      if response_document.has_errors?
-        render_options[:json] = content
+        render_options = {}
+        if response_document.has_errors?
+          render_options[:json] = content
+          status = 400
+        else
+          render_options[:body] = JSON.generate(content)
+          status = 200
+        end
+
+        # For whatever reason, `render` ignores :status and :content_type when :body is set.
+        # But, we can just set those values directly in the Response object instead.
+        response.status = status
+        response.headers['Content-Type'] = JSONAPI::OPERATIONS_MEDIA_TYPE
+
+        render(render_options)
       else
-        # Bypasing ActiveSupport allows us to use CompiledJson objects for cached response fragments
-        render_options[:body] = JSON.generate(content)
+        content = response_document.contents
 
-        render_options[:location] = content['data']['links']['self'] if (response_document.status == 201 && content[:data].class != Array)
+        render_options = {}
+        if response_document.has_errors?
+          render_options[:json] = content
+        else
+          # Bypasing ActiveSupport allows us to use CompiledJson objects for cached response fragments
+          render_options[:body] = JSON.generate(content)
+
+          render_options[:location] = content['data']['links']['self'] if (response_document.status == 201 && content[:data].class != Array)
+        end
+
+        # For whatever reason, `render` ignores :status and :content_type when :body is set.
+        # But, we can just set those values directly in the Response object instead.
+        response.status = response_document.status
+        response.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
+
+        render(render_options)
       end
-
-      # For whatever reason, `render` ignores :status and :content_type when :body is set.
-      # But, we can just set those values directly in the Response object instead.
-      response.status = response_document.status
-      response.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
-
-      render(render_options)
     end
 
     def create_response_document
@@ -262,7 +303,8 @@ module JSONAPI
           key_formatter: key_formatter,
           base_meta: base_meta,
           base_links: base_response_links,
-          request: request
+          request: request,
+          content_type: request.content_type
       )
     end
 

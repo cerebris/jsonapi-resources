@@ -241,6 +241,16 @@ module ActionDispatch
                 action: 'get_related_resources', via: [:get]
         end
 
+        def jsonapi_operations(*resources, &_block)
+          @resource_type = resources.first
+
+          options = resources.extract_options!.dup
+          options[:controller] ||= @resource_type
+          options[:action] ||= "#{options[:controller]}#operations"
+
+          patch options[:controller], to: options[:action]
+        end
+
         protected
         # :nocov:
         def jsonapi_resource_scope(resource, resource_type) #:nodoc:

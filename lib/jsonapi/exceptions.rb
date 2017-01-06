@@ -77,6 +77,84 @@ module JSONAPI
       end
     end
 
+    class InvalidOp < Error
+      def initialize(error_object_overrides = {})
+        super(error_object_overrides)
+      end
+
+      def errors
+        [create_error_object(code: JSONAPI::INVALID_OP,
+                             status: :bad_request,
+                             title: I18n.t('jsonapi-resources.exceptions.invalid_op.title',
+                                           default: 'Invalid op'),
+                             detail: I18n.t('jsonapi-resources.exceptions.invalid_op.detail',
+                                            default: 'Op is invalid'))]
+      end
+    end
+
+    class InvalidOps < Error
+      def initialize(error_object_overrides = {})
+        super(error_object_overrides)
+      end
+
+      def errors
+        [create_error_object(code: JSONAPI::INVALID_OPS,
+                             status: :bad_request,
+                             title: I18n.t('jsonapi-resources.exceptions.invalid_ops.title',
+                                           default: 'Invalid data'),
+                             detail: I18n.t('jsonapi-resources.exceptions.invalid_ops.detail',
+                                            default: 'Data is invalid. Must be an array.'))]
+      end
+    end
+
+    class InvalidPointer < Error
+      def initialize(error_object_overrides = {})
+        super(error_object_overrides)
+      end
+
+      def errors
+        [create_error_object(code: JSONAPI::INVALID_POINTER,
+                             status: :bad_request,
+                             title: I18n.t('jsonapi-resources.exceptions.invalid_pointer.title',
+                                           default: 'Invalid pointer'),
+                             detail: I18n.t('jsonapi-resources.exceptions.invalid_pointer.detail',
+                                            default: 'Pointer is invalid'))]
+      end
+    end
+
+    class InvalidPointerResolution < Error
+      def initialize(error_object_overrides = {})
+        super(error_object_overrides)
+      end
+
+      def errors
+        [create_error_object(code: JSONAPI::INVALID_POINTER_RESOLUTION,
+                             status: :bad_request,
+                             title: I18n.t('jsonapi-resources.exceptions.invalid_pointer_resolution.title',
+                                           default: 'Invalid pointer resolution'),
+                             detail: I18n.t('jsonapi-resources.exceptions.invalid_pointer_resolution.detail',
+                                            default: 'Pointer did not resolve to a valid location'))]
+      end
+    end
+
+    class InvalidRelationship < Error
+      attr_accessor :name, :type
+      def initialize(name, type, error_object_overrides = {})
+        @name = name
+        @type = type
+        super(error_object_overrides)
+      end
+
+      def errors
+        [create_error_object(code: JSONAPI::INVALID_RELATIONSHIP,
+                             status: :bad_request,
+                             title: I18n.t('jsonapi-resources.exceptions.invalid_relationship.title',
+                                           default: 'Invalid relationship'),
+                             detail: I18n.t('jsonapi-resources.exceptions.invalid_relationship.detail',
+                                            default: "#{name} is an invalid relationship on #{type}", name: name, type: type))]
+      end
+    end
+
     class RecordNotFound < Error
       attr_accessor :id
 
@@ -391,11 +469,11 @@ module JSONAPI
 
       def errors
         [create_error_object(code: JSONAPI::PARAM_NOT_ALLOWED,
-                            status: :bad_request,
-                            title: I18n.translate('jsonapi-resources.exceptions.parameter_not_allowed.title',
-                                                  default: 'Param not allowed'),
-                            detail: I18n.translate('jsonapi-resources.exceptions.parameters_not_allowed.detail',
-                                                   default: "#{param} is not allowed.", param: param))]
+                             status: :bad_request,
+                             title: I18n.translate('jsonapi-resources.exceptions.parameter_not_allowed.title',
+                                                   default: 'Param not allowed'),
+                             detail: I18n.translate('jsonapi-resources.exceptions.parameter_not_allowed.detail',
+                                                    default: "#{param} is not allowed.", param: param))]
       end
     end
 

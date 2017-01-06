@@ -197,6 +197,21 @@ class RoutesTest < ActionDispatch::IntegrationTest
                    {action: 'show', controller: 'iso_currencies', id: 'USD'})
   end
 
+  def test_routing_operations_no_namespace
+    assert_routing({path: '/posts', method: :patch},
+                   {action: 'operations', controller: 'posts'})
+  end
+
+  def test_routing_operations_namespaced
+    assert_routing({path: '/api/v2/authors', method: :patch},
+                   {action: 'operations', controller: 'api/v2/authors'})
+  end
+
+  def test_routing_operations_resources
+    assert_routing({path: '/api/v5/authors', method: :patch},
+                   {action: 'operations', controller: 'api/v5/authors'})
+  end
+
   # ToDo: Refute routing
   # def test_routing_v3_posts_delete
   #   assert_routing({ path: '/api/v3/posts/1', method: :delete },

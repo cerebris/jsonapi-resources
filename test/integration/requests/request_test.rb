@@ -1102,4 +1102,27 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_cacheable_jsonapi_get '/vehicles/1'
     assert_equal 'cars', json_response['data']['type']
   end
+
+  def test_operations
+    patch '/api/v1/posts', params: {
+        operations: [
+            {
+                op: 'get',
+                ref: {
+                    type: 'posts'
+                },
+                params: {
+                    filter: { id: '1,2' },
+                    sort: ['id'],
+                    include: ['comments']
+                }
+            }
+        ]}.to_json,
+          headers: {
+              'CONTENT_TYPE' => JSONAPI::OPERATIONS_MEDIA_TYPE,
+              'Accept' => JSONAPI::OPERATIONS_MEDIA_TYPE
+          }
+
+    assert_jsonapi_operations_response 200
+  end
 end

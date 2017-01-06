@@ -159,7 +159,7 @@ if Rails::VERSION::MAJOR >= 5
             case content_mime_type.to_sym
               when nil
                 raise "Unknown Content-Type: #{content_type}"
-              when :json, :api_json
+              when :json, :api_json, :api_json_operations
                 data = ActiveSupport::JSON.encode(non_path_parameters)
               when :xml
                 data = non_path_parameters.to_xml
@@ -260,6 +260,8 @@ TestApp.routes.draw do
   jsonapi_resources :doctors
   jsonapi_resources :patients
 
+  jsonapi_operations :posts
+
   namespace :api do
     jsonapi_resources :boxes
 
@@ -278,6 +280,7 @@ TestApp.routes.draw do
       jsonapi_resources :craters
       jsonapi_resources :preferences
       jsonapi_resources :likes
+      jsonapi_operations :posts
     end
 
     JSONAPI.configuration.route_format = :underscored_route
@@ -290,6 +293,8 @@ TestApp.routes.draw do
 
       jsonapi_resources :books
       jsonapi_resources :book_comments
+
+      jsonapi_operations :authors
     end
 
     namespace :v3 do
@@ -330,7 +335,10 @@ TestApp.routes.draw do
 
       jsonapi_resources :employees
 
+      jsonapi_operations :authors
+      jsonapi_operations :iso_currencies
     end
+
     JSONAPI.configuration.route_format = :underscored_route
 
     JSONAPI.configuration.route_format = :dasherized_route
@@ -435,6 +443,14 @@ class ActionDispatch::IntegrationTest
 
   def assert_jsonapi_response(expected_status, msg = nil)
     assert_equal JSONAPI::MEDIA_TYPE, response.content_type
+    if status != expected_status && status >= 400
+      pp json_response rescue nil
+    end
+    assert_equal expected_status, status, msg
+  end
+
+  def assert_jsonapi_operations_response(expected_status, msg = nil)
+    assert_equal JSONAPI::OPERATIONS_MEDIA_TYPE, response.content_type
     if status != expected_status && status >= 400
       pp json_response rescue nil
     end
