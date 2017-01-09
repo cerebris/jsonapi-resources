@@ -225,6 +225,20 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 1, json_response['data'].size
   end
 
+  def test_index_filter_with_hash_values_by_filter
+    assert_cacheable_get :index, params: {filter: {search_by_filter: {title: 'New post'}}}
+    assert_response :success
+    assert json_response['data'].is_a?(Array)
+    assert_equal 1, json_response['data'].size
+  end
+
+  def test_index_filter_with_hash_values_by_symbol
+    assert_cacheable_get :index, params: {filter: {search_by_symbol: {title: 'New post'}}}
+    assert_response :success
+    assert json_response['data'].is_a?(Array)
+    assert_equal 1, json_response['data'].size
+  end
+
   def test_index_filter_by_ids
     assert_cacheable_get :index, params: {filter: {ids: '1,2'}}
     assert_response :success
