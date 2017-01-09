@@ -60,6 +60,10 @@ module JSONAPI
       false
     end
 
+    def readonly?
+      @options[:readonly]
+    end
+
     class ToOne < Relationship
       attr_reader :foreign_key_on
 

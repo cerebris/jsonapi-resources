@@ -580,12 +580,12 @@ module JSONAPI
 
       # Override in your resource to filter the updatable keys
       def updatable_fields(_context = nil)
-        _updatable_relationships | _attributes.keys - [:id]
+        _updatable_relationships | _updatable_attributes - [:id]
       end
 
       # Override in your resource to filter the creatable keys
       def creatable_fields(_context = nil)
-        _updatable_relationships | _attributes.keys
+        _updatable_relationships | _updatable_attributes
       end
 
       # Override in your resource to filter the sortable keys
@@ -891,8 +891,12 @@ module JSONAPI
         default_attribute_options.merge(@_attributes[attr])
       end
 
+      def _updatable_attributes
+        _attributes.map { |key, options| key unless options[:readonly] }.compact
+      end
+
       def _updatable_relationships
-        @_relationships.map { |key, _relationship| key }
+        @_relationships.map { |key, relationship| key unless relationship.readonly? }.compact
       end
 
       def _relationship(type)
