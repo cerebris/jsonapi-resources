@@ -410,17 +410,14 @@ module JSONAPI
         subclass.immutable(false)
         subclass.caching(false)
         subclass._attributes = (_attributes || {}).dup
+
         subclass._model_hints = (_model_hints || {}).dup
 
-        subclass._relationships = {}
-        # Add the relationships from the base class to the subclass using the original options
-        if _relationships.is_a?(Hash)
-          _relationships.each_value do |relationship|
-            options = relationship.options.dup
-            options[:parent_resource] = subclass
-            subclass._add_relationship(relationship.class, relationship.name, options)
-          end
+        unless _model_name.empty?
+          subclass.model_name(_model_name, add_model_hint: (_model_hints && !_model_hints[_model_name].nil?) == true)
         end
+
+        subclass.rebuild_relationships(_relationships || {})
 
         subclass._allowed_filters = (_allowed_filters || Set.new).dup
 
@@ -430,6 +427,20 @@ module JSONAPI
         subclass.attribute :id, format: :id
 
         check_reserved_resource_name(subclass._type, subclass.name)
+      end
+
+      def rebuild_relationships(relationships)
+        original_relationships = relationships.deep_dup
+
+        @_relationships = {}
+
+        if original_relationships.is_a?(Hash)
+          original_relationships.each_value do |relationship|
+            options = relationship.options.dup
+            options[:parent_resource] = self
+            _add_relationship(relationship.class, relationship.name, options)
+          end
+        end
       end
 
       def resource_for(type)
@@ -554,6 +565,8 @@ module JSONAPI
         @_model_name = model.to_sym
 
         model_hint(model: @_model_name, resource: self) unless options[:add_model_hint] == false
+
+        rebuild_relationships(_relationships)
       end
 
       def model_hint(model: _model_name, resource: _type)
@@ -908,10 +921,11 @@ module JSONAPI
         if _abstract
           return ''
         else
-          return @_model_name if defined?(@_model_name)
+          return @_model_name.to_s if defined?(@_model_name)
           class_name = self.name
           return '' if class_name.nil?
-          return @_model_name = class_name.demodulize.sub(/Resource$/, '')
+          @_model_name = class_name.demodulize.sub(/Resource$/, '')
+          return @_model_name.to_s
         end
       end
 
@@ -982,11 +996,17 @@ module JSONAPI
       def _model_class
         return nil if _abstract
 
-        return @model if defined?(@model)
-        return nil if self.name.to_s.blank? && _model_name.to_s.blank?
-        @model = _model_name.to_s.safe_constantize
-        warn "[MODEL NOT FOUND] Model could not be found for #{self.name}. If this a base Resource declare it as abstract." if @model.nil?
-        @model
+        return @model_class if @model_class
+
+        model_name = _model_name
+        return nil if model_name.to_s.blank?
+
+        @model_class = model_name.to_s.safe_constantize
+        if @model_class.nil?
+          warn "[MODEL NOT FOUND] Model could not be found for #{self.name}. If this a base Resource declare it as abstract."
+        end
+
+        @model_class
       end
 
       def _allowed_filter?(filter)

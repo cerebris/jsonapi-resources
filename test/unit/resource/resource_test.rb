@@ -47,7 +47,9 @@ class NoMatchAbstractResource < JSONAPI::Resource
   abstract
 end
 
-class CatResource < JSONAPI::Resource
+class FelineResource < JSONAPI::Resource
+  model_name 'Cat'
+
   attribute :name
   attribute :breed
   attribute :kind, :delegate => :breed
@@ -99,6 +101,7 @@ module MyAPI
 end
 
 class PostWithReadonlyAttributesResource < JSONAPI::Resource
+  model_name 'Post'
   attribute :title, readonly: true
   has_one :author, readonly: true
 end
@@ -180,7 +183,7 @@ class ResourceTest < ActiveSupport::TestCase
   def test_nil_model_class
     # ToDo:Figure out why this test does not work on Rails 4.0
     # :nocov:
-    if Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR >= 1
+    if (Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR >= 1) || (Rails::VERSION::MAJOR >= 5)
       assert_output nil, "[MODEL NOT FOUND] Model could not be found for NoMatchResource. If this a base Resource declare it as abstract.\n" do
         assert_nil NoMatchResource._model_class
       end
@@ -199,13 +202,13 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_class_attributes
-    attrs = CatResource._attributes
+    attrs = FelineResource._attributes
     assert_kind_of(Hash, attrs)
     assert_equal(attrs.keys.size, 4)
   end
 
   def test_class_relationships
-    relationships = CatResource._relationships
+    relationships = FelineResource._relationships
     assert_kind_of(Hash, relationships)
     assert_equal(relationships.size, 2)
   end
@@ -219,16 +222,16 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_duplicate_relationship_name
-    assert_output nil, "[DUPLICATE RELATIONSHIP] `mother` has already been defined in CatResource.\n" do
-      CatResource.instance_eval do
+    assert_output nil, "[DUPLICATE RELATIONSHIP] `mother` has already been defined in FelineResource.\n" do
+      FelineResource.instance_eval do
         has_one :mother, class_name: 'Cat'
       end
     end
   end
 
   def test_duplicate_attribute_name
-    assert_output nil, "[DUPLICATE ATTRIBUTE] `name` has already been defined in CatResource.\n" do
-      CatResource.instance_eval do
+    assert_output nil, "[DUPLICATE ATTRIBUTE] `name` has already been defined in FelineResource.\n" do
+      FelineResource.instance_eval do
         attribute :name
       end
     end
@@ -299,7 +302,7 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_updatable_fields_does_not_include_id
-    assert(!CatResource.updatable_fields.include?(:id))
+    assert(!FelineResource.updatable_fields.include?(:id))
   end
 
   def test_filter_on_to_many_relationship_id
@@ -443,60 +446,60 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
   end
 
   def test_key_type_integer
-    CatResource.instance_eval do
+    FelineResource.instance_eval do
       key_type :integer
     end
 
-    assert CatResource.verify_key('45')
-    assert CatResource.verify_key(45)
+    assert FelineResource.verify_key('45')
+    assert FelineResource.verify_key(45)
 
     assert_raises JSONAPI::Exceptions::InvalidFieldValue do
-      CatResource.verify_key('45,345')
+      FelineResource.verify_key('45,345')
     end
 
   ensure
-    CatResource.instance_eval do
+    FelineResource.instance_eval do
       key_type nil
     end
   end
 
   def test_key_type_string
-    CatResource.instance_eval do
+    FelineResource.instance_eval do
       key_type :string
     end
 
-    assert CatResource.verify_key('45')
-    assert CatResource.verify_key(45)
+    assert FelineResource.verify_key('45')
+    assert FelineResource.verify_key(45)
 
     assert_raises JSONAPI::Exceptions::InvalidFieldValue do
-      CatResource.verify_key('45,345')
+      FelineResource.verify_key('45,345')
     end
 
   ensure
-    CatResource.instance_eval do
+    FelineResource.instance_eval do
       key_type nil
     end
   end
 
   def test_key_type_uuid
-    CatResource.instance_eval do
+    FelineResource.instance_eval do
       key_type :uuid
     end
 
-    assert CatResource.verify_key('f1a4d5f2-e77a-4d0a-acbb-ee0b98b3f6b5')
+    assert FelineResource.verify_key('f1a4d5f2-e77a-4d0a-acbb-ee0b98b3f6b5')
 
     assert_raises JSONAPI::Exceptions::InvalidFieldValue do
-      CatResource.verify_key('f1a-e77a-4d0a-acbb-ee0b98b3f6b5')
+      FelineResource.verify_key('f1a-e77a-4d0a-acbb-ee0b98b3f6b5')
     end
 
   ensure
-    CatResource.instance_eval do
+    FelineResource.instance_eval do
       key_type nil
     end
   end
 
   def test_key_type_proc
-    CatResource.instance_eval do
+    FelineResource.instance_eval do
       key_type -> (key, context) {
         return key if key.nil?
         if key.to_s.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
@@ -507,14 +510,14 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
       }
     end
 
-    assert CatResource.verify_key('f1a4d5f2-e77a-4d0a-acbb-ee0b98b3f6b5')
+    assert FelineResource.verify_key('f1a4d5f2-e77a-4d0a-acbb-ee0b98b3f6b5')
 
     assert_raises JSONAPI::Exceptions::InvalidFieldValue do
-      CatResource.verify_key('f1a-e77a-4d0a-acbb-ee0b98b3f6b5')
+      FelineResource.verify_key('f1a-e77a-4d0a-acbb-ee0b98b3f6b5')
     end
 
   ensure
-    CatResource.instance_eval do
+    FelineResource.instance_eval do
       key_type nil
     end
   end
