@@ -417,7 +417,9 @@ module JSONAPI
         type = subclass.name.demodulize.sub(/Resource$/, '').underscore
         subclass._type = type.pluralize.to_sym
 
-        subclass.attribute :id, format: :id
+        unless subclass._attributes[:id]
+          subclass.attribute :id, format: :id
+        end
 
         check_reserved_resource_name(subclass._type, subclass.name)
       end
@@ -579,7 +581,7 @@ module JSONAPI
 
       # Override in your resource to filter the creatable keys
       def creatable_fields(_context = nil)
-        _updatable_relationships | _attributes.keys
+        _updatable_relationships | _attributes.keys - [:id]
       end
 
       # Override in your resource to filter the sortable keys
