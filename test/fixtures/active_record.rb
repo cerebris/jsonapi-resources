@@ -1120,7 +1120,7 @@ class PostResource < JSONAPI::Resource
   end
 
   def self.creatable_fields(context)
-    super(context) - [:subject, :id]
+    super(context) - [:subject]
   end
 
   def self.sortable_fields(context)
@@ -1141,6 +1141,10 @@ end
 
 class IsoCurrencyResource < JSONAPI::Resource
   attributes :name, :country_name, :minor_unit
+
+  def self.creatable_fields(_context = nil)
+    super + [:id]
+  end
 
   filter :country_name
 
