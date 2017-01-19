@@ -424,7 +424,9 @@ module JSONAPI
         type = subclass.name.demodulize.sub(/Resource$/, '').underscore
         subclass._type = type.pluralize.to_sym
 
-        subclass.attribute :id, format: :id
+        unless subclass._attributes[:id]
+          subclass.attribute :id, format: :id, readonly: true
+        end
 
         check_reserved_resource_name(subclass._type, subclass.name)
       end
