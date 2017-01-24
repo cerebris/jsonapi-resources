@@ -137,7 +137,7 @@ module JSONAPI
     end
 
     def requested_fields(klass)
-      return if @fields.nil? || @fields.empty?
+      return if @fields.blank?
       if @fields[klass._type]
         @fields[klass._type]
       elsif klass.superclass != JSONAPI::Resource
