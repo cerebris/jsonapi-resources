@@ -184,7 +184,7 @@ class ResourceTest < ActiveSupport::TestCase
     # ToDo:Figure out why this test does not work on Rails 4.0
     # :nocov:
     if (Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR >= 1) || (Rails::VERSION::MAJOR >= 5)
-      assert_output nil, "[MODEL NOT FOUND] Model could not be found for NoMatchResource. If this a base Resource declare it as abstract.\n" do
+      assert_output nil, "[MODEL NOT FOUND] Model could not be found for NoMatchResource. If this is a base Resource declare it as abstract.\n" do
         assert_nil NoMatchResource._model_class
       end
     end
@@ -593,7 +593,7 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
         NoModelResource._model_class
       CODE
     end
-    assert_match "[MODEL NOT FOUND] Model could not be found for ResourceTest::NoModelResource. If this a base Resource declare it as abstract.\n", err
+    assert_match "[MODEL NOT FOUND] Model could not be found for ResourceTest::NoModelResource. If this is a base Resource declare it as abstract.\n", err
   end
 
   def test_no_warning_when_abstract
