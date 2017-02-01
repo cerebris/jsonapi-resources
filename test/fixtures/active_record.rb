@@ -394,6 +394,7 @@ class Section < ActiveRecord::Base
 end
 
 class HairCut < ActiveRecord::Base
+  has_many :people
 end
 
 class Property < ActiveRecord::Base

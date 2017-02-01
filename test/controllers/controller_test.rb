@@ -2390,6 +2390,17 @@ class PeopleControllerTest < ActionController::TestCase
     assert_response :bad_request
   end
 
+  def test_invalid_filter_value_for_get_related_resources
+    assert_cacheable_get :get_related_resources, params: {
+          hair_cut_id: 1,
+          relationship: 'people',
+          source: 'hair_cuts',
+          filter: {name: 'L'}
+        }
+
+    assert_response :bad_request
+  end
+
   def test_valid_filter_value
     assert_cacheable_get :index, params: {filter: {name: 'Joe Author'}}
     assert_response :success
