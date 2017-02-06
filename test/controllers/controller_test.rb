@@ -2518,7 +2518,7 @@ class BooksControllerTest < ActionController::TestCase
     JSONAPI.configuration.use_relationship_reflection = false
   end
 
-  def test_destroy_relationship_has_and_belongs_to_many_refect
+  def test_destroy_relationship_has_and_belongs_to_many_reflect
     JSONAPI.configuration.use_relationship_reflection = true
 
     assert_equal 2, Book.find(2).authors.count
