@@ -1801,6 +1801,24 @@ end
 class FlatPostsController < JSONAPI::ResourceController
 end
 
+class BlogPost < ActiveRecord::Base
+  self.table_name = 'posts'
+end
+
+class BlogPostsController < JSONAPI::ResourceController
+
+end
+
+class BlogPostResource < JSONAPI::Resource
+  model_name 'BlogPost', add_model_hint: false
+  model_hint model: 'BlogPost', resource: BlogPostResource
+
+  attribute :name, :delegate => :title
+  attribute :body
+
+  filter :name
+end
+
 # CustomProcessors
 class Api::V4::BookProcessor < JSONAPI::Processor
   after_find do

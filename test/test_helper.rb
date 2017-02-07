@@ -252,6 +252,7 @@ TestApp.routes.draw do
   jsonapi_resources :cars
   jsonapi_resources :boats
   jsonapi_resources :flat_posts
+  jsonapi_resources :blog_posts
 
   jsonapi_resources :books
   jsonapi_resources :authors
