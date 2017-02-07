@@ -2488,7 +2488,7 @@ class BooksControllerTest < ActionController::TestCase
     JSONAPI.configuration.use_relationship_reflection = false
   end
 
-  def test_destroy_relationship_has_and_belongs_to_many_refect
+  def test_destroy_relationship_has_and_belongs_to_many_reflect
     JSONAPI.configuration.use_relationship_reflection = true
 
     assert_equal 2, Book.find(2).authors.count
@@ -2609,14 +2609,14 @@ class BreedsControllerTest < ActionController::TestCase
   # Note: Breed names go through the TitleValueFormatter
 
   def test_poro_index
-    assert_cacheable_get :index
+    get :index
     assert_response :success
     assert_equal '0', json_response['data'][0]['id']
     assert_equal 'Persian', json_response['data'][0]['attributes']['name']
   end
 
   def test_poro_show
-    assert_cacheable_get :show, params: {id: '0'}
+    get :show, params: {id: '0'}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
     assert_equal '0', json_response['data']['id']
@@ -3626,6 +3626,11 @@ end
 class Api::BoxesControllerTest < ActionController::TestCase
   def test_complex_includes_base
     assert_cacheable_get :index
+    assert_response :success
+  end
+
+  def test_complex_includes_filters_nil_includes
+    assert_cacheable_get :index, params: {include: ',,'}
     assert_response :success
   end
 
