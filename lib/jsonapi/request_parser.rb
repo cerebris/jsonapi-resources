@@ -352,7 +352,7 @@ module JSONAPI
 
       return if included_resources.nil?
 
-      result = included_resources.map do |included_resource|
+      result = included_resources.compact.map do |included_resource|
         check_include(resource_klass, included_resource.partition('.'))
         unformat_key(included_resource).to_s
       end

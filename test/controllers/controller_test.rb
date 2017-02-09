@@ -3629,6 +3629,11 @@ class Api::BoxesControllerTest < ActionController::TestCase
     assert_response :success
   end
 
+  def test_complex_includes_filters_nil_includes
+    assert_cacheable_get :index, params: {include: ',,'}
+    assert_response :success
+  end
+
   def test_complex_includes_two_level
     assert_cacheable_get :index, params: {include: 'things,things.user'}
 
