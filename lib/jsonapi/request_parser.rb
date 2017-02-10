@@ -47,7 +47,7 @@ module JSONAPI
     def setup_base_op(params)
       return if params.nil?
 
-      resource_klass = Resource.resource_for(params[:controller]) if params[:controller]
+      resource_klass = Resource.resource_klass_for(params[:controller]) if params[:controller]
 
       setup_action_method_name = "setup_#{params[:action]}_action"
       if respond_to?(setup_action_method_name)
@@ -81,7 +81,7 @@ module JSONAPI
     end
 
     def setup_get_related_resource_action(params, resource_klass)
-      source_klass = Resource.resource_for(params.require(:source))
+      source_klass = Resource.resource_klass_for(params.require(:source))
       source_id = source_klass.verify_key(params.require(source_klass._as_parent_key), @context)
 
       fields = parse_fields(resource_klass, params[:fields])
@@ -102,7 +102,7 @@ module JSONAPI
     end
 
     def setup_get_related_resources_action(params, resource_klass)
-      source_klass = Resource.resource_for(params.require(:source))
+      source_klass = Resource.resource_klass_for(params.require(:source))
       source_id = source_klass.verify_key(params.require(source_klass._as_parent_key), @context)
 
       fields = parse_fields(resource_klass, params[:fields])
@@ -291,7 +291,7 @@ module JSONAPI
           if type != format_key(type)
             fail JSONAPI::Exceptions::InvalidResource.new(type, error_object_overrides)
           end
-          type_resource = Resource.resource_for(resource_klass.module_path + underscored_type.to_s)
+          type_resource = Resource.resource_klass_for(resource_klass.module_path + underscored_type.to_s)
         rescue NameError
           errors.concat(JSONAPI::Exceptions::InvalidResource.new(type, error_object_overrides).errors)
         rescue JSONAPI::Exceptions::InvalidResource => e
@@ -327,7 +327,7 @@ module JSONAPI
       relationship = resource_klass._relationship(relationship_name)
       if relationship && format_key(relationship_name) == include_parts.first
         unless include_parts.last.empty?
-          check_include(Resource.resource_for(resource_klass.module_path + relationship.class_name.to_s.underscore),
+          check_include(Resource.resource_klass_for(resource_klass.module_path + relationship.class_name.to_s.underscore),
                         include_parts.last.partition('.'))
         end
       else
@@ -530,7 +530,7 @@ module JSONAPI
 
       unless links_object[:id].nil?
         resource = resource_klass || Resource
-        relationship_resource = resource.resource_for(unformat_key(links_object[:type]).to_s)
+        relationship_resource = resource.resource_klass_for(unformat_key(links_object[:type]).to_s)
         relationship_id = relationship_resource.verify_key(links_object[:id], @context)
         if relationship.polymorphic?
           { id: relationship_id, type: unformat_key(links_object[:type].to_s) }
@@ -565,7 +565,7 @@ module JSONAPI
         end
 
         links_object.each_pair do |type, keys|
-          relationship_resource = Resource.resource_for(resource_klass.module_path + unformat_key(type).to_s)
+          relationship_resource = Resource.resource_klass_for(resource_klass.module_path + unformat_key(type).to_s)
           add_result.call relationship_resource.verify_keys(keys, @context)
         end
       end

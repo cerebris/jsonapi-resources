@@ -2609,14 +2609,14 @@ class BreedsControllerTest < ActionController::TestCase
   # Note: Breed names go through the TitleValueFormatter
 
   def test_poro_index
-    assert_cacheable_get :index
+    get :index
     assert_response :success
     assert_equal '0', json_response['data'][0]['id']
     assert_equal 'Persian', json_response['data'][0]['attributes']['name']
   end
 
   def test_poro_show
-    assert_cacheable_get :show, params: {id: '0'}
+    get :show, params: {id: '0'}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
     assert_equal '0', json_response['data']['id']

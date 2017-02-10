@@ -23,7 +23,7 @@ module JSONAPI
     end
 
     def resource_klass
-      @resource_klass ||= @parent_resource.resource_for(@class_name)
+      @resource_klass ||= @parent_resource.resource_klass_for(@class_name)
     end
 
     def table_name
