@@ -30,7 +30,9 @@ module JSONAPI
     def to_hash(serializer = nil)
       {
           errors: errors.collect do |error|
+            # :nocov:
             error.to_hash
+            # :nocov:
           end
       }
     end
@@ -48,7 +50,9 @@ module JSONAPI
       if serializer
         serializer.serialize_to_hash(resource)
       else
+        # :nocov:
         {}
+        # :nocov:
       end
     end
   end
@@ -68,7 +72,9 @@ module JSONAPI
       if serializer
         serializer.serialize_to_hash(resources)
       else
+        # :nocov:
         {}
+        # :nocov:
       end
     end
   end
@@ -86,7 +92,9 @@ module JSONAPI
       if serializer
         serializer.serialize_to_hash(resources)
       else
+        # :nocov:
         {}
+        # :nocov:
       end
     end
   end
@@ -104,7 +112,9 @@ module JSONAPI
       if serializer
         serializer.serialize_to_links_hash(parent_resource, relationship)
       else
+        # :nocov:
         {}
+        # :nocov:
       end
     end
   end

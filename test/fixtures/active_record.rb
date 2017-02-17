@@ -1615,7 +1615,7 @@ module Api
     class PostResource < PostResource
       # Test caching with SQL fragments
       def self.records(options = {})
-        super.joins('INNER JOIN people on people.id = author_id')
+        _model_class.all.joins('INNER JOIN people on people.id = author_id')
       end
     end
 

@@ -73,16 +73,14 @@ module JSONAPI
         include_directives: include_directives,
         sort_criteria: sort_criteria,
         paginator: paginator,
-        fields: fields
+        fields: fields,
+        caching: {
+            cache_serializer_output: params[:cache_serializer_output],
+            serializer: params[:serializer]
+        }
       }
 
-      resource_records = if params[:cache_serializer_output]
-        resource_klass.find_serialized_with_caching(verified_filters,
-                                                    params[:serializer],
-                                                    find_options)
-      else
-        resource_klass.find(verified_filters, find_options)
-      end
+      resources = resource_klass.find(verified_filters, find_options)
 
       page_options = result_options
       if (JSONAPI.configuration.top_level_meta_include_record_count ||
@@ -93,14 +91,14 @@ module JSONAPI
       end
 
       if (JSONAPI.configuration.top_level_meta_include_page_count && page_options[:record_count])
-        page_options[:page_count] = paginator.calculate_page_count(page_options[:record_count])
+        page_options[:page_count] = paginator ? paginator.calculate_page_count(page_options[:record_count]) : 1
       end
 
       if JSONAPI.configuration.top_level_links_include_pagination && paginator
         page_options[:pagination_params] = paginator.links_page_params(page_options)
       end
 
-      return JSONAPI::ResourcesOperationResult.new(:ok, resource_records, page_options)
+      return JSONAPI::ResourcesOperationResult.new(:ok, resources, page_options)
     end
 
     def show
@@ -113,18 +111,16 @@ module JSONAPI
       find_options = {
         context: context,
         include_directives: include_directives,
-        fields: fields
+        fields: fields,
+        caching: {
+            cache_serializer_output: params[:cache_serializer_output],
+            serializer: params[:serializer]
+        }
       }
 
-      resource_record = if params[:cache_serializer_output]
-        resource_klass.find_by_key_serialized_with_caching(key,
-                                                           params[:serializer],
-                                                           find_options)
-      else
-        resource_klass.find_by_key(key, find_options)
-      end
+      resource = resource_klass.find_by_key(key, find_options)
 
-      return JSONAPI::ResourceOperationResult.new(:ok, resource_record, result_options)
+      return JSONAPI::ResourceOperationResult.new(:ok, resource, result_options)
     end
 
     def show_relationship
@@ -172,32 +168,19 @@ module JSONAPI
         paginator: paginator,
         fields: fields,
         context: context,
-        include_directives: include_directives
+        include_directives: include_directives,
+        caching: {
+            cache_serializer_output: params[:cache_serializer_output],
+            serializer: params[:serializer]
+        }
       }
 
-      if params[:cache_serializer_output]
-        # TODO Could also avoid instantiating source_resource as actual Resource by
-        # allowing LinkBuilder to accept CachedResourceFragment as source in
-        # relationships_related_link
-        scope = source_resource.public_send(:"records_for_#{relationship_type}", rel_opts)
-        relationship = source_klass._relationship(relationship_type)
-        related_resources = relationship.resource_klass.find_serialized_with_caching(
-          scope,
-          params[:serializer],
-          rel_opts
-        )
-      else
-        related_resources = source_resource.public_send(relationship_type, rel_opts)
-      end
+      related_resources = source_resource.public_send(relationship_type, rel_opts)
 
       if ((JSONAPI.configuration.top_level_meta_include_record_count) ||
           (paginator && paginator.class.requires_record_count) ||
           (JSONAPI.configuration.top_level_meta_include_page_count))
-        related_resource_records = source_resource.public_send("records_for_" + relationship_type)
-        records = resource_klass.filter_records(verified_filters, { context: context },
-                                                related_resource_records)
-
-        record_count = resource_klass.count_records(records)
+        record_count = source_resource.count_for_relationship(relationship_type, rel_opts)
       end
 
       if (JSONAPI.configuration.top_level_meta_include_page_count && record_count)

@@ -18,7 +18,7 @@ module ActionDispatch
 
         def jsonapi_resource(*resources, &_block)
           @resource_type = resources.first
-          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
+          res = JSONAPI::Resource.resource_klass_for(resource_type_with_module_prefix(@resource_type))
 
           options = resources.extract_options!.dup
           options[:controller] ||= @resource_type
@@ -64,7 +64,7 @@ module ActionDispatch
         end
 
         def jsonapi_relationships(options = {})
-          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
+          res = JSONAPI::Resource.resource_klass_for(resource_type_with_module_prefix(@resource_type))
           res._relationships.each do |relationship_name, relationship|
             if relationship.is_a?(JSONAPI::Relationship::ToMany)
               jsonapi_links(relationship_name, options)
@@ -78,7 +78,7 @@ module ActionDispatch
 
         def jsonapi_resources(*resources, &_block)
           @resource_type = resources.first
-          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
+          res = JSONAPI::Resource.resource_klass_for(resource_type_with_module_prefix(@resource_type))
 
           options = resources.extract_options!.dup
           options[:controller] ||= @resource_type
@@ -147,7 +147,7 @@ module ActionDispatch
           formatted_relationship_name = format_route(link_type)
           options = links.extract_options!.dup
 
-          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix)
+          res = JSONAPI::Resource.resource_klass_for(resource_type_with_module_prefix)
           options[:controller] ||= res._type.to_s
 
           methods = links_methods(options)
@@ -175,7 +175,7 @@ module ActionDispatch
           formatted_relationship_name = format_route(link_type)
           options = links.extract_options!.dup
 
-          res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix)
+          res = JSONAPI::Resource.resource_klass_for(resource_type_with_module_prefix)
           options[:controller] ||= res._type.to_s
 
           methods = links_methods(options)
@@ -204,7 +204,7 @@ module ActionDispatch
         end
 
         def jsonapi_related_resource(*relationship)
-          source = JSONAPI::Resource.resource_for(resource_type_with_module_prefix)
+          source = JSONAPI::Resource.resource_klass_for(resource_type_with_module_prefix)
           options = relationship.extract_options!.dup
 
           relationship_name = relationship.first
@@ -215,7 +215,7 @@ module ActionDispatch
           if relationship.polymorphic?
             options[:controller] ||= relationship.class_name.underscore.pluralize
           else
-            related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(relationship.class_name.underscore.pluralize))
+            related_resource = JSONAPI::Resource.resource_klass_for(resource_type_with_module_prefix(relationship.class_name.underscore.pluralize))
             options[:controller] ||= related_resource._type.to_s
           end
 
@@ -225,14 +225,14 @@ module ActionDispatch
         end
 
         def jsonapi_related_resources(*relationship)
-          source = JSONAPI::Resource.resource_for(resource_type_with_module_prefix)
+          source = JSONAPI::Resource.resource_klass_for(resource_type_with_module_prefix)
           options = relationship.extract_options!.dup
 
           relationship_name = relationship.first
           relationship = source._relationships[relationship_name]
 
           formatted_relationship_name = format_route(relationship.name)
-          related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(relationship.class_name.underscore))
+          related_resource = JSONAPI::Resource.resource_klass_for(resource_type_with_module_prefix(relationship.class_name.underscore))
           options[:controller] ||= related_resource._type.to_s
 
           match formatted_relationship_name,
