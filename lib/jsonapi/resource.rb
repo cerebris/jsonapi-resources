@@ -1244,9 +1244,10 @@ module JSONAPI
       def pluck_arel_attributes(relation, *attrs)
         conn = relation.connection
         quoted_attrs = attrs.map do |attr|
-          quoted_table = conn.quote_table_name(attr.relation.table_alias || attr.relation.name)
+          table_name = attr.relation.table_alias || attr.relation.name
+          quoted_table = conn.quote_table_name(table_name)
           quoted_column = conn.quote_column_name(attr.name)
-          "#{quoted_table}.#{quoted_column}"
+          "#{quoted_table}.#{quoted_column} as #{table_name}_#{attr.name}"
         end
         relation.pluck(*quoted_attrs)
       end
