@@ -1,0 +1,5 @@
+john_doe:
+  id: 1
+  name: "John Doe"
+  keepable_id: 1 # storages.yml warehouse_1
+  keepable_type: "Storage"

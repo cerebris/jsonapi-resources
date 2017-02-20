@@ -1,0 +1,4 @@
+john_doe_worker:
+  id: 1
+  name: "John Doe"
+  access_card_id: 1 # access_cards.yml john_doe_worker_card
