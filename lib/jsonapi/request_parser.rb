@@ -152,7 +152,7 @@ module JSONAPI
           resource_klass,
           context: @context,
           relationship_type: relationship_type,
-          parent_key: resource_klass.verify_key(parent_key)
+          parent_key: resource_klass.verify_key(parent_key, @context)
       )
     end
 
