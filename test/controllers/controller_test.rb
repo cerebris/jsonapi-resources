@@ -1898,6 +1898,24 @@ class PostsControllerTest < ActionController::TestCase
                          }
                        }
   end
+
+  def test_get_related_resources_sorted
+    assert_cacheable_get :get_related_resources, params: {person_id: '1', relationship: 'posts', source:'people', sort: 'title' }
+    assert_response :success
+    assert_equal 'JR How To', json_response['data'][0]['attributes']['title']
+    assert_equal 'New post', json_response['data'][2]['attributes']['title']
+    assert_cacheable_get :get_related_resources, params: {person_id: '1', relationship: 'posts', source:'people', sort: '-title' }
+    assert_response :success
+    assert_equal 'New post', json_response['data'][0]['attributes']['title']
+    assert_equal 'JR How To', json_response['data'][2]['attributes']['title']
+  end
+
+  def test_get_related_resources_default_sorted
+    assert_cacheable_get :get_related_resources, params: {person_id: '1', relationship: 'posts', source:'people'}
+    assert_response :success
+    assert_equal 'New post', json_response['data'][0]['attributes']['title']
+    assert_equal 'JR How To', json_response['data'][2]['attributes']['title']
+  end
 end
 
 class TagsControllerTest < ActionController::TestCase

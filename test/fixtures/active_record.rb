@@ -1050,6 +1050,10 @@ class PostResource < JSONAPI::Resource
   # Not needed - just for testing
   primary_key :id
 
+  def self.default_sort
+    [{field: 'title', direction: :desc}, {field: 'id', direction: :desc}]
+  end
+
   before_save do
     msg = "Before save"
   end
