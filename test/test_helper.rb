@@ -229,6 +229,7 @@ TestApp.routes.draw do
   jsonapi_resources :comments
   jsonapi_resources :firms
   jsonapi_resources :tags
+  jsonapi_resources :hair_cuts
   jsonapi_resources :posts do
     jsonapi_relationships
     jsonapi_links :special_tags

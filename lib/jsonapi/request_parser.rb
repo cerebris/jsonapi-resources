@@ -119,7 +119,7 @@ module JSONAPI
           relationship_type: relationship_type,
           source_klass: source_klass,
           source_id: source_id,
-          filters: source_klass.verify_filters(filters, @context),
+          filters: filters,
           sort_criteria: sort_criteria,
           paginator: paginator,
           fields: fields,
