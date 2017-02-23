@@ -48,6 +48,20 @@ Or install it yourself as:
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
 
+## Did you find a bug?
+
+* **Ensure the bug was not already reported** by searching on GitHub under [Issues](https://github.com/cerebris/jsonapi-resources/issues).
+
+* If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/cerebris/jsonapi-resources/issues/new). 
+Be sure to include a **title and clear description**, as much relevant information as possible, 
+and a **code sample** or an **executable test case** demonstrating the expected behavior that is not occurring.
+
+* If possible, use the relevant bug report templates to create the issue. 
+Simply copy the content of the appropriate template into a .rb file, make the necessary changes to demonstrate the issue, 
+and **paste the content into the issue description**:
+  * [**Rails 5** issues](https://github.com/cerebris/jsonapi-resources/blob/master/lib/bug_report_templates/rails_5_master.rb)
+
+
 ## License
 
 Copyright 2014-2016 Cerebris Corporation. MIT License (see LICENSE for details).
