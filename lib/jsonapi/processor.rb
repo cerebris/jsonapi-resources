@@ -166,9 +166,10 @@ module JSONAPI
       include_directives = params[:include_directives]
 
       source_resource ||= source_klass.find_by_key(source_id, context: context, fields: fields)
+      verified_filters = resource_klass.verify_filters(filters, context)
 
       rel_opts = {
-        filters:  filters,
+        filters:  verified_filters,
         sort_criteria: sort_criteria,
         paginator: paginator,
         fields: fields,

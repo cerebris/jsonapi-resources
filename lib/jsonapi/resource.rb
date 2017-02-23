@@ -808,6 +808,9 @@ module JSONAPI
 
       def verify_filters(filters, context = nil)
         verified_filters = {}
+
+        return verified_filters if filters.nil?
+
         filters.each do |filter, raw_value|
           verified_filter = verify_filter(filter, raw_value, context)
           verified_filters[verified_filter[0]] = verified_filter[1]
