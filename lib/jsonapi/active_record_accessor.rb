@@ -151,10 +151,8 @@ module JSONAPI
       end
 
       sort_criteria = options.fetch(:sort_criteria, {})
-      unless sort_criteria.nil? || sort_criteria.empty?
-        order_options = relationship.resource_klass.construct_order_options(sort_criteria)
-        records = apply_sort(records, order_options, context)
-      end
+      order_options = relationship.resource_klass.construct_order_options(sort_criteria)
+      records = apply_sort(records, order_options, context)
 
       paginator = options[:paginator]
       if paginator
