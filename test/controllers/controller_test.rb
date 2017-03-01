@@ -104,6 +104,21 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration.whitelist_all_exceptions = original_config
   end
 
+  def test_exception_added_to_request_env
+    original_config = JSONAPI.configuration.whitelist_all_exceptions
+    $PostProcessorRaisesErrors = true
+    refute @request.env['action_dispatch.exception']
+    assert_cacheable_get :index
+    assert @request.env['action_dispatch.exception']
+
+    JSONAPI.configuration.whitelist_all_exceptions = true
+    assert_cacheable_get :index
+    assert @request.env['action_dispatch.exception']
+  ensure
+    $PostProcessorRaisesErrors = false
+    JSONAPI.configuration.whitelist_all_exceptions = original_config
+  end
+
   def test_exception_includes_backtrace_when_enabled
     original_config = JSONAPI.configuration.include_backtraces_in_errors
     $PostProcessorRaisesErrors = true

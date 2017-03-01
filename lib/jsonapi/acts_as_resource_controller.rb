@@ -284,6 +284,9 @@ module JSONAPI
               }
             end
 
+            # Store exception for other middlewares
+            request.env['action_dispatch.exception'] ||= e
+
             internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
             Rails.logger.error { "Internal Server Error: #{e.message} #{e.backtrace.join("\n")}" }
             errors = internal_server_error.errors
