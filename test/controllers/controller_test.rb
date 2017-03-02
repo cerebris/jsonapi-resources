@@ -1,7 +1,7 @@
 require File.expand_path('../../test_helper', __FILE__)
 
 def set_content_type_header!
-  @request.headers['Content-Type'] = 'application/vnd.api+json'
+  @request.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
 end
 
 class PostsControllerTest < ActionController::TestCase
@@ -423,7 +423,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_cacheable_get :index, params: {sort: 'author.name'}
 
     assert_response :success
-    assert json_response['data'].length > 10, 'there are enough recordsto show sort'
+    assert json_response['data'].length > 10, 'there are enough records to show sort'
     assert_equal '17', json_response['data'][0]['id'], 'nil is at the top'
     assert_equal post.id.to_s, json_response['data'][1]['id'], 'alphabetically first user is second'
   end
@@ -436,6 +436,16 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['data'].length > 10, 'there are enough records to show sort'
     assert_equal '17', json_response['data'][-1]['id'], 'nil is at the bottom'
     assert_equal post.id.to_s, json_response['data'][-2]['id'], 'alphabetically first user is second last'
+  end
+
+  def test_sorting_by_relationship_field_include
+    post  = create_alphabetically_first_user_and_post
+    assert_cacheable_get :index, params: {include: 'author', sort: 'author.name'}
+
+    assert_response :success
+    assert json_response['data'].length > 10, 'there are enough records to show sort'
+    assert_equal '17', json_response['data'][0]['id'], 'nil is at the top'
+    assert_equal post.id.to_s, json_response['data'][1]['id'], 'alphabetically first user is second'
   end
 
   def test_invalid_sort_param
@@ -473,7 +483,7 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration.top_level_meta_include_record_count = true
     assert_cacheable_get :show, params: { id: Post.first.id }
     assert_response :success
-    assert_equal json_response['meta'], nil
+    assert_nil json_response['meta']
   ensure
     JSONAPI.configuration.top_level_meta_include_record_count = false
   end
@@ -482,7 +492,7 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration.top_level_meta_include_page_count = true
     assert_cacheable_get :show, params: { id: Post.first.id }
     assert_response :success
-    assert_equal json_response['meta'], nil
+    assert_nil json_response['meta']
   ensure
     JSONAPI.configuration.top_level_meta_include_page_count = false
   end
@@ -586,7 +596,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /id is not allowed/, response.body
-    assert_equal nil,response.location
+    assert_nil response.location
   end
 
   def test_create_link_to_missing_object
@@ -608,7 +618,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :unprocessable_entity
     # TODO: check if this validation is working
     assert_match /author - can't be blank/, response.body
-    assert_equal nil, response.location
+    assert_nil response.location
   end
 
   def test_create_extra_param
@@ -630,7 +640,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /asdfg is not allowed/, response.body
-    assert_equal nil,response.location
+    assert_nil response.location
   end
 
   def test_create_extra_param_allow_extra_params
@@ -697,7 +707,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "/data/attributes/title", json_response['errors'][1]['source']['pointer']
     assert_equal "is too long (maximum is 35 characters)", json_response['errors'][1]['title']
     assert_equal "title - is too long (maximum is 35 characters)", json_response['errors'][1]['detail']
-    assert_equal nil, response.location
+    assert_nil response.location
   end
 
   def test_create_multiple
@@ -750,7 +760,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /The required parameter, data, is missing./, json_response['errors'][0]['detail']
-    assert_equal nil, response.location
+    assert_nil response.location
   end
 
   def test_create_simple_wrong_type
@@ -771,7 +781,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /posts_spelled_wrong is not a valid resource./, json_response['errors'][0]['detail']
-    assert_equal nil, response.location
+    assert_nil response.location
   end
 
   def test_create_simple_missing_type
@@ -791,7 +801,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /The required parameter, type, is missing./, json_response['errors'][0]['detail']
-    assert_equal nil, response.location
+    assert_nil response.location
   end
 
   def test_create_simple_unpermitted_attributes
@@ -812,7 +822,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /subject/, json_response['errors'][0]['detail']
-    assert_equal nil, response.location
+    assert_nil response.location
   end
 
   def test_create_simple_unpermitted_attributes_allow_extra_params
@@ -1076,7 +1086,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :success
     assert json_response['data'].is_a?(Hash)
     assert_equal '3', json_response['data']['relationships']['author']['data']['id']
-    assert_equal nil, json_response['data']['relationships']['section']['data']
+    assert_nil json_response['data']['relationships']['section']['data']
     assert_equal 'A great new Post', json_response['data']['attributes']['title']
     assert_equal 'AAAA', json_response['data']['attributes']['body']
     assert matches_array?([],
@@ -1106,7 +1116,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :no_content
     post_object = Post.find(4)
-    assert_equal nil, post_object.section_id
+    assert_nil post_object.section_id
   end
 
   def test_update_relationship_to_one_invalid_links_hash_keys_ids
@@ -1223,7 +1233,7 @@ class PostsControllerTest < ActionController::TestCase
     put :update_relationship, params: {post_id: 3, relationship: 'section', data: {type: 'sections', id: nil}}
 
     assert_response :no_content
-    assert_equal nil, post_object.reload.section_id
+    assert_nil post_object.reload.section_id
   end
 
   def test_update_relationship_to_one_data_nil
@@ -1236,7 +1246,7 @@ class PostsControllerTest < ActionController::TestCase
     put :update_relationship, params: {post_id: 3, relationship: 'section', data: nil}
 
     assert_response :no_content
-    assert_equal nil, post_object.reload.section_id
+    assert_nil post_object.reload.section_id
   end
 
   def test_remove_relationship_to_one
@@ -1250,7 +1260,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :no_content
     post_object = Post.find(3)
-    assert_equal nil, post_object.section_id
+    assert_nil post_object.section_id
   end
 
   def test_update_relationship_to_one_singular_param
@@ -1646,8 +1656,8 @@ class PostsControllerTest < ActionController::TestCase
             title: 'A great new Post'
           },
           relationships: {
-            section: {type: 'sections', id: "#{javascript.id}"},
-            tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
+            section: { data: { type: 'sections', id: "#{javascript.id}" } },
+            tags: { data: [{ type: 'tags', id: 3 }, { type: 'tags', id: 4 }] }
           }
         }
       }
@@ -1688,8 +1698,8 @@ class PostsControllerTest < ActionController::TestCase
             title: 'A great new Post'
           },
           relationships: {
-            section: {type: 'sections', id: "#{javascript.id}"},
-            tags: [{type: 'tags', id: 3}, {type: 'tags', id: 4}]
+            section: { data: { type: 'sections', id: "#{javascript.id}" } },
+            tags: { data: [{ type: 'tags', id: 3 }, { type: 'tags', id: 4 }] }
           }
         }
       }
@@ -1888,6 +1898,24 @@ class PostsControllerTest < ActionController::TestCase
                          }
                        }
   end
+
+  def test_get_related_resources_sorted
+    assert_cacheable_get :get_related_resources, params: {person_id: '1', relationship: 'posts', source:'people', sort: 'title' }
+    assert_response :success
+    assert_equal 'JR How To', json_response['data'][0]['attributes']['title']
+    assert_equal 'New post', json_response['data'][2]['attributes']['title']
+    assert_cacheable_get :get_related_resources, params: {person_id: '1', relationship: 'posts', source:'people', sort: '-title' }
+    assert_response :success
+    assert_equal 'New post', json_response['data'][0]['attributes']['title']
+    assert_equal 'JR How To', json_response['data'][2]['attributes']['title']
+  end
+
+  def test_get_related_resources_default_sorted
+    assert_cacheable_get :get_related_resources, params: {person_id: '1', relationship: 'posts', source:'people'}
+    assert_response :success
+    assert_equal 'New post', json_response['data'][0]['attributes']['title']
+    assert_equal 'JR How To', json_response['data'][2]['attributes']['title']
+  end
 end
 
 class TagsControllerTest < ActionController::TestCase
@@ -1920,6 +1948,15 @@ class TagsControllerTest < ActionController::TestCase
     assert_cacheable_get :show, params: {id: '99,9,100'}
     assert_response :bad_request
     assert_match /99,9,100 is not a valid value for id/, response.body
+  end
+
+  def test_nested_includes_sort
+    assert_cacheable_get :index, params: {filter: {id: '6,7,8,9'},
+                                          include: 'posts.tags,posts.author.posts',
+                                          sort: 'name'}
+    assert_response :success
+    assert_equal 4, json_response['data'].size
+    assert_equal 3, json_response['included'].size
   end
 end
 
@@ -2371,6 +2408,17 @@ class PeopleControllerTest < ActionController::TestCase
     assert_response :bad_request
   end
 
+  def test_invalid_filter_value_for_get_related_resources
+    assert_cacheable_get :get_related_resources, params: {
+          hair_cut_id: 1,
+          relationship: 'people',
+          source: 'hair_cuts',
+          filter: {name: 'L'}
+        }
+
+    assert_response :bad_request
+  end
+
   def test_valid_filter_value
     assert_cacheable_get :index, params: {filter: {name: 'Joe Author'}}
     assert_response :success
@@ -2469,7 +2517,7 @@ class BooksControllerTest < ActionController::TestCase
     JSONAPI.configuration.use_relationship_reflection = false
   end
 
-  def test_destroy_relationship_has_and_belongs_to_many_refect
+  def test_destroy_relationship_has_and_belongs_to_many_reflect
     JSONAPI.configuration.use_relationship_reflection = true
 
     assert_equal 2, Book.find(2).authors.count
@@ -2497,7 +2545,7 @@ class Api::V5::AuthorsControllerTest < ActionController::TestCase
     assert_equal '1', json_response['data'][0]['id']
     assert_equal 'authors', json_response['data'][0]['type']
     assert_equal 'Joe Author', json_response['data'][0]['attributes']['name']
-    assert_equal nil, json_response['data'][0]['attributes']['email']
+    assert_nil json_response['data'][0]['attributes']['email']
   end
 
   def test_show_person_as_author
@@ -2506,7 +2554,7 @@ class Api::V5::AuthorsControllerTest < ActionController::TestCase
     assert_equal '1', json_response['data']['id']
     assert_equal 'authors', json_response['data']['type']
     assert_equal 'Joe Author', json_response['data']['attributes']['name']
-    assert_equal nil, json_response['data']['attributes']['email']
+    assert_nil json_response['data']['attributes']['email']
   end
 
   def test_get_person_as_author_by_name_filter
@@ -2590,14 +2638,14 @@ class BreedsControllerTest < ActionController::TestCase
   # Note: Breed names go through the TitleValueFormatter
 
   def test_poro_index
-    assert_cacheable_get :index
+    get :index
     assert_response :success
     assert_equal '0', json_response['data'][0]['id']
     assert_equal 'Persian', json_response['data'][0]['attributes']['name']
   end
 
   def test_poro_show
-    assert_cacheable_get :show, params: {id: '0'}
+    get :show, params: {id: '0'}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
     assert_equal '0', json_response['data']['id']
@@ -3587,9 +3635,31 @@ class Api::V6::SectionsControllerTest < ActionController::TestCase
   end
 end
 
+class AuthorsControllerTest < ActionController::TestCase
+  def test_show_author_recursive
+    get :show, params: {id: '2', include: 'books.authors'}
+    assert_response :success
+    assert_equal '2', json_response['data']['id']
+    assert_equal 'authors', json_response['data']['type']
+    assert_equal 'Fred Reader', json_response['data']['attributes']['name']
+
+    # The test is hardcoded with the include order. This should be changed at some
+    # point since either thing could come first and still be valid
+    assert_equal '1', json_response['included'][0]['id']
+    assert_equal 'authors', json_response['included'][0]['type']
+    assert_equal '2', json_response['included'][1]['id']
+    assert_equal 'books', json_response['included'][1]['type']
+  end
+end
+
 class Api::BoxesControllerTest < ActionController::TestCase
   def test_complex_includes_base
     assert_cacheable_get :index
+    assert_response :success
+  end
+
+  def test_complex_includes_filters_nil_includes
+    assert_cacheable_get :index, params: {include: ',,'}
     assert_response :success
   end
 
@@ -3598,7 +3668,8 @@ class Api::BoxesControllerTest < ActionController::TestCase
 
     assert_response :success
 
-    # The test is hardcoded with the include order. This should be changed at some point since either thing could come first and still be valid
+    # The test is hardcoded with the include order. This should be changed at some
+    # point since either thing could come first and still be valid
     assert_equal '1', json_response['included'][0]['id']
     assert_equal 'things', json_response['included'][0]['type']
     assert_equal '1',  json_response['included'][0]['relationships']['user']['data']['id']
@@ -3619,7 +3690,8 @@ class Api::BoxesControllerTest < ActionController::TestCase
 
     assert_response :success
 
-    # The test is hardcoded with the include order. This should be changed at some point since either thing could come first and still be valid
+    # The test is hardcoded with the include order. This should be changed at some
+    # point since either thing could come first and still be valid
     assert_equal '2', json_response['included'][0]['id']
     assert_equal 'things', json_response['included'][0]['type']
     assert_nil json_response['included'][0]['relationships']['user']['data']
@@ -3636,7 +3708,8 @@ class Api::BoxesControllerTest < ActionController::TestCase
 
     assert_response :success
 
-    # The test is hardcoded with the include order. This should be changed at some point since either thing could come first and still be valid
+    # The test is hardcoded with the include order. This should be changed at some
+    # point since either thing could come first and still be valid
     assert_equal '1', json_response['included'][2]['id']
     assert_equal 'users', json_response['included'][2]['type']
     assert_nil json_response['included'][2]['relationships']['things']['data']

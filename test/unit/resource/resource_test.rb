@@ -47,7 +47,9 @@ class NoMatchAbstractResource < JSONAPI::Resource
   abstract
 end
 
-class CatResource < JSONAPI::Resource
+class FelineResource < JSONAPI::Resource
+  model_name 'Cat'
+
   attribute :name
   attribute :breed
   attribute :kind, :delegate => :breed
@@ -98,6 +100,12 @@ module MyAPI
   end
 end
 
+class PostWithReadonlyAttributesResource < JSONAPI::Resource
+  model_name 'Post'
+  attribute :title, readonly: true
+  has_one :author, readonly: true
+end
+
 class ResourceTest < ActiveSupport::TestCase
   def setup
     @post = Post.first
@@ -121,30 +129,30 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_resource_for_root_resource
     assert_raises NameError do
-      JSONAPI::Resource.resource_for('related')
+      JSONAPI::Resource.resource_klass_for('related')
     end
   end
 
   def test_resource_for_resource_does_not_exist_at_root
     assert_raises NameError do
-      ArticleResource.resource_for('related')
+      ArticleResource.resource_klass_for('related')
     end
   end
 
   def test_resource_for_with_underscored_namespaced_paths
-    assert_equal(JSONAPI::Resource.resource_for('my_module/related'), MyModule::RelatedResource)
-    assert_equal(PostResource.resource_for('my_module/related'), MyModule::RelatedResource)
-    assert_equal(MyModule::MyNamespacedResource.resource_for('my_module/related'), MyModule::RelatedResource)
+    assert_equal(JSONAPI::Resource.resource_klass_for('my_module/related'), MyModule::RelatedResource)
+    assert_equal(PostResource.resource_klass_for('my_module/related'), MyModule::RelatedResource)
+    assert_equal(MyModule::MyNamespacedResource.resource_klass_for('my_module/related'), MyModule::RelatedResource)
   end
 
   def test_resource_for_with_camelized_namespaced_paths
-    assert_equal(JSONAPI::Resource.resource_for('MyModule::Related'), MyModule::RelatedResource)
-    assert_equal(PostResource.resource_for('MyModule::Related'), MyModule::RelatedResource)
-    assert_equal(MyModule::MyNamespacedResource.resource_for('MyModule::Related'), MyModule::RelatedResource)
+    assert_equal(JSONAPI::Resource.resource_klass_for('MyModule::Related'), MyModule::RelatedResource)
+    assert_equal(PostResource.resource_klass_for('MyModule::Related'), MyModule::RelatedResource)
+    assert_equal(MyModule::MyNamespacedResource.resource_klass_for('MyModule::Related'), MyModule::RelatedResource)
   end
 
   def test_resource_for_namespaced_resource
-    assert_equal(MyModule::MyNamespacedResource.resource_for('related'), MyModule::RelatedResource)
+    assert_equal(MyModule::MyNamespacedResource.resource_klass_for('related'), MyModule::RelatedResource)
   end
 
   def test_relationship_parent_point_to_correct_resource
@@ -175,8 +183,8 @@ class ResourceTest < ActiveSupport::TestCase
   def test_nil_model_class
     # ToDo:Figure out why this test does not work on Rails 4.0
     # :nocov:
-    if Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR >= 1
-      assert_output nil, "[MODEL NOT FOUND] Model could not be found for NoMatchResource. If this a base Resource declare it as abstract.\n" do
+    if (Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR >= 1) || (Rails::VERSION::MAJOR >= 5)
+      assert_output nil, "[MODEL NOT FOUND] Model could not be found for NoMatchResource. If this is a base Resource declare it as abstract.\n" do
         assert_nil NoMatchResource._model_class
       end
     end
@@ -194,13 +202,13 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_class_attributes
-    attrs = CatResource._attributes
+    attrs = FelineResource._attributes
     assert_kind_of(Hash, attrs)
     assert_equal(attrs.keys.size, 4)
   end
 
   def test_class_relationships
-    relationships = CatResource._relationships
+    relationships = FelineResource._relationships
     assert_kind_of(Hash, relationships)
     assert_equal(relationships.size, 2)
   end
@@ -214,16 +222,16 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_duplicate_relationship_name
-    assert_output nil, "[DUPLICATE RELATIONSHIP] `mother` has already been defined in CatResource.\n" do
-      CatResource.instance_eval do
+    assert_output nil, "[DUPLICATE RELATIONSHIP] `mother` has already been defined in FelineResource.\n" do
+      FelineResource.instance_eval do
         has_one :mother, class_name: 'Cat'
       end
     end
   end
 
   def test_duplicate_attribute_name
-    assert_output nil, "[DUPLICATE ATTRIBUTE] `name` has already been defined in CatResource.\n" do
-      CatResource.instance_eval do
+    assert_output nil, "[DUPLICATE ATTRIBUTE] `name` has already been defined in FelineResource.\n" do
+      FelineResource.instance_eval do
         attribute :name
       end
     end
@@ -258,28 +266,32 @@ class ResourceTest < ActiveSupport::TestCase
     author = Person.find(1)
     author.update! preferences: Preferences.first
     author_resource = PersonWithCustomRecordsForRelationshipsResource.new(author, nil)
-    assert_equal(author_resource.record_for_preferences, :record_for_preferences)
+    assert_equal(author_resource.class._record_accessor.records_for(
+        author_resource, :preferences), :record_for_preferences)
   end
 
   def test_records_for_meta_method_for_to_one_calling_records_for
     author = Person.find(1)
     author.update! preferences: Preferences.first
     author_resource = PersonWithCustomRecordsForResource.new(author, nil)
-    assert_equal(author_resource.record_for_preferences, :records_for)
+    assert_equal(author_resource.class._record_accessor.records_for(
+        author_resource, :preferences), :records_for)
   end
 
   def test_associated_records_meta_method_for_to_many
     author = Person.find(1)
     author.posts << Post.find(1)
     author_resource = PersonWithCustomRecordsForRelationshipsResource.new(author, nil)
-    assert_equal(author_resource.records_for_posts, :records_for_posts)
+    assert_equal(author_resource.class._record_accessor.records_for(
+        author_resource, :posts), :records_for_posts)
   end
 
   def test_associated_records_meta_method_for_to_many_calling_records_for
     author = Person.find(1)
     author.posts << Post.find(1)
     author_resource = PersonWithCustomRecordsForResource.new(author, nil)
-    assert_equal(author_resource.records_for_posts, :records_for)
+    assert_equal(author_resource.class._record_accessor.records_for(
+        author_resource, :posts), :records_for)
   end
 
   def test_find_by_key_with_customized_base_records
@@ -294,7 +306,7 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_updatable_fields_does_not_include_id
-    assert(!CatResource.updatable_fields.include?(:id))
+    assert(!FelineResource.updatable_fields.include?(:id))
   end
 
   def test_filter_on_to_many_relationship_id
@@ -339,7 +351,28 @@ class ResourceTest < ActiveSupport::TestCase
     PostResource.instance_eval do
       def apply_filters(records, filters, options)
         # :nocov:
-        super
+        required_includes = []
+
+        if filters
+          filters.each do |filter, value|
+            if _relationships.include?(filter)
+              if _relationships[filter].belongs_to?
+                records = apply_filter(records, _relationships[filter].foreign_key, value, options)
+              else
+                required_includes.push(filter.to_s)
+                records = apply_filter(records, "#{_relationships[filter].table_name}.#{_relationships[filter].primary_key}", value, options)
+              end
+            else
+              records = apply_filter(records, filter, value, options)
+            end
+          end
+        end
+
+        if required_includes.any?
+          records = apply_includes(records, options.merge(include_directives: IncludeDirectives.new(self, required_includes, force_eager_load: true)))
+        end
+
+        records
         # :nocov:
       end
     end
@@ -350,11 +383,12 @@ class ResourceTest < ActiveSupport::TestCase
     comment_ids = post_resource.comments.map{|c| c._model.id }
     assert_equal [1,2], comment_ids
 
-    # define apply_filters method on post resource to not respect filters
+    # define apply_filters method on post resource to sort descending
     PostResource.instance_eval do
       def apply_sort(records, criteria, context = {})
         # :nocov:
-        records
+        order_by_query = 'id desc'
+        records.order(order_by_query)
         # :nocov:
       end
     end
@@ -365,9 +399,26 @@ class ResourceTest < ActiveSupport::TestCase
   ensure
     # reset method to original implementation
     PostResource.instance_eval do
-      def apply_sort(records, criteria, context = {})
+      def apply_sort(records, order_options, _context = {})
         # :nocov:
-        super
+        if order_options.any?
+          order_options.each_pair do |field, direction|
+            if field.to_s.include?(".")
+              *model_names, column_name = field.split(".")
+
+              associations = _lookup_association_chain([records.model.to_s, *model_names])
+              joins_query = _record_accessor._build_joins([records.model, *associations])
+
+              # _sorting is appended to avoid name clashes with manual joins eg. overriden filters
+              order_by_query = "#{associations.last.name}_sorting.#{column_name} #{direction}"
+              records = records.joins(joins_query).order(order_by_query)
+            else
+              records = records.order(field => direction)
+            end
+          end
+        end
+
+        records
         # :nocov:
       end
     end
@@ -392,7 +443,7 @@ class ResourceTest < ActiveSupport::TestCase
   def test_build_joins
     model_names = %w(person posts parent_post author)
     associations = PostResource._lookup_association_chain(model_names)
-    result = PostResource._build_joins(associations)
+    result = PostResource._record_accessor._build_joins(associations)
 
     assert_equal "LEFT JOIN posts AS parent_post_sorting ON parent_post_sorting.id = posts.parent_post_id
 LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", result
@@ -431,67 +482,68 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
     PostResource.instance_eval do
       def apply_pagination(records, criteria, order_options)
         # :nocov:
-        super
+        records = paginator.apply(records, order_options) if paginator
+        records
         # :nocov:
       end
     end
   end
 
   def test_key_type_integer
-    CatResource.instance_eval do
+    FelineResource.instance_eval do
       key_type :integer
     end
 
-    assert CatResource.verify_key('45')
-    assert CatResource.verify_key(45)
+    assert FelineResource.verify_key('45')
+    assert FelineResource.verify_key(45)
 
     assert_raises JSONAPI::Exceptions::InvalidFieldValue do
-      CatResource.verify_key('45,345')
+      FelineResource.verify_key('45,345')
     end
 
   ensure
-    CatResource.instance_eval do
+    FelineResource.instance_eval do
       key_type nil
     end
   end
 
   def test_key_type_string
-    CatResource.instance_eval do
+    FelineResource.instance_eval do
       key_type :string
     end
 
-    assert CatResource.verify_key('45')
-    assert CatResource.verify_key(45)
+    assert FelineResource.verify_key('45')
+    assert FelineResource.verify_key(45)
 
     assert_raises JSONAPI::Exceptions::InvalidFieldValue do
-      CatResource.verify_key('45,345')
+      FelineResource.verify_key('45,345')
     end
 
   ensure
-    CatResource.instance_eval do
+    FelineResource.instance_eval do
       key_type nil
     end
   end
 
   def test_key_type_uuid
-    CatResource.instance_eval do
+    FelineResource.instance_eval do
       key_type :uuid
     end
 
-    assert CatResource.verify_key('f1a4d5f2-e77a-4d0a-acbb-ee0b98b3f6b5')
+    assert FelineResource.verify_key('f1a4d5f2-e77a-4d0a-acbb-ee0b98b3f6b5')
 
     assert_raises JSONAPI::Exceptions::InvalidFieldValue do
-      CatResource.verify_key('f1a-e77a-4d0a-acbb-ee0b98b3f6b5')
+      FelineResource.verify_key('f1a-e77a-4d0a-acbb-ee0b98b3f6b5')
     end
 
   ensure
-    CatResource.instance_eval do
+    FelineResource.instance_eval do
       key_type nil
     end
   end
 
   def test_key_type_proc
-    CatResource.instance_eval do
+    FelineResource.instance_eval do
       key_type -> (key, context) {
         return key if key.nil?
         if key.to_s.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
@@ -502,14 +554,14 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
       }
     end
 
-    assert CatResource.verify_key('f1a4d5f2-e77a-4d0a-acbb-ee0b98b3f6b5')
+    assert FelineResource.verify_key('f1a4d5f2-e77a-4d0a-acbb-ee0b98b3f6b5')
 
     assert_raises JSONAPI::Exceptions::InvalidFieldValue do
-      CatResource.verify_key('f1a-e77a-4d0a-acbb-ee0b98b3f6b5')
+      FelineResource.verify_key('f1a-e77a-4d0a-acbb-ee0b98b3f6b5')
     end
 
   ensure
-    CatResource.instance_eval do
+    FelineResource.instance_eval do
       key_type nil
     end
   end
@@ -585,7 +637,7 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
         NoModelResource._model_class
       CODE
     end
-    assert_match "[MODEL NOT FOUND] Model could not be found for ResourceTest::NoModelResource. If this a base Resource declare it as abstract.\n", err
+    assert_match "[MODEL NOT FOUND] Model could not be found for ResourceTest::NoModelResource. If this is a base Resource declare it as abstract.\n", err
   end
 
   def test_no_warning_when_abstract
@@ -613,7 +665,7 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
     special_person = Person.create!(name: 'Special', date_joined: Date.today, special: true)
     special_resource = SpecialPersonResource.new(special_person, nil)
     resource_model = SpecialPersonResource.records({}).first # simulate a find
-    assert_equal(SpecialPersonResource, SpecialPersonResource.resource_for_model(resource_model))
+    assert_equal(SpecialPersonResource, SpecialPersonResource.resource_klass_for_model(resource_model))
   end
 
   def test_resource_performs_validations_in_custom_context
@@ -628,5 +680,13 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
   def test_resources_for_transforms_records_into_resources
     resources = PostResource.resources_for([Post.first], {})
     assert_equal(PostResource, resources.first.class)
+  end
+
+  def test_readonly_attribute
+    refute_includes(PostWithReadonlyAttributesResource.creatable_fields, :title)
+    refute_includes(PostWithReadonlyAttributesResource.updatable_fields, :title)
+
+    refute_includes(PostWithReadonlyAttributesResource.creatable_fields, :author)
+    refute_includes(PostWithReadonlyAttributesResource.updatable_fields, :author)
   end
 end

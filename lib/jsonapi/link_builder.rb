@@ -57,8 +57,12 @@ module JSONAPI
     def build_engine_name
       scopes = module_scopes_from_class(primary_resource_klass)
 
-      unless scopes.empty?
-        "#{ scopes.first.to_s.camelize }::Engine".safe_constantize
+      begin
+        unless scopes.empty?
+          "#{ scopes.first.to_s.camelize }::Engine".safe_constantize
+        end
+      rescue LoadError => e
+        nil
       end
     end
 

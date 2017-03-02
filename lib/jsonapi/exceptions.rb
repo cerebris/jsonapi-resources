@@ -18,6 +18,22 @@ module JSONAPI
       end
     end
 
+    class Errors < Error
+      def initialize(errors, error_object_overrides = {})
+        @errors = errors
+
+        @errors.each do |error|
+          error.update_with_overrides(error_object_overrides)
+        end
+
+        super(error_object_overrides)
+      end
+
+      def errors
+        @errors
+      end
+    end
+
     class InternalServerError < Error
       attr_accessor :exception
 
@@ -140,28 +156,29 @@ module JSONAPI
     end
 
     class BadRequest < Error
-      def initialize(exception)
+      def initialize(exception, error_object_overrides = {})
         @exception = exception
+        super(error_object_overrides)
       end
 
       def errors
-        [JSONAPI::Error.new(code: JSONAPI::BAD_REQUEST,
-                            status: :bad_request,
-                            title: I18n.translate('jsonapi-resources.exceptions.bad_request.title',
-                                                  default: 'Bad Request'),
-                            detail: I18n.translate('jsonapi-resources.exceptions.bad_request.detail',
-                                                   default: @exception))]
+        [create_error_object(code: JSONAPI::BAD_REQUEST,
+                             status: :bad_request,
+                             title: I18n.translate('jsonapi-resources.exceptions.bad_request.title',
+                                                   default: 'Bad Request'),
+                             detail: I18n.translate('jsonapi-resources.exceptions.bad_request.detail',
+                                                    default: @exception))]
       end
     end
 
     class InvalidRequestFormat < Error
       def errors
-        [JSONAPI::Error.new(code: JSONAPI::BAD_REQUEST,
-                            status: :bad_request,
-                            title: I18n.translate('jsonapi-resources.exceptions.invalid_request_format.title',
-                                                  default: 'Bad Request'),
-                            detail: I18n.translate('jsonapi-resources.exceptions.invalid_request_format.detail',
-                                                   default: 'Request must be a hash'))]
+        [create_error_object(code: JSONAPI::BAD_REQUEST,
+                             status: :bad_request,
+                             title: I18n.translate('jsonapi-resources.exceptions.invalid_request_format.title',
+                                                   default: 'Bad Request'),
+                             detail: I18n.translate('jsonapi-resources.exceptions.invalid_request_format.detail',
+                                                    default: 'Request must be a hash'))]
       end
     end
 
@@ -364,24 +381,21 @@ module JSONAPI
       end
     end
 
-    class ParametersNotAllowed < Error
-      attr_accessor :params
+    class ParameterNotAllowed < Error
+      attr_accessor :param
 
-      def initialize(params, error_object_overrides = {})
-        @params = params
+      def initialize(param, error_object_overrides = {})
+        @param = param
         super(error_object_overrides)
       end
 
       def errors
-        params.collect do |param|
-          create_error_object(code: JSONAPI::PARAM_NOT_ALLOWED,
-                              status: :bad_request,
-                              title: I18n.translate('jsonapi-resources.exceptions.parameters_not_allowed.title',
-                                                    default: 'Param not allowed'),
-                              detail: I18n.translate('jsonapi-resources.exceptions.parameters_not_allowed.detail',
-                                                     default: "#{param} is not allowed.", param: param))
-
-        end
+        [create_error_object(code: JSONAPI::PARAM_NOT_ALLOWED,
+                            status: :bad_request,
+                            title: I18n.translate('jsonapi-resources.exceptions.parameter_not_allowed.title',
+                                                  default: 'Param not allowed'),
+                            detail: I18n.translate('jsonapi-resources.exceptions.parameters_not_allowed.detail',
+                                                   default: "#{param} is not allowed.", param: param))]
       end
     end
 

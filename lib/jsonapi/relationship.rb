@@ -25,7 +25,7 @@ module JSONAPI
     end
 
     def resource_klass
-      @resource_klass ||= @parent_resource.resource_for(@class_name)
+      @resource_klass ||= @parent_resource.resource_klass_for(@class_name)
     end
 
     def table_name
@@ -60,6 +60,10 @@ module JSONAPI
 
     def belongs_to?
       false
+    end
+
+    def readonly?
+      @options[:readonly]
     end
 
     class ToOne < Relationship

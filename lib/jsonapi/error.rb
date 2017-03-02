@@ -24,6 +24,29 @@ module JSONAPI
       instance_variables.each {|var| hash[var.to_s.delete('@')] = instance_variable_get(var) unless instance_variable_get(var).nil? }
       hash
     end
+
+    def update_with_overrides(error_object_overrides)
+      @title          = error_object_overrides[:title] || @title
+      @detail         = error_object_overrides[:detail] || @detail
+      @id             = error_object_overrides[:id] || @id
+      @href           = error_object_overrides[:href] || href
+
+      if error_object_overrides[:code]
+        @code           = if JSONAPI.configuration.use_text_errors
+                            TEXT_ERRORS[error_object_overrides[:code]]
+                          else
+                            error_object_overrides[:code]
+                          end
+      end
+
+      @source         = error_object_overrides[:source] || @source
+      @links          = error_object_overrides[:links] || @links
+
+      if error_object_overrides[:status]
+        @status         = Rack::Utils::SYMBOL_TO_STATUS_CODE[error_object_overrides[:status]].to_s
+      end
+      @meta           = error_object_overrides[:meta] || @meta
+    end
   end
 
   class Warning

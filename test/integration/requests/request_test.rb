@@ -45,6 +45,15 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration = original_config
   end
 
+  def test_filter_with_value_containing_double_quote
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.json_key_format = :underscored_key
+    get '/iso_currencies?filter[country_name]=%22'
+    assert_jsonapi_response 200
+  ensure
+    JSONAPI.configuration = original_config
+  end
+
   def test_get_underscored_key_filtered
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :underscored_key
@@ -597,16 +606,16 @@ class RequestTest < ActionDispatch::IntegrationTest
 
 
   def test_flow_self
-    assert_cacheable_jsonapi_get '/posts'
-    post_1 = json_response['data'][0]
+    assert_cacheable_jsonapi_get '/posts/1'
+    post_1 = json_response['data']
 
     assert_cacheable_jsonapi_get post_1['links']['self']
     assert_hash_equals post_1, json_response['data']
   end
 
   def test_flow_link_to_one_self_link
-    assert_cacheable_jsonapi_get '/posts'
-    post_1 = json_response['data'][0]
+    assert_cacheable_jsonapi_get '/posts/1'
+    post_1 = json_response['data']
 
     assert_cacheable_jsonapi_get post_1['relationships']['author']['links']['self']
     assert_hash_equals(json_response, {
@@ -619,8 +628,8 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_flow_link_to_many_self_link
-    assert_cacheable_jsonapi_get '/posts'
-    post_1 = json_response['data'][0]
+    assert_cacheable_jsonapi_get '/posts/1'
+    post_1 = json_response['data']
 
     assert_cacheable_jsonapi_get post_1['relationships']['tags']['links']['self']
     assert_hash_equals(json_response,
@@ -638,10 +647,10 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_flow_link_to_many_self_link_put
-    assert_cacheable_jsonapi_get '/posts'
-    post_1 = json_response['data'][4]
+    assert_cacheable_jsonapi_get '/posts/5'
+    post_5 = json_response['data']
 
-    post post_1['relationships']['tags']['links']['self'], params:
+    post post_5['relationships']['tags']['links']['self'], params:
          {'data' => [{'type' => 'tags', 'id' => '10'}]}.to_json,
          headers: {
            'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
@@ -650,7 +659,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
     assert_equal 204, status
 
-    assert_cacheable_jsonapi_get post_1['relationships']['tags']['links']['self']
+    assert_cacheable_jsonapi_get post_5['relationships']['tags']['links']['self']
     assert_hash_equals(json_response,
                        {
                          'links' => {
@@ -1061,6 +1070,26 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_jsonapi_response 400
   ensure
     JSONAPI.configuration.allow_sort = true
+  end
+
+  def test_sort_parameter_quoted
+    get '/api/v2/books?sort=%22title%22', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 200
+  end
+
+  def test_sort_parameter_openquoted
+    get '/api/v2/books?sort=%22title', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 400
+  end
+
+  def test_include_parameter_quoted
+    get '/api/v2/posts?include=%22author%22', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 200
+  end
+
+  def test_include_parameter_openquoted
+    get '/api/v2/posts?include=%22author', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 400
   end
 
   def test_getting_different_resources_when_sti

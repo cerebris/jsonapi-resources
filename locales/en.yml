@@ -50,12 +50,12 @@ en:
         title: 'Invalid field'
         detail: "%{field} is not a valid field for %{type}."
       invalid_include:
-        title: 'Invalid field'
+        title: 'Invalid include'
         detail: "%{relationship} is not a valid relationship of %{resource}"
       invalid_sort_criteria:
         title: 'Invalid sort criteria'
         detail: "%{sort_criteria} is not a valid sort criteria for %{resource}"
-      parameters_not_allowed:
+      parameter_not_allowed:
         title: 'Param not allowed'
         detail: "%{param} is not allowed."
       parameter_missing:

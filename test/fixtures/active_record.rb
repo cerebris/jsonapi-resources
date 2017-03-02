@@ -25,7 +25,7 @@ ActiveRecord::Schema.define do
   end
 
   create_table :posts, force: true do |t|
-    t.string     :title
+    t.string     :title, length: 255
     t.text       :body
     t.integer    :author_id
     t.integer    :parent_post_id
@@ -291,6 +291,25 @@ ActiveRecord::Schema.define do
     t.timestamps null: false
   end
 
+  create_table :questions, force: true do |t|
+    t.string :text
+  end
+
+  create_table :answers, force: true do |t|
+    t.references :question
+    t.integer :respondent_id
+    t.string  :respondent_type
+    t.string :text
+  end
+
+  create_table :patients, force: true do |t|
+    t.string :name
+  end
+
+  create_table :doctors, force: true do |t|
+    t.string :name
+  end
+
   # special cases
 end
 
@@ -375,6 +394,7 @@ class Section < ActiveRecord::Base
 end
 
 class HairCut < ActiveRecord::Base
+  has_many :people
 end
 
 class Property < ActiveRecord::Base
@@ -606,6 +626,25 @@ class RelatedThing < ActiveRecord::Base
   belongs_to :to, class_name: Thing, foreign_key: :to_id
 end
 
+class Question < ActiveRecord::Base
+  has_one :answer
+
+  def respondent
+    answer.try(:respondent)
+  end
+end
+
+class Answer < ActiveRecord::Base
+  belongs_to :question
+  belongs_to :respondent, polymorphic: true
+end
+
+class Patient < ActiveRecord::Base
+end
+
+class Doctor < ActiveRecord::Base
+end
+
 module Api
   module V7
     class Client < Customer
@@ -637,15 +676,6 @@ class PostsController < BaseController
   # the operations dispatcher.
   rescue_from PostsController::SpecialError do
     head :forbidden
-  end
-
-  def handle_exceptions(e)
-    case e
-      when PostsController::SpecialError
-        raise e
-      else
-        super(e)
-    end
   end
 
   #called by test_on_server_error
@@ -882,6 +912,21 @@ module Api
   end
 end
 
+class QuestionsController < JSONAPI::ResourceController
+end
+
+class AnswersController < JSONAPI::ResourceController
+end
+
+class PatientsController < JSONAPI::ResourceController
+end
+
+class DoctorsController < JSONAPI::ResourceController
+end
+
+class RespondentController < JSONAPI::ResourceController
+end
+
 ### RESOURCES
 class BaseResource < JSONAPI::Resource
   abstract
@@ -961,6 +1006,7 @@ class CompanyResource < JSONAPI::Resource
 end
 
 class FirmResource < CompanyResource
+  model_name "Firm"
 end
 
 class TagResource < JSONAPI::Resource
@@ -995,6 +1041,10 @@ class PostResource < JSONAPI::Resource
 
   # Not needed - just for testing
   primary_key :id
+
+  def self.default_sort
+    [{field: 'title', direction: :desc}, {field: 'id', direction: :desc}]
+  end
 
   before_save do
     msg = "Before save"
@@ -1066,7 +1116,7 @@ class PostResource < JSONAPI::Resource
   end
 
   def self.creatable_fields(context)
-    super(context) - [:subject, :id]
+    super(context) - [:subject]
   end
 
   def self.sortable_fields(context)
@@ -1087,6 +1137,7 @@ end
 
 class IsoCurrencyResource < JSONAPI::Resource
   attributes :name, :country_name, :minor_unit
+  attribute :id, format: :id, readonly: false
 
   filter :country_name
 
@@ -1138,10 +1189,6 @@ class PlanetResource < JSONAPI::Resource
   has_one :planet_type
 
   has_many :tags, acts_as_set: true
-
-  def records_for_moons(opts = {})
-    Moon.joins(:craters).select('moons.*, craters.code').distinct
-  end
 end
 
 class PropertyResource < JSONAPI::Resource
@@ -1572,7 +1619,7 @@ module Api
     class PostResource < PostResource
       # Test caching with SQL fragments
       def self.records(options = {})
-        super.joins('INNER JOIN people on people.id = author_id')
+        _model_class.all.joins('INNER JOIN people on people.id = author_id')
       end
     end
 
@@ -1797,6 +1844,30 @@ module Api
   class UserResource < JSONAPI::Resource
     has_many :things
   end
+end
+
+class QuestionResource < JSONAPI::Resource
+  has_one :answer
+  has_one :respondent, polymorphic: true, class_name: "Respondent", foreign_key_on: :related
+
+  attributes :text
+end
+
+class AnswerResource < JSONAPI::Resource
+  has_one :question
+  has_one :respondent, polymorphic: true
+end
+
+class PatientResource < JSONAPI::Resource
+  attributes :name
+end
+
+class DoctorResource < JSONAPI::Resource
+  attributes :name
+end
+
+class RespondentResource < JSONAPI::Resource
+  abstract
 end
 
 ### PORO Data - don't do this in a production app
