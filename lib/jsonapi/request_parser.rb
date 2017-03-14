@@ -426,9 +426,8 @@ module JSONAPI
 
     def check_sort_criteria(resource_klass, sort_criteria)
       sort_field = sort_criteria[:field]
-      sortable_fields = resource_klass.sortable_fields(context)
 
-      unless sortable_fields.include? sort_field.to_sym
+      unless resource_klass.sortable_field?(sort_field.to_sym, context)
         @errors.concat(JSONAPI::Exceptions::InvalidSortCriteria
                            .new(format_key(resource_klass._type), sort_field).errors)
       end

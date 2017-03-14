@@ -607,6 +607,10 @@ module JSONAPI
         _attributes.keys
       end
 
+      def sortable_field?(key, context = nil)
+        sortable_fields(context).include? key.to_sym
+      end
+
       def fields
         _relationships.keys | _attributes.keys
       end
