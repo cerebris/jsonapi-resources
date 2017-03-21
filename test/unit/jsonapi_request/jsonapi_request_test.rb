@@ -14,6 +14,12 @@ class CatResource < JSONAPI::Resource
   end
 end
 
+class TreeResource < JSONAPI::Resource
+  def self.sortable_field?(key, context)
+    key =~ /^sort\d+/
+  end
+end
+
 class JSONAPIRequestTest < ActiveSupport::TestCase
   def test_parse_includes_underscored
     params = ActionController::Parameters.new(
@@ -209,6 +215,15 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
     sort_criteria = @request.parse_sort_criteria(CatResource, "-name")
     assert_equal(@request.errors, [])
     assert_equal(sort_criteria, [{:field=>"name", :direction=>:desc}])
+  end
+
+  def test_parse_sort_with_resource_validated_sorts
+    setup_request
+    sort_criteria = @request.parse_sort_criteria(TreeResource, "sort66,name")
+    assert_equal(@request.errors.count, 1)
+    assert_equal(@request.errors.first.title, "Invalid sort criteria")
+    assert_equal(@request.errors.first.detail, "name is not a valid sort criteria for trees")
+    assert_equal(sort_criteria, [{:field=>"sort66", :direction=>:asc}, {:field=>"name", :direction=>:asc}])
   end
 
   def test_parse_sort_with_relationships

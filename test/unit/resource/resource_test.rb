@@ -689,4 +689,10 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
     refute_includes(PostWithReadonlyAttributesResource.creatable_fields, :author)
     refute_includes(PostWithReadonlyAttributesResource.updatable_fields, :author)
   end
+
+  def test_sortable_field?
+    assert(PostResource.sortable_field?(:title))
+    assert(PostResource.sortable_field?(:body))
+    refute(PostResource.sortable_field?(:color))
+  end
 end
