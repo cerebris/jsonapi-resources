@@ -936,8 +936,7 @@ class PersonResource < BaseResource
   attributes :name, :email
   attribute :date_joined, format: :date_with_timezone
 
-  has_many :comments
-  has_many :posts
+  has_many :comments, :posts
   has_many :vehicles, polymorphic: true
 
   has_one :preferences

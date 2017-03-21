@@ -917,7 +917,7 @@ module JSONAPI
         if _model_class && _model_class.ancestors.collect { |ancestor| ancestor.name }.include?('ActiveRecord::Base')
           model_association = _model_class.reflect_on_association(relationship_name)
           if model_association
-            options[:class_name] ||= model_association.class_name
+            options = options.reverse_merge(class_name: model_association.class_name)
           end
         end
 
