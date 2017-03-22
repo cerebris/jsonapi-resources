@@ -5,6 +5,20 @@ module JSONAPI
 
     # RecordAccessor methods
 
+    def transaction
+      ActiveRecord::Base.transaction do
+        yield
+      end
+    end
+
+    def rollback_transaction
+      fail ActiveRecord::Rollback
+    end
+
+    def model_error_messages(model)
+      model.errors.messages
+    end
+
     def find_resource(filters, options = {})
       if options[:caching] && options[:caching][:cache_serializer_output]
         find_serialized_with_caching(filters, options[:caching][:serializer], options)

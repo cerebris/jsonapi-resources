@@ -6,6 +6,25 @@ module JSONAPI
       @_resource_klass = resource_klass
     end
 
+    def transaction
+      # :nocov:
+      raise 'Abstract method called'
+      # :nocov:
+    end
+
+    # Should return an enumerable with the key being the attribute name and value being an array of error messages.
+    def model_error_messages(model)
+      # :nocov:
+      raise 'Abstract method called'
+      # :nocov:
+    end
+
+    def rollback_transaction
+      # :nocov:
+      raise 'Abstract method called'
+      # :nocov:
+    end
+
     # Resource records
     def find_resource(_filters, _options = {})
       # :nocov:

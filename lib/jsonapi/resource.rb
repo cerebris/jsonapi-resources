@@ -117,8 +117,9 @@ module JSONAPI
       self.class.fields
     end
 
+    # Some or
     def model_error_messages
-      _model.errors.messages
+      self.class._record_accessor.model_error_messages(_model)
     end
 
     # Add metadata to validation error objects.

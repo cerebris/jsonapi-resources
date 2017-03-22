@@ -114,7 +114,7 @@ module JSONAPI
     def run_in_transaction(transactional)
       if transactional
         run_callbacks :transaction do
-          transaction do
+          resource_klass._record_accessor.transaction do
             yield
           end
         end
@@ -126,7 +126,7 @@ module JSONAPI
     def rollback_transaction(transactional)
       if transactional
         run_callbacks :rollback do
-          rollback
+          resource_klass._record_accessor.rollback_transaction
         end
       end
     end
@@ -134,16 +134,6 @@ module JSONAPI
     def process_operation(operation)
       result = operation.process
       response_document.add_result(result, operation)
-    end
-
-    def transaction
-      ActiveRecord::Base.transaction do
-        yield
-      end
-    end
-
-    def rollback
-      fail ActiveRecord::Rollback
     end
 
     private
