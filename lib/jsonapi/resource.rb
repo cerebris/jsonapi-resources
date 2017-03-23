@@ -813,7 +813,7 @@ module JSONAPI
       end
 
       def record_accessor=(record_accessor_klass)
-        @record_accessor_klass = record_accessor_klass
+        @_record_accessor_klass = record_accessor_klass
       end
 
       def _record_accessor_klass
