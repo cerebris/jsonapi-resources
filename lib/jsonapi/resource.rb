@@ -224,8 +224,8 @@ module JSONAPI
         fail JSONAPI::Exceptions::ValidationErrors.new(self)
       end
       :completed
-
-    rescue ActiveRecord::DeleteRestrictionError => e
+      self.class._record_accessor.model_error_messages(_model)
+    rescue self.class._record_accessor.delete_restriction_error_class => e
       fail JSONAPI::Exceptions::RecordLocked.new(e.message)
     end
 
@@ -355,9 +355,9 @@ module JSONAPI
 
       :completed
 
-    rescue ActiveRecord::DeleteRestrictionError => e
+    rescue self.class._record_accessor.delete_restriction_error_class => e
       fail JSONAPI::Exceptions::RecordLocked.new(e.message)
-    rescue ActiveRecord::RecordNotFound
+    rescue self.class._record_accessor.record_not_found_error_class
       fail JSONAPI::Exceptions::RecordNotFound.new(key)
     end
 
@@ -914,12 +914,11 @@ module JSONAPI
 
       #   ResourceBuilder methods
       def define_relationship_methods(relationship_name, relationship_klass, options)
-        # Initialize from an ActiveRecord model's properties
-        if _model_class && _model_class.ancestors.collect { |ancestor| ancestor.name }.include?('ActiveRecord::Base')
-          model_association = _model_class.reflect_on_association(relationship_name)
-          if model_association
-            options = options.reverse_merge(class_name: model_association.class_name)
-          end
+        # Initialize from an ORM model's properties
+        if _model_class.is_a?(_record_accessor.model_base_class) &&
+          (association_model_class_name = association_model_class_name(_model_class, relationship_name))
+
+          options = options.reverse_merge(class_name: association_model_class_name)
         end
 
         relationship = register_relationship(

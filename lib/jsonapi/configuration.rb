@@ -1,7 +1,6 @@
 require 'jsonapi/formatter'
 require 'jsonapi/processor'
-require 'jsonapi/record_accessor'
-require 'jsonapi/active_record_accessor'
+require 'jsonapi/active_record_record_accessor'
 require 'concurrent'
 
 module JSONAPI
@@ -96,10 +95,10 @@ module JSONAPI
       self.always_include_to_many_linkage_data = false
 
       # Record Accessor
-      # The default Record Accessor is the ActiveRecordAccessor which provides
+      # The default Record Accessor is the JSONAPI::ActiveRecordRecordAccessor which provides
       # caching access to ActiveRecord backed models. Custom Accessors can be specified
       # in order to support other models.
-      self.default_record_accessor_klass = JSONAPI::ActiveRecordAccessor
+      self.default_record_accessor_klass = JSONAPI::ActiveRecordRecordAccessor
 
       # The default Operation Processor to use if one is not defined specifically
       # for a Resource.

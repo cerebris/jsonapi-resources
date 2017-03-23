@@ -1,8 +1,7 @@
 require 'jsonapi/record_accessor'
 
 module JSONAPI
-  class ActiveRecordAccessor < RecordAccessor
-
+  class ActiveRecordRecordAccessor < RecordAccessor
     # RecordAccessor methods
 
     def transaction
@@ -11,12 +10,28 @@ module JSONAPI
       end
     end
 
+    def model_base_class
+      ActiveRecord::Base
+    end
+
+    def delete_restriction_error_class
+      ActiveRecord::DeleteRestrictionError
+    end
+
+    def record_not_found_error_class
+      ActiveRecord::RecordNotFound
+    end
+
     def rollback_transaction
       fail ActiveRecord::Rollback
     end
 
     def model_error_messages(model)
       model.errors.messages
+    end
+
+    def association_model_class_name(from_model, relationship_name)
+      from_model.reflect_on_association(relationship_name)
     end
 
     def find_resource(filters, options = {})
@@ -292,21 +307,21 @@ module JSONAPI
 
     def resolve_relationship_names_to_relations(resource_klass, model_includes, options = {})
       case model_includes
-        when Array
-          return model_includes.map do |value|
-            resolve_relationship_names_to_relations(resource_klass, value, options)
-          end
-        when Hash
-          model_includes.keys.each do |key|
-            relationship = resource_klass._relationships[key]
-            value = model_includes[key]
-            model_includes.delete(key)
-            model_includes[relationship.relation_name(options)] = resolve_relationship_names_to_relations(relationship.resource_klass, value, options)
-          end
-          return model_includes
-        when Symbol
-          relationship = resource_klass._relationships[model_includes]
-          return relationship.relation_name(options)
+      when Array
+        return model_includes.map do |value|
+          resolve_relationship_names_to_relations(resource_klass, value, options)
+        end
+      when Hash
+        model_includes.keys.each do |key|
+          relationship = resource_klass._relationships[key]
+          value = model_includes[key]
+          model_includes.delete(key)
+          model_includes[relationship.relation_name(options)] = resolve_relationship_names_to_relations(relationship.resource_klass, value, options)
+        end
+        return model_includes
+      when Symbol
+        relationship = resource_klass._relationships[model_includes]
+        return relationship.relation_name(options)
       end
     end
 
@@ -402,8 +417,8 @@ module JSONAPI
         pluck_attrs << _resource_klass._model_class.arel_table[_resource_klass._primary_key]
 
         relation = records
-                       .except(:limit, :offset, :order)
-                       .where({ _resource_klass._primary_key => res_ids })
+          .except(:limit, :offset, :order)
+          .where({ _resource_klass._primary_key => res_ids })
 
         # These are updated as we iterate through the association path; afterwards they will
         # refer to the final resource on the path, i.e. the actual resource to find in the cache.
@@ -469,17 +484,17 @@ module JSONAPI
 
         if klass.caching?
           sub_cache_ids = id_rows
-                              .map { |row| row.last(2) }
-                              .reject { |row| target_resources[klass.name].has_key?(row.first) }
-                              .uniq
+            .map { |row| row.last(2) }
+            .reject { |row| target_resources[klass.name].has_key?(row.first) }
+            .uniq
           target_resources[klass.name].merge! CachedResourceFragment.fetch_fragments(
-              klass, serializer, context, sub_cache_ids
+            klass, serializer, context, sub_cache_ids
           )
         else
           sub_res_ids = id_rows
-                            .map(&:last)
-                            .reject { |id| target_resources[klass.name].has_key?(id) }
-                            .uniq
+            .map(&:last)
+            .reject { |id| target_resources[klass.name].has_key?(id) }
+            .uniq
           found = klass.find({ klass._primary_key => sub_res_ids }, context: options[:context])
           target_resources[klass.name].merge! found.map { |r| [r.id, r] }.to_h
         end
