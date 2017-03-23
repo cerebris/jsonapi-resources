@@ -243,7 +243,7 @@ module JSONAPI
       if response_document.has_errors?
         render_options[:json] = content
       else
-        # Bypasing ActiveSupport allows us to use CompiledJson objects for cached response fragments
+        # Bypassing ActiveSupport allows us to use CompiledJson objects for cached response fragments
         render_options[:body] = JSON.generate(content)
 
         render_options[:location] = content['data']['links']['self'] if (response_document.status == 201 && content[:data].class != Array)

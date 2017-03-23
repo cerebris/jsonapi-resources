@@ -201,7 +201,7 @@ module JSONAPI
       fail JSONAPI::Exceptions::MissingKey.new(error_object_overrides) if data[:id].nil?
 
       resource_id = data.require(:id)
-      # Singlton resources may not have the ID set in the URL
+      # Singleton resources may not have the ID set in the URL
       if key
         fail JSONAPI::Exceptions::KeyNotIncludedInURL.new(resource_id) if key.to_s != resource_id.to_s
       end
