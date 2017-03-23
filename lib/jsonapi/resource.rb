@@ -308,7 +308,7 @@ module JSONAPI
       :completed
     end
 
-    def _replace_to_one_link(relationship_type, relationship_key_value, options)
+    def _replace_to_one_link(relationship_type, relationship_key_value, _options)
       relationship = self.class._relationships[relationship_type]
 
       send("#{relationship.foreign_key}=", relationship_key_value)
@@ -317,7 +317,7 @@ module JSONAPI
       :completed
     end
 
-    def _replace_polymorphic_to_one_link(relationship_type, key_value, key_type, options)
+    def _replace_polymorphic_to_one_link(relationship_type, key_value, key_type, _options)
       relationship = self.class._relationships[relationship_type.to_sym]
 
       _model.public_send("#{relationship.foreign_key}=", key_value)
@@ -360,7 +360,7 @@ module JSONAPI
       fail JSONAPI::Exceptions::RecordNotFound.new(key)
     end
 
-    def _remove_to_one_link(relationship_type, options)
+    def _remove_to_one_link(relationship_type, _options)
       relationship = self.class._relationships[relationship_type]
 
       send("#{relationship.foreign_key}=", nil)
@@ -739,12 +739,12 @@ module JSONAPI
         end
       end
 
-      # Either add a custom :verify labmda or override verify_custom_filter to allow for custom filters
+      # Either add a custom :verify lambda or override verify_custom_filter to allow for custom filters
       def verify_custom_filter(filter, value, _context = nil)
         [filter, value]
       end
 
-      # Either add a custom :verify labmda or override verify_relationship_filter to allow for custom
+      # Either add a custom :verify lambda or override verify_relationship_filter to allow for custom
       # relationship logic, such as uuids, multiple keys or permission checks on keys
       def verify_relationship_filter(filter, raw, _context = nil)
         [filter, raw]
@@ -852,7 +852,7 @@ module JSONAPI
         @caching && !JSONAPI.configuration.resource_cache.nil?
       end
 
-      def attribute_caching_context(context)
+      def attribute_caching_context(_context)
         nil
       end
 

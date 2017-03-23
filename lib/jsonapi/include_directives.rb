@@ -65,7 +65,7 @@ module JSONAPI
 
     def get_includes(directive, only_joined_includes = true)
       ir = directive[:include_related]
-      ir = ir.select { |k,v| v[:include_in_join] } if only_joined_includes
+      ir = ir.select { |_k,v| v[:include_in_join] } if only_joined_includes
 
       ir.map do |name, sub_directive|
         sub = get_includes(sub_directive, only_joined_includes)

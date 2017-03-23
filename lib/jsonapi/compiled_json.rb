@@ -19,7 +19,7 @@ module JSONAPI
       @h = h
     end
 
-    def to_json(*args)
+    def to_json(*_args)
       @json
     end
 

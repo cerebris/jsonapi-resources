@@ -24,7 +24,7 @@ module JSONAPI
       {}
     end
 
-    def each(response_document)
+    def each(_response_document)
       operation = setup_base_op(params)
       if @errors.any?
         fail JSONAPI::Exceptions::Errors.new(@errors)
@@ -201,7 +201,7 @@ module JSONAPI
       fail JSONAPI::Exceptions::MissingKey.new(error_object_overrides) if data[:id].nil?
 
       resource_id = data.require(:id)
-      # Singlton resources may not have the ID set in the URL
+      # Singleton resources may not have the ID set in the URL
       if key
         fail JSONAPI::Exceptions::KeyNotIncludedInURL.new(resource_id) if key.to_s != resource_id.to_s
       end
@@ -595,7 +595,7 @@ module JSONAPI
               end
             end
           when 'attributes'
-            value.each do |attr_key, attr_value|
+            value.each do |attr_key, _attr_value|
               unless formatted_allowed_fields.include?(attr_key.to_sym)
                 if JSONAPI.configuration.raise_if_parameters_not_allowed
                   param_errors.concat JSONAPI::Exceptions::ParameterNotAllowed.new(

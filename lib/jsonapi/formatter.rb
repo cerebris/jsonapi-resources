@@ -108,7 +108,7 @@ end
 
 class DasherizedKeyFormatter < JSONAPI::KeyFormatter
   class << self
-    def format(key)
+    def format(_key)
       super.underscore.dasherize
     end
 
@@ -146,7 +146,7 @@ end
 
 class CamelizedRouteFormatter < JSONAPI::RouteFormatter
   class << self
-    def format(route)
+    def format(_route)
       super.camelize(:lower)
     end
 
@@ -158,7 +158,7 @@ end
 
 class DasherizedRouteFormatter < JSONAPI::RouteFormatter
   class << self
-    def format(route)
+    def format(_route)
       super.dasherize
     end
 
