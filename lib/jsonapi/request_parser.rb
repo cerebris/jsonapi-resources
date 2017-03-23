@@ -24,7 +24,7 @@ module JSONAPI
       {}
     end
 
-    def each(response_document)
+    def each(_response_document)
       operation = setup_base_op(params)
       if @errors.any?
         fail JSONAPI::Exceptions::Errors.new(@errors)
@@ -595,7 +595,7 @@ module JSONAPI
               end
             end
           when 'attributes'
-            value.each do |attr_key, attr_value|
+            value.each do |attr_key, _attr_value|
               unless formatted_allowed_fields.include?(attr_key.to_sym)
                 if JSONAPI.configuration.raise_if_parameters_not_allowed
                   param_errors.concat JSONAPI::Exceptions::ParameterNotAllowed.new(

@@ -61,7 +61,7 @@ module JSONAPI
         unless scopes.empty?
           "#{ scopes.first.to_s.camelize }::Engine".safe_constantize
         end
-      rescue LoadError => e
+      rescue LoadError => _e
         nil
       end
     end
