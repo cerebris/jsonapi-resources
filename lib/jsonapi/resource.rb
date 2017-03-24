@@ -61,7 +61,7 @@ module JSONAPI
         end
       end
 
-      return completed ? :completed : :accepted
+      completed ? :completed : :accepted
     end
 
     def remove
@@ -164,7 +164,7 @@ module JSONAPI
 
     def preloaded_fragments
       # A hash of hashes
-      @preloaded_fragments ||= Hash.new
+      @preloaded_fragments ||= {}
     end
 
     def count_for_relationship(relationship_name, options)
@@ -194,7 +194,7 @@ module JSONAPI
     # ```
     def _save(validation_context = nil)
       unless @model.valid?(validation_context)
-        fail JSONAPI::Exceptions::ValidationErrors.new(self)
+        raise JSONAPI::Exceptions::ValidationErrors, self
       end
 
       if defined? @model.save
@@ -202,9 +202,9 @@ module JSONAPI
 
         unless saved
           if @model.errors.present?
-            fail JSONAPI::Exceptions::ValidationErrors.new(self)
+            raise JSONAPI::Exceptions::ValidationErrors, self
           else
-            fail JSONAPI::Exceptions::SaveFailed.new
+            raise JSONAPI::Exceptions::SaveFailed
           end
         end
       else
@@ -219,18 +219,16 @@ module JSONAPI
     end
 
     def _remove
-      unless @model.destroy
-        fail JSONAPI::Exceptions::ValidationErrors.new(self)
-      end
+      raise JSONAPI::Exceptions::ValidationErrors, self unless @model.destroy
       :completed
 
     rescue ActiveRecord::DeleteRestrictionError => e
-      fail JSONAPI::Exceptions::RecordLocked.new(e.message)
+      raise JSONAPI::Exceptions::RecordLocked, e.message
     end
 
     def reflect_relationship?(relationship, options)
       return false if !relationship.reflect ||
-        (!JSONAPI.configuration.use_relationship_reflection || options[:reflected_source])
+                      (!JSONAPI.configuration.use_relationship_reflection || options[:reflected_source])
 
       inverse_relationship = relationship.resource_klass._relationships[relationship.inverse_relationship]
       if inverse_relationship.nil?
@@ -247,8 +245,8 @@ module JSONAPI
       relation_name = relationship.relation_name(context: @context)
       existing_relations = @model.public_send(relation_name).where(relationship.primary_key => relationship_key_values)
       if existing_relations.count > 0
-        # todo: obscure id so not to leak info
-        fail JSONAPI::Exceptions::HasManyRelationExists.new(existing_relations.first.id)
+        # TODO: obscure id so not to leak info
+        raise JSONAPI::Exceptions::HasManyRelationExists, existing_relations.first.id
       end
 
       if options[:reflected_source]
@@ -262,8 +260,8 @@ module JSONAPI
       related_resources = relationship.resource_klass.find_by_keys(relationship_key_values, context: @context)
 
       if related_resources.count != relationship_key_values.count
-        # todo: obscure id so not to leak info
-        fail JSONAPI::Exceptions::RecordNotFound.new('unspecified')
+        # TODO: obscure id so not to leak info
+        raise JSONAPI::Exceptions::RecordNotFound, 'unspecified'
       end
 
       reflect = reflect_relationship?(relationship, options)
@@ -290,7 +288,7 @@ module JSONAPI
       reflect = reflect_relationship?(relationship, options)
 
       if reflect
-        existing = send("#{relationship.foreign_key}")
+        existing = send(relationship.foreign_key.to_s)
         to_delete = existing - (relationship_key_values & existing)
         to_delete.each do |key|
           _remove_to_many_link(relationship_type, key, reflected_source: self)
@@ -338,7 +336,7 @@ module JSONAPI
         related_resource = relationship.resource_klass.find_by_key(key, context: @context)
 
         if related_resource.nil?
-          fail JSONAPI::Exceptions::RecordNotFound.new(key)
+          raise JSONAPI::Exceptions::RecordNotFound, key
         else
           if related_resource.class._relationships[relationship.inverse_relationship].is_a?(JSONAPI::Relationship::ToMany)
             related_resource.remove_to_many_link(relationship.inverse_relationship, id, reflected_source: self)
@@ -355,9 +353,9 @@ module JSONAPI
       :completed
 
     rescue ActiveRecord::DeleteRestrictionError => e
-      fail JSONAPI::Exceptions::RecordLocked.new(e.message)
+      raise JSONAPI::Exceptions::RecordLocked, e.message
     rescue ActiveRecord::RecordNotFound
-      fail JSONAPI::Exceptions::RecordNotFound.new(key)
+      raise JSONAPI::Exceptions::RecordNotFound, key
     end
 
     def _remove_to_one_link(relationship_type, _options)
@@ -381,22 +379,26 @@ module JSONAPI
         end
       end
 
-      field_data[:to_one].each do |relationship_type, value|
-        if value.nil?
-          remove_to_one_link(relationship_type)
-        else
-          case value
-          when Hash
-            replace_polymorphic_to_one_link(relationship_type.to_s, value.fetch(:id), value.fetch(:type))
+      if field_data[:to_one]
+        field_data[:to_one].each do |relationship_type, value|
+          if value.nil?
+            remove_to_one_link(relationship_type)
           else
-            replace_to_one_link(relationship_type, value)
+            case value
+            when Hash
+              replace_polymorphic_to_one_link(relationship_type.to_s, value.fetch(:id), value.fetch(:type))
+            else
+              replace_to_one_link(relationship_type, value)
+            end
           end
         end
-      end if field_data[:to_one]
+      end
 
-      field_data[:to_many].each do |relationship_type, values|
-        replace_to_many_links(relationship_type, values)
-      end if field_data[:to_many]
+      if field_data[:to_many]
+        field_data[:to_many].each do |relationship_type, values|
+          replace_to_many_links(relationship_type, values)
+        end
+      end
 
       :completed
     end
@@ -451,7 +453,7 @@ module JSONAPI
         resource_name = _resource_name_from_type(type_with_module)
         resource = resource_name.safe_constantize if resource_name
         if resource.nil?
-          fail NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
+          raise NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
         end
         resource
       end
@@ -509,7 +511,7 @@ module JSONAPI
       def attribute(attr, options = {})
         check_reserved_attribute_name(attr)
 
-        if (attr.to_sym == :id) && (options[:format].nil?)
+        if (attr.to_sym == :id) && options[:format].nil?
           ActiveSupport::Deprecation.warn('Id without format is no longer supported. Please remove ids from attributes, or specify a format.')
         end
 
@@ -517,13 +519,17 @@ module JSONAPI
 
         @_attributes ||= {}
         @_attributes[attr] = options
-        define_method attr do
-          @model.public_send(options[:delegate] ? options[:delegate].to_sym : attr)
-        end unless method_defined?(attr)
+        unless method_defined?(attr)
+          define_method attr do
+            @model.public_send(options[:delegate] ? options[:delegate].to_sym : attr)
+          end
+        end
 
-        define_method "#{attr}=" do |value|
-          @model.public_send("#{options[:delegate] ? options[:delegate].to_sym : attr}=", value)
-        end unless method_defined?("#{attr}=")
+        unless method_defined?("#{attr}=")
+          define_method "#{attr}=" do |value|
+            @model.public_send("#{options[:delegate] ? options[:delegate].to_sym : attr}=", value)
+          end
+        end
       end
 
       def default_attribute_options
@@ -533,14 +539,14 @@ module JSONAPI
       def relationship(*attrs)
         options = attrs.extract_options!
         klass = case options[:to]
-                  when :one
-                    Relationship::ToOne
-                  when :many
-                    Relationship::ToMany
-                  else
-                    #:nocov:#
-                    fail ArgumentError.new('to: must be either :one or :many')
-                    #:nocov:#
+                when :one
+                  Relationship::ToOne
+                when :many
+                  Relationship::ToMany
+                else
+                  #:nocov:#
+                  raise ArgumentError, 'to: must be either :one or :many'
+                  #:nocov:#
                 end
         _add_relationship(klass, *attrs, options.except(:to))
       end
@@ -551,10 +557,10 @@ module JSONAPI
 
       def belongs_to(*attrs)
         ActiveSupport::Deprecation.warn "In #{name} you exposed a `has_one` relationship "\
-                                        " using the `belongs_to` class method. We think `has_one`" \
+                                        ' using the `belongs_to` class method. We think `has_one`' \
                                         " is more appropriate. If you know what you're doing," \
                                         " and don't want to see this warning again, override the" \
-                                        " `belongs_to` class method on your resource."
+                                        ' `belongs_to` class method on your resource.'
         _add_relationship(Relationship::ToOne, *attrs)
       end
 
@@ -571,13 +577,13 @@ module JSONAPI
       end
 
       def model_hint(model: _model_name, resource: _type)
-        resource_type = ((resource.is_a?(Class)) && (resource < JSONAPI::Resource)) ? resource._type : resource.to_s
+        resource_type = resource.is_a?(Class) && (resource < JSONAPI::Resource) ? resource._type : resource.to_s
 
         _model_hints[model.to_s.gsub('::', '/').underscore] = resource_type.to_s
       end
 
       def filters(*attrs)
-        @_allowed_filters.merge!(attrs.inject({}) { |h, attr| h[attr] = {}; h })
+        @_allowed_filters.merge!(attrs.each_with_object({}) { |attr, h| h[attr] = {}; })
       end
 
       def filter(attr, *args)
@@ -619,7 +625,7 @@ module JSONAPI
         associations = []
         model_names.inject do |prev, current|
           association = prev.classify.constantize.reflect_on_all_associations.detect do |assoc|
-            assoc.name.to_s.downcase == current.downcase
+            assoc.name.to_s.casecmp(current.downcase).zero?
           end
           associations << association
           association.class_name
@@ -643,7 +649,7 @@ module JSONAPI
       end
 
       def resource_for(model, context)
-        resource_klass = self.resource_klass_for_model(model)
+        resource_klass = resource_klass_for_model(model)
         resource_klass.new(model, context)
       end
 
@@ -678,14 +684,14 @@ module JSONAPI
           end
         end
 
-        strategy = _allowed_filters.fetch(filter, Hash.new)[:verify]
+        strategy = _allowed_filters.fetch(filter, {})[:verify]
 
         if strategy
-          if strategy.is_a?(Symbol) || strategy.is_a?(String)
-            values = send(strategy, filter_values, context)
-          else
-            values = strategy.call(filter_values, context)
-          end
+          values = if strategy.is_a?(Symbol) || strategy.is_a?(String)
+                     send(strategy, filter_values, context)
+                   else
+                     strategy.call(filter_values, context)
+                   end
           [filter, values]
         else
           if is_filter_relationship?(filter)
@@ -720,7 +726,7 @@ module JSONAPI
           end
         when :uuid
           return if key.nil?
-          if key.to_s.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
+          if key.to_s =~ /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
             key
           else
             raise JSONAPI::Exceptions::InvalidFieldValue.new(:id, key)
@@ -734,7 +740,7 @@ module JSONAPI
 
       # override to allow for key processing and checking
       def verify_keys(keys, context = nil)
-        return keys.collect do |key|
+        keys.collect do |key|
           verify_key(key, context)
         end
       end
@@ -770,13 +776,13 @@ module JSONAPI
 
       def _model_name
         if _abstract
-          return ''
+          ''
         else
           return @_model_name.to_s if defined?(@_model_name)
-          class_name = self.name
+          class_name = name
           return '' if class_name.nil?
           @_model_name = class_name.demodulize.sub(/Resource$/, '')
-          return @_model_name.to_s
+          @_model_name.to_s
         end
       end
 
@@ -866,7 +872,7 @@ module JSONAPI
 
         @model_class = model_name.to_s.safe_constantize
         if @model_class.nil?
-          warn "[MODEL NOT FOUND] Model could not be found for #{self.name}. If this is a base Resource declare it as abstract."
+          warn "[MODEL NOT FOUND] Model could not be found for #{name}. If this is a base Resource declare it as abstract."
         end
 
         @model_class
@@ -885,7 +891,7 @@ module JSONAPI
       end
 
       def default_sort
-        [{field: 'id', direction: :asc}]
+        [{ field: 'id', direction: :asc }]
       end
 
       def construct_order_options(sort_params)
@@ -914,7 +920,7 @@ module JSONAPI
       #   ResourceBuilder methods
       def define_relationship_methods(relationship_name, relationship_klass, options)
         # Initialize from an ActiveRecord model's properties
-        if _model_class && _model_class.ancestors.collect { |ancestor| ancestor.name }.include?('ActiveRecord::Base')
+        if _model_class && _model_class.ancestors.collect(&:name).include?('ActiveRecord::Base')
           model_association = _model_class.reflect_on_association(relationship_name)
           if model_association
             options = options.reverse_merge(class_name: model_association.class_name)
@@ -922,21 +928,21 @@ module JSONAPI
         end
 
         relationship = register_relationship(
-            relationship_name,
-            relationship_klass.new(relationship_name, options)
+          relationship_name,
+          relationship_klass.new(relationship_name, options)
         )
 
         define_foreign_key_setter(relationship)
 
         case relationship
-          when JSONAPI::Relationship::ToOne
-            if relationship.belongs_to?
-              build_belongs_to(relationship)
-            else
-              build_has_one(relationship)
-            end
-          when JSONAPI::Relationship::ToMany
-            build_to_many(relationship)
+        when JSONAPI::Relationship::ToOne
+          if relationship.belongs_to?
+            build_belongs_to(relationship)
+          else
+            build_has_one(relationship)
+          end
+        when JSONAPI::Relationship::ToMany
+          build_to_many(relationship)
         end
       end
 
@@ -1000,7 +1006,7 @@ module JSONAPI
       def check_reserved_resource_name(type, name)
         if [:ids, :types, :hrefs, :links].include?(type)
           warn "[NAME COLLISION] `#{name}` is a reserved resource name."
-          return
+          nil
         end
       end
 

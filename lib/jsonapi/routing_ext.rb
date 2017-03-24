@@ -154,18 +154,18 @@ module ActionDispatch
 
           if methods.include?(:show)
             match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                  action: 'show_relationship', relationship: link_type.to_s, via: [:get]
+                                                                  action: 'show_relationship', relationship: link_type.to_s, via: [:get]
           end
 
           if res.mutable?
             if methods.include?(:update)
               match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                    action: 'update_relationship', relationship: link_type.to_s, via: [:put, :patch]
+                                                                    action: 'update_relationship', relationship: link_type.to_s, via: [:put, :patch]
             end
 
             if methods.include?(:destroy)
               match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                    action: 'destroy_relationship', relationship: link_type.to_s, via: [:delete]
+                                                                    action: 'destroy_relationship', relationship: link_type.to_s, via: [:delete]
             end
           end
         end
@@ -182,23 +182,23 @@ module ActionDispatch
 
           if methods.include?(:show)
             match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                  action: 'show_relationship', relationship: link_type.to_s, via: [:get]
+                                                                  action: 'show_relationship', relationship: link_type.to_s, via: [:get]
           end
 
           if res.mutable?
             if methods.include?(:create)
               match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                    action: 'create_relationship', relationship: link_type.to_s, via: [:post]
+                                                                    action: 'create_relationship', relationship: link_type.to_s, via: [:post]
             end
 
             if methods.include?(:update)
               match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                    action: 'update_relationship', relationship: link_type.to_s, via: [:put, :patch]
+                                                                    action: 'update_relationship', relationship: link_type.to_s, via: [:put, :patch]
             end
 
             if methods.include?(:destroy)
               match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                    action: 'destroy_relationship', relationship: link_type.to_s, via: [:delete]
+                                                                    action: 'destroy_relationship', relationship: link_type.to_s, via: [:delete]
             end
           end
         end
@@ -220,8 +220,8 @@ module ActionDispatch
           end
 
           match formatted_relationship_name, controller: options[:controller],
-                relationship: relationship.name, source: resource_type_with_module_prefix(source._type),
-                action: 'get_related_resource', via: [:get]
+                                             relationship: relationship.name, source: resource_type_with_module_prefix(source._type),
+                                             action: 'get_related_resource', via: [:get]
         end
 
         def jsonapi_related_resources(*relationship)
@@ -242,6 +242,7 @@ module ActionDispatch
         end
 
         protected
+
         # :nocov:
         def jsonapi_resource_scope(resource, resource_type) #:nodoc:
           @scope = @scope.new(scope_level_resource: resource, jsonapi_resource: resource_type)

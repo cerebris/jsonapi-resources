@@ -168,37 +168,35 @@ module JSONAPI
     end
 
     def key_formatter
-      if self.cache_formatters
+      if cache_formatters
         formatter = @key_formatter_tlv.value
         return formatter if formatter
       end
 
-      formatter = JSONAPI::Formatter.formatter_for(self.json_key_format)
+      formatter = JSONAPI::Formatter.formatter_for(json_key_format)
 
-      if self.cache_formatters
+      if cache_formatters
         formatter = @key_formatter_tlv.value = formatter.cached
       end
 
-      return formatter
+      formatter
     end
 
-    def resource_key_type=(key_type)
-      @resource_key_type = key_type
-    end
+    attr_writer :resource_key_type
 
     def route_formatter
-      if self.cache_formatters
+      if cache_formatters
         formatter = @route_formatter_tlv.value
         return formatter if formatter
       end
 
-      formatter = JSONAPI::Formatter.formatter_for(self.route_format)
+      formatter = JSONAPI::Formatter.formatter_for(route_format)
 
-      if self.cache_formatters
+      if cache_formatters
         formatter = @route_formatter_tlv.value = formatter.cached
       end
 
-      return formatter
+      formatter
     end
 
     def exception_class_whitelisted?(e)
@@ -206,13 +204,9 @@ module JSONAPI
         @exception_class_whitelist.flatten.any? { |k| e.class.ancestors.map(&:to_s).include?(k.to_s) }
     end
 
-    def default_processor_klass=(default_processor_klass)
-      @default_processor_klass = default_processor_klass
-    end
+    attr_writer :default_processor_klass
 
-    def default_record_accessor_klass=(default_record_accessor_klass)
-      @default_record_accessor_klass = default_record_accessor_klass
-    end
+    attr_writer :default_record_accessor_klass
 
     attr_writer :allow_include, :allow_sort, :allow_filter
 

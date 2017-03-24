@@ -1,5 +1,4 @@
 module JSONAPI
-
   # Cache which memoizes the given block.
   #
   # It's "naive" because it clears the least-recently-inserted cache entry
@@ -11,7 +10,7 @@ module JSONAPI
   # Also, it's not thread safe (although jsonapi-resources is careful to only
   # use it in a thread safe way).
   class NaiveCache
-    def initialize(cap = 10000, &calculator)
+    def initialize(cap = 10_000, &calculator)
       @cap = cap
       @data = {}
       @calculator = calculator
@@ -24,7 +23,7 @@ module JSONAPI
       value = @calculator.call(key)
       @data[key] = value
       @data.shift if @data.length > @cap
-      return value
+      value
     end
   end
 end

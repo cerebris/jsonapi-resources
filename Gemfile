@@ -14,8 +14,8 @@ version = ENV['RAILS_VERSION'] || 'default'
 
 case version
 when 'master'
-  gem 'railties', { git: 'https://github.com/rails/rails.git' }
-  gem 'arel', { git: 'https://github.com/rails/arel.git' }
+  gem 'arel', git: 'https://github.com/rails/arel.git'
+  gem 'railties', git: 'https://github.com/rails/rails.git'
 when 'default'
   gem 'railties', '>= 5.0'
 else

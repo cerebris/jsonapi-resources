@@ -1,7 +1,7 @@
 module JSONAPI
   module Exceptions
     class Error < RuntimeError
-      attr :error_object_overrides
+      attr_reader :error_object_overrides
 
       def initialize(error_object_overrides = {})
         @error_object_overrides = error_object_overrides
@@ -13,7 +13,7 @@ module JSONAPI
 
       def errors
         # :nocov:
-        raise NotImplementedError, "Subclass of Error must implement errors method"
+        raise NotImplementedError, 'Subclass of Error must implement errors method'
         # :nocov:
       end
     end
@@ -29,9 +29,7 @@ module JSONAPI
         super(error_object_overrides)
       end
 
-      def errors
-        @errors
-      end
+      attr_reader :errors
     end
 
     class InternalServerError < Error
@@ -44,7 +42,7 @@ module JSONAPI
 
       def errors
         if JSONAPI.configuration.include_backtraces_in_errors
-          meta = Hash.new
+          meta = {}
           meta[:exception] = exception.message
           meta[:backtrace] = exception.backtrace
         end
@@ -134,7 +132,6 @@ module JSONAPI
                                                     media_type: media_type))]
       end
     end
-
 
     class HasManyRelationExists < Error
       attr_accessor :id
@@ -391,11 +388,11 @@ module JSONAPI
 
       def errors
         [create_error_object(code: JSONAPI::PARAM_NOT_ALLOWED,
-                            status: :bad_request,
-                            title: I18n.translate('jsonapi-resources.exceptions.parameter_not_allowed.title',
-                                                  default: 'Param not allowed'),
-                            detail: I18n.translate('jsonapi-resources.exceptions.parameters_not_allowed.detail',
-                                                   default: "#{param} is not allowed.", param: param))]
+                             status: :bad_request,
+                             title: I18n.translate('jsonapi-resources.exceptions.parameter_not_allowed.title',
+                                                   default: 'Param not allowed'),
+                             detail: I18n.translate('jsonapi-resources.exceptions.parameters_not_allowed.detail',
+                                                    default: "#{param} is not allowed.", param: param))]
       end
     end
 
@@ -460,7 +457,7 @@ module JSONAPI
                              status: :locked,
                              title: I18n.translate('jsonapi-resources.exceptions.record_locked.title',
                                                    default: 'Locked resource'),
-                             detail: "#{message}")]
+                             detail: message.to_s)]
       end
     end
 

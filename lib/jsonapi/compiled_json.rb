@@ -6,11 +6,11 @@ module JSONAPI
 
     def self.of(obj)
       case obj
-        when NilClass then nil
-        when CompiledJson then obj
-        when String then CompiledJson.new(obj)
-        when Hash then CompiledJson.compile(obj)
-        else raise "Can't figure out how to turn #{obj.inspect} into CompiledJson"
+      when NilClass then nil
+      when CompiledJson then obj
+      when String then CompiledJson.new(obj)
+      when Hash then CompiledJson.compile(obj)
+      else raise "Can't figure out how to turn #{obj.inspect} into CompiledJson"
       end
     end
 

@@ -17,7 +17,7 @@ module JSONAPI
     end
 
     def has_errors?
-      @error_results.length > 0 || @global_errors.length > 0
+      !@error_results.empty? || !@global_errors.empty?
     end
 
     def add_result(result, operation)
@@ -43,16 +43,16 @@ module JSONAPI
 
     def contents
       if has_errors?
-        return { 'errors' => @global_errors }
+        { 'errors' => @global_errors }
       else
         hash = @serialized_results[0]
         meta = top_level_meta
-        hash.merge!('meta' => meta) unless meta.empty?
+        hash['meta'] = meta unless meta.empty?
 
         links = top_level_links
-        hash.merge!('links' => links) unless links.empty?
+        hash['links'] = links unless links.empty?
 
-        return hash
+        hash
       end
     end
 
@@ -77,7 +77,7 @@ module JSONAPI
         code = status.to_i
         max_status = code if max_status < code
       end
-      return (max_status / 100).floor * 100
+      (max_status / 100).floor * 100
     end
 
     #
@@ -99,9 +99,7 @@ module JSONAPI
       end
 
       if result.warnings.any?
-        @top_level_meta[:warnings] = result.warnings.collect do |warning|
-          warning.to_hash
-        end
+        @top_level_meta[:warnings] = result.warnings.collect(&:to_hash)
       end
     end
 

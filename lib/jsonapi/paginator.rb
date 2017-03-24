@@ -1,7 +1,6 @@
 module JSONAPI
   class Paginator
-    def initialize(_params)
-    end
+    def initialize(_params); end
 
     def apply(_relation, _order_options)
       # relation
@@ -99,22 +98,22 @@ class OffsetPaginator < JSONAPI::Paginator
       @offset = validparams[:offset] ? validparams[:offset].to_i : 0
       @limit = validparams[:limit] ? validparams[:limit].to_i : JSONAPI.configuration.default_page_size
     else
-      fail JSONAPI::Exceptions::InvalidPageObject.new
+      raise JSONAPI::Exceptions::InvalidPageObject
     end
   rescue ActionController::UnpermittedParameters => e
-    raise JSONAPI::Exceptions::PageParametersNotAllowed.new(e.params)
+    raise JSONAPI::Exceptions::PageParametersNotAllowed, e.params
   end
 
   def verify_pagination_params
     if @limit < 1
-      fail JSONAPI::Exceptions::InvalidPageValue.new(:limit, @limit)
+      raise JSONAPI::Exceptions::InvalidPageValue.new(:limit, @limit)
     elsif @limit > JSONAPI.configuration.maximum_page_size
-      fail JSONAPI::Exceptions::InvalidPageValue.new(:limit, @limit,
-                                                     detail: "Limit exceeds maximum page size of #{JSONAPI.configuration.maximum_page_size}.")
+      raise JSONAPI::Exceptions::InvalidPageValue.new(:limit, @limit,
+                                                      detail: "Limit exceeds maximum page size of #{JSONAPI.configuration.maximum_page_size}.")
     end
 
     if @offset < 0
-      fail JSONAPI::Exceptions::InvalidPageValue.new(:offset, @offset)
+      raise JSONAPI::Exceptions::InvalidPageValue.new(:offset, @offset)
     end
   end
 end
@@ -191,19 +190,19 @@ class PagedPaginator < JSONAPI::Paginator
       @number = params.to_i
     end
   rescue ActionController::UnpermittedParameters => e
-    raise JSONAPI::Exceptions::PageParametersNotAllowed.new(e.params)
+    raise JSONAPI::Exceptions::PageParametersNotAllowed, e.params
   end
 
   def verify_pagination_params
     if @size < 1
-      fail JSONAPI::Exceptions::InvalidPageValue.new(:size, @size)
+      raise JSONAPI::Exceptions::InvalidPageValue.new(:size, @size)
     elsif @size > JSONAPI.configuration.maximum_page_size
-      fail JSONAPI::Exceptions::InvalidPageValue.new(:size, @size,
-                                                     detail: "size exceeds maximum page size of #{JSONAPI.configuration.maximum_page_size}.")
+      raise JSONAPI::Exceptions::InvalidPageValue.new(:size, @size,
+                                                      detail: "size exceeds maximum page size of #{JSONAPI.configuration.maximum_page_size}.")
     end
 
     if @number < 1
-      fail JSONAPI::Exceptions::InvalidPageValue.new(:number, @number)
+      raise JSONAPI::Exceptions::InvalidPageValue.new(:number, @number)
     end
   end
 end

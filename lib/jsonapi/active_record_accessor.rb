@@ -2,7 +2,6 @@ require 'jsonapi/record_accessor'
 
 module JSONAPI
   class ActiveRecordAccessor < RecordAccessor
-
     # RecordAccessor methods
 
     def find_resource(filters, options = {})
@@ -19,7 +18,7 @@ module JSONAPI
       else
         records = find_records({ _resource_klass._primary_key => key }, options.except(:paginator, :sort_criteria))
         model = records.first
-        fail JSONAPI::Exceptions::RecordNotFound.new(key) if model.nil?
+        raise JSONAPI::Exceptions::RecordNotFound, key if model.nil?
         _resource_klass.resource_for(model, options[:context])
       end
     end
@@ -27,7 +26,7 @@ module JSONAPI
     def find_resources_by_keys(keys, options = {})
       records = records(options)
       records = apply_includes(records, options)
-      records = records.where({ _resource_klass._primary_key => keys })
+      records = records.where(_resource_klass._primary_key => keys)
 
       _resource_klass.resources_for(records, options[:context])
     end
@@ -111,10 +110,10 @@ module JSONAPI
 
     def find_serialized_with_caching(filters_or_source, serializer, options = {})
       if filters_or_source.is_a?(ActiveRecord::Relation)
-        return cached_resources_for(filters_or_source, serializer, options)
+        cached_resources_for(filters_or_source, serializer, options)
       elsif _resource_klass._model_class.respond_to?(:all) && _resource_klass._model_class.respond_to?(:arel_table)
         records = find_records(filters_or_source, options.except(:include_directives))
-        return cached_resources_for(records, serializer, options)
+        cached_resources_for(records, serializer, options)
       else
         # :nocov:
         warn('Caching enabled on model that does not support ActiveRelation')
@@ -126,8 +125,8 @@ module JSONAPI
       if _resource_klass._model_class.respond_to?(:all) && _resource_klass._model_class.respond_to?(:arel_table)
         results = find_serialized_with_caching({ _resource_klass._primary_key => key }, serializer, options)
         result = results.first
-        fail JSONAPI::Exceptions::RecordNotFound.new(key) if result.nil?
-        return result
+        raise JSONAPI::Exceptions::RecordNotFound, key if result.nil?
+        result
       else
         # :nocov:
         warn('Caching enabled on model that does not support ActiveRelation')
@@ -155,9 +154,7 @@ module JSONAPI
       records = apply_sort(records, order_options, context)
 
       paginator = options[:paginator]
-      if paginator
-        records = apply_pagination(records, paginator, order_options)
-      end
+      records = apply_pagination(records, paginator, order_options) if paginator
 
       records
     end
@@ -215,8 +212,8 @@ module JSONAPI
       else
         if order_options.any?
           order_options.each_pair do |field, direction|
-            if field.to_s.include?(".")
-              *model_names, column_name = field.split(".")
+            if field.to_s.include?('.')
+              *model_names, column_name = field.split('.')
 
               associations = _lookup_association_chain([records.model.to_s, *model_names])
               joins_query = _build_joins([records.model, *associations])
@@ -238,7 +235,7 @@ module JSONAPI
       associations = []
       model_names.inject do |prev, current|
         association = prev.classify.constantize.reflect_on_all_associations.detect do |assoc|
-          assoc.name.to_s.downcase == current.downcase
+          assoc.name.to_s.casecmp(current.downcase).zero?
         end
         associations << association
         association.class_name
@@ -258,7 +255,7 @@ module JSONAPI
     end
 
     def apply_filter(records, filter, value, options = {})
-      strategy = _resource_klass._allowed_filters.fetch(filter.to_sym, Hash.new)[:apply]
+      strategy = _resource_klass._allowed_filters.fetch(filter.to_sym, {})[:apply]
 
       if strategy
         if strategy.is_a?(Symbol) || strategy.is_a?(String)
@@ -278,21 +275,21 @@ module JSONAPI
 
     def resolve_relationship_names_to_relations(resource_klass, model_includes, options = {})
       case model_includes
-        when Array
-          return model_includes.map do |value|
-            resolve_relationship_names_to_relations(resource_klass, value, options)
-          end
-        when Hash
-          model_includes.keys.each do |key|
-            relationship = resource_klass._relationships[key]
-            value = model_includes[key]
-            model_includes.delete(key)
-            model_includes[relationship.relation_name(options)] = resolve_relationship_names_to_relations(relationship.resource_klass, value, options)
-          end
-          return model_includes
-        when Symbol
-          relationship = resource_klass._relationships[model_includes]
-          return relationship.relation_name(options)
+      when Array
+        model_includes.map do |value|
+          resolve_relationship_names_to_relations(resource_klass, value, options)
+        end
+      when Hash
+        model_includes.keys.each do |key|
+          relationship = resource_klass._relationships[key]
+          value = model_includes[key]
+          model_includes.delete(key)
+          model_includes[relationship.relation_name(options)] = resolve_relationship_names_to_relations(relationship.resource_klass, value, options)
+        end
+        model_includes
+      when Symbol
+        relationship = resource_klass._relationships[model_includes]
+        relationship.relation_name(options)
       end
     end
 
@@ -347,8 +344,8 @@ module JSONAPI
     def find_records(filters, options = {})
       if defined?(_resource_klass.find_records)
         ActiveSupport::Deprecation.warn "In #{_resource_klass.name} you overrode `find_records`. "\
-                                        "`find_records` has been deprecated in favor of using `apply` "\
-                                        "and `verify` callables on the filter."
+                                        '`find_records` has been deprecated in favor of using `apply` '\
+                                        'and `verify` callables on the filter.'
 
         _resource_klass.find_records(filters, options)
       else
@@ -388,8 +385,8 @@ module JSONAPI
         pluck_attrs << _resource_klass._model_class.arel_table[_resource_klass._primary_key]
 
         relation = records
-                       .except(:limit, :offset, :order)
-                       .where({ _resource_klass._primary_key => res_ids })
+                   .except(:limit, :offset, :order)
+                   .where(_resource_klass._primary_key => res_ids)
 
         # These are updated as we iterate through the association path; afterwards they will
         # refer to the final resource on the path, i.e. the actual resource to find in the cache.
@@ -455,17 +452,17 @@ module JSONAPI
 
         if klass.caching?
           sub_cache_ids = id_rows
-                              .map { |row| row.last(2) }
-                              .reject { |row| target_resources[klass.name].has_key?(row.first) }
-                              .uniq
+                          .map { |row| row.last(2) }
+                          .reject { |row| target_resources[klass.name].key?(row.first) }
+                          .uniq
           target_resources[klass.name].merge! CachedResourceFragment.fetch_fragments(
-              klass, serializer, context, sub_cache_ids
+            klass, serializer, context, sub_cache_ids
           )
         else
           sub_res_ids = id_rows
-                            .map(&:last)
-                            .reject { |id| target_resources[klass.name].has_key?(id) }
-                            .uniq
+                        .map(&:last)
+                        .reject { |id| target_resources[klass.name].key?(id) }
+                        .uniq
           found = klass.find({ klass._primary_key => sub_res_ids }, context: options[:context])
           target_resources[klass.name].merge! found.map { |r| [r.id, r] }.to_h
         end
@@ -474,7 +471,7 @@ module JSONAPI
           res = resources[row.first]
           path.each_with_index do |rel_name, index|
             rel_name = serializer.key_formatter.format(rel_name)
-            rel_id = row[index+1]
+            rel_id = row[index + 1]
             assoc_rels = res.preloaded_fragments[rel_name]
             if index == path.length - 1
               assoc_rels[rel_id] = target_resources[klass.name].fetch(rel_id)

@@ -21,7 +21,7 @@ module JSONAPI
 
     def to_hash
       hash = {}
-      instance_variables.each {|var| hash[var.to_s.delete('@')] = instance_variable_get(var) unless instance_variable_get(var).nil? }
+      instance_variables.each { |var| hash[var.to_s.delete('@')] = instance_variable_get(var) unless instance_variable_get(var).nil? }
       hash
     end
 
@@ -63,7 +63,7 @@ module JSONAPI
 
     def to_hash
       hash = {}
-      instance_variables.each {|var| hash[var.to_s.delete('@')] = instance_variable_get(var) unless instance_variable_get(var).nil? }
+      instance_variables.each { |var| hash[var.to_s.delete('@')] = instance_variable_get(var) unless instance_variable_get(var).nil? }
       hash
     end
   end

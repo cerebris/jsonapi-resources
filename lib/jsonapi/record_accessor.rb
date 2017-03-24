@@ -13,13 +13,13 @@ module JSONAPI
       # :nocov:
     end
 
-    def find_resource_by_key(_key, options = {})
+    def find_resource_by_key(_key, _options = {})
       # :nocov:
       raise 'Abstract method called'
       # :nocov:
     end
 
-    def find_resources_by_keys(_keys, options = {})
+    def find_resources_by_keys(_keys, _options = {})
       # :nocov:
       raise 'Abstract method called'
       # :nocov:
@@ -51,7 +51,7 @@ module JSONAPI
     end
 
     # Keys
-    def foreign_key(_resource, _relationship_name, options = {})
+    def foreign_key(_resource, _relationship_name, _options = {})
       # :nocov:
       raise 'Abstract method called'
       # :nocov:

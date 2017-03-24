@@ -65,7 +65,7 @@ module JSONAPI
 
     def get_includes(directive, only_joined_includes = true)
       ir = directive[:include_related]
-      ir = ir.select { |_k,v| v[:include_in_join] } if only_joined_includes
+      ir = ir.select { |_k, v| v[:include_in_join] } if only_joined_includes
 
       ir.map do |name, sub_directive|
         sub = get_includes(sub_directive, only_joined_includes)
@@ -78,7 +78,7 @@ module JSONAPI
       local_path = ''
 
       parts.each do |name|
-        local_path += local_path.length > 0 ? ".#{name}" : name
+        local_path += !local_path.empty? ? ".#{name}" : name
         related = get_related(local_path)
         related[:include] = true
       end
@@ -86,14 +86,14 @@ module JSONAPI
 
     def delve_paths(obj)
       case obj
-        when Array
-          obj.map{|elem| delve_paths(elem)}.flatten(1)
-        when Hash
-          obj.map{|k,v| [[k]] + delve_paths(v).map{|path| [k] + path } }.flatten(1)
-        when Symbol, String
-          [[obj]]
-        else
-          raise "delve_paths cannot descend into #{obj.class.name}"
+      when Array
+        obj.flat_map { |elem| delve_paths(elem) }
+      when Hash
+        obj.flat_map { |k, v| [[k]] + delve_paths(v).map { |path| [k] + path } }
+      when Symbol, String
+        [[obj]]
+      else
+        raise "delve_paths cannot descend into #{obj.class.name}"
       end
     end
   end

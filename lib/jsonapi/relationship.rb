@@ -16,7 +16,7 @@ module JSONAPI
       @eager_load_on_include = options.fetch(:eager_load_on_include, true) == true
     end
 
-    alias_method :polymorphic?, :polymorphic
+    alias polymorphic? polymorphic
 
     def primary_key
       @primary_key ||= resource_klass._primary_key
@@ -36,14 +36,14 @@ module JSONAPI
 
     def relation_name(options)
       case @relation_name
-        when Symbol
-          # :nocov:
-          @relation_name
-          # :nocov:
-        when String
-          @relation_name.to_sym
-        when Proc
-          @relation_name.call(options)
+      when Symbol
+        # :nocov:
+        @relation_name
+      # :nocov:
+      when String
+        @relation_name.to_sym
+      when Proc
+        @relation_name.call(options)
       end
     end
 

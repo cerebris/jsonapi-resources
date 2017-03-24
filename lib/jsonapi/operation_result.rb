@@ -14,7 +14,7 @@ module JSONAPI
       @warnings = options.fetch(:warnings, {})
     end
 
-    def to_hash(serializer = nil)
+    def to_hash(_serializer = nil)
       {}
     end
   end
@@ -27,13 +27,9 @@ module JSONAPI
       super(code, options)
     end
 
-    def to_hash(serializer = nil)
+    def to_hash(_serializer = nil)
       {
-          errors: errors.collect do |error|
-            # :nocov:
-            error.to_hash
-            # :nocov:
-          end
+        errors: errors.collect(&:to_hash)
       }
     end
   end

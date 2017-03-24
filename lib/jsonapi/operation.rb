@@ -8,11 +8,10 @@ module JSONAPI
       @options = options
     end
 
-    def process
-      processor.process
-    end
+    delegate :process, to: :processor
 
     private
+
     def processor
       JSONAPI::Processor.processor_instance_for(resource_klass, operation_type, options)
     end

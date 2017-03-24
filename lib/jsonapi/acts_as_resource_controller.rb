@@ -3,7 +3,7 @@ require 'csv'
 module JSONAPI
   module ActsAsResourceController
     MEDIA_TYPE_MATCHER = /.+".+"[^,]*|[^,]+/
-    ALL_MEDIA_TYPES = '*/*'
+    ALL_MEDIA_TYPES = '*/*'.freeze
 
     def self.included(base)
       base.extend ClassMethods
@@ -69,10 +69,11 @@ module JSONAPI
       end
 
       request_parser = JSONAPI::RequestParser.new(
-          params,
-          context: context,
-          key_formatter: key_formatter,
-          server_error_callbacks: (self.class.server_error_callbacks || []))
+        params,
+        context: context,
+        key_formatter: key_formatter,
+        server_error_callbacks: (self.class.server_error_callbacks || [])
+      )
 
       transactional = request_parser.transactional?
 
@@ -83,13 +84,13 @@ module JSONAPI
             begin
               request_parser.each(response_document) do |op|
                 op.options[:serializer] = resource_serializer_klass.new(
-                    op.resource_klass,
-                    include_directives: op.options[:include_directives],
-                    fields: op.options[:fields],
-                    base_url: base_url,
-                    key_formatter: key_formatter,
-                    route_formatter: route_formatter,
-                    serialization_options: serialization_options
+                  op.resource_klass,
+                  include_directives: op.options[:include_directives],
+                  fields: op.options[:fields],
+                  base_url: base_url,
+                  key_formatter: key_formatter,
+                  route_formatter: route_formatter,
+                  serialization_options: serialization_options
                 )
                 op.options[:cache_serializer_output] = !JSONAPI.configuration.resource_cache.nil?
 
@@ -143,7 +144,7 @@ module JSONAPI
     end
 
     def rollback
-      fail ActiveRecord::Rollback
+      raise ActiveRecord::Rollback
     end
 
     private
@@ -165,9 +166,9 @@ module JSONAPI
     end
 
     def verify_content_type_header
-      if ['create', 'create_relationship', 'update_relationship', 'update'].include?(params[:action])
+      if %w(create create_relationship update_relationship update).include?(params[:action])
         unless request.content_type == JSONAPI::MEDIA_TYPE
-          fail JSONAPI::Exceptions::UnsupportedMediaTypeError.new(request.content_type)
+          raise JSONAPI::Exceptions::UnsupportedMediaTypeError, request.content_type
         end
       end
       true
@@ -178,7 +179,7 @@ module JSONAPI
 
     def verify_accept_header
       unless valid_accept_media_type?
-        fail JSONAPI::Exceptions::NotAcceptableError.new(request.accept)
+        raise JSONAPI::Exceptions::NotAcceptableError, request.accept
       end
       true
     rescue => e
@@ -194,12 +195,12 @@ module JSONAPI
       end
     end
 
-  def media_types_for(header)
+    def media_types_for(header)
       (request.headers[header] || '')
         .scan(MEDIA_TYPE_MATCHER)
         .to_a
         .map(&:strip)
-    end
+      end
 
     # override to set context
     def context
@@ -246,7 +247,7 @@ module JSONAPI
         # Bypassing ActiveSupport allows us to use CompiledJson objects for cached response fragments
         render_options[:body] = JSON.generate(content)
 
-        render_options[:location] = content['data']['links']['self'] if (response_document.status == 201 && content[:data].class != Array)
+        render_options[:location] = content['data']['links']['self'] if response_document.status == 201 && content[:data].class != Array
       end
 
       # For whatever reason, `render` ignores :status and :content_type when :body is set.
@@ -259,10 +260,10 @@ module JSONAPI
 
     def create_response_document
       JSONAPI::ResponseDocument.new(
-          key_formatter: key_formatter,
-          base_meta: base_meta,
-          base_links: base_response_links,
-          request: request
+        key_formatter: key_formatter,
+        base_meta: base_meta,
+        base_links: base_response_links,
+        request: request
       )
     end
 
@@ -270,40 +271,38 @@ module JSONAPI
     # Note: Be sure to either call super(e) or handle JSONAPI::Exceptions::Error and raise unhandled exceptions
     def handle_exceptions(e)
       case e
-        when JSONAPI::Exceptions::Error
-          errors = e.errors
-        when ActionController::ParameterMissing
-          errors = JSONAPI::Exceptions::ParameterMissing.new(e.param).errors
+      when JSONAPI::Exceptions::Error
+        errors = e.errors
+      when ActionController::ParameterMissing
+        errors = JSONAPI::Exceptions::ParameterMissing.new(e.param).errors
+      else
+        if JSONAPI.configuration.exception_class_whitelisted?(e)
+          raise e
         else
-          if JSONAPI.configuration.exception_class_whitelisted?(e)
-            fail e
-          else
-            if self.class.server_error_callbacks
-              self.class.server_error_callbacks.each { |callback|
-                safe_run_callback(callback, e)
-              }
+          if self.class.server_error_callbacks
+            self.class.server_error_callbacks.each do |callback|
+              safe_run_callback(callback, e)
             end
-
-            # Store exception for other middlewares
-            request.env['action_dispatch.exception'] ||= e
-
-            internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
-            Rails.logger.error { "Internal Server Error: #{e.message} #{e.backtrace.join("\n")}" }
-            errors = internal_server_error.errors
           end
+
+          # Store exception for other middlewares
+          request.env['action_dispatch.exception'] ||= e
+
+          internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
+          Rails.logger.error { "Internal Server Error: #{e.message} #{e.backtrace.join("\n")}" }
+          errors = internal_server_error.errors
+        end
       end
 
       response_document.add_result(JSONAPI::ErrorsOperationResult.new(errors[0].status, errors), nil)
     end
 
     def safe_run_callback(callback, error)
-      begin
-        callback.call(error)
-      rescue => e
-        Rails.logger.error { "Error in error handling callback: #{e.message} #{e.backtrace.join("\n")}" }
-        internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
-        return JSONAPI::ErrorsOperationResult.new(internal_server_error.errors[0].code, internal_server_error.errors)
-      end
+      callback.call(error)
+    rescue => e
+      Rails.logger.error { "Error in error handling callback: #{e.message} #{e.backtrace.join("\n")}" }
+      internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
+      return JSONAPI::ErrorsOperationResult.new(internal_server_error.errors[0].code, internal_server_error.errors)
     end
 
     # Pass in a methods or a block to be run when an exception is
@@ -313,17 +312,14 @@ module JSONAPI
     # Ignores whitelist exceptions from config
 
     module ClassMethods
-
       def on_server_error(*args, &callback_block)
         callbacks ||= []
 
-        if callback_block
-          callbacks << callback_block
-        end
+        callbacks << callback_block if callback_block
 
         method_callbacks = args.map do |method|
-          ->(error) do
-            if self.respond_to? method
+          lambda do |error|
+            if respond_to? method
               send(method, error)
             else
               Rails.logger.warn("#{method} not defined on #{self}, skipping error callback")
@@ -331,9 +327,8 @@ module JSONAPI
           end
         end.compact
         callbacks += method_callbacks
-        self.class_variable_set :@@server_error_callbacks, callbacks
+        class_variable_set :@@server_error_callbacks, callbacks
       end
-
     end
   end
 end

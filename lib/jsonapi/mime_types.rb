@@ -1,7 +1,7 @@
 require 'json'
 
 module JSONAPI
-  MEDIA_TYPE = 'application/vnd.api+json'
+  MEDIA_TYPE = 'application/vnd.api+json'.freeze
 
   module MimeTypes
     def self.install
@@ -26,10 +26,10 @@ module JSONAPI
           if data.is_a?(Hash)
             data.with_indifferent_access
           else
-            fail JSONAPI::Exceptions::InvalidRequestFormat.new
+            raise JSONAPI::Exceptions::InvalidRequestFormat
           end
         rescue JSON::ParserError => e
-          { _parser_exception: JSONAPI::Exceptions::BadRequest.new(e.to_s)  }
+          { _parser_exception: JSONAPI::Exceptions::BadRequest.new(e.to_s) }
         rescue => e
           { _parser_exception: e }
         end

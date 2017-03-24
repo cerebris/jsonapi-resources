@@ -27,20 +27,20 @@ module JSONAPI
     def each(_response_document)
       operation = setup_base_op(params)
       if @errors.any?
-        fail JSONAPI::Exceptions::Errors.new(@errors)
+        raise JSONAPI::Exceptions::Errors, @errors
       else
         yield operation
       end
     rescue ActionController::ParameterMissing => e
-      fail JSONAPI::Exceptions::ParameterMissing.new(e.param, error_object_overrides)
+      raise JSONAPI::Exceptions::ParameterMissing.new(e.param, error_object_overrides)
     end
 
     def transactional?
       case params[:action]
-        when 'index', 'get_related_resource', 'get_related_resources', 'show', 'show_relationship'
-          return false
-        else
-          return true
+      when 'index', 'get_related_resource', 'get_related_resources', 'show', 'show_relationship'
+        return false
+      else
+        true
       end
     end
 
@@ -69,14 +69,14 @@ module JSONAPI
       paginator = parse_pagination(resource_klass, params[:page])
 
       JSONAPI::Operation.new(
-          :find,
-          resource_klass,
-          context: context,
-          filters: filters,
-          include_directives: include_directives,
-          sort_criteria: sort_criteria,
-          paginator: paginator,
-          fields: fields
+        :find,
+        resource_klass,
+        context: context,
+        filters: filters,
+        include_directives: include_directives,
+        sort_criteria: sort_criteria,
+        paginator: paginator,
+        fields: fields
       )
     end
 
@@ -90,14 +90,14 @@ module JSONAPI
       relationship_type = params[:relationship].to_sym
 
       JSONAPI::Operation.new(
-          :show_related_resource,
-          resource_klass,
-          context: @context,
-          relationship_type: relationship_type,
-          source_klass: source_klass,
-          source_id: source_id,
-          fields: fields,
-          include_directives: include_directives
+        :show_related_resource,
+        resource_klass,
+        context: @context,
+        relationship_type: relationship_type,
+        source_klass: source_klass,
+        source_id: source_id,
+        fields: fields,
+        include_directives: include_directives
       )
     end
 
@@ -113,17 +113,17 @@ module JSONAPI
       relationship_type = params[:relationship]
 
       JSONAPI::Operation.new(
-          :show_related_resources,
-          resource_klass,
-          context: @context,
-          relationship_type: relationship_type,
-          source_klass: source_klass,
-          source_id: source_id,
-          filters: filters,
-          sort_criteria: sort_criteria,
-          paginator: paginator,
-          fields: fields,
-          include_directives: include_directives
+        :show_related_resources,
+        resource_klass,
+        context: @context,
+        relationship_type: relationship_type,
+        source_klass: source_klass,
+        source_id: source_id,
+        filters: filters,
+        sort_criteria: sort_criteria,
+        paginator: paginator,
+        fields: fields,
+        include_directives: include_directives
       )
     end
 
@@ -133,13 +133,13 @@ module JSONAPI
       id = params[:id]
 
       JSONAPI::Operation.new(
-          :show,
-          resource_klass,
-          context: @context,
-          id: id,
-          include_directives: include_directives,
-          fields: fields,
-          allowed_resources: params[:allowed_resources]
+        :show,
+        resource_klass,
+        context: @context,
+        id: id,
+        include_directives: include_directives,
+        fields: fields,
+        allowed_resources: params[:allowed_resources]
       )
     end
 
@@ -148,11 +148,11 @@ module JSONAPI
       parent_key = params.require(resource_klass._as_parent_key)
 
       JSONAPI::Operation.new(
-          :show_relationship,
-          resource_klass,
-          context: @context,
-          relationship_type: relationship_type,
-          parent_key: resource_klass.verify_key(parent_key)
+        :show_relationship,
+        resource_klass,
+        context: @context,
+        relationship_type: relationship_type,
+        parent_key: resource_klass.verify_key(parent_key)
       )
     end
 
@@ -163,7 +163,7 @@ module JSONAPI
       data = params.require(:data)
 
       unless data.respond_to?(:each_pair)
-        fail JSONAPI::Exceptions::InvalidDataFormat.new(error_object_overrides)
+        raise JSONAPI::Exceptions::InvalidDataFormat, error_object_overrides
       end
 
       verify_type(data[:type], resource_klass)
@@ -171,13 +171,13 @@ module JSONAPI
       data = parse_params(resource_klass, data, resource_klass.creatable_fields(@context))
 
       JSONAPI::Operation.new(
-          :create_resource,
-          resource_klass,
-          context: @context,
-          data: data,
-          fields: fields,
-          include_directives: include_directives,
-          warnings: @warnings
+        :create_resource,
+        resource_klass,
+        context: @context,
+        data: data,
+        fields: fields,
+        include_directives: include_directives,
+        warnings: @warnings
       )
     end
 
@@ -196,14 +196,14 @@ module JSONAPI
       data = params.require(:data)
       key = params[:id]
 
-      fail JSONAPI::Exceptions::InvalidDataFormat.new(error_object_overrides) unless data.respond_to?(:each_pair)
+      raise JSONAPI::Exceptions::InvalidDataFormat, error_object_overrides unless data.respond_to?(:each_pair)
 
-      fail JSONAPI::Exceptions::MissingKey.new(error_object_overrides) if data[:id].nil?
+      raise JSONAPI::Exceptions::MissingKey, error_object_overrides if data[:id].nil?
 
       resource_id = data.require(:id)
       # Singleton resources may not have the ID set in the URL
       if key
-        fail JSONAPI::Exceptions::KeyNotIncludedInURL.new(resource_id) if key.to_s != resource_id.to_s
+        raise JSONAPI::Exceptions::KeyNotIncludedInURL, resource_id if key.to_s != resource_id.to_s
       end
 
       data.delete(:id)
@@ -211,23 +211,24 @@ module JSONAPI
       verify_type(data[:type], resource_klass)
 
       JSONAPI::Operation.new(
-          :replace_fields,
-          resource_klass,
-          context: @context,
-          resource_id: resource_id,
-          data: parse_params(resource_klass, data, resource_klass.updatable_fields(@context)),
-          fields: fields,
-          include_directives: include_directives,
-          warnings: @warnings
+        :replace_fields,
+        resource_klass,
+        context: @context,
+        resource_id: resource_id,
+        data: parse_params(resource_klass, data, resource_klass.updatable_fields(@context)),
+        fields: fields,
+        include_directives: include_directives,
+        warnings: @warnings
       )
     end
 
     def setup_destroy_action(params, resource_klass)
       JSONAPI::Operation.new(
-          :remove_resource,
-          resource_klass,
-          context: @context,
-          resource_id: resource_klass.verify_key(params.require(:id), @context))
+        :remove_resource,
+        resource_klass,
+        context: @context,
+        resource_id: resource_klass.verify_key(params.require(:id), @context)
+      )
     end
 
     def setup_destroy_relationship_action(params, resource_klass)
@@ -278,7 +279,7 @@ module JSONAPI
           extracted_fields[field] = resource_fields
         end
       else
-        fail JSONAPI::Exceptions::InvalidFieldFormat.new(error_object_overrides)
+        raise JSONAPI::Exceptions::InvalidFieldFormat, error_object_overrides
       end
 
       errors = []
@@ -289,7 +290,7 @@ module JSONAPI
         validated_fields[type] = []
         begin
           if type != format_key(type)
-            fail JSONAPI::Exceptions::InvalidResource.new(type, error_object_overrides)
+            raise JSONAPI::Exceptions::InvalidResource.new(type, error_object_overrides)
           end
           type_resource = Resource.resource_klass_for(resource_klass.module_path + underscored_type.to_s)
         rescue NameError
@@ -301,7 +302,9 @@ module JSONAPI
         if type_resource.nil?
           errors.concat(JSONAPI::Exceptions::InvalidResource.new(type, error_object_overrides).errors)
         else
-          unless values.nil?
+          if values.nil?
+            errors.concat(JSONAPI::Exceptions::InvalidField.new(type, 'nil', error_object_overrides).errors)
+          else
             valid_fields = type_resource.fields.collect { |key| format_key(key) }
             values.each do |field|
               if valid_fields.include?(field)
@@ -310,13 +313,11 @@ module JSONAPI
                 errors.concat(JSONAPI::Exceptions::InvalidField.new(type, field, error_object_overrides).errors)
               end
             end
-          else
-            errors.concat(JSONAPI::Exceptions::InvalidField.new(type, 'nil', error_object_overrides).errors)
           end
         end
       end
 
-      fail JSONAPI::Exceptions::Errors.new(errors) unless errors.empty?
+      raise JSONAPI::Exceptions::Errors, errors unless errors.empty?
 
       validated_fields.deep_transform_keys { |key| unformat_key(key) }
     end
@@ -340,14 +341,14 @@ module JSONAPI
       return unless raw_include
 
       unless JSONAPI.configuration.allow_include
-        fail JSONAPI::Exceptions::ParameterNotAllowed.new(:include)
+        raise JSONAPI::Exceptions::ParameterNotAllowed, :include
       end
 
       included_resources = []
       begin
         included_resources += raw_include.is_a?(Array) ? raw_include : CSV.parse_line(raw_include)
       rescue CSV::MalformedCSVError
-        fail JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type), raw_include)
+        raise JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type), raw_include)
       end
 
       return if included_resources.nil?
@@ -377,7 +378,7 @@ module JSONAPI
       end
 
       unless JSONAPI.configuration.allow_filter
-        fail JSONAPI::Exceptions::ParameterNotAllowed.new(:filter)
+        raise JSONAPI::Exceptions::ParameterNotAllowed, :filter
       end
 
       filters.each do |key, value|
@@ -396,7 +397,7 @@ module JSONAPI
       return unless sort_criteria.present?
 
       unless JSONAPI.configuration.allow_sort
-        fail JSONAPI::Exceptions::ParameterNotAllowed.new(:sort)
+        raise JSONAPI::Exceptions::ParameterNotAllowed, :sort
       end
 
       if sort_criteria.is_a?(Array)
@@ -406,7 +407,7 @@ module JSONAPI
           raw = URI.unescape(sort_criteria)
           sorts = CSV.parse_line(raw)
         rescue CSV::MalformedCSVError
-          fail JSONAPI::Exceptions::InvalidSortCriteria.new(format_key(resource_klass._type), raw)
+          raise JSONAPI::Exceptions::InvalidSortCriteria.new(format_key(resource_klass._type), raw)
         end
       end
 
@@ -435,33 +436,33 @@ module JSONAPI
 
     def verify_type(type, resource_klass)
       if type.nil?
-        fail JSONAPI::Exceptions::ParameterMissing.new(:type)
+        raise JSONAPI::Exceptions::ParameterMissing, :type
       elsif unformat_key(type).to_sym != resource_klass._type
-        fail JSONAPI::Exceptions::InvalidResource.new(type, error_object_overrides)
+        raise JSONAPI::Exceptions::InvalidResource.new(type, error_object_overrides)
       end
     end
 
     def parse_to_one_links_object(raw)
       if raw.nil?
         return {
-            type: nil,
-            id: nil
+          type: nil,
+          id: nil
         }
       end
 
       if !(raw.is_a?(Hash) || raw.is_a?(ActionController::Parameters)) ||
-          raw.keys.length != 2 || !(raw.key?('type') && raw.key?('id'))
-        fail JSONAPI::Exceptions::InvalidLinksObject.new(error_object_overrides)
+         raw.keys.length != 2 || !(raw.key?('type') && raw.key?('id'))
+        raise JSONAPI::Exceptions::InvalidLinksObject, error_object_overrides
       end
 
       {
-          type: unformat_key(raw['type']).to_s,
-          id: raw['id']
+        type: unformat_key(raw['type']).to_s,
+        id: raw['id']
       }
     end
 
     def parse_to_many_links_object(raw)
-      fail JSONAPI::Exceptions::InvalidLinksObject.new(error_object_overrides) if raw.nil?
+      raise JSONAPI::Exceptions::InvalidLinksObject, error_object_overrides if raw.nil?
 
       links_object = {}
       if raw.is_a?(Array)
@@ -471,7 +472,7 @@ module JSONAPI
           links_object[link_object[:type]].push(link_object[:id])
         end
       else
-        fail JSONAPI::Exceptions::InvalidLinksObject.new(error_object_overrides)
+        raise JSONAPI::Exceptions::InvalidLinksObject, error_object_overrides
       end
       links_object
     end
@@ -485,46 +486,46 @@ module JSONAPI
 
       params.each do |key, value|
         case key.to_s
-          when 'relationships'
-            value.each do |link_key, link_value|
-              param = unformat_key(link_key)
-              relationship = resource_klass._relationship(param)
+        when 'relationships'
+          value.each do |link_key, link_value|
+            param = unformat_key(link_key)
+            relationship = resource_klass._relationship(param)
 
-              if relationship.is_a?(JSONAPI::Relationship::ToOne)
-                checked_to_one_relationships[param] = parse_to_one_relationship(resource_klass, link_value, relationship)
-              elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
-                parse_to_many_relationship(resource_klass, link_value, relationship) do |result_val|
-                  checked_to_many_relationships[param] = result_val
-                end
+            if relationship.is_a?(JSONAPI::Relationship::ToOne)
+              checked_to_one_relationships[param] = parse_to_one_relationship(resource_klass, link_value, relationship)
+            elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
+              parse_to_many_relationship(resource_klass, link_value, relationship) do |result_val|
+                checked_to_many_relationships[param] = result_val
               end
             end
-          when 'id'
-            checked_attributes['id'] = unformat_value(resource_klass, :id, value)
-          when 'attributes'
-            value.each do |key, value|
-              param = unformat_key(key)
-              checked_attributes[param] = unformat_value(resource_klass, param, value)
-            end
+          end
+        when 'id'
+          checked_attributes['id'] = unformat_value(resource_klass, :id, value)
+        when 'attributes'
+          value.each do |key, value|
+            param = unformat_key(key)
+            checked_attributes[param] = unformat_value(resource_klass, param, value)
+          end
         end
       end
 
-      return {
-          'attributes' => checked_attributes,
-          'to_one' => checked_to_one_relationships,
-          'to_many' => checked_to_many_relationships
+      {
+        'attributes' => checked_attributes,
+        'to_one' => checked_to_one_relationships,
+        'to_many' => checked_to_many_relationships
       }.deep_transform_keys { |key| unformat_key(key) }
     end
 
     def parse_to_one_relationship(resource_klass, link_value, relationship)
-      if link_value.nil?
-        linkage = nil
-      else
-        linkage = link_value[:data]
-      end
+      linkage = if link_value.nil?
+                  nil
+                else
+                  link_value[:data]
+                end
 
       links_object = parse_to_one_links_object(linkage)
       if !relationship.polymorphic? && links_object[:type] && (links_object[:type].to_s != relationship.type.to_s)
-        fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type], error_object_overrides)
+        raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type], error_object_overrides)
       end
 
       unless links_object[:id].nil?
@@ -536,18 +537,16 @@ module JSONAPI
         else
           relationship_id
         end
-      else
-        nil
       end
     end
 
-    def parse_to_many_relationship(resource_klass, link_value, relationship, &add_result)
-      if link_value.is_a?(Array) && link_value.length == 0
+    def parse_to_many_relationship(resource_klass, link_value, relationship)
+      if link_value.is_a?(Array) && link_value.empty?
         linkage = []
-      elsif (link_value.is_a?(Hash) || link_value.is_a?(ActionController::Parameters))
+      elsif link_value.is_a?(Hash) || link_value.is_a?(ActionController::Parameters)
         linkage = link_value[:data]
       else
-        fail JSONAPI::Exceptions::InvalidLinksObject.new(error_object_overrides)
+        raise JSONAPI::Exceptions::InvalidLinksObject, error_object_overrides
       end
 
       links_object = parse_to_many_links_object(linkage)
@@ -556,16 +555,16 @@ module JSONAPI
       # relationship's type.
       # ToDo: Support Polymorphic relationships
 
-      if links_object.length == 0
-        add_result.call([])
+      if links_object.empty?
+        yield([])
       else
-        if links_object.length > 1 || !links_object.has_key?(unformat_key(relationship.type).to_s)
-          fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type], error_object_overrides)
+        if links_object.length > 1 || !links_object.key?(unformat_key(relationship.type).to_s)
+          raise JSONAPI::Exceptions::TypeMismatch.new(links_object[:type], error_object_overrides)
         end
 
         links_object.each_pair do |type, keys|
           relationship_resource = Resource.resource_klass_for(resource_klass.module_path + unformat_key(type).to_s)
-          add_result.call relationship_resource.verify_keys(keys, @context)
+          yield relationship_resource.verify_keys(keys, @context)
         end
       end
     end
@@ -582,82 +581,86 @@ module JSONAPI
 
       params.each do |key, value|
         case key.to_s
-          when 'relationships'
-            value.keys.each do |links_key|
-              unless formatted_allowed_fields.include?(links_key.to_sym)
-                if JSONAPI.configuration.raise_if_parameters_not_allowed
-                  param_errors.concat JSONAPI::Exceptions::ParameterNotAllowed.new(
-                      links_key, error_object_overrides).errors
-                else
-                  params_not_allowed.push(links_key)
-                  value.delete links_key
-                end
-              end
-            end
-          when 'attributes'
-            value.each do |attr_key, _attr_value|
-              unless formatted_allowed_fields.include?(attr_key.to_sym)
-                if JSONAPI.configuration.raise_if_parameters_not_allowed
-                  param_errors.concat JSONAPI::Exceptions::ParameterNotAllowed.new(
-                      attr_key, error_object_overrides).errors
-                else
-                  params_not_allowed.push(attr_key)
-                  value.delete attr_key
-                end
-              end
-            end
-          when 'type'
-          when 'id'
-            unless formatted_allowed_fields.include?(:id)
+        when 'relationships'
+          value.keys.each do |links_key|
+            unless formatted_allowed_fields.include?(links_key.to_sym)
               if JSONAPI.configuration.raise_if_parameters_not_allowed
                 param_errors.concat JSONAPI::Exceptions::ParameterNotAllowed.new(
-                    :id, error_object_overrides).errors
+                  links_key, error_object_overrides
+                ).errors
               else
-                params_not_allowed.push(:id)
-                params.delete :id
+                params_not_allowed.push(links_key)
+                value.delete links_key
               end
             end
-          else
-            if JSONAPI.configuration.raise_if_parameters_not_allowed
-              param_errors += JSONAPI::Exceptions::ParameterNotAllowed.new(
-                  key, error_object_overrides).errors
-            else
-              params_not_allowed.push(key)
-              params.delete key
+          end
+        when 'attributes'
+          value.each do |attr_key, _attr_value|
+            unless formatted_allowed_fields.include?(attr_key.to_sym)
+              if JSONAPI.configuration.raise_if_parameters_not_allowed
+                param_errors.concat JSONAPI::Exceptions::ParameterNotAllowed.new(
+                  attr_key, error_object_overrides
+                ).errors
+              else
+                params_not_allowed.push(attr_key)
+                value.delete attr_key
+              end
             end
+          end
+        when 'type'
+        when 'id'
+          unless formatted_allowed_fields.include?(:id)
+            if JSONAPI.configuration.raise_if_parameters_not_allowed
+              param_errors.concat JSONAPI::Exceptions::ParameterNotAllowed.new(
+                :id, error_object_overrides
+              ).errors
+            else
+              params_not_allowed.push(:id)
+              params.delete :id
+            end
+          end
+        else
+          if JSONAPI.configuration.raise_if_parameters_not_allowed
+            param_errors += JSONAPI::Exceptions::ParameterNotAllowed.new(
+              key, error_object_overrides
+            ).errors
+          else
+            params_not_allowed.push(key)
+            params.delete key
+          end
         end
       end
 
-      if param_errors.length > 0
-        fail JSONAPI::Exceptions::Errors.new(param_errors)
-      elsif params_not_allowed.length > 0
+      if !param_errors.empty?
+        raise JSONAPI::Exceptions::Errors, param_errors
+      elsif !params_not_allowed.empty?
         params_not_allowed_warnings = params_not_allowed.map do |param|
           JSONAPI::Warning.new(code: JSONAPI::PARAM_NOT_ALLOWED,
                                title: 'Param not allowed',
                                detail: "#{param} is not allowed.")
         end
-        self.warnings.concat(params_not_allowed_warnings)
+        warnings.concat(params_not_allowed_warnings)
       end
     end
 
     def parse_add_relationship_operation(resource_klass, verified_params, relationship, parent_key)
       if relationship.is_a?(JSONAPI::Relationship::ToMany)
-        return JSONAPI::Operation.new(
-            :create_to_many_relationships,
-            resource_klass,
-            context: @context,
-            resource_id: parent_key,
-            relationship_type: relationship.name,
-            data: verified_params[:to_many].values[0]
+        JSONAPI::Operation.new(
+          :create_to_many_relationships,
+          resource_klass,
+          context: @context,
+          resource_id: parent_key,
+          relationship_type: relationship.name,
+          data: verified_params[:to_many].values[0]
         )
       end
     end
 
     def parse_update_relationship_operation(resource_klass, verified_params, relationship, parent_key)
       options = {
-          context: @context,
-          resource_id: parent_key,
-          relationship_type: relationship.name
+        context: @context,
+        resource_id: parent_key,
+        relationship_type: relationship.name
       }
 
       if relationship.is_a?(JSONAPI::Relationship::ToOne)
@@ -672,7 +675,7 @@ module JSONAPI
         end
       elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
         unless relationship.acts_as_set
-          fail JSONAPI::Exceptions::ToManySetReplacementForbidden.new
+          raise JSONAPI::Exceptions::ToManySetReplacementForbidden
         end
         options[:data] = verified_params[:to_many].values[0]
         operation_type = :replace_to_many_relationships
@@ -683,9 +686,9 @@ module JSONAPI
 
     def parse_remove_relationship_operation(resource_klass, params, relationship, parent_key)
       operation_base_args = [resource_klass].push(
-          context: @context,
-          resource_id: parent_key,
-          relationship_type: relationship.name
+        context: @context,
+        resource_id: parent_key,
+        relationship_type: relationship.name
       )
 
       if relationship.is_a?(JSONAPI::Relationship::ToMany)

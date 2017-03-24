@@ -31,17 +31,17 @@ module JSONAPI
     end
 
     def query_link(query_params)
-      "#{ primary_resources_url }?#{ query_params.to_query }"
+      "#{primary_resources_url}?#{query_params.to_query}"
     end
 
     def relationships_related_link(source, relationship, query_params = {})
-      url = "#{ self_link(source) }/#{ route_for_relationship(relationship) }"
-      url = "#{ url }?#{ query_params.to_query }" if query_params.present?
+      url = "#{self_link(source)}/#{route_for_relationship(relationship)}"
+      url = "#{url}?#{query_params.to_query}" if query_params.present?
       url
     end
 
     def relationships_self_link(source, relationship)
-      "#{ self_link(source) }/relationships/#{ route_for_relationship(relationship) }"
+      "#{self_link(source)}/relationships/#{route_for_relationship(relationship)}"
     end
 
     def self_link(source)
@@ -59,7 +59,7 @@ module JSONAPI
 
       begin
         unless scopes.empty?
-          "#{ scopes.first.to_s.camelize }::Engine".safe_constantize
+          "#{scopes.first.to_s.camelize}::Engine".safe_constantize
         end
       rescue LoadError => _e
         nil
@@ -76,7 +76,7 @@ module JSONAPI
     end
 
     def engine_primary_resources_url
-      "#{ base_url }#{ engine_primary_resources_path }"
+      "#{base_url}#{engine_primary_resources_path}"
     end
 
     def engine_resource_path(source)
@@ -86,24 +86,24 @@ module JSONAPI
 
     def engine_resource_path_name_from_source(source)
       scopes         = module_scopes_from_class(source.class)[1..-1]
-      base_path_name = scopes.map { |scope| scope.underscore }.join("_")
+      base_path_name = scopes.map(&:underscore).join('_')
       end_path_name  = source.class._type.to_s.singularize
-      [base_path_name, end_path_name, "path"].reject(&:blank?).join("_")
+      [base_path_name, end_path_name, 'path'].reject(&:blank?).join('_')
     end
 
     def engine_resource_url(source)
-      "#{ base_url }#{ engine_resource_path(source) }"
+      "#{base_url}#{engine_resource_path(source)}"
     end
 
     def engine_resources_path_name_from_class(klass)
       scopes         = module_scopes_from_class(klass)[1..-1]
-      base_path_name = scopes.map { |scope| scope.underscore }.join("_")
+      base_path_name = scopes.map(&:underscore).join('_')
       end_path_name  = klass._type.to_s
 
       if base_path_name.blank?
-        "#{ end_path_name }_path"
+        "#{end_path_name}_path"
       else
-        "#{ base_path_name }_#{ end_path_name }_path"
+        "#{base_path_name}_#{end_path_name}_path"
       end
     end
 
@@ -114,15 +114,15 @@ module JSONAPI
     def formatted_module_path_from_class(klass)
       scopes = module_scopes_from_class(klass)
 
-      unless scopes.empty?
-        "/#{ scopes.map{ |scope| format_route(scope.to_s.underscore) }.join('/') }/"
+      if scopes.empty?
+        '/'
       else
-        "/"
+        "/#{scopes.map { |scope| format_route(scope.to_s.underscore) }.join('/')}/"
       end
     end
 
     def module_scopes_from_class(klass)
-      klass.name.to_s.split("::")[0...-1]
+      klass.name.to_s.split('::')[0...-1]
     end
 
     def regular_resources_path(source_klass)
@@ -134,7 +134,7 @@ module JSONAPI
     end
 
     def regular_primary_resources_url
-      "#{ base_url }#{ regular_primary_resources_path }"
+      "#{base_url}#{regular_primary_resources_path}"
     end
 
     def regular_resource_path(source)
@@ -142,7 +142,7 @@ module JSONAPI
     end
 
     def regular_resource_url(source)
-      "#{ base_url }#{ regular_resource_path(source) }"
+      "#{base_url}#{regular_resource_path(source)}"
     end
 
     def route_for_relationship(relationship)
