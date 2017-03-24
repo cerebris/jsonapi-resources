@@ -6,6 +6,7 @@ AllCops:
     - '**/Gemfile'
     - '**/Rakefile'
   Exclude:
+   - 'lib/generators/jsonapi/templates/*'
    - 'test/**/*'
 Documentation:
   Enabled: false
