@@ -1,0 +1,20 @@
+Rails:
+  Enabled: true
+AllCops:
+  TargetRubyVersion: 2.1
+  Include:
+    - '**/Gemfile'
+    - '**/Rakefile'
+  Exclude:
+   - 'test/**/*'
+Documentation:
+  Enabled: false
+Metrics/LineLength:
+  Max: 120
+ClassLength:
+  Max: 250
+Metrics/BlockLength:
+  Exclude:
+    - 'test/routes.rb'
+    - 'Rakefile'
+    - '**/*.rake'
