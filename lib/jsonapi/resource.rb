@@ -224,7 +224,7 @@ module JSONAPI
         fail JSONAPI::Exceptions::ValidationErrors.new(self)
       end
       :completed
-      self.class._record_accessor.model_error_messages(_model)
+
     rescue self.class._record_accessor.delete_restriction_error_class => e
       fail JSONAPI::Exceptions::RecordLocked.new(e.message)
     end
@@ -915,15 +915,15 @@ module JSONAPI
       #   ResourceBuilder methods
       def define_relationship_methods(relationship_name, relationship_klass, options)
         # Initialize from an ORM model's properties
-        if _model_class.is_a?(_record_accessor.model_base_class) &&
-          (association_model_class_name = association_model_class_name(_model_class, relationship_name))
+        if _model_class && _model_class < _record_accessor.model_base_class &&
+          (association_model_class_name = _record_accessor.association_model_class_name(_model_class, relationship_name))
 
           options = options.reverse_merge(class_name: association_model_class_name)
         end
 
         relationship = register_relationship(
-            relationship_name,
-            relationship_klass.new(relationship_name, options)
+          relationship_name,
+          relationship_klass.new(relationship_name, options)
         )
 
         define_foreign_key_setter(relationship)

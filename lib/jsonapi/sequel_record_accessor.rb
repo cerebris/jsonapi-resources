@@ -18,7 +18,7 @@ module JSONAPI
     end
 
     def model_base_class
-      Sequel
+      Sequel::Model
     end
 
     def delete_restriction_error_class
@@ -27,6 +27,11 @@ module JSONAPI
 
     def record_not_found_error_class
       ActiveRecord::RecordNotFound
+    end
+
+    def association_model_class_name(from_model, relationship_name)
+      (reflect = from_model.association_reflections[relationship_name]) &&
+        reflect[:class_name] && reflect[:class_name].gsub(/^::/, '') # Sequel puts "::" in the beginning
     end
 
     def find_resource(filters, options = {})

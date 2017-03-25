@@ -18,7 +18,9 @@ if ENV['COVERAGE']
   end
 end
 
-require 'active_record/railtie'
+ENV["ORM"] = "active_record"
+
+require_relative "support/orm/#{ENV["ORM"]}/initialize"
 require 'rails/test_help'
 require 'minitest/mock'
 require 'jsonapi-resources'
@@ -38,7 +40,7 @@ JSONAPI.configure do |config|
   config.json_key_format = :camelized_key
 end
 
-puts "Testing With RAILS VERSION #{Rails.version}"
+puts "Testing With RAILS VERSION #{Rails.version} and #{ENV["ORM"]} ORM"
 
 class TestApp < Rails::Application
   config.eager_load = false
@@ -49,14 +51,12 @@ class TestApp < Rails::Application
   #Raise errors on unsupported parameters
   config.action_controller.action_on_unpermitted_parameters = :raise
 
-  ActiveRecord::Schema.verbose = false
-  config.active_record.schema_format = :none
   config.active_support.test_order = :random
+
+  ActiveSupport::Deprecation.silenced = true
 
   if Rails::VERSION::MAJOR >= 5
     config.active_support.halt_callback_chains_on_return_false = false
-    config.active_record.time_zone_aware_types = [:time, :datetime]
-    config.active_record.belongs_to_required_by_default = false
   end
 end
 
@@ -190,7 +190,7 @@ end
 def assert_query_count(expected, msg = nil, &block)
   @queries = []
   callback = lambda {|_, _, _, _, payload| @queries.push payload[:sql] }
-  ActiveSupport::Notifications.subscribed(callback, 'sql.active_record', &block)
+  ActiveSupport::Notifications.subscribed(callback, "sql.#{ENV["ORM"]}", &block)
 
   show_queries unless expected == @queries.size
   assert expected == @queries.size, "Expected #{expected} queries, ran #{@queries.size} queries"
@@ -205,7 +205,8 @@ end
 
 TestApp.initialize!
 
-require File.expand_path('../fixtures/active_record', __FILE__)
+require_relative "support/orm/#{ENV["ORM"]}/models"
+require_relative "support/controllers_resources_processors"
 
 module Pets
   module V1
@@ -412,27 +413,19 @@ class Minitest::Test
   include Helpers::ValueMatchers
   include Helpers::FunctionalHelpers
   include Helpers::ConfigurationHelpers
-  include ActiveRecord::TestFixtures
 
   def run_in_transaction?
     true
   end
-
-  self.fixture_path = "#{Rails.root}/fixtures"
-  fixtures :all
 end
 
 class ActiveSupport::TestCase
-  self.fixture_path = "#{Rails.root}/fixtures"
-  fixtures :all
   setup do
     @routes = TestApp.routes
   end
 end
 
 class ActionDispatch::IntegrationTest
-  self.fixture_path = "#{Rails.root}/fixtures"
-  fixtures :all
 
   def assert_jsonapi_response(expected_status, msg = nil)
     assert_equal JSONAPI::MEDIA_TYPE, response.content_type
@@ -487,7 +480,7 @@ class ActionController::TestCase
 
     normal_queries = []
     normal_query_callback = lambda {|_, _, _, _, payload| normal_queries.push payload[:sql] }
-    ActiveSupport::Notifications.subscribed(normal_query_callback, 'sql.active_record') do
+    ActiveSupport::Notifications.subscribed(normal_query_callback, "sql.#{ENV["ORM"]}") do
       get action, *args
     end
     non_caching_response = json_response_sans_backtraces
@@ -518,7 +511,7 @@ class ActionController::TestCase
           cache_queries = []
           cache_query_callback = lambda {|_, _, _, _, payload| cache_queries.push payload[:sql] }
           cache_activity[phase] = with_resource_caching(cache, cached_resources) do
-            ActiveSupport::Notifications.subscribed(cache_query_callback, 'sql.active_record') do
+            ActiveSupport::Notifications.subscribed(cache_query_callback, "sql.#{ENV["ORM"]}") do
               @controller = nil
               setup_controller_request_and_response
               @request.headers.merge!(orig_request_headers.dup)
@@ -645,3 +638,5 @@ class TitleValueFormatter < JSONAPI::ValueFormatter
     end
   end
 end
+
+require_relative "support/orm/#{ENV["ORM"]}/setup"

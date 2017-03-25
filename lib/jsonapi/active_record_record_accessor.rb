@@ -10,6 +10,14 @@ module JSONAPI
       end
     end
 
+    def rollback_transaction
+      fail ActiveRecord::Rollback
+    end
+
+    def model_error_messages(model)
+      model.errors.messages
+    end
+
     def model_base_class
       ActiveRecord::Base
     end
@@ -22,16 +30,8 @@ module JSONAPI
       ActiveRecord::RecordNotFound
     end
 
-    def rollback_transaction
-      fail ActiveRecord::Rollback
-    end
-
-    def model_error_messages(model)
-      model.errors.messages
-    end
-
     def association_model_class_name(from_model, relationship_name)
-      from_model.reflect_on_association(relationship_name)
+      (reflect = from_model.reflect_on_association(relationship_name)) && reflect.class_name
     end
 
     def find_resource(filters, options = {})

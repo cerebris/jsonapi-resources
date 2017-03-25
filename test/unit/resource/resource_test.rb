@@ -567,6 +567,7 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
   end
 
   def test_id_attr_deprecation
+    tmp, ActiveSupport::Deprecation.silenced = ActiveSupport::Deprecation.silenced, false
     _out, err = capture_io do
       eval <<-CODE
         class ProblemResource < JSONAPI::Resource
@@ -575,6 +576,8 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
       CODE
     end
     assert_match /DEPRECATION WARNING: Id without format is no longer supported. Please remove ids from attributes, or specify a format./, err
+  ensure
+    ActiveSupport::Deprecation.silenced = tmp
   end
 
   def test_id_attr_with_format
