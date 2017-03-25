@@ -20,7 +20,7 @@ end
 
 ENV["ORM"] = "active_record"
 
-require_relative "support/orm/#{ENV["ORM"]}/initialize"
+require_relative "support/#{ENV["ORM"]}/initialize"
 require 'rails/test_help'
 require 'minitest/mock'
 require 'jsonapi-resources'
@@ -52,6 +52,8 @@ class TestApp < Rails::Application
   config.action_controller.action_on_unpermitted_parameters = :raise
 
   config.active_support.test_order = :random
+
+  config.paths["config/database"] = "support/database.yml"
 
   ActiveSupport::Deprecation.silenced = true
 
@@ -205,7 +207,7 @@ end
 
 TestApp.initialize!
 
-require_relative "support/orm/#{ENV["ORM"]}/models"
+require_relative "support/#{ENV["ORM"]}/models"
 require_relative "support/controllers_resources_processors"
 
 module Pets
@@ -639,4 +641,4 @@ class TitleValueFormatter < JSONAPI::ValueFormatter
   end
 end
 
-require_relative "support/orm/#{ENV["ORM"]}/setup"
+require_relative "support/#{ENV["ORM"]}/setup"
