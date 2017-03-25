@@ -26,16 +26,16 @@ module ActionDispatch
           options[:path] = format_route(@resource_type)
 
           if options[:except]
-            options[:except] << :new unless options[:except].include?(:new) || options[:except].include?('new')
-            options[:except] << :edit unless options[:except].include?(:edit) || options[:except].include?('edit')
+            options[:except] << :new if (options[:except] & [:new, 'new']).empty?
+            options[:except] << :edit if (options[:except] & [:edit, 'edit']).empty?
           else
             options[:except] = [:new, :edit]
           end
 
           if res._immutable
-            options[:except] << :create unless options[:except].include?(:create) || options[:except].include?('create')
-            options[:except] << :update unless options[:except].include?(:update) || options[:except].include?('update')
-            options[:except] << :destroy unless options[:except].include?(:destroy) || options[:except].include?('destroy')
+            options[:except] << :create if (options[:except] & [:create, 'create']).empty?
+            options[:except] << :update if (options[:except] & [:update, 'update']).empty?
+            options[:except] << :destroy if (options[:except] & [:destroy, 'destroy']).empty?
           end
 
           resource @resource_type, options do
@@ -43,20 +43,12 @@ module ActionDispatch
             if @scope.respond_to? :[]=
               # Rails 4
               @scope[:jsonapi_resource] = @resource_type
-
-              if block_given?
-                yield
-              else
-                jsonapi_relationships
-              end
+              block_given? ? yield : jsonapi_relationships
             else
               # Rails 5
-              jsonapi_resource_scope(SingletonResource.new(@resource_type, api_only?, @scope[:shallow], options), @resource_type) do
-                if block_given?
-                  yield
-                else
-                  jsonapi_relationships
-                end
+              singleton_resource = SingletonResource.new(@resource_type, api_only?, @scope[:shallow], options)
+              jsonapi_resource_scope(singleton_resource, @resource_type) do
+                block_given? ? yield : jsonapi_relationships
               end
             end
             # :nocov:
@@ -95,16 +87,16 @@ module ActionDispatch
 
           if options[:except]
             options[:except] = Array(options[:except])
-            options[:except] << :new unless options[:except].include?(:new) || options[:except].include?('new')
-            options[:except] << :edit unless options[:except].include?(:edit) || options[:except].include?('edit')
+            options[:except] << :new if (options[:except] & [:new, 'new']).empty?
+            options[:except] << :edit if (options[:except] & [:edit, 'edit']).empty?
           else
             options[:except] = [:new, :edit]
           end
 
           if res._immutable
-            options[:except] << :create unless options[:except].include?(:create) || options[:except].include?('create')
-            options[:except] << :update unless options[:except].include?(:update) || options[:except].include?('update')
-            options[:except] << :destroy unless options[:except].include?(:destroy) || options[:except].include?('destroy')
+            options[:except] << :create if (options[:except] & [:create, 'create']).empty?
+            options[:except] << :update if (options[:except] & [:update, 'update']).empty?
+            options[:except] << :destroy if (options[:except] & [:destroy, 'destroy']).empty?
           end
 
           resources @resource_type, options do
@@ -112,19 +104,12 @@ module ActionDispatch
             if @scope.respond_to? :[]=
               # Rails 4
               @scope[:jsonapi_resource] = @resource_type
-              if block_given?
-                yield
-              else
-                jsonapi_relationships
-              end
+              block_given? ? yield : jsonapi_relationships
             else
               # Rails 5
-              jsonapi_resource_scope(Resource.new(@resource_type, api_only?, @scope[:shallow], options), @resource_type) do
-                if block_given?
-                  yield
-                else
-                  jsonapi_relationships
-                end
+              resource = Resource.new(@resource_type, api_only?, @scope[:shallow], options)
+              jsonapi_resource_scope(resource, @resource_type) do
+                block_given? ? yield : jsonapi_relationships
               end
             end
             # :nocov:
@@ -152,23 +137,19 @@ module ActionDispatch
           options[:controller] ||= res._type.to_s
 
           methods = links_methods(options)
+          route_name = "relationships/#{formatted_relationship_name}"
+          route_options = { controller: options[:controller], relationship: link_type.to_s }
 
-          if methods.include?(:show)
-            match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                                                                  action: 'show_relationship', relationship: link_type.to_s, via: [:get]
+          match route_name, route_options.merge(action: 'show_relationship', via: [:get]) if methods.include?(:show)
+
+          return unless res.mutable?
+
+          if methods.include?(:update)
+            match route_name, route_options.merge(action: 'update_relationship', via: [:put, :patch])
           end
 
-          if res.mutable?
-            if methods.include?(:update)
-              match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                                                                    action: 'update_relationship', relationship: link_type.to_s, via: [:put, :patch]
-            end
-
-            if methods.include?(:destroy)
-              match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                                                                    action: 'destroy_relationship', relationship: link_type.to_s, via: [:delete]
-            end
-          end
+          return unless methods.include?(:destroy)
+          match route_name, route_options.merge(action: 'destroy_relationship', via: [:delete])
         end
 
         def jsonapi_links(*links)
@@ -180,28 +161,23 @@ module ActionDispatch
           options[:controller] ||= res._type.to_s
 
           methods = links_methods(options)
+          route_name = "relationships/#{formatted_relationship_name}"
+          route_options = { controller: options[:controller], relationship: link_type.to_s }
 
-          if methods.include?(:show)
-            match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                                                                  action: 'show_relationship', relationship: link_type.to_s, via: [:get]
+          match route_name, route_options.merge(action: 'show_relationship', via: [:get]) if methods.include?(:show)
+
+          return unless res.mutable?
+
+          if methods.include?(:create)
+            match route_name, route_options.merge(action: 'create_relationship', via: [:post])
           end
 
-          if res.mutable?
-            if methods.include?(:create)
-              match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                                                                    action: 'create_relationship', relationship: link_type.to_s, via: [:post]
-            end
-
-            if methods.include?(:update)
-              match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                                                                    action: 'update_relationship', relationship: link_type.to_s, via: [:put, :patch]
-            end
-
-            if methods.include?(:destroy)
-              match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                                                                    action: 'destroy_relationship', relationship: link_type.to_s, via: [:delete]
-            end
+          if methods.include?(:update)
+            match route_name, route_options.merge(action: 'update_relationship', via: [:put, :patch])
           end
+
+          return unless methods.include?(:destroy)
+          match route_name, route_options.merge(action: 'destroy_relationship', via: [:delete])
         end
 
         def jsonapi_related_resource(*relationship)
@@ -216,12 +192,14 @@ module ActionDispatch
           if relationship.polymorphic?
             options[:controller] ||= relationship.class_name.underscore.pluralize
           else
-            related_resource = JSONAPI::Resource.resource_klass_for(resource_type_with_module_prefix(relationship.class_name.underscore.pluralize))
+            type_with_module = resource_type_with_module_prefix(relationship.class_name.underscore.pluralize)
+            related_resource = JSONAPI::Resource.resource_klass_for(type_with_module)
             options[:controller] ||= related_resource._type.to_s
           end
 
           match formatted_relationship_name, controller: options[:controller],
-                                             relationship: relationship.name, source: resource_type_with_module_prefix(source._type),
+                                             relationship: relationship.name,
+                                             source: resource_type_with_module_prefix(source._type),
                                              action: 'get_related_resource', via: [:get]
         end
 
@@ -233,7 +211,8 @@ module ActionDispatch
           relationship = source._relationships[relationship_name]
 
           formatted_relationship_name = format_route(relationship.name)
-          related_resource = JSONAPI::Resource.resource_klass_for(resource_type_with_module_prefix(relationship.class_name.underscore))
+          type_with_module = resource_type_with_module_prefix(relationship.class_name.underscore)
+          related_resource = JSONAPI::Resource.resource_klass_for(type_with_module)
           options[:controller] ||= related_resource._type.to_s
 
           match formatted_relationship_name,
