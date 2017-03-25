@@ -133,10 +133,11 @@ module ActionDispatch
 
         def links_methods(options)
           default_methods = [:show, :create, :destroy, :update]
-          if only = options[:only]
-            Array(only).map(&:to_sym)
-          elsif except = options[:except]
-            default_methods - Array(except)
+
+          if options[:only]
+            Array(options[:only]).map(&:to_sym)
+          elsif options[:except]
+            default_methods - Array(options[:except]).map(&:to_sym)
           else
             default_methods
           end
