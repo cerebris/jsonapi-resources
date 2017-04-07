@@ -477,7 +477,10 @@ module JSONAPI
             rel_id = row[index+1]
             assoc_rels = res.preloaded_fragments[rel_name]
             if index == path.length - 1
-              assoc_rels[rel_id] = target_resources[klass.name].fetch(rel_id)
+              fragment = target_resources[klass.name].fetch(rel_id)
+              if fragment
+                assoc_rels[rel_id] = fragment
+              end
             else
               res = assoc_rels[rel_id]
             end
