@@ -9,3 +9,7 @@ book_author_2_1:
 book_author_2_2:
   book_id: 2
   person_id: 2
+
+book_author_654_2:
+  book_id: 654 # Banned book
+  person_id: 2
