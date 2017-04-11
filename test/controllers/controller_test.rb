@@ -3667,6 +3667,23 @@ class AuthorsControllerTest < ActionController::TestCase
   end
 end
 
+class Api::V2::AuthorsControllerTest < ActionController::TestCase
+  def test_cache_pollution_for_non_admin_indirect_access_to_banned_books
+    cache = ActiveSupport::Cache::MemoryStore.new
+    with_resource_caching(cache) do
+      $test_user = Person.find(5)
+      get :show, params: {id: '2', include: 'books'}
+      assert_response :success
+      assert_equal 2, json_response['included'].length
+
+      $test_user = Person.find(1)
+      get :show, params: {id: '2', include: 'books'}
+      assert_response :success
+      assert_equal 1, json_response['included'].length
+    end
+  end
+end
+
 class Api::BoxesControllerTest < ActionController::TestCase
   def test_complex_includes_base
     assert_cacheable_get :index

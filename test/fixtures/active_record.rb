@@ -798,6 +798,9 @@ module Api
 
   module V2
     class AuthorsController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
     end
 
     class PeopleController < JSONAPI::ResourceController
@@ -1448,6 +1451,24 @@ module Api
     class PersonResource < PersonResource; end
     class PostResource < PostResource; end
 
+    class AuthorResource < JSONAPI::Resource
+      model_name 'Person'
+      attributes :name
+
+      has_many :books, inverse_relationship: :authors
+
+      def records_for(rel_name)
+        records = _model.public_send(rel_name)
+        if rel_name == :books
+          # Hide indirect access to banned books unless current user is a book admin
+          unless context[:current_user].try(:book_admin)
+            records = records.where(banned: false)
+          end
+        end
+        return records
+      end
+    end
+
     class BookResource < JSONAPI::Resource
       attribute :title
       attributes :isbn, :banned
@@ -1483,7 +1504,7 @@ module Api
           context = options[:context]
           current_user = context ? context[:current_user] : nil
 
-          records = _model_class
+          records = _model_class.all
           # Hide the banned books from people who are not book admins
           unless current_user && current_user.book_admin
             records = records.where(not_banned_books)
