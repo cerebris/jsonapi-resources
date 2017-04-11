@@ -36,7 +36,7 @@ module JSONAPI
       get_includes(@include_directives_hash)
     end
 
-    def paths
+    def all_paths
       delve_paths(get_includes(@include_directives_hash, false))
     end
 

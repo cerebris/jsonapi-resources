@@ -112,25 +112,25 @@ module JSONAPI
     def find_serialized_with_caching(filters_or_source, serializer, options = {})
       if filters_or_source.is_a?(ActiveRecord::Relation)
         return cached_resources_for(filters_or_source, serializer, options)
-      elsif _resource_klass._model_class.respond_to?(:all) && _resource_klass._model_class.respond_to?(:arel_table)
+      elsif resource_class_based_on_active_record?(_resource_klass)
         records = find_records(filters_or_source, options.except(:include_directives))
         return cached_resources_for(records, serializer, options)
       else
         # :nocov:
-        warn('Caching enabled on model that does not support ActiveRelation')
+        warn('Caching enabled on model not based on ActiveRecord API or similar')
         # :nocov:
       end
     end
 
     def find_by_key_serialized_with_caching(key, serializer, options = {})
-      if _resource_klass._model_class.respond_to?(:all) && _resource_klass._model_class.respond_to?(:arel_table)
+      if resource_class_based_on_active_record?(_resource_klass)
         results = find_serialized_with_caching({ _resource_klass._primary_key => key }, serializer, options)
         result = results.first
         fail JSONAPI::Exceptions::RecordNotFound.new(key) if result.nil?
         return result
       else
         # :nocov:
-        warn('Caching enabled on model that does not support ActiveRelation')
+        warn('Caching enabled on model not based on ActiveRecord API or similar')
         # :nocov:
       end
     end
@@ -339,7 +339,14 @@ module JSONAPI
         resources = _resource_klass.resources_for(records, options[:context]).map { |r| [r.id, r] }.to_h
       end
 
-      preload_included_fragments(resources, records, serializer, options)
+      if options[:include_directives]
+        resource_pile = { _resource_klass.name => resources }
+        options[:include_directives].all_paths.each do |path|
+          # Note that `all_paths` returns shorter paths first, so e.g. the partial fragments for
+          # posts.comments will exist before we start working with posts.comments.author
+          preload_included_fragments(_resource_klass, resource_pile, path, serializer, options)
+        end
+      end
 
       resources.values
     end
@@ -366,137 +373,121 @@ module JSONAPI
       end
     end
 
-    def preload_included_fragments(resources, records, serializer, options)
-      return if resources.empty?
-      res_ids = resources.keys
+    def preload_included_fragments(src_res_class, resource_pile, path, serializer, options)
+      src_resources = resource_pile[src_res_class.name]
+      return if src_resources.nil? || src_resources.empty?
 
-      include_directives = options[:include_directives]
-      return unless include_directives
+      rel_name = path.first
+      relationship = src_res_class._relationships[rel_name]
+      if relationship.polymorphic
+        # FIXME Preloading through a polymorphic belongs_to association is not implemented.
+        # For now, in this case, ResourceSerializer will have to do the fetch itself, without
+        # using either the cache or eager-loading.
+        return
+      end
 
-      context = options[:context]
+      tgt_res_class = relationship.resource_klass
+      unless resource_class_based_on_active_record?(tgt_res_class)
+        # Can't preload relationships from non-AR resources, this association will be filled
+        # in on-demand later by ResourceSerializer.
+        return
+      end
 
-      # For each association, including indirect associations, find the target record ids.
-      # Even if a target class doesn't have caching enabled, we still have to look up
-      # and match the target ids here, because we can't use ActiveRecord#includes.
-      #
-      # Note that `paths` returns partial paths before complete paths, so e.g. the partial
-      # fragments for posts.comments will exist before we start working with posts.comments.author
-      target_resources = {}
-      include_directives.paths.each do |path|
-        # If path is [:posts, :comments, :author], then...
-        pluck_attrs = [] # ...will be [posts.id, comments.id, authors.id, authors.updated_at]
-        pluck_attrs << _resource_klass._model_class.arel_table[_resource_klass._primary_key]
+      # Assume for longer paths that the intermediate fragments have already been preloaded
+      if path.length > 1
+        preload_included_fragments(tgt_res_class, resource_pile, path.drop(1), serializer, options)
+        return
+      end
 
-        relation = records
-                       .except(:limit, :offset, :order)
-                       .where({ _resource_klass._primary_key => res_ids })
+      record_source = src_res_class._model_class
+                                      .where({ src_res_class._primary_key => src_resources.keys })
+                                      .joins(relationship.relation_name(options).to_sym)
 
-        # These are updated as we iterate through the association path; afterwards they will
-        # refer to the final resource on the path, i.e. the actual resource to find in the cache.
-        # So e.g. if path is [:posts, :comments, :author], then after iteration...
-        parent_klass = nil # Comment
-        klass = _resource_klass # Person
-        relationship = nil # JSONAPI::Relationship::ToOne for CommentResource.author
-        table = nil # people
-        assocs_path = [] # [ :posts, :approved_comments, :author ]
-        ar_hash = nil # { :posts => { :approved_comments => :author } }
+      if relationship.is_a?(JSONAPI::Relationship::ToMany)
+        # Rails doesn't include order clauses in `joins`, so we have to add that manually here.
+        # FIXME Should find a better way to reflect on relationship ordering. :-(
+        fake_model_instance = src_res_class._model_class.new
+        record_source = record_source.order(fake_model_instance.send(rel_name).arel.orders)
+      end
 
-        # For each step on the path, figure out what the actual table name/alias in the join
-        # will be, and include the primary key of that table in our list of fields to select
-        non_polymorphic = true
-        path.each do |elem|
-          relationship = klass._relationships[elem]
-          if relationship.polymorphic
-            # Can't preload through a polymorphic belongs_to association, ResourceSerializer
-            # will just have to bypass the cache and load the real Resource.
-            non_polymorphic = false
-            break
-          end
-          assocs_path << relationship.relation_name(options).to_sym
-          # Converts [:a, :b, :c] to Rails-style { :a => { :b => :c }}
-          ar_hash = assocs_path.reverse.reduce { |memo, step| { step => memo } }
-          # We can't just look up the table name from the resource class, because Arel could
-          # have used a table alias if the relation includes a self-reference.
-          join_source = relation.joins(ar_hash).arel.source.right.reverse.find do |arel_node|
-            arel_node.is_a?(Arel::Nodes::InnerJoin)
-          end
-          table = join_source.left
-          parent_klass = klass
-          klass = relationship.resource_klass
-          pluck_attrs << table[klass._primary_key]
-        end
-        next unless non_polymorphic
+      # Pre-fill empty fragment hashes.
+      # This allows us to later distinguish between a preload that returned nothing
+      # vs. a preload that never ran.
+      serialized_rel_name = serializer.key_formatter.format(rel_name)
+      src_resources.each do |key, res|
+        res.preloaded_fragments[serialized_rel_name] ||= {}
+      end
 
-        # Pre-fill empty hashes for each resource up to the end of the path.
-        # This allows us to later distinguish between a preload that returned nothing
-        # vs. a preload that never ran.
-        prefilling_resources = resources.values
-        path.each do |rel_name|
-          rel_name = serializer.key_formatter.format(rel_name)
-          prefilling_resources.map! do |res|
-            res.preloaded_fragments[rel_name] ||= {}
-            res.preloaded_fragments[rel_name].values
-          end
-          prefilling_resources.flatten!(1)
-        end
+      # We can't just look up the table name from the target class, because Arel could
+      # have used a table alias if the relation is a self-reference.
+      join_node = record_source.arel.source.right.reverse.find do |arel_node|
+        arel_node.is_a?(Arel::Nodes::InnerJoin)
+      end
+      tgt_table = join_node.left
 
-        pluck_attrs << table[klass._cache_field] if klass.caching?
-        relation = relation.joins(ar_hash)
-        if relationship.is_a?(JSONAPI::Relationship::ToMany)
-          # Rails doesn't include order clauses in `joins`, so we have to add that manually here.
-          # FIXME Should find a better way to reflect on relationship ordering. :-(
-          relation = relation.order(parent_klass._model_class.new.send(assocs_path.last).arel.orders)
-        end
+      # Resource class may restrict current user to a subset of available records
+      if tgt_res_class.respond_to?(:records)
+        valid_tgts_rel = tgt_res_class.records(options)
+        valid_tgts_rel = valid_tgts_rel.all if valid_tgts_rel.respond_to?(:all)
+        conn = valid_tgts_rel.connection
+        tgt_attr = tgt_table[tgt_res_class._primary_key]
 
-        # [[post id, comment id, author id, author updated_at], ...]
-        id_rows = pluck_arel_attributes(relation.joins(ar_hash), *pluck_attrs)
+        # Alter a normal AR query to select only the primary key instead of all columns.
+        # Sadly doing direct string manipulation of query here, cannot use ARel for this due to
+        # bind values being stripped from AR::Relation#arel in Rails >= 4.2, see
+        # https://github.com/rails/arel/issues/363
+        valid_tgts_query = valid_tgts_rel.to_sql.sub('*', conn.quote_column_name(tgt_attr.name))
+        valid_tgts_cond = "#{quote_arel_attribute(conn, tgt_attr)} IN (#{valid_tgts_query})"
 
-        target_resources[klass.name] ||= {}
+        record_source = record_source.where(valid_tgts_cond)
+      end
 
-        if klass.caching?
-          sub_cache_ids = id_rows
-                              .map { |row| row.last(2) }
-                              .reject { |row| target_resources[klass.name].has_key?(row.first) }
-                              .uniq
-          target_resources[klass.name].merge! CachedResourceFragment.fetch_fragments(
-              klass, serializer, context, sub_cache_ids
-          )
-        else
-          sub_res_ids = id_rows
-                            .map(&:last)
-                            .reject { |id| target_resources[klass.name].has_key?(id) }
-                            .uniq
-          found = klass.find({ klass._primary_key => sub_res_ids }, context: options[:context])
-          target_resources[klass.name].merge! found.map { |r| [r.id, r] }.to_h
-        end
+      pluck_attrs = [
+        src_res_class._model_class.arel_table[src_res_class._primary_key],
+        tgt_table[tgt_res_class._primary_key]
+      ]
+      pluck_attrs << tgt_table[tgt_res_class._cache_field] if tgt_res_class.caching?
 
-        id_rows.each do |row|
-          res = resources[row.first]
-          path.each_with_index do |rel_name, index|
-            rel_name = serializer.key_formatter.format(rel_name)
-            rel_id = row[index+1]
-            assoc_rels = res.preloaded_fragments[rel_name]
-            if index == path.length - 1
-              fragment = target_resources[klass.name].fetch(rel_id)
-              if fragment
-                assoc_rels[rel_id] = fragment
-              end
-            else
-              res = assoc_rels[rel_id]
-            end
-          end
-        end
+      id_rows = pluck_arel_attributes(record_source, *pluck_attrs)
+
+      target_resources = resource_pile[tgt_res_class.name] ||= {}
+
+      if tgt_res_class.caching?
+        sub_cache_ids = id_rows.map{ |row| row.last(2) }.uniq.reject{|p| target_resources.has_key?(p[0]) }
+        target_resources.merge! CachedResourceFragment.fetch_fragments(
+            tgt_res_class, serializer, options[:context], sub_cache_ids
+        )
+      else
+        sub_res_ids = id_rows.map(&:last).uniq - target_resources.keys
+        recs = tgt_res_class.find({ tgt_res_class._primary_key => sub_res_ids }, context: options[:context])
+        target_resources.merge!(recs.map{ |r| [r.id, r] }.to_h)
+      end
+
+      id_rows.each do |row|
+        src_id, tgt_id = row[0], row[1]
+        src_res = src_resources[src_id]
+        next unless src_res
+        fragment = target_resources[tgt_id]
+        next unless fragment
+        src_res.preloaded_fragments[serialized_rel_name][tgt_id] = fragment 
       end
     end
 
     def pluck_arel_attributes(relation, *attrs)
       conn = relation.connection
-      quoted_attrs = attrs.map do |attr|
-        quoted_table = conn.quote_table_name(attr.relation.table_alias || attr.relation.name)
-        quoted_column = conn.quote_column_name(attr.name)
-        "#{quoted_table}.#{quoted_column}"
-      end
+      quoted_attrs = attrs.map{|attr| quote_arel_attribute(conn, attr) }
       relation.pluck(*quoted_attrs)
+    end
+
+    def quote_arel_attribute(connection, attr)
+      quoted_table = connection.quote_table_name(attr.relation.table_alias || attr.relation.name)
+      quoted_column = connection.quote_column_name(attr.name)
+      "#{quoted_table}.#{quoted_column}"
+    end
+
+    def resource_class_based_on_active_record?(klass)
+      model_class = klass._model_class
+      model_class.respond_to?(:all) && model_class.respond_to?(:arel_table)
     end
   end
 end
