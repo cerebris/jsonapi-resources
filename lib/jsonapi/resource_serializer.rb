@@ -323,7 +323,7 @@ module JSONAPI
 
       real_res = nil
       relationships.each do |rel_name, relationship|
-        key = @key_formatter.format(rel_name)
+        key = format_key(rel_name)
         to_many = relationship.is_a? JSONAPI::Relationship::ToMany
 
         ia = include_directives[:include_related][rel_name]
