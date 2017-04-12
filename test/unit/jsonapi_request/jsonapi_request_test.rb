@@ -42,6 +42,11 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
     assert request.errors.empty?
   end
 
+  def test_parse_blank_includes
+    include_directives = JSONAPI::RequestParser.new.parse_include_directives(nil, '')
+    assert_empty include_directives.model_includes
+  end
+
   def test_parse_dasherized_with_dasherized_include
     params = ActionController::Parameters.new(
       {
