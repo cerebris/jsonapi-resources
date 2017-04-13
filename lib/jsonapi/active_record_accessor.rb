@@ -161,9 +161,9 @@ module JSONAPI
 
     # Implement self.records on the resource if you want to customize the relation for
     # finder methods (find, find_by_key, find_serialized_with_caching)
-    def records(_options = {})
+    def records(options = {})
       if defined?(_resource_klass.records)
-        _resource_klass.records(_options)
+        _resource_klass.records(options)
       else
         _resource_klass._model_class.all
       end
@@ -182,10 +182,8 @@ module JSONAPI
         if resource.respond_to?(:"records_for_#{relation_name}")
           return resource.method(:"records_for_#{relation_name}").call
         end
-      else
-        if resource.respond_to?(:"record_for_#{relation_name}")
-          return resource.method(:"record_for_#{relation_name}").call
-        end
+      elsif resource.respond_to?(:"record_for_#{relation_name}")
+        return resource.method(:"record_for_#{relation_name}").call
       end
 
       resource._model.public_send(relation_name)
@@ -318,9 +316,9 @@ module JSONAPI
       records
     end
 
-    def filter_records(filters, options, records = records(options))
-      records = apply_filters(records, filters, options)
-      apply_includes(records, options)
+    def filter_records(filters, options, resource_records = records(options))
+      filtered_records = apply_filters(resource_records, filters, options)
+      apply_includes(filtered_records, options)
     end
 
     def sort_records(records, order_options, context = {})

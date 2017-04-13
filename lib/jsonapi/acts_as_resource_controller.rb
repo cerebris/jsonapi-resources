@@ -125,10 +125,10 @@ module JSONAPI
     end
 
     def rollback_transaction(transactional)
-      if transactional
-        run_callbacks :rollback do
-          rollback
-        end
+      return unless transactional
+
+      run_callbacks :rollback do
+        rollback
       end
     end
 
@@ -196,11 +196,8 @@ module JSONAPI
     end
 
     def media_types_for(header)
-      (request.headers[header] || '')
-        .scan(MEDIA_TYPE_MATCHER)
-        .to_a
-        .map(&:strip)
-      end
+      (request.headers[header] || '').scan(MEDIA_TYPE_MATCHER).to_a.map(&:strip)
+    end
 
     # override to set context
     def context

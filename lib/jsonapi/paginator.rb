@@ -105,16 +105,14 @@ class OffsetPaginator < JSONAPI::Paginator
   end
 
   def verify_pagination_params
-    if @limit < 1
-      raise JSONAPI::Exceptions::InvalidPageValue.new(:limit, @limit)
-    elsif @limit > JSONAPI.configuration.maximum_page_size
-      raise JSONAPI::Exceptions::InvalidPageValue.new(:limit, @limit,
-                                                      detail: "Limit exceeds maximum page size of #{JSONAPI.configuration.maximum_page_size}.")
+    raise JSONAPI::Exceptions::InvalidPageValue.new(:limit, @limit) if @limit < 1
+
+    if @limit > JSONAPI.configuration.maximum_page_size
+      raise JSONAPI::Exceptions::InvalidPageValue.new(:limit, @limit, detail: 'Limit exceeds maximum page size of ' \
+        "#{JSONAPI.configuration.maximum_page_size}.")
     end
 
-    if @offset < 0
-      raise JSONAPI::Exceptions::InvalidPageValue.new(:offset, @offset)
-    end
+    raise JSONAPI::Exceptions::InvalidPageValue.new(:offset, @offset) if @offset < 0
   end
 end
 
@@ -166,7 +164,7 @@ class PagedPaginator < JSONAPI::Paginator
 
     if record_count
       links_page_params['last'] = {
-        'number' => page_count == 0 ? 1 : page_count,
+        'number' => page_count.zero? ? 1 : page_count,
         'size' => @size
       }
     end
@@ -194,15 +192,13 @@ class PagedPaginator < JSONAPI::Paginator
   end
 
   def verify_pagination_params
-    if @size < 1
-      raise JSONAPI::Exceptions::InvalidPageValue.new(:size, @size)
-    elsif @size > JSONAPI.configuration.maximum_page_size
-      raise JSONAPI::Exceptions::InvalidPageValue.new(:size, @size,
-                                                      detail: "size exceeds maximum page size of #{JSONAPI.configuration.maximum_page_size}.")
+    raise JSONAPI::Exceptions::InvalidPageValue.new(:size, @size) if @size < 1
+
+    if @size > JSONAPI.configuration.maximum_page_size
+      raise JSONAPI::Exceptions::InvalidPageValue.new(:size, @size, detail: 'size exceeds maximum page size of ' \
+        "#{JSONAPI.configuration.maximum_page_size}.")
     end
 
-    if @number < 1
-      raise JSONAPI::Exceptions::InvalidPageValue.new(:number, @number)
-    end
+    raise JSONAPI::Exceptions::InvalidPageValue.new(:number, @number) if @number < 1
   end
 end

@@ -155,16 +155,14 @@ module JSONAPI
 
     def json_key_format=(format)
       @json_key_format = format
-      if defined?(@cache_formatters)
-        @key_formatter_tlv = Concurrent::ThreadLocalVar.new
-      end
+      return unless defined?(@cache_formatters)
+      @key_formatter_tlv = Concurrent::ThreadLocalVar.new
     end
 
     def route_format=(format)
       @route_format = format
-      if defined?(@cache_formatters)
-        @route_formatter_tlv = Concurrent::ThreadLocalVar.new
-      end
+      return unless defined?(@cache_formatters)
+      @route_formatter_tlv = Concurrent::ThreadLocalVar.new
     end
 
     def key_formatter
