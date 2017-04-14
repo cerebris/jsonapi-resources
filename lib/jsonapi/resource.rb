@@ -446,7 +446,7 @@ module JSONAPI
 
       def resource_klass_for(type)
         type = type.underscore
-        type_with_module = type.include?('/') ? type : module_path + type
+        type_with_module = type.start_with?(module_path) ? type : module_path + type
 
         resource_name = _resource_name_from_type(type_with_module)
         resource = resource_name.safe_constantize if resource_name
