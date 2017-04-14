@@ -85,10 +85,17 @@ module MyModule
   class MyNamespacedResource < JSONAPI::Resource
     model_name "Person"
     has_many :related
+    has_one :default_profile, class_name: "Nested::Profile"
   end
 
   class RelatedResource < JSONAPI::Resource
     model_name "Comment"
+  end
+
+  module Nested
+    class ProfileResource < JSONAPI::Resource
+      model_name "Nested::Profile"
+    end
   end
 end
 
@@ -153,6 +160,12 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_resource_for_namespaced_resource
     assert_equal(MyModule::MyNamespacedResource.resource_for('related'), MyModule::RelatedResource)
+  end
+
+  def test_resource_for_nested_namespaced_resource
+    assert_equal(JSONAPI::Resource.resource_for('my_module/nested/profile'), MyModule::Nested::ProfileResource)
+    assert_equal(MyModule::MyNamespacedResource.resource_for('my_module/nested/profile'), MyModule::Nested::ProfileResource)
+    assert_equal(MyModule::MyNamespacedResource.resource_for('nested/profile'), MyModule::Nested::ProfileResource)
   end
 
   def test_relationship_parent_point_to_correct_resource
