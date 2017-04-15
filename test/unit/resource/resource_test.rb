@@ -8,25 +8,6 @@ class ArticleResource < JSONAPI::Resource
   end
 end
 
-class PostWithBadAfterSave < ActiveRecord::Base
-  self.table_name = 'posts'
-  after_save :do_some_after_save_stuff
-
-  def do_some_after_save_stuff
-    errors[:base] << 'Boom! Error added in after_save callback.'
-    raise ActiveRecord::RecordInvalid.new(self)
-  end
-end
-
-class PostWithCustomValidationContext < ActiveRecord::Base
-  self.table_name = 'posts'
-  validate :api_specific_check, on: :json_api_create
-
-  def api_specific_check
-    errors[:base] << 'Record is invalid'
-  end
-end
-
 class ArticleWithBadAfterSaveResource < JSONAPI::Resource
   model_name 'PostWithBadAfterSave'
   attribute :title
@@ -238,15 +219,15 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_find_with_customized_base_records
-    author = Person.find(1)
+    author = find_first(Person, 1)
     posts = ArticleResource.find([], context: author).map(&:_model)
 
-    assert(posts.include?(Post.find(1)))
-    refute(posts.include?(Post.find(3)))
+    assert(posts.include?(find_first(Post, 1)))
+    refute(posts.include?(find_first(Post, 3)))
   end
 
   def test_records_for
-    author = Person.find(1)
+    author = find_first(Person, 1)
     preferences = Preferences.first
     refute(preferences == nil)
     author.update! preferences: preferences
@@ -263,7 +244,7 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_records_for_meta_method_for_to_one
-    author = Person.find(1)
+    author = find_first(Person, 1)
     author.update! preferences: Preferences.first
     author_resource = PersonWithCustomRecordsForRelationshipsResource.new(author, nil)
     assert_equal(author_resource.class._record_accessor.records_for(
@@ -271,7 +252,7 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_records_for_meta_method_for_to_one_calling_records_for
-    author = Person.find(1)
+    author = find_first(Person, 1)
     author.update! preferences: Preferences.first
     author_resource = PersonWithCustomRecordsForResource.new(author, nil)
     assert_equal(author_resource.class._record_accessor.records_for(
@@ -279,26 +260,26 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_associated_records_meta_method_for_to_many
-    author = Person.find(1)
-    author.posts << Post.find(1)
+    author = find_first(Person, 1)
+    author.posts << find_first(Post, 1)
     author_resource = PersonWithCustomRecordsForRelationshipsResource.new(author, nil)
     assert_equal(author_resource.class._record_accessor.records_for(
         author_resource, :posts), :records_for_posts)
   end
 
   def test_associated_records_meta_method_for_to_many_calling_records_for
-    author = Person.find(1)
-    author.posts << Post.find(1)
+    author = find_first(Person, 1)
+    author.posts << find_first(Post, 1)
     author_resource = PersonWithCustomRecordsForResource.new(author, nil)
     assert_equal(author_resource.class._record_accessor.records_for(
         author_resource, :posts), :records_for)
   end
 
   def test_find_by_key_with_customized_base_records
-    author = Person.find(1)
+    author = find_first(Person, 1)
 
     post = ArticleResource.find_by_key(1, context: author)._model
-    assert_equal(post, Post.find(1))
+    assert_equal(post, find_first(Post, 1))
 
     assert_raises JSONAPI::Exceptions::RecordNotFound do
       ArticleResource.find_by_key(3, context: author)._model
@@ -330,7 +311,7 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_to_many_relationship_filters
-    post_resource = PostResource.new(Post.find(1), nil)
+    post_resource = PostResource.new(find_first(Post, 1), nil)
     comments = post_resource.comments
     assert_equal(2, comments.size)
 
@@ -379,7 +360,7 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_to_many_relationship_sorts
-    post_resource = PostResource.new(Post.find(1), nil)
+    post_resource = PostResource.new(find_first(Post, 1), nil)
     comment_ids = post_resource.comments.map{|c| c._model.id }
     assert_equal [1,2], comment_ids
 
@@ -450,7 +431,7 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
   end
 
   def test_to_many_relationship_pagination
-    post_resource = PostResource.new(Post.find(1), nil)
+    post_resource = PostResource.new(find_first(Post, 1), nil)
     comments = post_resource.comments
     assert_equal 2, comments.size
 
@@ -656,7 +637,7 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
   end
 
   def test_correct_error_surfaced_if_validation_errors_in_after_save_callback
-    post = PostWithBadAfterSave.find(1)
+    post = find_first(PostWithBadAfterSave, 1)
     post_resource = ArticleWithBadAfterSaveResource.new(post, nil)
     err = assert_raises JSONAPI::Exceptions::ValidationErrors do
       post_resource.replace_fields({:attributes => {:title => 'Some title'}})
@@ -672,7 +653,7 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
   end
 
   def test_resource_performs_validations_in_custom_context
-    post = PostWithCustomValidationContext.find(1)
+    post = find_first(PostWithCustomValidationContext, 1)
     post_resource = ArticleWithCustomValidationContextResource.new(post, nil)
     err = assert_raises JSONAPI::Exceptions::ValidationErrors do
       post_resource._save

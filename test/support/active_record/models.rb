@@ -1,10 +1,3 @@
-require_relative 'schema'
-
-ActiveSupport::Inflector.inflections(:en) do |inflect|
-  inflect.uncountable 'preferences'
-  inflect.irregular 'numero_telefone', 'numeros_telefone'
-end
-
 class Person < ActiveRecord::Base
   has_many :posts, foreign_key: 'author_id'
   has_many :comments, foreign_key: 'author_id'
@@ -55,6 +48,31 @@ class Post < ActiveRecord::Base
       end
       # :nocov:
     end
+  end
+end
+
+class PostWithBadAfterSave < ActiveRecord::Base
+  self.table_name = 'posts'
+  after_save :do_some_after_save_stuff
+
+  def do_some_after_save_stuff
+    errors[:base] << 'Boom! Error added in after_save callback.'
+    raise ActiveRecord::RecordInvalid.new(self)
+  end
+end
+
+class PostWithCustomValidationContext < ActiveRecord::Base
+  self.table_name = 'posts'
+  validate :api_specific_check, on: :json_api_create
+
+  def api_specific_check
+    errors[:base] << 'Record is invalid'
+  end
+end
+
+module Legacy
+  class FlatPost < ActiveRecord::Base
+    self.table_name = "posts"
   end
 end
 

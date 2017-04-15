@@ -4,136 +4,78 @@ module JSONAPI
   class ActiveRecordRecordAccessor < RecordAccessor
     # RecordAccessor methods
 
-    def transaction
-      ActiveRecord::Base.transaction do
-        yield
-      end
-    end
+    class << self
 
-    def rollback_transaction
-      fail ActiveRecord::Rollback
-    end
-
-    def model_error_messages(model)
-      model.errors.messages
-    end
-
-    def model_base_class
-      ActiveRecord::Base
-    end
-
-    def delete_restriction_error_class
-      ActiveRecord::DeleteRestrictionError
-    end
-
-    def record_not_found_error_class
-      ActiveRecord::RecordNotFound
-    end
-
-    def association_model_class_name(from_model, relationship_name)
-      (reflect = from_model.reflect_on_association(relationship_name)) && reflect.class_name
-    end
-
-    def find_resource(filters, options = {})
-      if options[:caching] && options[:caching][:cache_serializer_output]
-        find_serialized_with_caching(filters, options[:caching][:serializer], options)
-      else
-        _resource_klass.resources_for(find_records(filters, options), options[:context])
-      end
-    end
-
-    def find_resource_by_key(key, options = {})
-      if options[:caching] && options[:caching][:cache_serializer_output]
-        find_by_key_serialized_with_caching(key, options[:caching][:serializer], options)
-      else
-        records = find_records({ _resource_klass._primary_key => key }, options.except(:paginator, :sort_criteria))
-        model = records.first
-        fail JSONAPI::Exceptions::RecordNotFound.new(key) if model.nil?
-        _resource_klass.resource_for(model, options[:context])
-      end
-    end
-
-    def find_resources_by_keys(keys, options = {})
-      records = records(options)
-      records = apply_includes(records, options)
-      records = records.where({ _resource_klass._primary_key => keys })
-
-      _resource_klass.resources_for(records, options[:context])
-    end
-
-    def find_count(filters, options = {})
-      count_records(filter_records(filters, options))
-    end
-
-    def related_resource(resource, relationship_name, options = {})
-      relationship = resource.class._relationships[relationship_name.to_sym]
-
-      if relationship.polymorphic?
-        associated_model = records_for_relationship(resource, relationship_name, options)
-        resource_klass = resource.class.resource_klass_for_model(associated_model) if associated_model
-        return resource_klass.new(associated_model, resource.context) if resource_klass && associated_model
-      else
-        resource_klass = relationship.resource_klass
-        if resource_klass
-          associated_model = records_for_relationship(resource, relationship_name, options)
-          return associated_model ? resource_klass.new(associated_model, resource.context) : nil
+      def transaction
+        ActiveRecord::Base.transaction do
+          yield
         end
       end
-    end
 
-    def related_resources(resource, relationship_name, options = {})
-      relationship = resource.class._relationships[relationship_name.to_sym]
-      relationship_resource_klass = relationship.resource_klass
-
-      if options[:caching] && options[:caching][:cache_serializer_output]
-        scope = relationship_resource_klass._record_accessor.records_for_relationship(resource, relationship_name, options)
-        relationship_resource_klass._record_accessor.find_serialized_with_caching(scope, options[:caching][:serializer], options)
-      else
-        records = records_for_relationship(resource, relationship_name, options)
-        return records.collect do |record|
-          klass = relationship.polymorphic? ? resource.class.resource_klass_for_model(record) : relationship_resource_klass
-          klass.new(record, resource.context)
-        end
-      end
-    end
-
-    def count_for_relationship(resource, relationship_name, options = {})
-      relationship = resource.class._relationships[relationship_name.to_sym]
-
-      context = resource.context
-
-      relation_name = relationship.relation_name(context: context)
-      records = records_for(resource, relation_name)
-
-      resource_klass = relationship.resource_klass
-
-      filters = options.fetch(:filters, {})
-      unless filters.nil? || filters.empty?
-        records = resource_klass._record_accessor.apply_filters(records, filters, options)
+      def rollback_transaction
+        fail ActiveRecord::Rollback
       end
 
-      records.count(:all)
+      def model_error_messages(model)
+        model.errors.messages
+      end
+
+      def valid?(model, validation_context)
+        model.valid?(validation_context)
+      end
+
+      def save(model, options={})
+        method = options[:raise_on_failure] ? :save! : :save
+        model.public_send(method, options.slice(:validate))
+      end
+
+      def destroy(model, options={})
+        model.destroy
+      end
+
+      def delete_relationship(model, relationship_name, id)
+        model.public_send(relationship_name).delete(id)
+      end
+
+      def reload(model)
+        model.reload
+      end
+
+      def model_base_class
+        ActiveRecord::Base
+      end
+
+      def delete_restriction_error_class
+        ActiveRecord::DeleteRestrictionError
+      end
+
+      def record_not_found_error_class
+        ActiveRecord::RecordNotFound
+      end
+
+      def find_in_association(model, association_name, ids)
+        primary_key = model.class.reflections[association_name.to_s].klass.primary_key
+        model.public_send(association_name).where(primary_key => ids)
+      end
+
+      def add_to_association(model, association_name, association_model)
+        model.public_send(association_name) << association_model
+      end
+
+      def association_model_class_name(from_model, relationship_name)
+        (reflect = from_model.reflect_on_association(relationship_name)) && reflect.class_name
+      end
+
+      def set_primary_keys(model, relationship, value)
+        model.method("#{relationship.foreign_key}=").call(value)
+      end
+
     end
 
-    def foreign_key(resource, relationship_name, options = {})
-      relationship = resource.class._relationships[relationship_name.to_sym]
 
-      if relationship.belongs_to?
-        resource._model.method(relationship.foreign_key).call
-      else
-        records = records_for_relationship(resource, relationship_name, options)
-        return nil if records.nil?
-        records.public_send(relationship.resource_klass._primary_key)
-      end
-    end
-
-    def foreign_keys(resource, relationship_name, options = {})
-      relationship = resource.class._relationships[relationship_name.to_sym]
-
-      records = records_for_relationship(resource, relationship_name, options)
-      records.collect do |record|
-        record.public_send(relationship.resource_klass._primary_key)
-      end
+    # In AR, the .all command will return a chainable relation in which you can attach limit, offset, where, etc.
+    def model_class_relation
+      _resource_klass._model_class.all
     end
 
     # protected-ish methods left public for tests and what not
@@ -141,6 +83,8 @@ module JSONAPI
     def find_serialized_with_caching(filters_or_source, serializer, options = {})
       if filters_or_source.is_a?(ActiveRecord::Relation)
         return cached_resources_for(filters_or_source, serializer, options)
+        # TODO - if we are already in ActiveRecordRecordAccessor, then _resource_klass._model_class
+        # will essentially always support ActiveRelation, right? Maybe we should get rid of this check.
       elsif _resource_klass._model_class.respond_to?(:all) && _resource_klass._model_class.respond_to?(:arel_table)
         records = find_records(filters_or_source, options.except(:include_directives))
         return cached_resources_for(records, serializer, options)
@@ -149,93 +93,6 @@ module JSONAPI
         warn('Caching enabled on model that does not support ActiveRelation')
         # :nocov:
       end
-    end
-
-    def find_by_key_serialized_with_caching(key, serializer, options = {})
-      if _resource_klass._model_class.respond_to?(:all) && _resource_klass._model_class.respond_to?(:arel_table)
-        results = find_serialized_with_caching({ _resource_klass._primary_key => key }, serializer, options)
-        result = results.first
-        fail JSONAPI::Exceptions::RecordNotFound.new(key) if result.nil?
-        return result
-      else
-        # :nocov:
-        warn('Caching enabled on model that does not support ActiveRelation')
-        # :nocov:
-      end
-    end
-
-    def records_for_relationship(resource, relationship_name, options = {})
-      relationship = resource.class._relationships[relationship_name.to_sym]
-
-      context = resource.context
-
-      relation_name = relationship.relation_name(context: context)
-      records = records_for(resource, relation_name)
-
-      resource_klass = relationship.resource_klass
-
-      filters = options.fetch(:filters, {})
-      unless filters.nil? || filters.empty?
-        records = resource_klass._record_accessor.apply_filters(records, filters, options)
-      end
-
-      sort_criteria = options.fetch(:sort_criteria, {})
-      order_options = relationship.resource_klass.construct_order_options(sort_criteria)
-      records = apply_sort(records, order_options, context)
-
-      paginator = options[:paginator]
-      if paginator
-        records = apply_pagination(records, paginator, order_options)
-      end
-
-      records
-    end
-
-    # Implement self.records on the resource if you want to customize the relation for
-    # finder methods (find, find_by_key, find_serialized_with_caching)
-    def records(_options = {})
-      if defined?(_resource_klass.records)
-        _resource_klass.records(_options)
-      else
-        _resource_klass._model_class.all
-      end
-    end
-
-    # Implement records_for on the resource to customize how the associated records
-    # are fetched for a model. Particularly helpful for authorization.
-    def records_for(resource, relation_name)
-      if resource.respond_to?(:records_for)
-        return resource.records_for(relation_name)
-      end
-
-      relationship = resource.class._relationships[relation_name]
-
-      if relationship.is_a?(JSONAPI::Relationship::ToMany)
-        if resource.respond_to?(:"records_for_#{relation_name}")
-          return resource.method(:"records_for_#{relation_name}").call
-        end
-      else
-        if resource.respond_to?(:"record_for_#{relation_name}")
-          return resource.method(:"record_for_#{relation_name}").call
-        end
-      end
-
-      resource._model.public_send(relation_name)
-    end
-
-    def apply_includes(records, options = {})
-      include_directives = options[:include_directives]
-      if include_directives
-        model_includes = resolve_relationship_names_to_relations(_resource_klass, include_directives.model_includes, options)
-        records = records.includes(model_includes)
-      end
-
-      records
-    end
-
-    def apply_pagination(records, paginator, order_options)
-      records = paginator.apply(records, order_options) if paginator
-      records
     end
 
     def apply_sort(records, order_options, context = {})
@@ -258,7 +115,6 @@ module JSONAPI
             end
           end
         end
-
         records
       end
     end
@@ -300,99 +156,36 @@ module JSONAPI
       end
     end
 
-    # Assumes ActiveRecord's counting. Override if you need a different counting method
-    def count_records(records)
-      records.count(:all)
-    end
-
-    def resolve_relationship_names_to_relations(resource_klass, model_includes, options = {})
-      case model_includes
-      when Array
-        return model_includes.map do |value|
-          resolve_relationship_names_to_relations(resource_klass, value, options)
-        end
-      when Hash
-        model_includes.keys.each do |key|
-          relationship = resource_klass._relationships[key]
-          value = model_includes[key]
-          model_includes.delete(key)
-          model_includes[relationship.relation_name(options)] = resolve_relationship_names_to_relations(relationship.resource_klass, value, options)
-        end
-        return model_includes
-      when Symbol
-        relationship = resource_klass._relationships[model_includes]
-        return relationship.relation_name(options)
-      end
-    end
-
-    def apply_filters(records, filters, options = {})
+    def apply_filters_to_many_relationships(records, to_many_filters, options)
       required_includes = []
-
-      if filters
-        filters.each do |filter, value|
-          if _resource_klass._relationships.include?(filter)
-            if _resource_klass._relationships[filter].belongs_to?
-              records = apply_filter(records, _resource_klass._relationships[filter].foreign_key, value, options)
-            else
-              required_includes.push(filter.to_s)
-              records = apply_filter(records, "#{_resource_klass._relationships[filter].table_name}.#{_resource_klass._relationships[filter].primary_key}", value, options)
-            end
-          else
-            records = apply_filter(records, filter, value, options)
-          end
-        end
+      to_many_filters.each do |filter, value|
+        relationship = _resource_klass._relationships[filter]
+        required_includes << filter.to_s
+        records = apply_filter(records, "#{relationship.table_name}.#{relationship.primary_key}", value, options)
       end
 
-      if required_includes.any?
-        records = apply_includes(records, options.merge(include_directives: IncludeDirectives.new(_resource_klass, required_includes, force_eager_load: true)))
-      end
+      records = apply_includes(records, options.merge(include_directives: IncludeDirectives.new(_resource_klass, required_includes, force_eager_load: true)))
 
       records
     end
 
-    def filter_records(filters, options, records = records(options))
-      records = apply_filters(records, filters, options)
-      apply_includes(records, options)
-    end
-
-    def sort_records(records, order_options, context = {})
-      apply_sort(records, order_options, context)
+    # ActiveRecord requires :all to be specified
+    def count_records(records)
+      records.count(:all)
     end
 
     def cached_resources_for(records, serializer, options)
       if _resource_klass.caching?
         t = _resource_klass._model_class.arel_table
-        cache_ids = pluck_arel_attributes(records, t[_resource_klass._primary_key], t[_resource_klass._cache_field])
+        cache_ids = pluck_attributes(records, t[_resource_klass._primary_key], t[_resource_klass._cache_field])
         resources = CachedResourceFragment.fetch_fragments(_resource_klass, serializer, options[:context], cache_ids)
       else
-        resources = _resource_klass.resources_for(records, options[:context]).map { |r| [r.id, r] }.to_h
+        resources = resources_for(records, options[:context]).map { |r| [r.id, r] }.to_h
       end
 
       preload_included_fragments(resources, records, serializer, options)
 
       resources.values
-    end
-
-    def find_records(filters, options = {})
-      if defined?(_resource_klass.find_records)
-        ActiveSupport::Deprecation.warn "In #{_resource_klass.name} you overrode `find_records`. "\
-                                        "`find_records` has been deprecated in favor of using `apply` "\
-                                        "and `verify` callables on the filter."
-
-        _resource_klass.find_records(filters, options)
-      else
-        context = options[:context]
-
-        records = filter_records(filters, options)
-
-        sort_criteria = options.fetch(:sort_criteria) { [] }
-        order_options = _resource_klass.construct_order_options(sort_criteria)
-        records = sort_records(records, order_options, context)
-
-        records = apply_pagination(records, options[:paginator], order_options)
-
-        records
-      end
     end
 
     def preload_included_fragments(resources, records, serializer, options)
@@ -428,7 +221,7 @@ module JSONAPI
         relationship = nil # JSONAPI::Relationship::ToOne for CommentResource.author
         table = nil # people
         assocs_path = [] # [ :posts, :approved_comments, :author ]
-        ar_hash = nil # { :posts => { :approved_comments => :author } }
+        joins_hash = nil # { :posts => { :approved_comments => :author } }
 
         # For each step on the path, figure out what the actual table name/alias in the join
         # will be, and include the primary key of that table in our list of fields to select
@@ -443,10 +236,10 @@ module JSONAPI
           end
           assocs_path << relationship.relation_name(options).to_sym
           # Converts [:a, :b, :c] to Rails-style { :a => { :b => :c }}
-          ar_hash = assocs_path.reverse.reduce { |memo, step| { step => memo } }
+          joins_hash = assocs_path.reverse.reduce { |memo, step| { step => memo } }
           # We can't just look up the table name from the resource class, because Arel could
           # have used a table alias if the relation includes a self-reference.
-          join_source = relation.joins(ar_hash).arel.source.right.reverse.find do |arel_node|
+          join_source = relation.joins(joins_hash).arel.source.right.reverse.find do |arel_node|
             arel_node.is_a?(Arel::Nodes::InnerJoin)
           end
           table = join_source.left
@@ -470,7 +263,7 @@ module JSONAPI
         end
 
         pluck_attrs << table[klass._cache_field] if klass.caching?
-        relation = relation.joins(ar_hash)
+        relation = relation.joins(joins_hash)
         if relationship.is_a?(JSONAPI::Relationship::ToMany)
           # Rails doesn't include order clauses in `joins`, so we have to add that manually here.
           # FIXME Should find a better way to reflect on relationship ordering. :-(
@@ -478,10 +271,9 @@ module JSONAPI
         end
 
         # [[post id, comment id, author id, author updated_at], ...]
-        id_rows = pluck_arel_attributes(relation.joins(ar_hash), *pluck_attrs)
+        id_rows = pluck_attributes(relation.joins(joins_hash), *pluck_attrs)
 
         target_resources[klass.name] ||= {}
-
         if klass.caching?
           sub_cache_ids = id_rows
             .map { |row| row.last(2) }
@@ -512,10 +304,11 @@ module JSONAPI
             end
           end
         end
+
       end
     end
 
-    def pluck_arel_attributes(relation, *attrs)
+    def pluck_attributes(relation, *attrs)
       conn = relation.connection
       quoted_attrs = attrs.map do |attr|
         quoted_table = conn.quote_table_name(attr.relation.table_alias || attr.relation.name)

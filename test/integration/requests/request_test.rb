@@ -5,7 +5,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.json_key_format = :underscored_key
     JSONAPI.configuration.route_format = :underscored_route
     Api::V2::BookResource.paginator :offset
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
   end
 
   def after_teardown
@@ -259,14 +259,14 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_update_relationship_without_content_type
-    ruby = Section.find_by(name: 'ruby')
+    ruby = find_first(Section, name: 'ruby')
     patch '/posts/3/relationships/section', params: { 'data' => {'type' => 'sections', 'id' => ruby.id.to_s }}.to_json
 
     assert_equal 415, status
   end
 
   def test_patch_update_relationship_to_one
-    ruby = Section.find_by(name: 'ruby')
+    ruby = find_first(Section, name: 'ruby')
     patch '/posts/3/relationships/section', params:
       { 'data' => {'type' => 'sections', 'id' => ruby.id.to_s }}.to_json,
           headers: {
@@ -278,7 +278,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_put_update_relationship_to_one
-    ruby = Section.find_by(name: 'ruby')
+    ruby = find_first(Section, name: 'ruby')
     put '/posts/3/relationships/section', params: { 'data' => {'type' => 'sections', 'id' => ruby.id.to_s }}.to_json,
         headers: {
           'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
@@ -291,7 +291,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_patch_update_relationship_to_many_acts_as_set
     # Comments are acts_as_set=false so PUT/PATCH should respond with 403
 
-    rogue = Comment.find_by(body: 'Rogue Comment Here')
+    rogue = find_first(Comment, body: 'Rogue Comment Here')
     patch '/posts/5/relationships/comments', params: { 'data' => [{'type' => 'comments', 'id' => rogue.id.to_s }]}.to_json,
           headers: {
             'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
@@ -302,7 +302,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_post_update_relationship_to_many
-    rogue = Comment.find_by(body: 'Rogue Comment Here')
+    rogue = find_first(Comment, body: 'Rogue Comment Here')
     post '/posts/5/relationships/comments', params: { 'data' => [{'type' => 'comments', 'id' => rogue.id.to_s }]}.to_json,
          headers: {
            'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
@@ -315,7 +315,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_put_update_relationship_to_many_acts_as_set
     # Comments are acts_as_set=false so PUT/PATCH should respond with 403. Note: JR currently treats PUT and PATCH as equivalent
 
-    rogue = Comment.find_by(body: 'Rogue Comment Here')
+    rogue = find_first(Comment, body: 'Rogue Comment Here')
     put '/posts/5/relationships/comments', params: { 'data' => [{'type' => 'comments', 'id' => rogue.id.to_s }]}.to_json,
         headers: {
           'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
@@ -896,7 +896,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_patch_formatted_dasherized_replace_to_many_computed_relation
     $original_test_user = $test_user
-    $test_user = Person.find(5)
+    $test_user = find_first(Person, 5)
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
@@ -955,7 +955,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_post_computed_relation_to_many
     $original_test_user = $test_user
-    $test_user = Person.find(5)
+    $test_user = find_first(Person, 5)
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
@@ -1000,7 +1000,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_patch_to_many_link_computed_relation
     $original_test_user = $test_user
-    $test_user = Person.find(5)
+    $test_user = find_first(Person, 5)
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key

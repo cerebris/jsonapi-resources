@@ -3,7 +3,7 @@ require File.expand_path('../../test_helper', __FILE__)
 class RequestBenchmark < IntegrationBenchmark
   def setup
     super
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
   end
 
   def bench_large_index_request_uncached

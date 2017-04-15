@@ -30,9 +30,8 @@ module Helpers
           resource_classes = ObjectSpace.each_object(Class).select do |klass|
             if klass < JSONAPI::Resource
               # Not using Resource#_model_class to avoid tripping the warning early, which could
-              # cause ResourceTest#test_nil_model_class to fail.
-              model_class = klass._model_name.to_s.safe_constantize
-              if model_class && model_class.respond_to?(:arel_table)
+              # cause ResourceTest#test_nil_model_class to fail, so we check first with safe_constantize.
+              if klass._model_name.to_s.safe_constantize && klass.model_class_compatible_with_record_accessor?
                 next true
               end
             end

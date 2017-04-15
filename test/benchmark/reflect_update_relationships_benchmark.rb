@@ -2,7 +2,7 @@ require File.expand_path('../../test_helper', __FILE__)
 
 class ReflectUpdateRelationshipsBenchmark < IntegrationBenchmark
   def setup
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
   end
 
   def replace_tags
@@ -16,7 +16,7 @@ class ReflectUpdateRelationshipsBenchmark < IntegrationBenchmark
           'Accept' => JSONAPI::MEDIA_TYPE
         }
     assert_response :no_content
-    post_object = Post.find(15)
+    post_object = find_first(Post, 15)
     assert_equal 5, post_object.tags.collect { |tag| tag.id }.length
 
     put '/posts/15/relationships/tags', params:
@@ -29,7 +29,7 @@ class ReflectUpdateRelationshipsBenchmark < IntegrationBenchmark
           'Accept' => JSONAPI::MEDIA_TYPE
         }
     assert_response :no_content
-    post_object = Post.find(15)
+    post_object = find_first(Post, 15)
     assert_equal 3, post_object.tags.collect { |tag| tag.id }.length
   end
 

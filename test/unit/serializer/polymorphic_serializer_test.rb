@@ -5,7 +5,7 @@ require 'json'
 class PolymorphismTest < ActionDispatch::IntegrationTest
   def setup
     @pictures = Picture.all
-    @person = Person.find(1)
+    @person = find_first(Person, 1)
 
     @questions = Question.all
 

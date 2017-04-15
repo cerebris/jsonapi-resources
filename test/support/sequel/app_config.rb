@@ -1,0 +1,1 @@
+JSONAPI.configuration.default_record_accessor_klass = JSONAPI::SequelRecordAccessor

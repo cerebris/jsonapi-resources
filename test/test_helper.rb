@@ -18,18 +18,15 @@ if ENV['COVERAGE']
   end
 end
 
-ENV["ORM"] = "active_record"
+ENV["ORM"] ||= "active_record"
 
+require 'rails'
 require_relative "support/#{ENV["ORM"]}/initialize"
+require_relative "support/inflections"
 require 'rails/test_help'
 require 'minitest/mock'
 require 'jsonapi-resources'
 require 'pry'
-
-require File.expand_path('../helpers/value_matchers', __FILE__)
-require File.expand_path('../helpers/assertions', __FILE__)
-require File.expand_path('../helpers/functional_helpers', __FILE__)
-require File.expand_path('../helpers/configuration_helpers', __FILE__)
 
 Rails.env = 'test'
 
@@ -53,7 +50,7 @@ class TestApp < Rails::Application
 
   config.active_support.test_order = :random
 
-  config.paths["config/database"] = "support/database.yml"
+  config.paths["config/database"] = "support/database/config.yml"
 
   ActiveSupport::Deprecation.silenced = true
 
@@ -191,7 +188,11 @@ end
 
 def assert_query_count(expected, msg = nil, &block)
   @queries = []
-  callback = lambda {|_, _, _, _, payload| @queries.push payload[:sql] }
+  callback = lambda do |_, _, _, _, payload|
+    # Ignore ORM methods to introspect column names and primary keys.
+    # This happens when the Model first has methods accessed on it.
+    @queries.push(payload[:sql]) unless payload[:sql]=~/sqlite_temp_master|PRAGMA/
+  end
   ActiveSupport::Notifications.subscribed(callback, "sql.#{ENV["ORM"]}", &block)
 
   show_queries unless expected == @queries.size
@@ -205,8 +206,22 @@ def show_queries
   end
 end
 
+# For debugging purposes, put in global scope to be used anywhere in the code.
+def show_sql(&block)
+  output_sql = lambda {|_, _, _, _, payload| puts payload[:sql] }
+  ActiveSupport::Notifications.subscribed(output_sql, "sql.#{ENV["ORM"]}", &block)
+end
+
 TestApp.initialize!
 
+require_relative "support/#{ENV["ORM"]}/app_config"
+
+# We used to have the schema in the ActiveRecord schema creation format, but then we would need
+# to reimplement the schema bulider in other ORMs that we are testing. We could always require ActiveRecord
+# for the purposes of schema creation, but then we would have to try to remove ActiveRecord from the global
+# namespace to really have no side-effects when running the specs. The goal of running the specs with other
+# orms is to not have ActiveRecord required in at all.
+require_relative "support/#{ENV["ORM"]}/import_schema"
 require_relative "support/#{ENV["ORM"]}/models"
 require_relative "support/controllers_resources_processors"
 
@@ -410,11 +425,18 @@ end
 # Ensure backward compatibility with Minitest 4
 Minitest::Test = MiniTest::Unit::TestCase unless defined?(Minitest::Test)
 
+require_relative 'helpers/assertions'
+require_relative 'helpers/value_matchers'
+require_relative 'helpers/functional_helpers'
+require_relative 'helpers/configuration_helpers'
+require_relative 'helpers/record_accessor_helpers'
+
 class Minitest::Test
   include Helpers::Assertions
   include Helpers::ValueMatchers
   include Helpers::FunctionalHelpers
   include Helpers::ConfigurationHelpers
+  include Helpers::RecordAccessorHelpers
 
   def run_in_transaction?
     true
@@ -492,15 +514,15 @@ class ActionController::TestCase
     orig_queries = @queries.try(:dup)
     orig_request_headers = @request.headers.dup
 
-    ar_resource_klass = nil
+    resource_class = nil
     modes = {none: [], all: :all}
     if @controller.class.included_modules.include?(JSONAPI::ActsAsResourceController)
-      ar_resource_klass = @controller.send(:resource_klass)
-      if ar_resource_klass._model_class.respond_to?(:arel_table)
-        modes[:root_only] = [ar_resource_klass]
-        modes[:all_but_root] = {except: [ar_resource_klass]}
+      resource_class = @controller.send(:resource_klass)
+      if resource_class.model_class_compatible_with_record_accessor?
+        modes[:root_only] = [resource_class]
+        modes[:all_but_root] = {except: [resource_class]}
       else
-        ar_resource_klass = nil
+        resource_class = nil
       end
     end
 
@@ -533,6 +555,11 @@ class ActionController::TestCase
           response.status,
           "Cache (mode: #{mode}) #{phase} response status must match normal response"
         )
+        # puts "non_caching_response.pretty_inspect"
+        # puts non_caching_response.pretty_inspect
+        # puts "json_response_sans_backtraces.pretty_inspect"
+        # puts json_response_sans_backtraces.pretty_inspect
+        # debugger if @response.body.include?("error")
         assert_equal(
           non_caching_response.pretty_inspect,
           json_response_sans_backtraces.pretty_inspect,
@@ -549,7 +576,7 @@ class ActionController::TestCase
       if mode == :all
         # TODO Should also be caching :show_related_resource (non-plural) action
         if [:index, :show, :show_related_resources].include?(action)
-          if ar_resource_klass && response.status == 200 && json_response["data"].try(:size) > 0
+          if resource_class && response.status == 200 && json_response["data"].try(:size) > 0
             assert_operator(
               cache_activity[:warmup][:total][:misses],
               :>,
@@ -641,4 +668,7 @@ class TitleValueFormatter < JSONAPI::ValueFormatter
   end
 end
 
-require_relative "support/#{ENV["ORM"]}/setup"
+# Implement rollback functionality for each spec. The schema and data is loaded
+# initially via the support/database/dump.sql file and each spec simply runs in a transaction
+# and returns the database to it's current state.
+require_relative "support/#{ENV["ORM"]}/rollback"

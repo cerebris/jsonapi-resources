@@ -15,4 +15,9 @@ namespace :test do
   Rake::TestTask.new(:benchmark) do |t|
     t.pattern = 'test/benchmark/*_benchmark.rb'
   end
+
+  desc "Refresh dump.sql from fixtures and schema."
+  task :refresh_dump do
+    require_relative 'test/support/database/generator'
+  end
 end

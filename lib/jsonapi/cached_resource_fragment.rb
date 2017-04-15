@@ -8,11 +8,10 @@ module JSONAPI
 
       results = self.lookup(resource_klass, serializer_config_key, context, context_key, cache_ids)
 
-      miss_ids = results.select{|k,v| v.nil? }.keys
+      miss_ids = results.select{ |k,v| v.nil? }.keys
       unless miss_ids.empty?
         find_filters = {resource_klass._primary_key => miss_ids.uniq}
-        find_options = {context: context}
-        resource_klass.find(find_filters, find_options).each do |resource|
+        resource_klass.find(find_filters, context: context).each do |resource|
           (id, cr) = write(resource_klass, resource, serializer, serializer_config_key, context, context_key)
           results[id] = cr
         end

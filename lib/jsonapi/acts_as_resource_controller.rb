@@ -96,6 +96,7 @@ module JSONAPI
                 process_operation(op)
               end
             rescue => e
+              debugger if ENV["RAISE"]
               handle_exceptions(e)
             end
           end
@@ -114,7 +115,7 @@ module JSONAPI
     def run_in_transaction(transactional)
       if transactional
         run_callbacks :transaction do
-          resource_klass._record_accessor.transaction do
+          resource_klass._record_accessor_klass.transaction do
             yield
           end
         end
@@ -126,7 +127,7 @@ module JSONAPI
     def rollback_transaction(transactional)
       if transactional
         run_callbacks :rollback do
-          resource_klass._record_accessor.rollback_transaction
+          resource_klass._record_accessor_klass.rollback_transaction
         end
       end
     end

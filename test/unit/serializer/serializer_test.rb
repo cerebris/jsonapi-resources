@@ -4,10 +4,10 @@ require 'json'
 
 class SerializerTest < ActionDispatch::IntegrationTest
   def setup
-    @post = Post.find(1)
-    @fred = Person.find_by(name: 'Fred Reader')
+    @post = find_first(Post, 1)
+    @fred = find_first(Person, name: 'Fred Reader')
 
-    @expense_entry = ExpenseEntry.find(1)
+    @expense_entry = find_first(ExpenseEntry, 1)
 
     JSONAPI.configuration.json_key_format = :camelized_key
     JSONAPI.configuration.route_format = :camelized_route
@@ -530,7 +530,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
   end
 
   def test_serializer_keeps_sorted_order_of_objects_with_self_referential_relationships
-    post1, post2, post3 = Post.find(1), Post.find(2), Post.find(3)
+    post1, post2, post3 = find_first(Post, 1), find_first(Post, 2), find_first(Post, 3)
     post1.parent_post = post3
     ordered_posts = [post1, post2, post3]
     serialized_data = JSONAPI::ResourceSerializer.new(
@@ -672,7 +672,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
   def test_serializer_array_of_resources_always_include_to_one_linkage_data
 
     posts = []
-    Post.find(1, 2).each do |post|
+    find_all(Post, 1, 2).each do |post|
       posts.push PostResource.new(post, nil)
     end
 
@@ -988,7 +988,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
   def test_serializer_always_include_to_one_linkage_data_does_not_load_association
     JSONAPI.configuration.always_include_to_one_linkage_data = true
 
-    post = Post.find(1)
+    post = find_first(Post, 1)
     resource = Api::V1::PostResource.new(post, nil)
     JSONAPI::ResourceSerializer.new(Api::V1::PostResource).serialize_to_hash(resource)
 
@@ -1000,7 +1000,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
   def test_serializer_array_of_resources
 
     posts = []
-    Post.find(1, 2).each do |post|
+    find_all(Post, 1, 2).each do |post|
       posts.push PostResource.new(post, nil)
     end
 
@@ -1275,7 +1275,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
   def test_serializer_array_of_resources_limited_fields
 
     posts = []
-    Post.find(1, 2).each do |post|
+    find_all(Post, 1, 2).each do |post|
       posts.push PostResource.new(post, nil)
     end
 
@@ -1714,7 +1714,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
     serialized = JSONAPI::ResourceSerializer.new(
       Api::V5::AuthorResource,
       include: ['author_detail']
-    ).serialize_to_hash(Api::V5::AuthorResource.new(Person.find(1), nil))
+    ).serialize_to_hash(Api::V5::AuthorResource.new(find_first(Person, 1), nil))
 
     assert_hash_equals(
       {
@@ -1773,7 +1773,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
     serialized = JSONAPI::ResourceSerializer.new(
       Api::V5::AuthorResource,
       include: ['author_detail']
-    ).serialize_to_hash(Api::V5::AuthorResource.new(Person.find(1), nil))
+    ).serialize_to_hash(Api::V5::AuthorResource.new(find_first(Person, 1), nil))
 
     assert_hash_equals(
       {
@@ -2098,7 +2098,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
   def test_custom_links_with_if_condition_equals_true
     serialized_custom_link_resource = JSONAPI::ResourceSerializer
       .new(CustomLinkWithIfCondition, base_url: 'http://example.com')
-      .serialize_to_hash(CustomLinkWithIfCondition.new(Post.find_by(title: "JR Solves your serialization woes!"), {}))
+      .serialize_to_hash(CustomLinkWithIfCondition.new(find_first(Post, title: "JR Solves your serialization woes!"), {}))
 
     custom_link_spec = {
         data: {
@@ -2190,7 +2190,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
   def test_includes_two_relationships_with_same_foreign_key
     serialized_resource = JSONAPI::ResourceSerializer
       .new(PersonWithEvenAndOddPostsResource, include: ['even_posts','odd_posts'])
-      .serialize_to_hash(PersonWithEvenAndOddPostsResource.new(Person.find(1), nil))
+      .serialize_to_hash(PersonWithEvenAndOddPostsResource.new(find_first(Person, 1), nil))
 
     assert_hash_equals(
       {

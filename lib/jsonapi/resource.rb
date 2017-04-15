@@ -117,9 +117,8 @@ module JSONAPI
       self.class.fields
     end
 
-    # Some or
     def model_error_messages
-      self.class._record_accessor.model_error_messages(_model)
+      self.class._record_accessor_klass.model_error_messages(_model)
     end
 
     # Add metadata to validation error objects.
@@ -194,12 +193,12 @@ module JSONAPI
     # end
     # ```
     def _save(validation_context = nil)
-      unless @model.valid?(validation_context)
+      unless self.class._record_accessor_klass.valid?(@model, validation_context)
         fail JSONAPI::Exceptions::ValidationErrors.new(self)
       end
 
-      if defined? @model.save
-        saved = @model.save(validate: false)
+      if defined?(@model.save)
+        saved = self.class._record_accessor_klass.save(@model, validate: false, raise_on_failure: false)
 
         unless saved
           if @model.errors.present?
@@ -211,7 +210,7 @@ module JSONAPI
       else
         saved = true
       end
-      @model.reload if @reload_needed
+      self.class._record_accessor_klass.reload(@model) if @reload_needed
       @reload_needed = false
 
       @save_needed = !saved
@@ -220,12 +219,12 @@ module JSONAPI
     end
 
     def _remove
-      unless @model.destroy
+      unless self.class._record_accessor_klass.destroy(@model, raise_on_failure: false)
         fail JSONAPI::Exceptions::ValidationErrors.new(self)
       end
       :completed
 
-    rescue self.class._record_accessor.delete_restriction_error_class => e
+    rescue self.class._record_accessor_klass.delete_restriction_error_class => e
       fail JSONAPI::Exceptions::RecordLocked.new(e.message)
     end
 
@@ -246,14 +245,14 @@ module JSONAPI
 
       # check if relationship_key_values are already members of this relationship
       relation_name = relationship.relation_name(context: @context)
-      existing_relations = @model.public_send(relation_name).where(relationship.primary_key => relationship_key_values)
+      existing_relations = self.class._record_accessor_klass.find_in_association(@model, relation_name, relationship_key_values)
       if existing_relations.count > 0
         # todo: obscure id so not to leak info
         fail JSONAPI::Exceptions::HasManyRelationExists.new(existing_relations.first.id)
       end
 
       if options[:reflected_source]
-        @model.public_send(relation_name) << options[:reflected_source]._model
+        self.class._record_accessor_klass.add_to_association(@model, relation_name, options[:reflected_source]._model)
         return :completed
       end
 
@@ -278,7 +277,7 @@ module JSONAPI
           end
           @reload_needed = true
         else
-          @model.public_send(relation_name) << related_resource._model
+          self.class._record_accessor_klass.add_to_association(@model, relation_name, related_resource._model)
         end
       end
 
@@ -350,14 +349,13 @@ module JSONAPI
 
         @reload_needed = true
       else
-        @model.public_send(relationship.relation_name(context: @context)).delete(key)
+        self.class._record_accessor_klass.delete_relationship(@model, relationship.relation_name(context: @context).to_s, key)
       end
 
       :completed
-
-    rescue self.class._record_accessor.delete_restriction_error_class => e
+    rescue self.class._record_accessor_klass.delete_restriction_error_class => e
       fail JSONAPI::Exceptions::RecordLocked.new(e.message)
-    rescue self.class._record_accessor.record_not_found_error_class
+    rescue self.class._record_accessor_klass.record_not_found_error_class
       fail JSONAPI::Exceptions::RecordNotFound.new(key)
     end
 
@@ -518,13 +516,19 @@ module JSONAPI
 
         @_attributes ||= {}
         @_attributes[attr] = options
-        define_method attr do
-          @model.public_send(options[:delegate] ? options[:delegate].to_sym : attr)
-        end unless method_defined?(attr)
 
-        define_method "#{attr}=" do |value|
-          @model.public_send("#{options[:delegate] ? options[:delegate].to_sym : attr}=", value)
-        end unless method_defined?("#{attr}=")
+        delegate = lambda do |model|
+          if options[:delegate]
+            options[:delegate].to_sym
+          elsif attr.to_sym == :id
+            model.class.primary_key
+          else
+            attr
+          end
+        end
+
+        define_method(attr) { @model.public_send(delegate[@model]) } unless method_defined?(attr)
+        define_method("#{attr}=") { |value| @model.public_send("#{delegate[@model]}=", value) } unless method_defined?("#{attr}=")
       end
 
       def default_attribute_options
@@ -810,7 +814,7 @@ module JSONAPI
       end
 
       def _record_accessor
-        @_record_accessor = _record_accessor_klass.new(self)
+        @_record_accessor ||= _record_accessor_klass.new(self)
       end
 
       def record_accessor=(record_accessor_klass)
@@ -873,6 +877,10 @@ module JSONAPI
         @model_class
       end
 
+      def model_class_compatible_with_record_accessor?
+        _model_class && _model_class < _record_accessor_klass.model_base_class
+      end
+
       def _allowed_filter?(filter)
         !_allowed_filters[filter].nil?
       end
@@ -915,8 +923,8 @@ module JSONAPI
       #   ResourceBuilder methods
       def define_relationship_methods(relationship_name, relationship_klass, options)
         # Initialize from an ORM model's properties
-        if _model_class && _model_class < _record_accessor.model_base_class &&
-          (association_model_class_name = _record_accessor.association_model_class_name(_model_class, relationship_name))
+        if model_class_compatible_with_record_accessor? &&
+          (association_model_class_name = _record_accessor_klass.association_model_class_name(_model_class, relationship_name))
 
           options = options.reverse_merge(class_name: association_model_class_name)
         end
@@ -942,7 +950,7 @@ module JSONAPI
 
       def define_foreign_key_setter(relationship)
         define_on_resource "#{relationship.foreign_key}=" do |value|
-          _model.method("#{relationship.foreign_key}=").call(value)
+          self.class._record_accessor_klass.set_primary_keys(_model, relationship, value)
         end
       end
 

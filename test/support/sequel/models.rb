@@ -1,28 +1,19 @@
-require 'sequel'
-require 'jsonapi-resources'
-require_relative 'schema'
-
-config = Rails.configuration.database_configuration["test"]
-config["adapter"] = "sqlite" if config["adapter"]=="sqlite3"
-Sequel.connect(config)
-
 Sequel::Model.class_eval do
   plugin :validation_class_methods
   plugin :hook_class_methods
   plugin :timestamps, update_on_create: true
-  plugin :single_table_inheritance, :type
-end
+  plugin :association_pks
+  plugin :association_dependencies
+  plugin :polymorphic
 
-ActiveSupport::Inflector.inflections(:en) do |inflect|
-  inflect.uncountable 'preferences'
-  inflect.irregular 'numero_telefone', 'numeros_telefone'
+  db.integer_booleans = false # Fixtures use 't' and 'f' for true and false (ActiveRecord convention)
 end
 
 ### MODELS
 class Person < Sequel::Model
-  one_to_many :posts, key: 'author_id'
-  one_to_many :comments, key: 'author_id'
-  one_to_many :expense_entries, key: 'employee_id', dependent: :restrict_with_exception
+  one_to_many :posts, key: :author_id
+  one_to_many :comments, key: :author_id
+  one_to_many :expense_entries, key: :employee_id, dependent: :restrict_with_exception
   one_to_many :vehicles
   many_to_one :preferences
   many_to_one :hair_cut
@@ -30,28 +21,28 @@ class Person < Sequel::Model
 
   many_to_many :books, join_table: :book_authors
 
-  one_to_many :even_posts, conditions: 'posts.id % 2 = 0', class: 'Post', key: 'author_id'
-  one_to_many :odd_posts, conditions: 'posts.id % 2 = 1', class: 'Post', key: 'author_id'
+  one_to_many :even_posts, conditions: 'posts.id % 2 = 0', class: 'Post', key: :author_id
+  one_to_many :odd_posts, conditions: 'posts.id % 2 = 1', class: 'Post', key: :author_id
 
   ### Validations
-  validates_presence_of :name, :date_joined
+  validates_presence_of :name, :date_joined, message: "can't be blank"
 end
 
 class AuthorDetail < Sequel::Model
-  many_to_one :author, class: 'Person', key: 'person_id'
+  many_to_one :author, class: 'Person', key: :person_id
 end
 
 class Post < Sequel::Model
-  many_to_one :author, class: 'Person', key: 'author_id'
-  many_to_one :writer, class: 'Person', key: 'author_id'
+  many_to_one :author, class: 'Person', key: :author_id
+  many_to_one :writer, class: 'Person', key: :author_id
   one_to_many :comments
   many_to_many :tags, join_table: :posts_tags
   one_to_many :special_post_tags, source: :tag
-  one_to_many :special_tags, through: :special_post_tags, source: :tag
+  many_to_many :special_tags, join_table: :special_post_tags, right_key: :tag_id
   many_to_one :section
-  one_to_one :parent_post, class: 'Post', key: 'parent_post_id'
+  one_to_one :parent_post, class: 'Post', key: :parent_post_id
 
-  validates_presence_of :author
+  validates_presence_of :author, message: "can't be blank"
   validates_length_of :title, maximum: 35
 
   before_destroy :destroy_callback
@@ -59,15 +50,45 @@ class Post < Sequel::Model
   def destroy_callback
     if title == "can't destroy me"
       errors.add(:title, "can't destroy me")
-
-      # :nocov:
-      if Rails::VERSION::MAJOR >= 5
-        throw(:abort)
-      else
-        return false
-      end
-      # :nocov:
+      false
     end
+  end
+
+  # For specs
+  def tag_ids
+    tag_pks
+  end
+
+  # For specs
+  def comment_ids
+    comment_pks
+  end
+
+end
+
+class PostWithBadAfterSave < Sequel::Model
+  set_dataset :posts
+  after_save :do_some_after_save_stuff
+
+  def do_some_after_save_stuff
+    errors[:base] << 'Boom! Error added in after_save callback.'
+    raise Sequel::ValidationFailed.new(self)
+  end
+end
+
+# Sequel Does Not Support Validation Context
+# class PostWithCustomValidationContext < Sequel::Model
+#   set_dataset :posts
+#   validate :api_specific_check, on: :json_api_create
+#
+#   def api_specific_check
+#     errors[:base] << 'Record is invalid'
+#   end
+# end
+
+module Legacy
+  class FlatPost < Sequel::Model
+    set_dataset :posts
   end
 end
 
@@ -77,12 +98,13 @@ class SpecialPostTag < Sequel::Model
 end
 
 class Comment < Sequel::Model
-  many_to_one :author, class: 'Person', key: 'author_id'
+  many_to_one :author, class: 'Person', key: :author_id
   many_to_one :post
   many_to_many :tags, join_table: :comments_tags
 end
 
 class Company < Sequel::Model
+  plugin :single_table_inheritance, :type
 end
 
 class Firm < Company
@@ -115,12 +137,12 @@ end
 
 class IsoCurrency < Sequel::Model
   set_primary_key :code
-  # one_to_many :expense_entries, key: 'currency_code'
+  # one_to_many :expense_entries, key: :currency_code
 end
 
 class ExpenseEntry < Sequel::Model
-  many_to_one :employee, class: 'Person', key: 'employee_id'
-  many_to_one :iso_currency, key: 'currency_code'
+  many_to_one :employee, class: 'Person', key: :employee_id
+  many_to_one :iso_currency, key: :currency_code
 end
 
 class Planet < Sequel::Model
@@ -132,17 +154,9 @@ class Planet < Sequel::Model
   # Test model callback cancelling save
   before_save :check_not_pluto
 
+  # Pluto can't be a planet, so cancel the save by returning false
   def check_not_pluto
-    # Pluto can't be a planet, so cancel the save
-    if name.downcase == 'pluto'
-      # :nocov:
-      if Rails::VERSION::MAJOR >= 5
-        throw(:abort)
-      else
-        return false
-      end
-      # :nocov:
-    end
+    name.downcase != 'pluto'
   end
 end
 
@@ -163,11 +177,11 @@ class Crater < Sequel::Model
 end
 
 class Preferences < Sequel::Model
-  one_to_one :author, class: 'Person', :inverse_of => 'preferences'
+  one_to_one :author, class: 'Person', :reciprocal => :preferences
 end
 
 class Fact < Sequel::Model
-  validates_presence_of :spouse_name, :bio
+  validates_presence_of :spouse_name, :bio, message: "can't be blank"
 end
 
 class Like < Sequel::Model
@@ -188,7 +202,7 @@ class Breed
 
   attr_accessor :id, :name
 
-  def destroy
+  def destroy(options={})
     $breed_data.remove(@id)
   end
 
@@ -211,22 +225,18 @@ class Book < Sequel::Model
   one_to_many :book_comments
   one_to_many :approved_book_comments, conditions: {approved: true}, class: "BookComment"
 
-  many_to_many :authors, join_table: :book_authors, class: "Person"
+  many_to_many :authors, join_table: :book_authors, right_key: :person_id, class: "Person"
 end
 
 class BookComment < Sequel::Model
-  many_to_one :author, class: 'Person', key: 'author_id'
+  many_to_one :author, class: 'Person', key: :author_id
   many_to_one :book
-
-  def before_save
-    debugger
-  end
 
   def self.for_user(current_user)
     records = self
     # Hide the unapproved comments from people who are not book admins
     unless current_user && current_user.book_admin
-      records = records.where(approved: true)
+      records = records.where(approved: 't')
     end
     records
   end
@@ -261,7 +271,7 @@ end
 class PurchaseOrder < Sequel::Model
   many_to_one :customer
   one_to_many :line_items
-  one_to_many :admin_line_items, class: 'LineItem', key: 'purchase_order_id'
+  one_to_many :admin_line_items, class: 'LineItem', key: :purchase_order_id
 
   many_to_many :order_flags, join_table: :purchase_orders_order_flags
 
@@ -288,6 +298,7 @@ end
 
 class Vehicle < Sequel::Model
   many_to_one :person
+  plugin :single_table_inheritance, :type
 end
 
 class Car < Vehicle
@@ -297,14 +308,14 @@ class Boat < Vehicle
 end
 
 class Document < Sequel::Model
-  one_to_many :pictures, as: :imageable
+  one_to_many :pictures, as: :imageable, reciprocal_type: :many_to_one
 end
 
 class Document::Topic < Document
 end
 
 class Product < Sequel::Model
-  one_to_one :picture, as: :imageable
+  one_to_one :picture, as: :imageable, reciprocal_type: :many_to_one
 end
 
 class Make < Sequel::Model
@@ -326,7 +337,7 @@ class Thing < Sequel::Model
   many_to_one :user
 
   one_to_many :related_things, key: :from_id
-  one_to_many :things, through: :related_things, source: :to
+  many_to_many :things, join_table: :related_things, left_key: :from_id, right_key: :to_id
 end
 
 class RelatedThing < Sequel::Model

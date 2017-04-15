@@ -430,7 +430,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def create_alphabetically_first_user_and_post
     author = Person.create(name: "Aardvark", date_joined: Time.now)
-    author.posts.create(title: "My first post", body: "Hello World")
+    Post.create(title: "My first post", body: "Hello World", author_id: author.id)
   end
 
   def test_sorting_by_relationship_field
@@ -720,8 +720,8 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "author - can't be blank", json_response['errors'][0]['detail']
 
     assert_equal "/data/attributes/title", json_response['errors'][1]['source']['pointer']
-    assert_equal "is too long (maximum is 35 characters)", json_response['errors'][1]['title']
-    assert_equal "title - is too long (maximum is 35 characters)", json_response['errors'][1]['detail']
+    assert_match /is too long( \(maximum is 35 characters\))?/, json_response['errors'][1]['title']
+    assert_match /title - is too long( \(maximum is 35 characters\))?/, json_response['errors'][1]['detail']
     assert_nil response.location
   end
 
@@ -958,7 +958,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_with_links
     set_content_type_header!
-    javascript = Section.find_by(name: 'javascript')
+    javascript = find_first(Section, name: 'javascript')
 
     put :update, params:
       {
@@ -989,7 +989,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_with_internal_server_error
     set_content_type_header!
-    post_object = Post.find(3)
+    post_object = find_first(Post, 3)
     title = post_object.title
 
     put :update, params:
@@ -1005,7 +1005,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response 500
-    post_object = Post.find(3)
+    post_object = find_first(Post, 3)
     assert_equal title, post_object.title
   end
 
@@ -1013,7 +1013,7 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration.raise_if_parameters_not_allowed = false
 
     set_content_type_header!
-    javascript = Section.find_by(name: 'javascript')
+    javascript = find_first(Section, name: 'javascript')
 
     put :update, params:
       {
@@ -1110,27 +1110,27 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_relationship_to_one
     set_content_type_header!
-    ruby = Section.find_by(name: 'ruby')
-    post_object = Post.find(4)
+    ruby = find_first(Section, name: 'ruby')
+    post_object = find_first(Post, 4)
     assert_not_equal ruby.id, post_object.section_id
 
     put :update_relationship, params: {post_id: 4, relationship: 'section', data: {type: 'sections', id: "#{ruby.id}"}}
 
     assert_response :no_content
-    post_object = Post.find(4)
+    post_object = find_first(Post, 4)
     assert_equal ruby.id, post_object.section_id
   end
 
   def test_update_relationship_to_one_nil
     set_content_type_header!
-    ruby = Section.find_by(name: 'ruby')
-    post_object = Post.find(4)
+    ruby = find_first(Section, name: 'ruby')
+    post_object = find_first(Post, 4)
     assert_not_equal ruby.id, post_object.section_id
 
     put :update_relationship, params: {post_id: 4, relationship: 'section', data: nil}
 
     assert_response :no_content
-    post_object = Post.find(4)
+    post_object = find_first(Post, 4)
     assert_nil post_object.section_id
   end
 
@@ -1240,10 +1240,10 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_relationship_to_one_singular_param_id_nil
     set_content_type_header!
-    ruby = Section.find_by(name: 'ruby')
-    post_object = Post.find(3)
+    ruby = find_first(Section, name: 'ruby')
+    post_object = find_first(Post, 3)
     post_object.section = ruby
-    post_object.save!
+    save!(post_object)
 
     put :update_relationship, params: {post_id: 3, relationship: 'section', data: {type: 'sections', id: nil}}
 
@@ -1253,10 +1253,10 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_relationship_to_one_data_nil
     set_content_type_header!
-    ruby = Section.find_by(name: 'ruby')
-    post_object = Post.find(3)
+    ruby = find_first(Section, name: 'ruby')
+    post_object = find_first(Post, 3)
     post_object.section = ruby
-    post_object.save!
+    save!(post_object)
 
     put :update_relationship, params: {post_id: 3, relationship: 'section', data: nil}
 
@@ -1266,29 +1266,29 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_remove_relationship_to_one
     set_content_type_header!
-    ruby = Section.find_by(name: 'ruby')
-    post_object = Post.find(3)
+    ruby = find_first(Section, name: 'ruby')
+    post_object = find_first(Post, 3)
     post_object.section_id = ruby.id
-    post_object.save!
+    save!(post_object)
 
     put :destroy_relationship, params: {post_id: 3, relationship: 'section'}
 
     assert_response :no_content
-    post_object = Post.find(3)
+    post_object = find_first(Post, 3)
     assert_nil post_object.section_id
   end
 
   def test_update_relationship_to_one_singular_param
     set_content_type_header!
-    ruby = Section.find_by(name: 'ruby')
-    post_object = Post.find(3)
+    ruby = find_first(Section, name: 'ruby')
+    post_object = find_first(Post, 3)
     post_object.section_id = nil
-    post_object.save!
+    save!(post_object)
 
     put :update_relationship, params: {post_id: 3, relationship: 'section', data: {type: 'sections', id: "#{ruby.id}"}}
 
     assert_response :no_content
-    post_object = Post.find(3)
+    post_object = find_first(Post, 3)
     assert_equal ruby.id, post_object.section_id
   end
 
@@ -1297,19 +1297,19 @@ class PostsControllerTest < ActionController::TestCase
     put :update_relationship, params: {post_id: 3, relationship: 'tags', data: []}
     assert_response :no_content
 
-    post_object = Post.find(3)
+    post_object = find_first(Post, 3)
     assert_equal 0, post_object.tags.length
 
     put :update_relationship, params: {post_id: 3, relationship: 'tags', data: [{type: 'tags', id: 2}]}
 
     assert_response :no_content
-    post_object = Post.find(3)
+    post_object = find_first(Post, 3)
     assert_equal 1, post_object.tags.length
 
     put :update_relationship, params: {post_id: 3, relationship: 'tags', data: [{type: 'tags', id: 5}]}
 
     assert_response :no_content
-    post_object = Post.find(3)
+    post_object = find_first(Post, 3)
     tags = post_object.tags.collect { |tag| tag.id }
     assert_equal 1, tags.length
     assert matches_array? [5], tags
@@ -1320,7 +1320,7 @@ class PostsControllerTest < ActionController::TestCase
     put :update_relationship, params: {post_id: 3, relationship: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
 
     assert_response :no_content
-    post_object = Post.find(3)
+    post_object = find_first(Post, 3)
     assert_equal 2, post_object.tags.collect { |tag| tag.id }.length
     assert matches_array? [2, 3], post_object.tags.collect { |tag| tag.id }
   end
@@ -1330,14 +1330,14 @@ class PostsControllerTest < ActionController::TestCase
     put :update_relationship, params: {post_id: 3, relationship: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
 
     assert_response :no_content
-    post_object = Post.find(3)
+    post_object = find_first(Post, 3)
     assert_equal 2, post_object.tags.collect { |tag| tag.id }.length
     assert matches_array? [2, 3], post_object.tags.collect { |tag| tag.id }
 
     post :create_relationship, params: {post_id: 3, relationship: 'tags', data: [{type: 'tags', id: 5}]}
 
     assert_response :no_content
-    post_object = Post.find(3)
+    post_object = find_first(Post, 3)
     assert_equal 3, post_object.tags.collect { |tag| tag.id }.length
     assert matches_array? [2, 3, 5], post_object.tags.collect { |tag| tag.id }
   end
@@ -1345,13 +1345,13 @@ class PostsControllerTest < ActionController::TestCase
   def test_create_relationship_to_many_join_table_reflect
     JSONAPI.configuration.use_relationship_reflection = true
     set_content_type_header!
-    post_object = Post.find(15)
+    post_object = find_first(Post, 15)
     assert_equal 5, post_object.tags.collect { |tag| tag.id }.length
 
     put :update_relationship, params: {post_id: 15, relationship: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}, {type: 'tags', id: 4}]}
 
     assert_response :no_content
-    post_object = Post.find(15)
+    post_object = find_first(Post, 15)
     assert_equal 3, post_object.tags.collect { |tag| tag.id }.length
     assert matches_array? [2, 3, 4], post_object.tags.collect { |tag| tag.id }
   ensure
@@ -1393,7 +1393,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_create_relationship_to_many_join_table_no_reflection
     JSONAPI.configuration.use_relationship_reflection = false
     set_content_type_header!
-    p = Post.find(4)
+    p = find_first(Post, 4)
     assert_equal [], p.tag_ids
 
     post :create_relationship, params: {post_id: 4, relationship: 'tags', data: [{type: 'tags', id: 1}, {type: 'tags', id: 2}, {type: 'tags', id: 3}]}
@@ -1408,7 +1408,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_create_relationship_to_many_join_table_reflection
     JSONAPI.configuration.use_relationship_reflection = true
     set_content_type_header!
-    p = Post.find(4)
+    p = find_first(Post, 4)
     assert_equal [], p.tag_ids
 
     post :create_relationship, params: {post_id: 4, relationship: 'tags', data: [{type: 'tags', id: 1}, {type: 'tags', id: 2}, {type: 'tags', id: 3}]}
@@ -1423,7 +1423,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_create_relationship_to_many_no_reflection
     JSONAPI.configuration.use_relationship_reflection = false
     set_content_type_header!
-    p = Post.find(4)
+    p = find_first(Post, 4)
     assert_equal [], p.comment_ids
 
     post :create_relationship, params: {post_id: 4, relationship: 'comments', data: [{type: 'comments', id: 7}, {type: 'comments', id: 8}]}
@@ -1438,7 +1438,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_create_relationship_to_many_reflection
     JSONAPI.configuration.use_relationship_reflection = true
     set_content_type_header!
-    p = Post.find(4)
+    p = find_first(Post, 4)
     assert_equal [], p.comment_ids
 
     post :create_relationship, params: {post_id: 4, relationship: 'comments', data: [{type: 'comments', id: 7}, {type: 'comments', id: 8}]}
@@ -1455,7 +1455,7 @@ class PostsControllerTest < ActionController::TestCase
     put :update_relationship, params: {post_id: 3, relationship: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
 
     assert_response :no_content
-    post_object = Post.find(3)
+    post_object = find_first(Post, 3)
     assert_equal 2, post_object.tags.collect { |tag| tag.id }.length
     assert matches_array? [2, 3], post_object.tags.collect { |tag| tag.id }
 
@@ -1487,7 +1487,7 @@ class PostsControllerTest < ActionController::TestCase
         }
 
     assert_response :no_content
-    p = Post.find(14)
+    p = find_first(Post, 14)
     assert_equal [2, 3, 4], p.tag_ids
 
     delete :destroy_relationship,
@@ -1512,14 +1512,14 @@ class PostsControllerTest < ActionController::TestCase
     post :create_relationship, params: {post_id: 14, relationship: 'special_tags', data: [{type: 'tags', id: 2}]}
 
     #check the relationship was created successfully
-    assert_equal 1, Post.find(14).special_tags.count
-    before_tags = Post.find(14).tags.count
+    assert_equal 1, find_first(Post, 14).special_tags.count
+    before_tags = find_first(Post, 14).tags.count
 
     delete :destroy_relationship, params: {post_id: 14, relationship: 'special_tags', data: [{type: 'tags', id: 2}]}
-    assert_equal 0, Post.find(14).special_tags.count, "Relationship that matches URL relationship not destroyed"
+    assert_equal 0, find_first(Post, 14).special_tags.count, "Relationship that matches URL relationship not destroyed"
 
     #check that the tag association is not affected
-    assert_equal Post.find(14).tags.count, before_tags
+    assert_equal find_first(Post, 14).tags.count, before_tags
   ensure
     PostResource.instance_variable_get(:@_relationships).delete(:special_tags)
   end
@@ -1528,7 +1528,7 @@ class PostsControllerTest < ActionController::TestCase
     set_content_type_header!
     put :update_relationship, params: {post_id: 14, relationship: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
     assert_response :no_content
-    p = Post.find(14)
+    p = find_first(Post, 14)
     assert_equal [2, 3], p.tag_ids
 
     delete :destroy_relationship, params: {post_id: 14, relationship: 'tags', data: [{type: 'tags', id: 4}]}
@@ -1542,7 +1542,7 @@ class PostsControllerTest < ActionController::TestCase
     set_content_type_header!
     put :update_relationship, params: {post_id: 14, relationship: 'tags', data: [{type: 'tags', id: 2}, {type: 'tags', id: 3}]}
     assert_response :no_content
-    p = Post.find(14)
+    p = find_first(Post, 14)
     assert_equal [2, 3], p.tag_ids
 
     put :update_relationship, params: {post_id: 14, relationship: 'tags', data: [] }
@@ -1554,7 +1554,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_mismatch_single_key
     set_content_type_header!
-    javascript = Section.find_by(name: 'javascript')
+    javascript = find_first(Section, name: 'javascript')
 
     put :update, params:
       {
@@ -1578,7 +1578,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_extra_param
     set_content_type_header!
-    javascript = Section.find_by(name: 'javascript')
+    javascript = find_first(Section, name: 'javascript')
 
     put :update, params:
       {
@@ -1603,7 +1603,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_extra_param_in_links
     set_content_type_header!
-    javascript = Section.find_by(name: 'javascript')
+    javascript = find_first(Section, name: 'javascript')
 
     put :update, params:
       {
@@ -1631,7 +1631,6 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration.use_text_errors = true
 
     set_content_type_header!
-    javascript = Section.find_by(name: 'javascript')
 
     put :update, params:
       {
@@ -1660,7 +1659,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_missing_param
     set_content_type_header!
-    javascript = Section.find_by(name: 'javascript')
+    javascript = find_first(Section, name: 'javascript')
 
     put :update, params:
       {
@@ -1701,7 +1700,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_missing_type
     set_content_type_header!
-    javascript = Section.find_by(name: 'javascript')
+    javascript = find_first(Section, name: 'javascript')
 
     put :update, params:
       {
@@ -1725,7 +1724,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_unknown_key
     set_content_type_header!
-    javascript = Section.find_by(name: 'javascript')
+    javascript = find_first(Section, name: 'javascript')
 
     put :update, params:
       {
@@ -1750,7 +1749,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_multiple_ids
     set_content_type_header!
-    javascript = Section.find_by(name: 'javascript')
+    javascript = find_first(Section, name: 'javascript')
 
     put :update, params: {
         id: '3,16',
@@ -1774,7 +1773,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_update_multiple_array
     set_content_type_header!
-    javascript = Section.find_by(name: 'javascript')
+    javascript = find_first(Section, name: 'javascript')
 
     put :update, params:
         {
@@ -1843,7 +1842,8 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_delete_with_validation_error
-    post = Post.create!(title: "can't destroy me", author: Person.first)
+    post = Post.new(title: "can't destroy me", author: Person.first)
+    save!(post)
     delete :destroy, params: { id: post.id }
 
     assert_equal "can't destroy me", json_response['errors'][0]['title']
@@ -2514,7 +2514,7 @@ end
 
 class BooksControllerTest < ActionController::TestCase
   def test_books_include_correct_type
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
     assert_cacheable_get :index, params: {filter: {id: '1'}, include: 'authors'}
     assert_response :success
     assert_equal 'authors', json_response['included'][0]['type']
@@ -2523,23 +2523,22 @@ class BooksControllerTest < ActionController::TestCase
   def test_destroy_relationship_has_and_belongs_to_many
     JSONAPI.configuration.use_relationship_reflection = false
 
-    assert_equal 2, Book.find(2).authors.count
+    assert_equal 2, find_first(Book, 2).authors.count
 
     delete :destroy_relationship, params: {book_id: 2, relationship: 'authors', data: [{type: 'authors', id: 1}]}
     assert_response :no_content
-    assert_equal 1, Book.find(2).authors.count
+    assert_equal 1, find_first(Book, 2).authors.count
   ensure
     JSONAPI.configuration.use_relationship_reflection = false
   end
 
   def test_destroy_relationship_has_and_belongs_to_many_reflect
     JSONAPI.configuration.use_relationship_reflection = true
-
-    assert_equal 2, Book.find(2).authors.count
+    assert_equal 2, find_first(Book, 2).authors.count
 
     delete :destroy_relationship, params: {book_id: 2, relationship: 'authors', data: [{type: 'authors', id: 1}]}
     assert_response :no_content
-    assert_equal 1, Book.find(2).authors.count
+    assert_equal 1, find_first(Book, 2).authors.count
 
   ensure
     JSONAPI.configuration.use_relationship_reflection = false
@@ -2885,7 +2884,7 @@ end
 class Api::V2::BooksControllerTest < ActionController::TestCase
   def setup
     JSONAPI.configuration.json_key_format = :dasherized_key
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
   end
 
   def after_teardown
@@ -2979,7 +2978,6 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
   def test_books_offset_pagination
     Api::V2::BookResource.paginator :offset
-
     assert_cacheable_get :index, params: {page: {offset: 50, limit: 12}}
     assert_response :success
     assert_equal 12, json_response['data'].size
@@ -3106,7 +3104,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   end
 
   def test_books_banned_non_book_admin
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
     Api::V2::BookResource.paginator :offset
     JSONAPI.configuration.top_level_meta_include_record_count = true
     assert_query_count(2) do
@@ -3121,7 +3119,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   end
 
   def test_books_banned_non_book_admin_includes_switched
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
     Api::V2::BookResource.paginator :offset
     JSONAPI.configuration.top_level_meta_include_record_count = true
     assert_query_count(3) do
@@ -3140,7 +3138,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   end
 
   def test_books_banned_non_book_admin_includes_nested_includes
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
     JSONAPI.configuration.top_level_meta_include_record_count = true
     Api::V2::BookResource.paginator :offset
     assert_query_count(4) do
@@ -3156,7 +3154,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   end
 
   def test_books_banned_admin
-    $test_user = Person.find(5)
+    $test_user = find_first(Person, 5)
     Api::V2::BookResource.paginator :offset
     JSONAPI.configuration.top_level_meta_include_record_count = true
     assert_query_count(2) do
@@ -3171,7 +3169,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   end
 
   def test_books_not_banned_admin
-    $test_user = Person.find(5)
+    $test_user = find_first(Person, 5)
     Api::V2::BookResource.paginator :offset
     JSONAPI.configuration.top_level_meta_include_record_count = true
     assert_query_count(2) do
@@ -3186,7 +3184,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   end
 
   def test_books_banned_non_book_admin_overlapped
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
     Api::V2::BookResource.paginator :offset
     JSONAPI.configuration.top_level_meta_include_record_count = true
     assert_query_count(2) do
@@ -3201,7 +3199,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   end
 
   def test_books_included_exclude_unapproved
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
     Api::V2::BookResource.paginator :none
 
     assert_query_count(2) do
@@ -3215,7 +3213,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   end
 
   def test_books_included_all_comments_for_admin
-    $test_user = Person.find(5)
+    $test_user = find_first(Person, 5)
     Api::V2::BookResource.paginator :none
 
     assert_cacheable_get :index, params: {filter: {id: '0,1,2,3,4'}, include: 'book-comments'}
@@ -3227,14 +3225,14 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   end
 
   def test_books_filter_by_book_comment_id_limited_user
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
     assert_cacheable_get :index, params: {filter: {book_comments: '0,52' }}
     assert_response :success
     assert_equal 1, json_response['data'].size
   end
 
   def test_books_filter_by_book_comment_id_admin_user
-    $test_user = Person.find(5)
+    $test_user = find_first(Person, 5)
     assert_cacheable_get :index, params: {filter: {book_comments: '0,52' }}
     assert_response :success
     assert_equal 2, json_response['data'].size
@@ -3242,7 +3240,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
   def test_books_create_unapproved_comment_limited_user_using_relation_name
     set_content_type_header!
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
 
     book_comment = BookComment.create(body: 'Not Approved dummy comment', approved: false)
     post :create_relationship, params: {book_id: 1, relationship: 'book_comments', data: [{type: 'book_comments', id: book_comment.id}]}
@@ -3256,7 +3254,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
   def test_books_create_approved_comment_limited_user_using_relation_name
     set_content_type_header!
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
 
     book_comment = BookComment.create(body: 'Approved dummy comment', approved: true)
     post :create_relationship, params: {book_id: 1, relationship: 'book_comments', data: [{type: 'book_comments', id: book_comment.id}]}
@@ -3267,7 +3265,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   end
 
   def test_books_delete_unapproved_comment_limited_user_using_relation_name
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
 
     book_comment = BookComment.create(book_id: 1, body: 'Not Approved dummy comment', approved: false)
     delete :destroy_relationship, params: {book_id: 1, relationship: 'book_comments', data: [{type: 'book_comments', id: book_comment.id}]}
@@ -3278,7 +3276,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   end
 
   def test_books_delete_approved_comment_limited_user_using_relation_name
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
 
     book_comment = BookComment.create(book_id: 1, body: 'Approved dummy comment', approved: true)
     delete :destroy_relationship, params: {book_id: 1, relationship: 'book_comments', data: [{type: 'book_comments', id: book_comment.id}]}
@@ -3290,7 +3288,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
   def test_books_delete_approved_comment_limited_user_using_relation_name_reflected
     JSONAPI.configuration.use_relationship_reflection = true
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
 
     book_comment = BookComment.create(book_id: 1, body: 'Approved dummy comment', approved: true)
     delete :destroy_relationship, params: {book_id: 1, relationship: 'book_comments', data: [{type: 'book_comments', id: book_comment.id}]}
@@ -3306,11 +3304,11 @@ class Api::V2::BookCommentsControllerTest < ActionController::TestCase
   def setup
     JSONAPI.configuration.json_key_format = :dasherized_key
     Api::V2::BookCommentResource.paginator :none
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
   end
 
   def test_book_comments_all_for_admin
-    $test_user = Person.find(5)
+    $test_user = find_first(Person, 5)
     assert_query_count(1) do
       assert_cacheable_get :index
     end
@@ -3319,7 +3317,7 @@ class Api::V2::BookCommentsControllerTest < ActionController::TestCase
   end
 
   def test_book_comments_unapproved_context_based
-    $test_user = Person.find(5)
+    $test_user = find_first(Person, 5)
     assert_query_count(1) do
       assert_cacheable_get :index, params: {filter: {approved: 'false'}}
     end
@@ -3328,7 +3326,7 @@ class Api::V2::BookCommentsControllerTest < ActionController::TestCase
   end
 
   def test_book_comments_exclude_unapproved_context_based
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
     assert_query_count(1) do
       assert_cacheable_get :index
     end
@@ -3485,7 +3483,7 @@ class Api::V1::CratersControllerTest < ActionController::TestCase
   end
 
   def test_get_related_resources_filtered
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
     get :get_related_resources, params: {moon_id: '1', relationship: 'craters', source: "api/v1/moons", filter: {description: 'Small crater'}}
     assert_response :success
     assert_hash_equals({
@@ -3636,6 +3634,7 @@ class Api::V7::CategoriesControllerTest < ActionController::TestCase
   end
 end
 
+# These specs have ORM-specific implementations, please see support//app_config.rb
 class Api::V6::PostsControllerTest < ActionController::TestCase
   def test_caching_with_join_from_resource_with_sql_fragment
     assert_cacheable_get :index, params: {include: 'section'}

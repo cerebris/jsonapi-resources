@@ -2,7 +2,7 @@ require File.expand_path('../../test_helper', __FILE__)
 
 class ReflectCreateAndDeleteBenchmark < IntegrationBenchmark
   def setup
-    $test_user = Person.find(1)
+    $test_user = find_first(Person, 1)
   end
 
   def create_and_delete_comments
@@ -19,7 +19,7 @@ class ReflectCreateAndDeleteBenchmark < IntegrationBenchmark
           'Accept' => JSONAPI::MEDIA_TYPE
         }
     assert_response :no_content
-    post_object = Post.find(15)
+    post_object = find_first(Post, 15)
     assert_equal 3, post_object.comments.collect { |comment| comment.id }.length
 
     delete '/posts/15/relationships/comments', params:
@@ -35,7 +35,7 @@ class ReflectCreateAndDeleteBenchmark < IntegrationBenchmark
           'Accept' => JSONAPI::MEDIA_TYPE
         }
     assert_response :no_content
-    post_object = Post.find(15)
+    post_object = find_first(Post, 15)
     assert_equal 0, post_object.comments.collect { |comment| comment.id }.length
   end
 

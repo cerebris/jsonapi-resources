@@ -816,12 +816,8 @@ module Api
       filter :banned, apply: :apply_filter_banned
 
       class << self
-        def books
-          Book.arel_table
-        end
-
         def not_banned_books
-          books[:banned].eq(false)
+          {banned: false}
         end
 
         def records(options = {})
@@ -866,12 +862,12 @@ module Api
       }
 
       class << self
-        def book_comments
-          BookComment.arel_table
-        end
+        # def book_comments
+        #   BookComment.arel_table
+        # end
 
         def approved_comments(approved = true)
-          book_comments[:approved].eq(approved)
+          {approved: approved}
         end
 
         def records(options = {})
@@ -962,8 +958,17 @@ module Api
 
     class PostResource < PostResource
       # Test caching with SQL fragments
+      # ---
+      # This is the only resource in the test cases that has an ORM specific implementation
+      # Rather then extracting this out, let's just keep the logic here until we have more ORM-specific
+      # resources and then we can move this PostResource to a "resources.rb" for each ORM type.
+      # That seems like overkill and too much indirection for now, so keeping all resources in one spot.
       def self.records(options = {})
-        _model_class.all.joins('INNER JOIN people on people.id = author_id')
+        if _model_class.respond_to?(:with_sql)
+          _model_class.association_join(:author).select_all(:posts)
+        else
+          _model_class.all.joins('INNER JOIN people on people.id = author_id')
+        end
       end
     end
 
@@ -1101,12 +1106,6 @@ end
 
 module ApiV2Engine
   class PersonResource < JSONAPI::Resource
-  end
-end
-
-module Legacy
-  class FlatPost < ActiveRecord::Base
-    self.table_name = "posts"
   end
 end
 
