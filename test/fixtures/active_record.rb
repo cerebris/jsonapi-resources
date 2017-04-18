@@ -1470,12 +1470,12 @@ module Api
     end
 
     class BookResource < JSONAPI::Resource
-      attribute :title
+      attribute "title"
       attributes :isbn, :banned
 
-      has_many :authors
+      has_many "authors"
 
-      has_many :book_comments, relation_name: -> (options = {}) {
+      has_many "book_comments", relation_name: -> (options = {}) {
         context = options[:context]
         current_user = context ? context[:current_user] : nil
 
@@ -1486,7 +1486,7 @@ module Api
         end
       }, reflect: true
 
-      has_many :aliased_comments, class_name: 'BookComments', relation_name: :approved_book_comments
+      has_many "aliased_comments", class_name: 'BookComments', relation_name: :approved_book_comments
 
       filters :book_comments
       filter :banned, apply: :apply_filter_banned
