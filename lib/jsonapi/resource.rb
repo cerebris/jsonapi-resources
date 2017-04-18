@@ -506,10 +506,12 @@ module JSONAPI
         end
       end
 
-      def attribute(attr, options = {})
+      def attribute(attribute_name, options = {})
+        attr = attribute_name.to_sym
+
         check_reserved_attribute_name(attr)
 
-        if (attr.to_sym == :id) && (options[:format].nil?)
+        if (attr == :id) && (options[:format].nil?)
           ActiveSupport::Deprecation.warn('Id without format is no longer supported. Please remove ids from attributes, or specify a format.')
         end
 
@@ -903,7 +905,8 @@ module JSONAPI
         options = attrs.extract_options!
         options[:parent_resource] = self
 
-        attrs.each do |relationship_name|
+        attrs.each do |name|
+          relationship_name = name.to_sym
           check_reserved_relationship_name(relationship_name)
           check_duplicate_relationship_name(relationship_name)
 
