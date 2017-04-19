@@ -267,7 +267,15 @@ module JSONAPI
           strategy.call(records, value, options)
         end
       else
-        records.where(filter => value)
+        if _resource_klass._relationships.include?(filter)
+          if _resource_klass._relationships[filter].belongs_to?
+            records.where(_resource_klass._relationships[filter].foreign_key => value)
+          else
+            records.where("#{_resource_klass._relationships[filter].table_name}.#{_resource_klass._relationships[filter].primary_key}" => value)
+          end
+        else
+          records.where(filter => value)
+        end
       end
     end
 
@@ -301,21 +309,16 @@ module JSONAPI
 
       if filters
         filters.each do |filter, value|
-          if _resource_klass._relationships.include?(filter)
-            if _resource_klass._relationships[filter].belongs_to?
-              records = apply_filter(records, _resource_klass._relationships[filter].foreign_key, value, options)
-            else
-              required_includes.push(filter.to_s)
-              records = apply_filter(records, "#{_resource_klass._relationships[filter].table_name}.#{_resource_klass._relationships[filter].primary_key}", value, options)
-            end
-          else
-            records = apply_filter(records, filter, value, options)
+          if _resource_klass._relationships.include?(filter) && !_resource_klass._relationships[filter].belongs_to?
+            required_includes.push(filter.to_s)
           end
+
+          records = apply_filter(records, filter, value, options)
         end
       end
 
       if required_includes.any?
-        records = apply_includes(records, options.merge(include_directives: IncludeDirectives.new(_resource_klass, required_includes, force_eager_load: true)))
+        options.merge!(include_directives: IncludeDirectives.new(_resource_klass, required_includes, force_eager_load: true))
       end
 
       records

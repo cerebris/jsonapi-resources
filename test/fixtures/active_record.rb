@@ -1488,7 +1488,11 @@ module Api
 
       has_many :aliased_comments, class_name: 'BookComments', relation_name: :approved_book_comments
 
-      filters :book_comments
+      filter :book_comments,
+              apply: ->(records, value, options) {
+                return records.where('book_comments.id' => value)
+              }
+
       filter :banned, apply: :apply_filter_banned
 
       class << self
