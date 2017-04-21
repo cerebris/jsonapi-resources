@@ -11,6 +11,7 @@ module JSONAPI
       #   @param [Proc] apply Proc with custom action logic | receive: model, context, data
       #   @param [Symbol] method a name of the method with logic of custom action | default: custom action :name
       #   @param [Symbol] level a level of custom action :instance or :collection | default: :instance
+      #   @param [String] includes includes for resource eg. 'user,project.owner'
       # @return [nil]
       def custom_action(name, options = {})
         @_custom_actions ||= {}
@@ -20,7 +21,8 @@ module JSONAPI
           type: options[:type] || :get,
           apply: options[:apply],
           method: options[:method] || name,
-          level: options[:level] || :instance
+          level: options[:level] || :instance,
+          includes: options[:includes]
         }
 
         define_jsonapi_resources_callbacks "#{name}_action"
