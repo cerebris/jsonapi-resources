@@ -1,0 +1,86 @@
+module JSONAPI
+  class RequestParser
+    # It setups custom_actions action for RequestParser
+    #
+    # @param [Hash] params Controller's action params
+    # @param [Class] resource_klass class of the hitted resource
+    # @return [Operation] operation instance
+    def setup_custom_actions_action(params, resource_klass)
+      action_resource = custom_action_resource(params[resource_klass._as_parent_key], resource_klass)
+      custom_action = params.require(:custom_action)
+      data = transform_data(params[:data])
+
+      action_result = resolve_custom_action(custom_action[:method], action_resource, data)
+
+      resource_klass = result_klass(resource_klass, action_result)
+      options = operation_params(resource_klass, custom_action[:includes])
+
+      case action_result
+      when ActiveRecord::Relation
+        return action_operation(resource_klass, options.merge({ results: action_result }), false)
+      when ActiveRecord::Base
+        return action_operation(resource_klass, options.merge({ id: action_result.id }))
+      end
+
+      action_operation(resource_klass, id: nil, context: @context)
+    end
+
+    private
+
+    def transform_data(data)
+      data.is_a?(Hash) ? data.deep_transform_keys { |key| unformat_key(key) } : {}
+    end
+
+    def action_operation(resource_klass, options, instance = true)
+      action_name = instance ? :custom_actions_instance : :custom_actions_collection
+      JSONAPI::Operation.new(action_name, resource_klass, options)
+    end
+
+    def result_klass(resource_klass, result)
+      begin
+        case result
+        when ActiveRecord::Relation
+          return resource_klass.resource_klass_for(result.klass.to_s)
+        when ActiveRecord::Base
+          return resource_klass.resource_klass_for_model(result)
+        end
+      rescue
+        nil
+      end
+
+      resource_klass
+    end
+
+    def operation_params(resource_klass, actions_includes)
+      includes = if params[:include].present?
+        params[:include]
+      elsif actions_includes === true
+        includable_string(resource_klass)
+      elsif actions_includes.present?
+        actions_includes
+      end
+
+      {
+        include_directives: parse_include_directives(resource_klass, includes),
+        fields: parse_fields(resource_klass, params[:fields]),
+        context: @context
+      }
+    end
+
+    def custom_action_resource(resource_id, resource_klass)
+      resource_id ? resource_klass.find_by_key(resource_id, context: @context) : resource_klass.new(nil, @context)
+    end
+
+    def resolve_custom_action(action_method, resource, data)
+      result = resource.call_custom_action(action_method, data)
+      return result unless result && result.try(:errors).present?
+
+      attribute, value = result.errors.first
+      raise JSONAPI::Exceptions::InvalidFieldValue.new(attribute, value)
+    end
+
+    def includable_string(resource_klass)
+      resource_klass.includable_relationship_names.map { |key| format_key(key) }.join(',')
+    end
+  end
+end

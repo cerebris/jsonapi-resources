@@ -1,0 +1,69 @@
+module JSONAPI
+  class Resource
+    class << self
+      attr_accessor :_custom_actions
+
+      # It define custom action for the resource
+      #
+      # @param [String, Symbol] name name of the custom action
+      # @param [Hash, nil] options = {} you can pass optional custom actions options
+      #   @param [Symbol] type request type eg. :get, :post, :put | default: :get
+      #   @param [Proc] apply Proc with custom action logic | receive: model, context, data
+      #   @param [Symbol] method a name of the method with logic of custom action | default: custom action :name
+      #   @param [Symbol] level a level of custom action :instance or :collection | default: :instance
+      # @return [nil]
+      def custom_action(name, options = {})
+        @_custom_actions ||= {}
+
+        @_custom_actions[name.to_sym] = {
+          name: name,
+          type: options[:type] || :get,
+          apply: options[:apply],
+          method: options[:method] || name,
+          level: options[:level] || :instance
+        }
+
+        define_jsonapi_resources_callbacks "#{name}_action"
+      end
+
+      # @return [Array] names of available includes
+      def includable_relationship_names
+        _relationships.keys.map { |key| key.to_s }
+      end
+    end
+
+    define_jsonapi_resources_callbacks :custom_actions
+
+    # It is resolving custom action logic and running callbacks for given custom action
+    #
+    # @param [String, Symbol] name of custom action
+    # @param [Hash] data = {} params which will be passed to custom action | default: {}
+    # @return result of custom action
+    def call_custom_action(name, data = {})
+      custom_action = self.class._custom_actions[name]
+      return unless custom_action
+
+      result = nil
+      @custom_action = custom_action
+
+      run_callbacks :custom_actions do
+        run_callbacks "#{name}_action" do
+          result = _call_custom_action(custom_action, ActionController::Parameters.new(data))
+        end
+      end
+
+      @custom_action = nil
+      result
+    end
+
+    private
+
+    def _call_custom_action(custom_action, data)
+      if custom_action[:apply]
+        custom_action[:apply].call(@model, context, data)
+      elsif custom_action[:method]
+        send(custom_action[:method], data)
+      end
+    end
+  end
+end
