@@ -81,6 +81,11 @@ module JSONAPI
       hits = JSONAPI.configuration.resource_cache.read_multi(*keys).reject{|_,v| v.nil? }
       return keys.each_with_object({}) do |key, hash|
         (_, id, _, _) = key
+
+        if JSONAPI.configuration.resource_cache_key_format_function
+          key = JSONAPI.configuration.resource_cache_key_format_function(key)
+        end
+
         if hits.has_key?(key)
           hash[id] = self.from_cache_value(resource_klass, context, hits[key])
         else
