@@ -11,8 +11,11 @@ module ActionDispatch
           resource_klass._custom_actions.each_value do |custom_action|
             path = format_route(custom_action[:name])
 
-            return unless custom_action[:level] === :instance
-            match path, to: "#{@resource_type}#custom_actions", via: [custom_action[:type]], custom_action: custom_action
+            next unless custom_action[:level] == :instance
+            match path,
+                  to: "#{@resource_type}#custom_actions",
+                  via: [custom_action[:type]],
+                  custom_action: custom_action
           end
         end
 
@@ -23,8 +26,11 @@ module ActionDispatch
           resource_klass._custom_actions.each_value do |custom_action|
             path = format_route(custom_action[:name])
 
-            next unless custom_action[:level] === :collection
-            match "#{@resource_type}/#{path}", to: "#{@resource_type}#custom_actions", via: [custom_action[:type]], custom_action: custom_action
+            next unless custom_action[:level] == :collection
+            match "#{@resource_type}/#{path}",
+                  to: "#{@resource_type}#custom_actions",
+                  via: [custom_action[:type]],
+                  custom_action: custom_action
           end
         end
       end

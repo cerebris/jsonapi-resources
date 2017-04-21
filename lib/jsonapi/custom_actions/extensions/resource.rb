@@ -30,7 +30,7 @@ module JSONAPI
 
       # @return [Array] names of available includes
       def includable_relationship_names
-        _relationships.keys.map { |key| key.to_s }
+        _relationships.keys.map(&:to_s)
       end
     end
 
@@ -42,11 +42,18 @@ module JSONAPI
     # @param [Hash] data = {} params which will be passed to custom action | default: {}
     # @return result of custom action
     def call_custom_action(name, data = {})
-      custom_action = self.class._custom_actions[name]
-      return unless custom_action
+      @custom_action = self.class._custom_actions[name]
+      return unless @custom_action
 
+      run_custom_actions_callbacks(name, @custom_action, data).tap do
+        @custom_action = nil
+      end
+    end
+
+    private
+
+    def run_custom_actions_callbacks(name, custom_action, data)
       result = nil
-      @custom_action = custom_action
 
       run_callbacks :custom_actions do
         run_callbacks "#{name}_action" do
@@ -54,11 +61,8 @@ module JSONAPI
         end
       end
 
-      @custom_action = nil
       result
     end
-
-    private
 
     def _call_custom_action(custom_action, data)
       if custom_action[:apply]

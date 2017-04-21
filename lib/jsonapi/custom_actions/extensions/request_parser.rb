@@ -15,17 +15,21 @@ module JSONAPI
       resource_klass = result_klass(resource_klass, action_result)
       options = operation_params(resource_klass, custom_action[:includes])
 
+      resolve_operation(action_result, resource_klass, options)
+    end
+
+    private
+
+    def resolve_operation(action_result, resource_klass, options)
       case action_result
       when ActiveRecord::Relation
-        return action_operation(resource_klass, options.merge({ results: action_result }), false)
+        return action_operation(resource_klass, options.merge(results: action_result), false)
       when ActiveRecord::Base
-        return action_operation(resource_klass, options.merge({ id: action_result.id }))
+        return action_operation(resource_klass, options.merge(id: action_result.id))
       end
 
       action_operation(resource_klass, id: nil, context: @context)
     end
-
-    private
 
     def transform_data(data)
       data.is_a?(Hash) ? data.deep_transform_keys { |key| unformat_key(key) } : {}
@@ -51,20 +55,24 @@ module JSONAPI
       resource_klass
     end
 
-    def operation_params(resource_klass, actions_includes)
-      includes = if params[:include].present?
-        params[:include]
-      elsif actions_includes === true
-        includable_string(resource_klass)
-      elsif actions_includes.present?
-        actions_includes
-      end
+    def operation_params(resource_klass, action_includes)
+      includes = request_includes(resource_klass, action_includes)
 
       {
         include_directives: parse_include_directives(resource_klass, includes),
         fields: parse_fields(resource_klass, params[:fields]),
         context: @context
       }
+    end
+
+    def request_includes(resource_klass, action_includes)
+      if params[:include].present?
+        params[:include]
+      elsif action_includes == true
+        includable_string(resource_klass)
+      elsif action_includes.present?
+        action_includes
+      end
     end
 
     def custom_action_resource(resource_id, resource_klass)
