@@ -30,11 +30,7 @@ module JSONAPI
       {
         context: context,
         fields: params[:fields],
-        include_directives: params[:include_directives],
-        caching: {
-          cache_serializer_output: params[:cache_serializer_output],
-          serializer: params[:serializer]
-        }
+        include_directives: params[:include_directives]
       }
     end
   end
