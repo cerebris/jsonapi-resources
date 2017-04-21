@@ -210,28 +210,26 @@ module JSONAPI
     end
 
     def apply_sort(records, order_options, context = {})
-      if defined?(_resource_klass.apply_sort)
-        _resource_klass.apply_sort(records, order_options, context)
-      else
-        if order_options.any?
-          order_options.each_pair do |field, direction|
-            if field.to_s.include?(".")
-              *model_names, column_name = field.split(".")
+      if order_options.any?
+        order_options.each_pair do |field, direction|
+          if field.to_s.include?(".")
+            *model_names, column_name = field.split(".")
 
-              associations = _lookup_association_chain([records.model.to_s, *model_names])
-              joins_query = _build_joins([records.model, *associations])
+            associations = _lookup_association_chain([records.model.to_s, *model_names])
+            joins_query = _build_joins([records.model, *associations])
 
-              # _sorting is appended to avoid name clashes with manual joins eg. overridden filters
-              order_by_query = "#{associations.last.name}_sorting.#{column_name} #{direction}"
-              records = records.joins(joins_query).order(order_by_query)
-            else
-              records = records.order(field => direction)
-            end
+            # _sorting is appended to avoid name clashes with manual joins eg. overridden filters
+            order_by_query = "#{associations.last.name}_sorting.#{column_name} #{direction}"
+            records = records.joins(joins_query).order(order_by_query)
+          else
+            records = records.order(field => direction)
           end
         end
-
-        records
       end
+
+      return records unless defined?(_resource_klass.apply_sort)
+      custom_sort = _resource_klass.apply_sort(records, order_options, context)
+      custom_sort.nil? ? records : custom_sort
     end
 
     def _lookup_association_chain(model_names)
@@ -472,7 +470,7 @@ module JSONAPI
         next unless src_res
         fragment = target_resources[tgt_id]
         next unless fragment
-        src_res.preloaded_fragments[serialized_rel_name][tgt_id] = fragment 
+        src_res.preloaded_fragments[serialized_rel_name][tgt_id] = fragment
       end
     end
 
