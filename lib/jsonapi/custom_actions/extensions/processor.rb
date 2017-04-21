@@ -2,7 +2,7 @@ module JSONAPI
   class Processor
     define_jsonapi_resources_callbacks :custom_actions_instance, :custom_actions_collection
 
-    # Processing custom actions on instance level
+    # Processing custom actions results for model instance or other classes
     # It will handle for example: api/v1/posts/1/publish
     #
     # @return [ResourceOperationResult]
@@ -15,7 +15,7 @@ module JSONAPI
       JSONAPI::ResourceOperationResult.new(:ok, resource, result_options)
     end
 
-    # Processing custom actions on collection level
+    # Processing custom actions results for models collections
     # It will handle for example: api/v1/posts/remove-all
     #
     # @return [ResourceOperationResult]
