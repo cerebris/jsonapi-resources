@@ -57,7 +57,7 @@ module JSONAPI
 
       run_callbacks :custom_actions do
         run_callbacks "#{name}_action" do
-          result = _call_custom_action(custom_action, ActionController::Parameters.new(data))
+          result = _call_custom_action(custom_action, data)
         end
       end
 

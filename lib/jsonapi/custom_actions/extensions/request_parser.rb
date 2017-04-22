@@ -8,9 +8,9 @@ module JSONAPI
     def setup_custom_actions_action(params, resource_klass)
       action_resource = custom_action_resource(params[resource_klass._as_parent_key], resource_klass)
       custom_action = params.require(:custom_action)
-      data = transform_data(params[:data])
+      data = params[:data]
 
-      action_result = resolve_custom_action(custom_action[:method], action_resource, data)
+      action_result = resolve_custom_action(custom_action[:name], action_resource, data)
 
       resource_klass = result_klass(resource_klass, action_result)
       options = operation_params(resource_klass, custom_action[:includes])
@@ -41,18 +41,14 @@ module JSONAPI
     end
 
     def result_klass(resource_klass, result)
-      begin
-        case result
-        when ActiveRecord::Relation
-          return resource_klass.resource_klass_for(result.klass.to_s)
-        when ActiveRecord::Base
-          return resource_klass.resource_klass_for_model(result)
-        end
-      rescue
-        nil
-      end
+      return resource_klass unless result
 
-      resource_klass
+      case result
+      when ActiveRecord::Relation
+        resource_klass.resource_klass_for(result.klass.to_s)
+      when ActiveRecord::Base
+        resource_klass.resource_klass_for_model(result)
+      end
     end
 
     def operation_params(resource_klass, action_includes)
