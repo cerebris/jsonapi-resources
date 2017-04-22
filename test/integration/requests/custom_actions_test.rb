@@ -69,10 +69,6 @@ module Api
           author: Person.create(name: 'Test', date_joined: 1.days.ago)
         )
       end
-
-      # parsing params from custom action
-      # callbacks (before/after/around_{action_name}_action)
-      # callbacks (around/before/after_custom_actions)
     end
   end
 end
@@ -95,7 +91,7 @@ TestApp.routes.draw do
   end
 end
 
-class RequestTest < ActionDispatch::IntegrationTest
+class CustomActionsTest < ActionDispatch::IntegrationTest
   def setup
     JSONAPI.configuration.json_key_format = :underscored_key
     JSONAPI.configuration.route_format = :underscored_route
