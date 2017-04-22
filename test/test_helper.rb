@@ -357,6 +357,12 @@ TestApp.routes.draw do
     namespace :v8 do
       jsonapi_resources :numeros_telefone
     end
+
+    namespace :custom_actions do
+      jsonapi_resources :posts do
+        jsonapi_custom_actions
+      end
+    end
   end
 
   namespace :admin_api do
