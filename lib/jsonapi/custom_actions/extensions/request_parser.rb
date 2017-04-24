@@ -8,7 +8,7 @@ module JSONAPI
     def setup_custom_actions_action(params, resource_klass)
       action_resource = custom_action_resource(params[resource_klass._as_parent_key], resource_klass)
       custom_action = params.require(:custom_action)
-      data = params[:data]
+      data = transform_data(params[:data])
 
       action_result = resolve_custom_action(custom_action[:name], action_resource, data)
 
@@ -32,7 +32,7 @@ module JSONAPI
     end
 
     def transform_data(data)
-      data.is_a?(Hash) ? data.deep_transform_keys { |key| unformat_key(key) } : {}
+      data.nil? ? {} : data.deep_transform_keys { |key| unformat_key(key) }
     end
 
     def action_operation(resource_klass, options, instance = true)
@@ -43,12 +43,18 @@ module JSONAPI
     def result_klass(resource_klass, result)
       return resource_klass unless result
 
-      case result
-      when ActiveRecord::Relation
-        resource_klass.resource_klass_for(result.klass.to_s)
-      when ActiveRecord::Base
-        resource_klass.resource_klass_for_model(result)
+      begin
+        case result
+        when ActiveRecord::Relation
+          return resource_klass.resource_klass_for(result.klass.to_s)
+        when ActiveRecord::Base
+          return resource_klass.resource_klass_for_model(result)
+        end
+      rescue
+        nil
       end
+
+      resource_klass
     end
 
     def operation_params(resource_klass, action_includes)

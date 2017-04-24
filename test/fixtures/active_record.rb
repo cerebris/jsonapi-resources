@@ -1748,6 +1748,7 @@ module Api
 
   module CustomActions
     class CommentResource < Api::V1::CommentResource; end;
+    class NotResource < Post; end;
     class PersonResource < Api::V1::PersonResource; end;
     class PostResource < Api::V1::PostResource
       custom_action :favorite, type: :get, apply: (lambda do |model, context, data| # you can use apply with lambda
@@ -1796,10 +1797,16 @@ module Api
         Post.last
       end
 
+      custom_action :not_resource
+
+      def not_resource(data)
+        NotResource.new
+      end
+
       custom_action :custom_draft, type: :put
 
       def custom_draft(data)
-        title = data.require(:attributes).permit(:title)[:title] # strong params keeps you safer
+        title = data.require(:user_title) # strong params keeps you safer
         Post.create(
           title: title,
           author: Person.create(name: 'Test', date_joined: 1.days.ago)
