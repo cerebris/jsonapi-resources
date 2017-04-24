@@ -92,6 +92,15 @@ module JSONAPI
 end
 
 class UnderscoredKeyFormatter < JSONAPI::KeyFormatter
+  class << self
+    def format(key)
+      super.underscore
+    end
+
+    def unformat(formatted_key)
+      formatted_key.to_s.underscore
+    end
+  end
 end
 
 class CamelizedKeyFormatter < JSONAPI::KeyFormatter
@@ -142,6 +151,15 @@ class IdValueFormatter < JSONAPI::ValueFormatter
 end
 
 class UnderscoredRouteFormatter < JSONAPI::RouteFormatter
+  class << self
+    def format(_route)
+      super.underscore
+    end
+
+    def unformat(formatted_route)
+      formatted_route.to_s.underscore
+    end
+  end
 end
 
 class CamelizedRouteFormatter < JSONAPI::RouteFormatter

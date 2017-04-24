@@ -12,6 +12,13 @@ class CustomActionsTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.route_format = :underscored_route
   end
 
+  def test_custom_action_not_resource
+    http_request(path: '/api/custom_actions/posts/1/not_resource')
+
+    assert_equal json_response, {}
+    assert_equal 202, status
+  end
+
   def test_custom_action_instance_get
     first_post = Post.first
     http_request(path: '/api/custom_actions/posts/1/favorite')
@@ -24,8 +31,6 @@ class CustomActionsTest < ActionDispatch::IntegrationTest
     assert_difference 'Post.count', 1, 'should spawn a new Post' do
       http_request(method: :post, path: '/api/custom_actions/posts/1/draft')
     end
-
-    last_post = Post.last
 
     assert_equal response_data_attributes['title'], 'Custom action post'
     assert_equal 200, status
@@ -96,11 +101,9 @@ class CustomActionsTest < ActionDispatch::IntegrationTest
 
   def test_custom_action_instance_post_custom_attributes
     assert_difference 'Post.count', 1, 'should spawn a new Post' do
-      data = { "data" => { "type" => "posts", "attributes" => { "title" => "Hell yeaah!" } } }
+      data = { "data" => { "user-title": 'Hell yeaah!' } }
       http_request(method: :put, path: '/api/custom_actions/posts/1/custom_draft', params: data)
     end
-
-    last_post = Post.last
 
     assert_equal response_data_attributes['title'], 'Hell yeaah!'
     assert_equal 200, status
