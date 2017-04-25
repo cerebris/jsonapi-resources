@@ -101,7 +101,7 @@ class CustomActionsTest < ActionDispatch::IntegrationTest
 
   def test_custom_action_instance_post_custom_attributes
     assert_difference 'Post.count', 1, 'should spawn a new Post' do
-      data = { "data" => { "user-title": 'Hell yeaah!' } }
+      data = { "data" => { "user-title" => 'Hell yeaah!' } }
       http_request(method: :put, path: '/api/custom_actions/posts/1/custom_draft', params: data)
     end
 
