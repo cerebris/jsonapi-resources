@@ -212,9 +212,13 @@ module JSONAPI
     def apply_sort(records, order_options, context = {})
       if defined?(_resource_klass.apply_sort)
         custom_sort = _resource_klass.apply_sort(records, order_options, context)
-        records = custom_sort unless custom_sort.nil?
+        custom_sort.nil? ? default_sort(records, order_options) : custom_sort
+      else
+        default_sort(records, order_options)
       end
+    end
 
+    def default_sort(records, order_options)
       if order_options.any?
         order_options.each_pair do |field, direction|
           if field.to_s.include?(".")
