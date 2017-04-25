@@ -210,6 +210,11 @@ module JSONAPI
     end
 
     def apply_sort(records, order_options, context = {})
+      if defined?(_resource_klass.apply_sort)
+        custom_sort = _resource_klass.apply_sort(records, order_options, context)
+        records = custom_sort unless custom_sort.nil?
+      end
+
       if order_options.any?
         order_options.each_pair do |field, direction|
           if field.to_s.include?(".")
@@ -227,9 +232,7 @@ module JSONAPI
         end
       end
 
-      return records unless defined?(_resource_klass.apply_sort)
-      custom_sort = _resource_klass.apply_sort(records, order_options, context)
-      custom_sort.nil? ? records : custom_sort
+      records
     end
 
     def _lookup_association_chain(model_names)
