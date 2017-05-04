@@ -2043,13 +2043,24 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     assert_cacheable_get :show, params: {id: 1, include: 'isoCurrencies,employees'}
     assert_response :bad_request
     assert_match /isoCurrencies is not a valid relationship of expenseEntries/, json_response['errors'][0]['detail']
-    assert_match /employees is not a valid relationship of expenseEntries/, json_response['errors'][1]['detail']
   end
 
   def test_expense_entries_show_bad_include_missing_sub_relationship
     assert_cacheable_get :show, params: {id: 1, include: 'isoCurrency,employee.post'}
     assert_response :bad_request
     assert_match /post is not a valid relationship of people/, json_response['errors'][0]['detail']
+  end
+
+  def test_invalid_include
+    assert_cacheable_get :index, params: {include: 'invalid../../../../'}
+    assert_response :bad_request
+    assert_match /invalid is not a valid relationship of expenseEntries/, json_response['errors'][0]['detail']
+  end
+
+  def test_invalid_include_long_garbage_string
+    assert_cacheable_get :index, params: {include: 'invalid.foo.bar.dfsdfs,dfsdfs.sdfwe.ewrerw.erwrewrew'}
+    assert_response :bad_request
+    assert_match /invalid is not a valid relationship of expenseEntries/, json_response['errors'][0]['detail']
   end
 
   def test_expense_entries_show_fields
