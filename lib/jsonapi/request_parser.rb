@@ -331,8 +331,7 @@ module JSONAPI
                         include_parts.last.partition('.'))
         end
       else
-        @errors.concat(JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type),
-                                                               include_parts.first).errors)
+        fail JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type), include_parts.first)
       end
     end
 
@@ -352,12 +351,17 @@ module JSONAPI
 
       return if included_resources.nil?
 
-      result = included_resources.compact.map do |included_resource|
-        check_include(resource_klass, included_resource.partition('.'))
-        unformat_key(included_resource).to_s
-      end
+      begin
+        result = included_resources.compact.map do |included_resource|
+          check_include(resource_klass, included_resource.partition('.'))
+          unformat_key(included_resource).to_s
+        end
 
-      JSONAPI::IncludeDirectives.new(resource_klass, result)
+        return JSONAPI::IncludeDirectives.new(resource_klass, result)
+      rescue JSONAPI::Exceptions::InvalidInclude => e
+        @errors.concat(e.errors)
+        return {}
+      end
     end
 
     def parse_filters(resource_klass, filters)
