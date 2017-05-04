@@ -129,16 +129,17 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       }
     )
 
-    request = JSONAPI::RequestParser.new(
-      params,
-      {
-        context: nil,
-        key_formatter: JSONAPI::Formatter.formatter_for(:dasherized_key)
-      }
-    )
-
-    refute request.errors.empty?
-    assert_equal 'iso_currency is not a valid field for expense-entries.', request.errors[0].detail
+    e = assert_raises JSONAPI::Exceptions::InvalidField do
+      JSONAPI::RequestParser.new(
+        params,
+        {
+          context: nil,
+          key_formatter: JSONAPI::Formatter.formatter_for(:dasherized_key)
+        }
+      )
+    end
+    refute e.errors.empty?
+    assert_equal 'iso_currency is not a valid field for expense-entries.', e.errors[0].detail
   end
 
   def test_parse_dasherized_with_underscored_resource
@@ -152,16 +153,18 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       }
     )
 
-    request = JSONAPI::RequestParser.new(
-      params,
-      {
-        context: nil,
-        key_formatter: JSONAPI::Formatter.formatter_for(:dasherized_key)
-      }
-    )
-
-    refute request.errors.empty?
-    assert_equal 'expense_entries is not a valid resource.', request.errors[0].detail
+    e = assert_raises JSONAPI::Exceptions::InvalidResource do
+      JSONAPI::RequestParser.new(
+        params,
+        {
+          context: nil,
+          key_formatter: JSONAPI::Formatter.formatter_for(:dasherized_key)
+        }
+      )
+      parse_fields(params[:fields])
+    end
+    refute e.errors.empty?
+    assert_equal 'expense_entries is not a valid resource.', e.errors[0].detail
   end
 
   def test_parse_filters_with_valid_filters
@@ -173,10 +176,10 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
 
   def test_parse_filters_with_non_valid_filter
     setup_request
-    @request.parse_filters({breed: 'Whiskers'}) # breed is not a set filter
-    assert_equal(@request.filters, {})
-    assert_equal(@request.errors.count, 1)
-    assert_equal(@request.errors.first.title, "Filter not allowed")
+    e = assert_raises JSONAPI::Exceptions::FilterNotAllowed do
+        @request.parse_filters({breed: 'Whiskers'}) # breed is not a set filter
+    end
+    assert_equal 'breed is not allowed.', e.errors[0].detail
   end
 
   def test_parse_filters_with_no_filters
