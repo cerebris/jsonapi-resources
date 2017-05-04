@@ -153,7 +153,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       }
     )
 
-    e = assert_raises JSONAPI::Exceptions::Errors do
+    e = assert_raises JSONAPI::Exceptions::InvalidField do
       request.parse_fields(ExpenseEntryResource, params[:fields])
     end
     refute e.errors.empty?
@@ -178,7 +178,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
         key_formatter: JSONAPI::Formatter.formatter_for(:dasherized_key)
       }
     )
-    e = assert_raises JSONAPI::Exceptions::Errors do
+    e = assert_raises JSONAPI::Exceptions::InvalidResource do
       request.parse_fields(ExpenseEntryResource, params[:fields])
     end
     refute e.errors.empty?
@@ -194,10 +194,10 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
 
   def test_parse_filters_with_non_valid_filter
     setup_request
-    filters = @request.parse_filters(CatResource, {breed: 'Whiskers'}) # breed is not a set filter
-    assert_equal(filters, {})
-    assert_equal(@request.errors.count, 1)
-    assert_equal(@request.errors.first.title, "Filter not allowed")
+    e = assert_raises JSONAPI::Exceptions::FilterNotAllowed do
+        @request.parse_filters(CatResource, {breed: 'Whiskers'}) # breed is not a set filter
+    end
+    assert_equal 'breed is not allowed.', e.errors[0].detail
   end
 
   def test_parse_filters_with_no_filters
@@ -224,11 +224,10 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
 
   def test_parse_sort_with_resource_validated_sorts
     setup_request
-    sort_criteria = @request.parse_sort_criteria(TreeResource, "sort66,name")
-    assert_equal(@request.errors.count, 1)
-    assert_equal(@request.errors.first.title, "Invalid sort criteria")
-    assert_equal(@request.errors.first.detail, "name is not a valid sort criteria for trees")
-    assert_equal(sort_criteria, [{:field=>"sort66", :direction=>:asc}, {:field=>"name", :direction=>:asc}])
+    e = assert_raises JSONAPI::Exceptions::InvalidSortCriteria do
+      @request.parse_sort_criteria(TreeResource, "sort66,name")
+    end
+    assert_equal 'name is not a valid sort criteria for trees', e.errors[0].detail
   end
 
   def test_parse_sort_with_relationships
