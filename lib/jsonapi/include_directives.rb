@@ -52,7 +52,7 @@ module JSONAPI
           current_relationship = current_resource_klass._relationships[fragment]
           current_resource_klass = current_relationship.try(:resource_klass)
         else
-          warn "[RELATIONSHIP NOT FOUND] Relationship could not be found for #{current_path}."
+          raise JSONAPI::Exceptions::InvalidInclude.new(current_resource_klass, current_path)
         end
 
         include_in_join = @force_eager_load || !current_relationship || current_relationship.eager_load_on_include
