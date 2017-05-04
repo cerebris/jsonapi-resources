@@ -806,8 +806,13 @@ module JSONAPI
         @_paginator ||= JSONAPI.configuration.default_paginator
       end
 
-      def paginator(paginator)
+      def _paginator_options
+        @_paginator_options ||= {}
+      end
+
+      def paginator(paginator, options = {})
         @_paginator = paginator
+        @_paginator_options = options
       end
 
       def _record_accessor
