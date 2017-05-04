@@ -35,6 +35,7 @@ module JSONAPI
                 :resource_cache,
                 :default_resource_cache_field,
                 :resource_cache_digest_function,
+                :resource_cache_key_format_function,
                 :resource_cache_usage_report_function
 
     def initialize
@@ -139,6 +140,12 @@ module JSONAPI
       # Resource cache usage reporting
       # Optionally provide a callable which JSONAPI will call with information about cache
       # performance. Should accept three arguments: resource name, hits count, misses count.
+      self.resource_cache_usage_report_function = nil
+
+      # Resource cache key formating
+      # Optionally provide a callable which JSONAPI will call in order to format your cache
+      # key, this is useful for stores such as redis, which cannot be queried using an array
+      # the way the rails in memory cache can
       self.resource_cache_usage_report_function = nil
     end
 
@@ -256,7 +263,10 @@ module JSONAPI
 
     attr_writer :resource_cache_digest_function
 
+    attr_writer :resource_cache_key_format_function
+
     attr_writer :resource_cache_usage_report_function
+
   end
 
   class << self
