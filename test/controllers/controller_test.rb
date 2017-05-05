@@ -3767,3 +3767,26 @@ class Api::BoxesControllerTest < ActionController::TestCase
     assert_equal '2',  json_response['included'][1]['relationships']['things']['data'][0]['id']
   end
 end
+
+class BlogPostsControllerTest < ActionController::TestCase
+  def test_filter_by_delegated_attribute
+    assert_cacheable_get :index, params: {filter: {name: 'some title'}}
+    assert_response :success
+  end
+
+  def test_sorting_by_delegated_attribute
+    assert_cacheable_get :index, params: {sort: 'name'}
+    assert_response :success
+  end
+
+  def test_fields_with_delegated_attribute
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.json_key_format = :underscored_key
+
+    assert_cacheable_get :index, params: {fields: {blog_posts: 'name'}}
+    assert_response :success
+    assert_equal ['name'], json_response['data'].first['attributes'].keys
+  ensure
+    JSONAPI.configuration = original_config
+  end
+end

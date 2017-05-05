@@ -225,6 +225,7 @@ module JSONAPI
               order_by_query = "#{associations.last.name}_sorting.#{column_name} #{direction}"
               records = records.joins(joins_query).order(order_by_query)
             else
+              field = _resource_klass._attribute_delegated_name(field)
               records = records.order(field => direction)
             end
           end
@@ -274,6 +275,7 @@ module JSONAPI
             records.where("#{_resource_klass._relationships[filter].table_name}.#{_resource_klass._relationships[filter].primary_key}" => value)
           end
         else
+          filter = _resource_klass._attribute_delegated_name(filter)
           records.where(filter => value)
         end
       end
