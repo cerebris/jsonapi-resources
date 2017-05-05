@@ -2,7 +2,7 @@ module JSONAPI
   class Relationship
     attr_reader :acts_as_set, :foreign_key, :options, :name,
                 :class_name, :polymorphic, :always_include_linkage_data,
-                :parent_resource, :eager_load_on_include
+                :parent_resource, :eager_load_on_include, :sti
 
     def initialize(name, options = {})
       @name = name.to_s
@@ -11,11 +11,13 @@ module JSONAPI
       @foreign_key = options[:foreign_key] ? options[:foreign_key].to_sym : nil
       @parent_resource = options[:parent_resource]
       @relation_name = options.fetch(:relation_name, @name)
-      @polymorphic = options.fetch(:polymorphic, false) == true
+      @sti = options.fetch(:sti, false) == true
+      @polymorphic = options.fetch(:polymorphic, false) == true || @sti
       @always_include_linkage_data = options.fetch(:always_include_linkage_data, false) == true
       @eager_load_on_include = options.fetch(:eager_load_on_include, true) == true
     end
 
+    alias_method :sti?, :sti
     alias_method :polymorphic?, :polymorphic
 
     def primary_key
