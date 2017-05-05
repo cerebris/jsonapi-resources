@@ -391,12 +391,36 @@ class ResourceTest < ActiveSupport::TestCase
     end
   end
 
+  def test_custom_sorting
+    post_resource = PostResource.new(Post.find(1), nil)
+    comment_ids = post_resource.comments.map{|c| c._model.id }
+    assert_equal [1,2], comment_ids
+
+    # define apply_sort method on post resource that will never sort
+    PostResource.instance_eval do
+      def apply_sort(records, criteria, context = {})
+        if criteria.key?('name')
+          # this sort will never occure
+          records.order('name asc')
+        end
+      end
+    end
+
+    sorted_comment_ids = post_resource.comments(sort_criteria: [{ field: 'id', direction: :desc}]).map{|c| c._model.id }
+    assert_equal [2,1], sorted_comment_ids
+  ensure
+    # reset method to original implementation
+    PostResource.instance_eval do
+      undef :apply_sort
+    end
+  end
+
   def test_to_many_relationship_sorts
     post_resource = PostResource.new(Post.find(1), nil)
     comment_ids = post_resource.comments.map{|c| c._model.id }
     assert_equal [1,2], comment_ids
 
-    # define apply_filters method on post resource to sort descending
+    # define apply_sort method on post resource to sort descending
     PostResource.instance_eval do
       def apply_sort(records, criteria, context = {})
         # :nocov:
@@ -412,28 +436,7 @@ class ResourceTest < ActiveSupport::TestCase
   ensure
     # reset method to original implementation
     PostResource.instance_eval do
-      def apply_sort(records, order_options, _context = {})
-        # :nocov:
-        if order_options.any?
-          order_options.each_pair do |field, direction|
-            if field.to_s.include?(".")
-              *model_names, column_name = field.split(".")
-
-              associations = _lookup_association_chain([records.model.to_s, *model_names])
-              joins_query = _record_accessor._build_joins([records.model, *associations])
-
-              # _sorting is appended to avoid name clashes with manual joins eg. overriden filters
-              order_by_query = "#{associations.last.name}_sorting.#{column_name} #{direction}"
-              records = records.joins(joins_query).order(order_by_query)
-            else
-              records = records.order(field => direction)
-            end
-          end
-        end
-
-        records
-        # :nocov:
-      end
+      undef :apply_sort
     end
   end
 
