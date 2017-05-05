@@ -1818,7 +1818,6 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /author is not allowed./, response.body
     assert_match /subject is not allowed./, response.body
   end
 
