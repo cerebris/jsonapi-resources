@@ -606,16 +606,16 @@ class RequestTest < ActionDispatch::IntegrationTest
 
 
   def test_flow_self
-    assert_cacheable_jsonapi_get '/posts'
-    post_1 = json_response['data'][0]
+    assert_cacheable_jsonapi_get '/posts/1'
+    post_1 = json_response['data']
 
     assert_cacheable_jsonapi_get post_1['links']['self']
     assert_hash_equals post_1, json_response['data']
   end
 
   def test_flow_link_to_one_self_link
-    assert_cacheable_jsonapi_get '/posts'
-    post_1 = json_response['data'][0]
+    assert_cacheable_jsonapi_get '/posts/1'
+    post_1 = json_response['data']
 
     assert_cacheable_jsonapi_get post_1['relationships']['author']['links']['self']
     assert_hash_equals(json_response, {
@@ -628,8 +628,8 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_flow_link_to_many_self_link
-    assert_cacheable_jsonapi_get '/posts'
-    post_1 = json_response['data'][0]
+    assert_cacheable_jsonapi_get '/posts/1'
+    post_1 = json_response['data']
 
     assert_cacheable_jsonapi_get post_1['relationships']['tags']['links']['self']
     assert_hash_equals(json_response,
@@ -647,10 +647,10 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_flow_link_to_many_self_link_put
-    assert_cacheable_jsonapi_get '/posts'
-    post_1 = json_response['data'][4]
+    assert_cacheable_jsonapi_get '/posts/5'
+    post_5 = json_response['data']
 
-    post post_1['relationships']['tags']['links']['self'], params:
+    post post_5['relationships']['tags']['links']['self'], params:
          {'data' => [{'type' => 'tags', 'id' => '10'}]}.to_json,
          headers: {
            'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
@@ -659,7 +659,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
     assert_equal 204, status
 
-    assert_cacheable_jsonapi_get post_1['relationships']['tags']['links']['self']
+    assert_cacheable_jsonapi_get post_5['relationships']['tags']['links']['self']
     assert_hash_equals(json_response,
                        {
                          'links' => {
@@ -1101,5 +1101,49 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_getting_resource_with_correct_type_when_sti
     assert_cacheable_jsonapi_get '/vehicles/1'
     assert_equal 'cars', json_response['data']['type']
+  end
+
+  def test_get_resource_with_polymorphic_relationship_and_changed_primary_key
+    keeper = Keeper.find(1)
+    storage = keeper.keepable
+    assert_cacheable_jsonapi_get '/keepers/1?include=keepable'
+    assert_jsonapi_response 200
+
+    data = json_response['data']
+    refute_nil data
+    assert_equal keeper.id.to_s, data['id']
+
+    refute_nil data['relationships']
+    refute_nil data['relationships']['keepable']
+    refute_nil data['relationships']['keepable']['data']
+    assert_equal 'storages', data['relationships']['keepable']['data']['type']
+    assert_equal storage.token, data['relationships']['keepable']['data']['id']
+
+    included = json_response['included']
+    refute_nil included
+    assert_equal 'storages', included.first['type']
+    assert_equal storage.token, included.first['id']
+  end
+
+  def test_get_resource_with_belongs_to_relationship_and_changed_primary_key
+    worker = Worker.find(1)
+    access_card = worker.access_card
+    assert_cacheable_jsonapi_get '/workers/1?include=access_card'
+    assert_jsonapi_response 200
+
+    data = json_response['data']
+    refute_nil data
+    assert_equal worker.id.to_s, data['id']
+
+    refute_nil data['relationships']
+    refute_nil data['relationships']['access_card']
+    refute_nil data['relationships']['access_card']['data']
+    assert_equal 'access_cards', data['relationships']['access_card']['data']['type']
+    assert_equal access_card.token, data['relationships']['access_card']['data']['id']
+
+    included = json_response['included']
+    refute_nil included
+    assert_equal 'access_cards', included.first['type']
+    assert_equal access_card.token, included.first['id']
   end
 end

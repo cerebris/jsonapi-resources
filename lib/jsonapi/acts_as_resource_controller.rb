@@ -243,7 +243,7 @@ module JSONAPI
       if response_document.has_errors?
         render_options[:json] = content
       else
-        # Bypasing ActiveSupport allows us to use CompiledJson objects for cached response fragments
+        # Bypassing ActiveSupport allows us to use CompiledJson objects for cached response fragments
         render_options[:body] = JSON.generate(content)
 
         render_options[:location] = content['data']['links']['self'] if (response_document.status == 201 && content[:data].class != Array)
@@ -283,6 +283,9 @@ module JSONAPI
                 safe_run_callback(callback, e)
               }
             end
+
+            # Store exception for other middlewares
+            request.env['action_dispatch.exception'] ||= e
 
             internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
             Rails.logger.error { "Internal Server Error: #{e.message} #{e.backtrace.join("\n")}" }

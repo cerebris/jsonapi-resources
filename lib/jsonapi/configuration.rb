@@ -1,5 +1,7 @@
 require 'jsonapi/formatter'
 require 'jsonapi/processor'
+require 'jsonapi/record_accessor'
+require 'jsonapi/active_record_accessor'
 require 'concurrent'
 
 module JSONAPI
@@ -14,6 +16,7 @@ module JSONAPI
                 :default_paginator,
                 :default_page_size,
                 :maximum_page_size,
+                :default_record_accessor_klass,
                 :default_processor_klass,
                 :use_text_errors,
                 :top_level_links_include_pagination,
@@ -91,6 +94,12 @@ module JSONAPI
       # NOTE: always_include_to_many_linkage_data is not currently implemented
       self.always_include_to_one_linkage_data = false
       self.always_include_to_many_linkage_data = false
+
+      # Record Accessor
+      # The default Record Accessor is the ActiveRecordAccessor which provides
+      # caching access to ActiveRecord backed models. Custom Accessors can be specified
+      # in order to support other models.
+      self.default_record_accessor_klass = JSONAPI::ActiveRecordAccessor
 
       # The default Operation Processor to use if one is not defined specifically
       # for a Resource.
@@ -199,6 +208,10 @@ module JSONAPI
 
     def default_processor_klass=(default_processor_klass)
       @default_processor_klass = default_processor_klass
+    end
+
+    def default_record_accessor_klass=(default_record_accessor_klass)
+      @default_record_accessor_klass = default_record_accessor_klass
     end
 
     attr_writer :allow_include, :allow_sort, :allow_filter

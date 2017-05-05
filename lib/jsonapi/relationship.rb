@@ -23,7 +23,7 @@ module JSONAPI
     end
 
     def resource_klass
-      @resource_klass ||= @parent_resource.resource_for(@class_name)
+      @resource_klass ||= @parent_resource.resource_klass_for(@class_name)
     end
 
     def table_name
@@ -62,6 +62,10 @@ module JSONAPI
 
     def readonly?
       @options[:readonly]
+    end
+
+    def redefined_pkey?
+      belongs_to? && primary_key != resource_klass._default_primary_key
     end
 
     class ToOne < Relationship

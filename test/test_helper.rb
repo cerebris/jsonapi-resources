@@ -6,6 +6,7 @@ require 'simplecov'
 # To test on a specific rails version use this:
 # export RAILS_VERSION=4.2.6; bundle update rails; bundle exec rake test
 # export RAILS_VERSION=5.0.0; bundle update rails; bundle exec rake test
+# export RAILS_VERSION=5.1.0; bundle update rails; bundle exec rake test
 
 # We are no longer having Travis test Rails 4.1.x., but you can try it with:
 # export RAILS_VERSION=4.1.0; bundle update rails; bundle exec rake test
@@ -229,6 +230,7 @@ TestApp.routes.draw do
   jsonapi_resources :comments
   jsonapi_resources :firms
   jsonapi_resources :tags
+  jsonapi_resources :hair_cuts
   jsonapi_resources :posts do
     jsonapi_relationships
     jsonapi_links :special_tags
@@ -251,6 +253,7 @@ TestApp.routes.draw do
   jsonapi_resources :cars
   jsonapi_resources :boats
   jsonapi_resources :flat_posts
+  jsonapi_resources :blog_posts
 
   jsonapi_resources :books
   jsonapi_resources :authors
@@ -288,6 +291,7 @@ TestApp.routes.draw do
 
       jsonapi_resource :preferences, except: [:create, :destroy]
 
+      jsonapi_resources :authors
       jsonapi_resources :books
       jsonapi_resources :book_comments
     end
@@ -374,6 +378,9 @@ TestApp.routes.draw do
       jsonapi_resources :cats
     end
   end
+
+  jsonapi_resources :keepers, only: [:show]
+  jsonapi_resources :workers, only: [:show]
 
   mount MyEngine::Engine => "/boomshaka", as: :my_engine
   mount ApiV2Engine::Engine => "/api_v2", as: :api_v2_engine

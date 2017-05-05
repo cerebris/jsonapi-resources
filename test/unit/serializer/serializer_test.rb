@@ -985,6 +985,18 @@ class SerializerTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.always_include_to_one_linkage_data = false
   end
 
+  def test_serializer_always_include_to_one_linkage_data_does_not_load_association
+    JSONAPI.configuration.always_include_to_one_linkage_data = true
+
+    post = Post.find(1)
+    resource = Api::V1::PostResource.new(post, nil)
+    JSONAPI::ResourceSerializer.new(Api::V1::PostResource).serialize_to_hash(resource)
+
+    refute_predicate post.association(:writer), :loaded?
+  ensure
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
+  end
+
   def test_serializer_array_of_resources
 
     posts = []

@@ -85,10 +85,17 @@ module MyModule
   class MyNamespacedResource < JSONAPI::Resource
     model_name "Person"
     has_many :related
+    has_one :default_profile, class_name: "Nested::Profile"
   end
 
   class RelatedResource < JSONAPI::Resource
     model_name "Comment"
+  end
+
+  module Nested
+    class ProfileResource < JSONAPI::Resource
+      model_name "Nested::Profile"
+    end
   end
 end
 
@@ -129,30 +136,36 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_resource_for_root_resource
     assert_raises NameError do
-      JSONAPI::Resource.resource_for('related')
+      JSONAPI::Resource.resource_klass_for('related')
     end
   end
 
   def test_resource_for_resource_does_not_exist_at_root
     assert_raises NameError do
-      ArticleResource.resource_for('related')
+      ArticleResource.resource_klass_for('related')
     end
   end
 
   def test_resource_for_with_underscored_namespaced_paths
-    assert_equal(JSONAPI::Resource.resource_for('my_module/related'), MyModule::RelatedResource)
-    assert_equal(PostResource.resource_for('my_module/related'), MyModule::RelatedResource)
-    assert_equal(MyModule::MyNamespacedResource.resource_for('my_module/related'), MyModule::RelatedResource)
+    assert_equal(JSONAPI::Resource.resource_klass_for('my_module/related'), MyModule::RelatedResource)
+    assert_equal(PostResource.resource_klass_for('my_module/related'), MyModule::RelatedResource)
+    assert_equal(MyModule::MyNamespacedResource.resource_klass_for('my_module/related'), MyModule::RelatedResource)
   end
 
   def test_resource_for_with_camelized_namespaced_paths
-    assert_equal(JSONAPI::Resource.resource_for('MyModule::Related'), MyModule::RelatedResource)
-    assert_equal(PostResource.resource_for('MyModule::Related'), MyModule::RelatedResource)
-    assert_equal(MyModule::MyNamespacedResource.resource_for('MyModule::Related'), MyModule::RelatedResource)
+    assert_equal(JSONAPI::Resource.resource_klass_for('MyModule::Related'), MyModule::RelatedResource)
+    assert_equal(PostResource.resource_klass_for('MyModule::Related'), MyModule::RelatedResource)
+    assert_equal(MyModule::MyNamespacedResource.resource_klass_for('MyModule::Related'), MyModule::RelatedResource)
   end
 
   def test_resource_for_namespaced_resource
-    assert_equal(MyModule::MyNamespacedResource.resource_for('related'), MyModule::RelatedResource)
+    assert_equal(MyModule::MyNamespacedResource.resource_klass_for('related'), MyModule::RelatedResource)
+  end
+
+  def test_resource_for_nested_namespaced_resource
+    assert_equal(JSONAPI::Resource.resource_klass_for('my_module/nested/profile'), MyModule::Nested::ProfileResource)
+    assert_equal(MyModule::MyNamespacedResource.resource_klass_for('my_module/nested/profile'), MyModule::Nested::ProfileResource)
+    assert_equal(MyModule::MyNamespacedResource.resource_klass_for('nested/profile'), MyModule::Nested::ProfileResource)
   end
 
   def test_relationship_parent_point_to_correct_resource
@@ -184,7 +197,7 @@ class ResourceTest < ActiveSupport::TestCase
     # ToDo:Figure out why this test does not work on Rails 4.0
     # :nocov:
     if (Rails::VERSION::MAJOR >= 4 && Rails::VERSION::MINOR >= 1) || (Rails::VERSION::MAJOR >= 5)
-      assert_output nil, "[MODEL NOT FOUND] Model could not be found for NoMatchResource. If this a base Resource declare it as abstract.\n" do
+      assert_output nil, "[MODEL NOT FOUND] Model could not be found for NoMatchResource. If this is a base Resource declare it as abstract.\n" do
         assert_nil NoMatchResource._model_class
       end
     end
@@ -266,28 +279,32 @@ class ResourceTest < ActiveSupport::TestCase
     author = Person.find(1)
     author.update! preferences: Preferences.first
     author_resource = PersonWithCustomRecordsForRelationshipsResource.new(author, nil)
-    assert_equal(author_resource.record_for_preferences, :record_for_preferences)
+    assert_equal(author_resource.class._record_accessor.records_for(
+        author_resource, :preferences), :record_for_preferences)
   end
 
   def test_records_for_meta_method_for_to_one_calling_records_for
     author = Person.find(1)
     author.update! preferences: Preferences.first
     author_resource = PersonWithCustomRecordsForResource.new(author, nil)
-    assert_equal(author_resource.record_for_preferences, :records_for)
+    assert_equal(author_resource.class._record_accessor.records_for(
+        author_resource, :preferences), :records_for)
   end
 
   def test_associated_records_meta_method_for_to_many
     author = Person.find(1)
     author.posts << Post.find(1)
     author_resource = PersonWithCustomRecordsForRelationshipsResource.new(author, nil)
-    assert_equal(author_resource.records_for_posts, :records_for_posts)
+    assert_equal(author_resource.class._record_accessor.records_for(
+        author_resource, :posts), :records_for_posts)
   end
 
   def test_associated_records_meta_method_for_to_many_calling_records_for
     author = Person.find(1)
     author.posts << Post.find(1)
     author_resource = PersonWithCustomRecordsForResource.new(author, nil)
-    assert_equal(author_resource.records_for_posts, :records_for)
+    assert_equal(author_resource.class._record_accessor.records_for(
+        author_resource, :posts), :records_for)
   end
 
   def test_find_by_key_with_customized_base_records
@@ -347,7 +364,28 @@ class ResourceTest < ActiveSupport::TestCase
     PostResource.instance_eval do
       def apply_filters(records, filters, options)
         # :nocov:
-        super
+        required_includes = []
+
+        if filters
+          filters.each do |filter, value|
+            if _relationships.include?(filter)
+              if _relationships[filter].belongs_to?
+                records = apply_filter(records, _relationships[filter].foreign_key, value, options)
+              else
+                required_includes.push(filter.to_s)
+                records = apply_filter(records, "#{_relationships[filter].table_name}.#{_relationships[filter].primary_key}", value, options)
+              end
+            else
+              records = apply_filter(records, filter, value, options)
+            end
+          end
+        end
+
+        if required_includes.any?
+          records = apply_includes(records, options.merge(include_directives: IncludeDirectives.new(self, required_includes, force_eager_load: true)))
+        end
+
+        records
         # :nocov:
       end
     end
@@ -358,11 +396,12 @@ class ResourceTest < ActiveSupport::TestCase
     comment_ids = post_resource.comments.map{|c| c._model.id }
     assert_equal [1,2], comment_ids
 
-    # define apply_filters method on post resource to not respect filters
+    # define apply_filters method on post resource to sort descending
     PostResource.instance_eval do
       def apply_sort(records, criteria, context = {})
         # :nocov:
-        records
+        order_by_query = 'id desc'
+        records.order(order_by_query)
         # :nocov:
       end
     end
@@ -373,9 +412,26 @@ class ResourceTest < ActiveSupport::TestCase
   ensure
     # reset method to original implementation
     PostResource.instance_eval do
-      def apply_sort(records, criteria, context = {})
+      def apply_sort(records, order_options, _context = {})
         # :nocov:
-        super
+        if order_options.any?
+          order_options.each_pair do |field, direction|
+            if field.to_s.include?(".")
+              *model_names, column_name = field.split(".")
+
+              associations = _lookup_association_chain([records.model.to_s, *model_names])
+              joins_query = _record_accessor._build_joins([records.model, *associations])
+
+              # _sorting is appended to avoid name clashes with manual joins eg. overriden filters
+              order_by_query = "#{associations.last.name}_sorting.#{column_name} #{direction}"
+              records = records.joins(joins_query).order(order_by_query)
+            else
+              records = records.order(field => direction)
+            end
+          end
+        end
+
+        records
         # :nocov:
       end
     end
@@ -400,7 +456,7 @@ class ResourceTest < ActiveSupport::TestCase
   def test_build_joins
     model_names = %w(person posts parent_post author)
     associations = PostResource._lookup_association_chain(model_names)
-    result = PostResource._build_joins(associations)
+    result = PostResource._record_accessor._build_joins(associations)
 
     assert_equal "LEFT JOIN posts AS parent_post_sorting ON parent_post_sorting.id = posts.parent_post_id
 LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", result
@@ -439,7 +495,8 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
     PostResource.instance_eval do
       def apply_pagination(records, criteria, order_options)
         # :nocov:
-        super
+        records = paginator.apply(records, order_options) if paginator
+        records
         # :nocov:
       end
     end
@@ -593,7 +650,7 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
         NoModelResource._model_class
       CODE
     end
-    assert_match "[MODEL NOT FOUND] Model could not be found for ResourceTest::NoModelResource. If this a base Resource declare it as abstract.\n", err
+    assert_match "[MODEL NOT FOUND] Model could not be found for ResourceTest::NoModelResource. If this is a base Resource declare it as abstract.\n", err
   end
 
   def test_no_warning_when_abstract
@@ -621,7 +678,7 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
     special_person = Person.create!(name: 'Special', date_joined: Date.today, special: true)
     special_resource = SpecialPersonResource.new(special_person, nil)
     resource_model = SpecialPersonResource.records({}).first # simulate a find
-    assert_equal(SpecialPersonResource, SpecialPersonResource.resource_for_model(resource_model))
+    assert_equal(SpecialPersonResource, SpecialPersonResource.resource_klass_for_model(resource_model))
   end
 
   def test_resource_performs_validations_in_custom_context
@@ -644,5 +701,11 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
 
     refute_includes(PostWithReadonlyAttributesResource.creatable_fields, :author)
     refute_includes(PostWithReadonlyAttributesResource.updatable_fields, :author)
+  end
+
+  def test_sortable_field?
+    assert(PostResource.sortable_field?(:title))
+    assert(PostResource.sortable_field?(:body))
+    refute(PostResource.sortable_field?(:color))
   end
 end

@@ -14,6 +14,12 @@ class CatResource < JSONAPI::Resource
   end
 end
 
+class TreeResource < JSONAPI::Resource
+  def self.sortable_field?(key, context)
+    key =~ /^sort\d+/
+  end
+end
+
 class JSONAPIRequestTest < ActiveSupport::TestCase
   def test_parse_includes_underscored
     params = ActionController::Parameters.new(
@@ -34,6 +40,11 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
 
     request.parse_include_directives(ExpenseEntryResource, params[:include])
     assert request.errors.empty?
+  end
+
+  def test_parse_blank_includes
+    include_directives = JSONAPI::RequestParser.new.parse_include_directives(nil, '')
+    assert_empty include_directives.model_includes
   end
 
   def test_parse_dasherized_with_dasherized_include
@@ -142,7 +153,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       }
     )
 
-    e = assert_raises JSONAPI::Exceptions::Errors do
+    e = assert_raises JSONAPI::Exceptions::InvalidField do
       request.parse_fields(ExpenseEntryResource, params[:fields])
     end
     refute e.errors.empty?
@@ -167,7 +178,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
         key_formatter: JSONAPI::Formatter.formatter_for(:dasherized_key)
       }
     )
-    e = assert_raises JSONAPI::Exceptions::Errors do
+    e = assert_raises JSONAPI::Exceptions::InvalidResource do
       request.parse_fields(ExpenseEntryResource, params[:fields])
     end
     refute e.errors.empty?
@@ -183,10 +194,10 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
 
   def test_parse_filters_with_non_valid_filter
     setup_request
-    filters = @request.parse_filters(CatResource, {breed: 'Whiskers'}) # breed is not a set filter
-    assert_equal(filters, {})
-    assert_equal(@request.errors.count, 1)
-    assert_equal(@request.errors.first.title, "Filter not allowed")
+    e = assert_raises JSONAPI::Exceptions::FilterNotAllowed do
+        @request.parse_filters(CatResource, {breed: 'Whiskers'}) # breed is not a set filter
+    end
+    assert_equal 'breed is not allowed.', e.errors[0].detail
   end
 
   def test_parse_filters_with_no_filters
@@ -209,6 +220,14 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
     sort_criteria = @request.parse_sort_criteria(CatResource, "-name")
     assert_equal(@request.errors, [])
     assert_equal(sort_criteria, [{:field=>"name", :direction=>:desc}])
+  end
+
+  def test_parse_sort_with_resource_validated_sorts
+    setup_request
+    e = assert_raises JSONAPI::Exceptions::InvalidSortCriteria do
+      @request.parse_sort_criteria(TreeResource, "sort66,name")
+    end
+    assert_equal 'name is not a valid sort criteria for trees', e.errors[0].detail
   end
 
   def test_parse_sort_with_relationships

@@ -278,7 +278,7 @@ module JSONAPI
 
       include_directives[:include_related] ||= {}
 
-      relationships = source.class._relationships.select{|k,v| fetchable_fields.include?(k) }
+      relationships = source.class._relationships.select{|k,_v| fetchable_fields.include?(k) }
       field_set = supplying_relationship_fields(source.class) & relationships.keys
 
       relationships.each_with_object({}) do |(name, relationship), hash|
@@ -317,13 +317,13 @@ module JSONAPI
       h = source.relationships || {}
       return h unless include_directives.has_key?(:include_related)
 
-      relationships = source.resource_klass._relationships.select do |k,v|
+      relationships = source.resource_klass._relationships.select do |k,_v|
         source.fetchable_fields.include?(k)
       end
 
       real_res = nil
       relationships.each do |rel_name, relationship|
-        key = @key_formatter.format(rel_name)
+        key = format_key(rel_name)
         to_many = relationship.is_a? JSONAPI::Relationship::ToMany
 
         ia = include_directives[:include_related][rel_name]
@@ -454,11 +454,11 @@ module JSONAPI
     def foreign_key_value(source, relationship)
       related_resource_id = if source.preloaded_fragments.has_key?(format_key(relationship.name))
         source.preloaded_fragments[format_key(relationship.name)].values.first.try(:id)
-      elsif source.respond_to?("#{relationship.name}_id")
+      elsif !relationship.redefined_pkey? && !relationship.polymorphic? && source.respond_to?(relationship.foreign_key)
         # If you have direct access to the underlying id, you don't have to load the relationship
         # which can save quite a lot of time when loading a lot of data.
         # This does not apply to e.g. has_one :through relationships.
-        source.public_send("#{relationship.name}_id")
+        source.public_send(relationship.foreign_key)
       else
         source.public_send(relationship.name).try(:id)
       end
