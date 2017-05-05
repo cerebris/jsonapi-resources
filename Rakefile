@@ -8,7 +8,7 @@ Rake::TestTask.new do |t|
   t.test_files = FileList['test/**/*_test.rb']
 end
 
-task default: [:test, 'test:bug_report_template:rails_5']
+task default: [:test]
 
 desc 'Run benchmarks'
 namespace :test do
