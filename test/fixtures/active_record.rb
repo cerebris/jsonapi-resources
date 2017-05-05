@@ -310,7 +310,30 @@ ActiveRecord::Schema.define do
     t.string :name
   end
 
-  # special cases
+  create_table :storages, force: true do |t|
+    t.string :token, null: false
+    t.string :name
+    t.timestamps null: false
+  end
+
+  create_table :keepers, force: true do |t|
+    t.string :name
+    t.string :keepable_type, null: false
+    t.integer :keepable_id, null: false
+    t.timestamps null: false
+  end
+
+  create_table :access_cards, force: true do |t|
+    t.string :token, null: false
+    t.string :security_level
+    t.timestamps null: false
+  end
+
+  create_table :workers, force: true do |t|
+    t.string :name
+    t.integer :access_card_id, null: false
+    t.timestamps null: false
+  end
 end
 
 ### MODELS
@@ -655,6 +678,22 @@ module Api
   end
 end
 
+class Storage < ActiveRecord::Base
+  has_one :keeper, class_name: 'Keeper', as: :keepable
+end
+
+class Keeper < ActiveRecord::Base
+  belongs_to :keepable, polymorphic: true
+end
+
+class AccessCard < ActiveRecord::Base
+  has_one :worker, class_name: 'Worker'
+end
+
+class Worker < ActiveRecord::Base
+  belongs_to :access_card
+end
+
 ### CONTROLLERS
 class AuthorsController < JSONAPI::ResourceControllerMetal
 end
@@ -930,6 +969,17 @@ end
 class RespondentController < JSONAPI::ResourceController
 end
 
+class StoragesController < BaseController
+end
+
+class KeepersController < BaseController
+end
+
+class AccessCardsController < BaseController
+end
+
+class WorkersController < BaseController
+end
 ### RESOURCES
 class BaseResource < JSONAPI::Resource
   abstract
@@ -1801,6 +1851,24 @@ end
 class FlatPostsController < JSONAPI::ResourceController
 end
 
+class BlogPost < ActiveRecord::Base
+  self.table_name = 'posts'
+end
+
+class BlogPostsController < JSONAPI::ResourceController
+
+end
+
+class BlogPostResource < JSONAPI::Resource
+  model_name 'BlogPost', add_model_hint: false
+  model_hint model: 'BlogPost', resource: BlogPostResource
+
+  attribute :name, :delegate => :title
+  attribute :body
+
+  filter :name
+end
+
 # CustomProcessors
 class Api::V4::BookProcessor < JSONAPI::Processor
   after_find do
@@ -1892,6 +1960,35 @@ end
 
 class RespondentResource < JSONAPI::Resource
   abstract
+end
+
+class StorageResource < JSONAPI::Resource
+  key_type :string
+  primary_key :token
+
+  attribute :name
+end
+
+class KeeperResource < JSONAPI::Resource
+  has_one :keepable, polymorphic: true, foreign_key: :keepable_id
+
+  attribute :name
+end
+
+class KeepableResource < JSONAPI::Resource
+end
+
+class AccessCardResource < JSONAPI::Resource
+  key_type :string
+  primary_key :token
+
+  attribute :security_level
+end
+
+class WorkerResource < JSONAPI::Resource
+  has_one :access_card
+
+  attribute :name
 end
 
 ### PORO Data - don't do this in a production app

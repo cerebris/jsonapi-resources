@@ -757,6 +757,10 @@ module JSONAPI
         default_attribute_options.merge(@_attributes[attr])
       end
 
+      def _attribute_delegated_name(attr)
+        @_attributes.fetch(attr.to_sym, {}).fetch(:delegate, attr)
+      end
+
       def _updatable_attributes
         _attributes.map { |key, options| key unless options[:readonly] }.compact
       end
@@ -783,7 +787,11 @@ module JSONAPI
       end
 
       def _primary_key
-        @_primary_key ||= _model_class.respond_to?(:primary_key) ? _model_class.primary_key : :id
+        @_primary_key ||= _default_primary_key
+      end
+
+      def _default_primary_key
+        @_default_primary_key ||=_model_class.respond_to?(:primary_key) ? _model_class.primary_key : :id
       end
 
       def _cache_field
