@@ -162,6 +162,12 @@ module JSONAPI
       {}
     end
 
+    # Override this to add a custom route scope.  
+    # e.g. to support nested resource routes.
+    def self.custom_route_scopes
+      nil
+    end
+
     def preloaded_fragments
       # A hash of hashes
       @preloaded_fragments ||= Hash.new
