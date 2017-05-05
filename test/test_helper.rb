@@ -6,6 +6,7 @@ require 'simplecov'
 # To test on a specific rails version use this:
 # export RAILS_VERSION=4.2.6; bundle update rails; bundle exec rake test
 # export RAILS_VERSION=5.0.0; bundle update rails; bundle exec rake test
+# export RAILS_VERSION=5.1.0; bundle update rails; bundle exec rake test
 
 # We are no longer having Travis test Rails 4.1.x., but you can try it with:
 # export RAILS_VERSION=4.1.0; bundle update rails; bundle exec rake test
