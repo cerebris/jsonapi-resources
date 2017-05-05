@@ -64,6 +64,10 @@ module JSONAPI
       @options[:readonly]
     end
 
+    def redefined_pkey?
+      belongs_to? && primary_key != resource_klass._default_primary_key
+    end
+
     class ToOne < Relationship
       attr_reader :foreign_key_on
 
