@@ -16,5 +16,7 @@ matrix:
       env: "RAILS_VERSION=5.0.2"
     - rvm: 2.1.10
       env: "RAILS_VERSION=5.1.0"
+    - rvm: 2.1.10
+      env: "RAILS_VERSION=master"
   allow_failures:
     - env: "RAILS_VERSION=master"
