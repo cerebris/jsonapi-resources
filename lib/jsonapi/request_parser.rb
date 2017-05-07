@@ -170,13 +170,11 @@ module JSONAPI
           end
           type_resource = Resource.resource_for(@resource_klass.module_path + underscored_type.to_s)
         rescue NameError
-          @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
-        rescue JSONAPI::Exceptions::InvalidResource => e
-          @errors.concat(e.errors)
+          fail JSONAPI::Exceptions::InvalidResource.new(type)
         end
 
         if type_resource.nil?
-          @errors.concat(JSONAPI::Exceptions::InvalidResource.new(type).errors)
+          fail JSONAPI::Exceptions::InvalidResource.new(type)
         else
           unless values.nil?
             valid_fields = type_resource.fields.collect { |key| format_key(key) }
@@ -184,11 +182,11 @@ module JSONAPI
               if valid_fields.include?(field)
                 extracted_fields[type].push unformat_key(field)
               else
-                @errors.concat(JSONAPI::Exceptions::InvalidField.new(type, field).errors)
+                fail JSONAPI::Exceptions::InvalidField.new(type, field)
               end
             end
           else
-            @errors.concat(JSONAPI::Exceptions::InvalidField.new(type, 'nil').errors)
+            fail JSONAPI::Exceptions::InvalidField.new(type, 'nil')
           end
         end
       end
@@ -205,8 +203,7 @@ module JSONAPI
           check_include(Resource.resource_for(resource_klass.module_path + relationship.class_name.to_s.underscore), include_parts.last.partition('.'))
         end
       else
-        @errors.concat(JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type),
-                                                               include_parts.first).errors)
+        fail JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type), include_parts.first)
       end
     end
 
@@ -214,7 +211,7 @@ module JSONAPI
       return unless raw_include
 
       unless JSONAPI.configuration.allow_include
-        fail JSONAPI::Exceptions::ParametersNotAllowed.new([:include])
+        fail JSONAPI::Exceptions::ParameterNotAllowed.new(:include)
       end
 
       included_resources = []
@@ -226,19 +223,24 @@ module JSONAPI
 
       return if included_resources.empty?
 
-      result = included_resources.compact.map do |included_resource|
-        check_include(@resource_klass, included_resource.partition('.'))
-        unformat_key(included_resource).to_s
-      end
+      begin
+        result = included_resources.compact.map do |included_resource|
+          check_include(@resource_klass, included_resource.partition('.'))
+          unformat_key(included_resource).to_s
+        end
 
-      @include_directives = JSONAPI::IncludeDirectives.new(@resource_klass, result)
+        @include_directives = JSONAPI::IncludeDirectives.new(@resource_klass, result)
+      rescue JSONAPI::Exceptions::InvalidInclude => e
+        @errors.concat(e.errors)
+        @include_directives = {}
+      end
     end
 
     def parse_filters(filters)
       return unless filters
 
       unless JSONAPI.configuration.allow_filter
-        fail JSONAPI::Exceptions::ParametersNotAllowed.new([:filter])
+        fail JSONAPI::Exceptions::ParameterNotAllowed.new(:filter)
       end
 
       unless filters.class.method_defined?(:each)
@@ -251,7 +253,7 @@ module JSONAPI
         if @resource_klass._allowed_filter?(filter)
           @filters[filter] = value
         else
-          @errors.concat(JSONAPI::Exceptions::FilterNotAllowed.new(filter).errors)
+          fail JSONAPI::Exceptions::FilterNotAllowed.new(filter)
         end
       end
     end
@@ -267,7 +269,7 @@ module JSONAPI
       return unless sort_criteria.present?
 
       unless JSONAPI.configuration.allow_sort
-        fail JSONAPI::Exceptions::ParametersNotAllowed.new([:sort])
+        fail JSONAPI::Exceptions::ParameterNotAllowed.new(:sort)
       end
 
       sorts = []
@@ -296,9 +298,8 @@ module JSONAPI
       sort_field = sort_criteria[:field]
       sortable_fields = resource_klass.sortable_fields(context)
 
-      unless sortable_fields.include? sort_field.to_sym
-        @errors.concat(JSONAPI::Exceptions::InvalidSortCriteria
-                         .new(format_key(resource_klass._type), sort_field).errors)
+      unless sortable_fields.include?sort_field.to_sym
+        fail JSONAPI::Exceptions::InvalidSortCriteria.new(format_key(resource_klass._type), sort_field)
       end
     end
 
@@ -473,7 +474,7 @@ module JSONAPI
 
       unless links_object[:id].nil?
         resource = self.resource_klass || Resource
-        relationship_resource = resource.resource_for(unformat_key(links_object[:type]).to_s)
+        relationship_resource = resource.resource_for(unformat_key(relationship.options[:class_name] || links_object[:type]).to_s)
         relationship_id = relationship_resource.verify_key(links_object[:id], @context)
         if relationship.polymorphic?
           { id: relationship_id, type: unformat_key(links_object[:type].to_s) }
@@ -528,8 +529,10 @@ module JSONAPI
         when 'relationships'
           value.keys.each do |links_key|
             unless formatted_allowed_fields.include?(links_key.to_sym)
-              params_not_allowed.push(links_key)
-              unless JSONAPI.configuration.raise_if_parameters_not_allowed
+              if JSONAPI.configuration.raise_if_parameters_not_allowed
+                fail JSONAPI::Exceptions::ParameterNotAllowed.new(links_key)
+              else
+                params_not_allowed.push(links_key)
                 value.delete links_key
               end
             end
@@ -537,8 +540,10 @@ module JSONAPI
         when 'attributes'
           value.each do |attr_key, attr_value|
             unless formatted_allowed_fields.include?(attr_key.to_sym)
-              params_not_allowed.push(attr_key)
-              unless JSONAPI.configuration.raise_if_parameters_not_allowed
+              if JSONAPI.configuration.raise_if_parameters_not_allowed
+                fail JSONAPI::Exceptions::ParameterNotAllowed.new(attr_key)
+              else
+                params_not_allowed.push(attr_key)
                 value.delete attr_key
               end
             end
@@ -546,27 +551,30 @@ module JSONAPI
         when 'type'
         when 'id'
           unless formatted_allowed_fields.include?(:id)
-            params_not_allowed.push(:id)
-            unless JSONAPI.configuration.raise_if_parameters_not_allowed
+            if JSONAPI.configuration.raise_if_parameters_not_allowed
+              fail JSONAPI::Exceptions::ParameterNotAllowed.new(:id)
+            else
+              params_not_allowed.push(:id)
               params.delete :id
             end
           end
         else
-          params_not_allowed.push(key)
+          if JSONAPI.configuration.raise_if_parameters_not_allowed
+            fail JSONAPI::Exceptions::ParameterNotAllowed.new(key)
+          else
+            params_not_allowed.push(key)
+            params.delete key
+          end
         end
       end
 
       if params_not_allowed.length > 0
-        if JSONAPI.configuration.raise_if_parameters_not_allowed
-          fail JSONAPI::Exceptions::ParametersNotAllowed.new(params_not_allowed)
-        else
-          params_not_allowed_warnings = params_not_allowed.map do |key|
-            JSONAPI::Warning.new(code: JSONAPI::PARAM_NOT_ALLOWED,
-                                 title: 'Param not allowed',
-                                 detail: "#{key} is not allowed.")
-          end
-          self.warnings.concat(params_not_allowed_warnings)
+        params_not_allowed_warnings = params_not_allowed.map do |param|
+          JSONAPI::Warning.new(code: JSONAPI::PARAM_NOT_ALLOWED,
+                               title: 'Param not allowed',
+                               detail: "#{param} is not allowed.")
         end
+        self.warnings.concat(params_not_allowed_warnings)
       end
     end
 

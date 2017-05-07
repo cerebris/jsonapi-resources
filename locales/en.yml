@@ -55,7 +55,7 @@ en:
       invalid_sort_criteria:
         title: 'Invalid sort criteria'
         detail: "%{sort_criteria} is not a valid sort criteria for %{resource}"
-      parameters_not_allowed:
+      parameter_not_allowed:
         title: 'Param not allowed'
         detail: "%{param} is not allowed."
       parameter_missing:
