@@ -1,5 +1,5 @@
 module JSONAPI
   module Resources
-    VERSION = '0.9.0'
+    VERSION = '0.9.1.beta1'
   end
 end
