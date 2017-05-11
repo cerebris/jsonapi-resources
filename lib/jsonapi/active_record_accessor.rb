@@ -211,33 +211,35 @@ module JSONAPI
 
     def apply_sort(records, order_options, context = {})
       if defined?(_resource_klass.apply_sort)
-        custom_sort = _resource_klass.apply_sort(records, order_options, context)
-        custom_sort.nil? ? default_sort(records, order_options) : custom_sort
+        _resource_klass.apply_sort(records, order_options, context)
       else
-        default_sort(records, order_options)
-      end
-    end
-
-    def default_sort(records, order_options)
-      if order_options.any?
         order_options.each_pair do |field, direction|
-          if field.to_s.include?(".")
-            *model_names, column_name = field.split(".")
+          custom_sort = _resource_klass._custom_sorts.fetch(field.to_sym, Hash.new)[:apply]
 
-            associations = _lookup_association_chain([records.model.to_s, *model_names])
-            joins_query = _build_joins([records.model, *associations])
-
-            # _sorting is appended to avoid name clashes with manual joins eg. overridden filters
-            order_by_query = "#{associations.last.name}_sorting.#{column_name} #{direction}"
-            records = records.joins(joins_query).order(order_by_query)
+          if custom_sort
+            if custom_sort.is_a?(Symbol) || custom_sort.is_a?(String)
+              records = _resource_klass.send(custom_sort, records, direction, context)
+            else
+              records = custom_sort.call(records, direction, context)
+            end
           else
-            field = _resource_klass._attribute_delegated_name(field)
-            records = records.order(field => direction)
+            if field.to_s.include?(".")
+              *model_names, column_name = field.split(".")
+
+              associations = _lookup_association_chain([records.model.to_s, *model_names])
+              joins_query = _build_joins([records.model, *associations])
+
+              # _sorting is appended to avoid name clashes with manual joins eg. overridden filters
+              order_by_query = "LOWER(#{associations.last.name}_sorting.#{column_name}) #{direction}"
+              records = records.joins(joins_query).order(order_by_query)
+            else
+              records = records.order("LOWER(#{records.table_name}.#{field}) #{direction}")
+            end
           end
         end
-      end
 
-      records
+        records
+      end
     end
 
     def _lookup_association_chain(model_names)
