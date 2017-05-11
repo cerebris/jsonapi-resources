@@ -1631,6 +1631,9 @@ module Api
       paginator :paged
     end
 
+    class BiggerBookResource < Api::V4::BookResource
+    end
+
     class BookCommentResource < Api::V2::BookCommentResource
       paginator :paged
     end
