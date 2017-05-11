@@ -403,6 +403,7 @@ module JSONAPI
         subclass.abstract(false)
         subclass.immutable(false)
         subclass.caching(_caching)
+        subclass.paginator(_paginator)
         subclass._attributes = (_attributes || {}).dup
 
         subclass._model_hints = (_model_hints || {}).dup
