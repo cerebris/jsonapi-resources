@@ -220,7 +220,7 @@ module JSONAPI
             if custom_sort.is_a?(Symbol) || custom_sort.is_a?(String)
               records = _resource_klass.send(custom_sort, records, direction, context)
             else
-              records = custom_sort.call(records, direction, context)
+              records = _resource_klass.instance_exec(records, direction, context, &custom_sort)
             end
           else
             if field.to_s.include?(".")
@@ -272,7 +272,7 @@ module JSONAPI
         if strategy.is_a?(Symbol) || strategy.is_a?(String)
           _resource_klass.send(strategy, records, value, options)
         else
-          strategy.call(records, value, options)
+          _resource_klass.instance_exec(records, value, options, &strategy)
         end
       else
         if _resource_klass._relationships.include?(filter)
