@@ -417,6 +417,7 @@ module JSONAPI
         subclass.rebuild_relationships(_relationships || {})
 
         subclass._allowed_filters = (_allowed_filters || Set.new).dup
+        subclass._custom_sorts = (_custom_sorts || Set.new).dup
 
         type = subclass.name.demodulize.sub(/Resource$/, '').underscore
         subclass._type = type.pluralize.to_sym
@@ -480,7 +481,7 @@ module JSONAPI
       end
 
       attr_accessor :_attributes, :_relationships, :_type, :_model_hints
-      attr_writer :_allowed_filters, :_paginator
+      attr_writer :_allowed_filters, :_paginator, :_custom_sorts
 
       def create(context)
         new(create_model, context)
@@ -586,6 +587,10 @@ module JSONAPI
         @_allowed_filters[attr.to_sym] = args.extract_options!
       end
 
+      def sort(attr, *args)
+        @_custom_sorts[attr.to_sym] = args.extract_options!
+      end
+
       def primary_key(key)
         @_primary_key = key.to_sym
       end
@@ -606,7 +611,7 @@ module JSONAPI
 
       # Override in your resource to filter the sortable keys
       def sortable_fields(_context = nil)
-        _attributes.keys
+        _attributes.keys + _custom_sorts.keys
       end
 
       def sortable_field?(key, context = nil)
@@ -808,6 +813,10 @@ module JSONAPI
 
       def _allowed_filters
         defined?(@_allowed_filters) ? @_allowed_filters : { id: {} }
+      end
+
+      def _custom_sorts
+        @_custom_sorts ||= {}
       end
 
       def _paginator
