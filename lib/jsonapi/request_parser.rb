@@ -47,7 +47,18 @@ module JSONAPI
     def setup_base_op(params)
       return if params.nil?
 
-      resource_klass = Resource.resource_klass_for(params[:controller]) if params[:controller]
+      resource_klass = if params[:controller]
+                         allowed_types = context[:allowed_types] || []
+                         data_type = params.require(:data)[:type]
+                         if allowed_types.include?(data_type)
+                           resource_path = params[:controller].split('/')[0..-2]
+                           resource_path.push(data_type.underscore)
+                           resource_type = resource_path.join('/')
+                           Resource.resource_klass_for(resource_type)
+                         else
+                           Resource.resource_klass_for(params[:controller])
+                         end
+                       end
 
       setup_action_method_name = "setup_#{params[:action]}_action"
       if respond_to?(setup_action_method_name)
