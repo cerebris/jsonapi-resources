@@ -71,6 +71,8 @@ module JSONAPI
       # if there is only one status code we can return that
       return counts.keys[0].to_i if counts.length == 1
 
+      # :nocov: not currently used
+
       # if there are many we should return the highest general code, 200, 400, 500 etc.
       max_status = 0
       status_codes.each do |status|
@@ -78,12 +80,8 @@ module JSONAPI
         max_status = code if max_status < code
       end
       return (max_status / 100).floor * 100
+      # :nocov:
     end
-
-    #
-    # def status_sym
-    #   Rack::Utils::HTTP_STATUS_CODES[status].downcase.gsub(/\s|-|'/, '_').to_sym
-    # end
 
     private
 
@@ -113,9 +111,12 @@ module JSONAPI
       @top_level_links.merge!(result.links)
 
       # Build pagination links
-      if result.is_a?(JSONAPI::ResourcesOperationResult) || result.is_a?(JSONAPI::RelatedResourcesOperationResult)
+      if result.is_a?(JSONAPI::ResourceSetOperationResult) ||
+          result.is_a?(JSONAPI::ResourcesSetOperationResult) ||
+          result.is_a?(JSONAPI::RelatedResourcesSetOperationResult)
+
         result.pagination_params.each_pair do |link_name, params|
-          if result.is_a?(JSONAPI::RelatedResourcesOperationResult)
+          if result.is_a?(JSONAPI::RelatedResourcesSetOperationResult)
             relationship = result.source_resource.class._relationships[result._type.to_sym]
             @top_level_links[link_name] = serializer.link_builder.relationships_related_link(result.source_resource, relationship, query_params(params))
           else

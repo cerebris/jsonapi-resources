@@ -1,37 +1,26 @@
 module JSONAPI
-  class CachedResourceFragment
-    def self.fetch_fragments(resource_klass, serializer, context, cache_ids)
-      serializer_config_key = serializer.config_key(resource_klass).gsub("/", "_")
+  class CachedResponseFragment
+    def self.fetch_cached_fragments(resource_klass, serializer_config_key, cache_ids, context)
       context_json = resource_klass.attribute_caching_context(context).to_json
       context_b64 = JSONAPI.configuration.resource_cache_digest_function.call(context_json)
       context_key = "ATTR-CTX-#{context_b64.gsub("/", "_")}"
 
       results = self.lookup(resource_klass, serializer_config_key, context, context_key, cache_ids)
 
-      miss_ids = results.select{|_k,v| v.nil? }.keys
-      unless miss_ids.empty?
-        find_filters = {resource_klass._primary_key => miss_ids.uniq}
-        find_options = {context: context}
-        resource_klass.find(find_filters, find_options).each do |resource|
-          (id, cr) = write(resource_klass, resource, serializer, serializer_config_key, context, context_key)
-          results[id] = cr
-        end
-      end
-
       if JSONAPI.configuration.resource_cache_usage_report_function
+        miss_ids = results.select{|_k,v| v.nil? }.keys
         JSONAPI.configuration.resource_cache_usage_report_function.call(
-          resource_klass.name,
-          cache_ids.size - miss_ids.size,
-          miss_ids.size
+            resource_klass.name,
+            cache_ids.size - miss_ids.size,
+            miss_ids.size
         )
       end
 
-      return results
+      results
     end
 
     attr_reader :resource_klass, :id, :type, :context, :fetchable_fields, :relationships,
-                :links_json, :attributes_json, :meta_json,
-                :preloaded_fragments
+                :links_json, :attributes_json, :meta_json
 
     def initialize(resource_klass, id, type, context, fetchable_fields, relationships,
                    links_json, attributes_json, meta_json)
@@ -47,9 +36,6 @@ module JSONAPI
       @links_json = CompiledJson.of(links_json)
       @attributes_json = CompiledJson.of(attributes_json)
       @meta_json = CompiledJson.of(meta_json)
-
-      # A hash of hashes
-      @preloaded_fragments ||= Hash.new
     end
 
     def to_cache_value
@@ -62,11 +48,6 @@ module JSONAPI
         attrs: attributes_json.try(:to_s),
         meta: meta_json.try(:to_s)
       }
-    end
-
-    def to_real_resource
-      rs = Resource.resource_klass_for(self.type).find_by_keys([self.id], {context: self.context})
-      return rs.try(:first)
     end
 
     private
@@ -103,12 +84,14 @@ module JSONAPI
       )
     end
 
-    def self.write(resource_klass, resource, serializer, serializer_config_key, context, context_key)
+    def self.write(resource_klass, resource, serializer, serializer_config_key, context, context_key, relationship_data )
       (id, cache_key) = resource.cache_id
-      json = serializer.object_hash(resource) # No inclusions passed to object_hash
+
+      json = serializer.object_hash(resource, relationship_data)
+
       cr = self.new(
         resource_klass,
-        json['id'],
+        id,
         json['type'],
         context,
         resource.fetchable_fields,

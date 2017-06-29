@@ -146,13 +146,22 @@ module JSONAPI
     def setup_show_relationship_action(params, resource_klass)
       relationship_type = params[:relationship]
       parent_key = params.require(resource_klass._as_parent_key)
+      include_directives = parse_include_directives(resource_klass, params[:include])
+      filters = parse_filters(resource_klass, params[:filter])
+      sort_criteria = parse_sort_criteria(resource_klass, params[:sort])
+      paginator = parse_pagination(resource_klass, params[:page])
 
       JSONAPI::Operation.new(
           :show_relationship,
           resource_klass,
           context: @context,
           relationship_type: relationship_type,
-          parent_key: resource_klass.verify_key(parent_key)
+          parent_key: resource_klass.verify_key(parent_key),
+          filters: filters,
+          sort_criteria: sort_criteria,
+          paginator: paginator,
+          fields: fields,
+          include_directives: include_directives
       )
     end
 
@@ -540,9 +549,7 @@ module JSONAPI
     end
 
     def parse_to_many_relationship(resource_klass, link_value, relationship, &add_result)
-      if link_value.is_a?(Array) && link_value.length == 0
-        linkage = []
-      elsif (link_value.is_a?(Hash) || link_value.is_a?(ActionController::Parameters))
+      if (link_value.is_a?(Hash) || link_value.is_a?(ActionController::Parameters))
         linkage = link_value[:data]
       else
         fail JSONAPI::Exceptions::InvalidLinksObject.new(error_object_overrides)

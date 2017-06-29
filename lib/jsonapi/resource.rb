@@ -1,4 +1,5 @@
 require 'jsonapi/callbacks'
+require 'jsonapi/configuration'
 
 module JSONAPI
   class Resource
@@ -35,8 +36,12 @@ module JSONAPI
       _model.public_send(self.class._primary_key)
     end
 
+    def identity
+      JSONAPI::ResourceIdentity.new(self.class, id)
+    end
+
     def cache_id
-      [id, _model.public_send(self.class._cache_field)]
+      [id, self.class.hash_cache_field(_model.public_send(self.class._cache_field))]
     end
 
     def is_new?
@@ -162,15 +167,6 @@ module JSONAPI
       {}
     end
 
-    def preloaded_fragments
-      # A hash of hashes
-      @preloaded_fragments ||= Hash.new
-    end
-
-    def count_for_relationship(relationship_name, options)
-      self.class._record_accessor.count_for_relationship(self, relationship_name, options)
-    end
-
     private
 
     def save
@@ -290,7 +286,10 @@ module JSONAPI
       reflect = reflect_relationship?(relationship, options)
 
       if reflect
-        existing = send("#{relationship.foreign_key}")
+        existing_rids = self.class.find_related_fragments([identity], relationship_type, options)
+
+        existing = existing_rids.keys.collect { |rid| rid.id }
+
         to_delete = existing - (relationship_key_values & existing)
         to_delete.each do |key|
           _remove_to_many_link(relationship_type, key, reflected_source: self)
@@ -320,9 +319,7 @@ module JSONAPI
     def _replace_polymorphic_to_one_link(relationship_type, key_value, key_type, _options)
       relationship = self.class._relationships[relationship_type.to_sym]
 
-      _model.public_send("#{relationship.foreign_key}=", key_value)
-      _model.public_send("#{relationship.polymorphic_type}=", self.class.model_name_for_type(key_type))
-
+      send("#{relationship.foreign_key}=", {type: key_type, id: key_value})
       @save_needed = true
 
       :completed
@@ -405,12 +402,12 @@ module JSONAPI
       def inherited(subclass)
         subclass.abstract(false)
         subclass.immutable(false)
-        subclass.caching(false)
+        subclass.caching(_caching)
         subclass._attributes = (_attributes || {}).dup
 
         subclass._model_hints = (_model_hints || {}).dup
 
-        unless _model_name.empty?
+        unless _model_name.empty? || _immutable
           subclass.model_name(_model_name, add_model_hint: (_model_hints && !_model_hints[_model_name].nil?) == true)
         end
 
@@ -427,8 +424,66 @@ module JSONAPI
 
         check_reserved_resource_name(subclass._type, subclass.name)
 
-        subclass.record_accessor = @_record_accessor_klass
+        subclass.include JSONAPI.configuration.resource_finder if JSONAPI.configuration.resource_finder
       end
+
+      # A ResourceFinder is a mixin that adds functionality to find Resources and Resource Fragments
+      # to the core Resource class.
+      #
+      # Resource fragments are a hash with the following format:
+      # {
+      #   identity: <required: a ResourceIdentity>,
+      #   cache: <optional: the resource's cache value>
+      #   attributes: <optional: attributes hash for attributes requested - currently unused>
+      #   related: {
+      #     <relationship_name>: <ResourceIndentity of a source resource in find_related_fragments>
+      #   }
+      # }
+      #
+      # begin ResourceFinder Abstract methods
+        def find(_filters, _options = {})
+          # :nocov:
+          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+          # :nocov:
+        end
+
+        def count(_filters, _options = {})
+          # :nocov:
+          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+          # :nocov:
+        end
+
+        def find_by_keys(_keys, _options = {})
+          # :nocov:
+          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+          # :nocov:
+        end
+
+        def find_by_key(_key, _options = {})
+          # :nocov:
+          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+          # :nocov:
+        end
+
+        def find_fragments(_filters, _options = {})
+          # :nocov:
+          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+          # :nocov:
+        end
+
+        def find_related_fragments(_source_rids, _relationship_name, _options = {})
+          # :nocov:
+          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+          # :nocov:
+        end
+
+        def count_related(_source_rid, _relationship_name, _options = {})
+          # :nocov:
+          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+          # :nocov:
+        end
+
+      #end ResourceFinder Abstract methods
 
       def rebuild_relationships(relationships)
         original_relationships = relationships.deep_dup
@@ -439,6 +494,7 @@ module JSONAPI
           original_relationships.each_value do |relationship|
             options = relationship.options.dup
             options[:parent_resource] = self
+            options[:inverse_relationship] = relationship.inverse_relationship
             _add_relationship(relationship.class, relationship.name, options)
           end
         end
@@ -526,6 +582,32 @@ module JSONAPI
         define_method "#{attr}=" do |value|
           @model.public_send("#{options[:delegate] ? options[:delegate].to_sym : attr}=", value)
         end unless method_defined?("#{attr}=")
+      end
+
+      def attribute_to_model_field(attribute)
+        field_name = if attribute == :_cache_field
+                       _cache_field
+                     else
+                       # Note: this will allow the returning of model attributes without a corresponding
+                       # resource attribute, for example a belongs_to id such as `author_id` or bypassing
+                       # the delegate.
+                       attr = @_attributes[attribute]
+                       attr && attr[:delegate] ? attr[:delegate].to_sym : attribute
+                     end
+        if Rails::VERSION::MAJOR >= 5
+          attribute_type = _model_class.attribute_types[field_name.to_s]
+        else
+          attribute_type = _model_class.column_types[field_name.to_s]
+        end
+        { name: field_name, type: attribute_type}
+      end
+
+      def cast_to_attribute_type(value, type)
+        if Rails::VERSION::MAJOR >= 5
+          return type.cast(value)
+        else
+          return type.type_cast_from_database(value)
+        end
       end
 
       def default_attribute_options
@@ -631,30 +713,23 @@ module JSONAPI
       end
 
       def find_count(filters, options = {})
-        _record_accessor.find_count(filters, options)
+        # ToDo: Deprecation warning
+        count(filters, options)
       end
 
-      def find(filters, options = {})
-        _record_accessor.find_resource(filters, options)
+      def records(options = {})
+        _model_class.all
       end
 
-      def resources_for(models, context)
-        models.collect do |model|
-          resource_for(model, context)
+      def resources_for(records, context)
+        records.collect do |record|
+          resource_for(record, context)
         end
       end
 
-      def resource_for(model, context)
-        resource_klass = self.resource_klass_for_model(model)
-        resource_klass.new(model, context)
-      end
-
-      def find_by_keys(keys, options = {})
-        _record_accessor.find_resources_by_keys(keys, options)
-      end
-
-      def find_by_key(key, options = {})
-        _record_accessor.find_resource_by_key(key, options)
+      def resource_for(model_record, context)
+        resource_klass = self.resource_klass_for_model(model_record)
+        resource_klass.new(model_record, context)
       end
 
       def verify_filters(filters, context = nil)
@@ -818,18 +893,6 @@ module JSONAPI
         @_paginator = paginator
       end
 
-      def _record_accessor
-        @_record_accessor = _record_accessor_klass.new(self)
-      end
-
-      def record_accessor=(record_accessor_klass)
-        @_record_accessor_klass = record_accessor_klass
-      end
-
-      def _record_accessor_klass
-        @_record_accessor_klass ||= JSONAPI.configuration.default_record_accessor_klass
-      end
-
       def abstract(val = true)
         @abstract = val
       end
@@ -859,11 +922,20 @@ module JSONAPI
       end
 
       def caching?
-        @caching && !JSONAPI.configuration.resource_cache.nil?
+        if @caching.nil?
+          !JSONAPI.configuration.resource_cache.nil? && JSONAPI.configuration.default_caching
+        else
+          @caching && !JSONAPI.configuration.resource_cache.nil?
+        end
       end
 
       def attribute_caching_context(_context)
         nil
+      end
+
+      # Generate a hashcode from the value to be used as part of the cache lookup
+      def hash_cache_field(value)
+        value.hash
       end
 
       def _model_class
@@ -924,76 +996,24 @@ module JSONAPI
 
       #   ResourceBuilder methods
       def define_relationship_methods(relationship_name, relationship_klass, options)
-        # Initialize from an ActiveRecord model's properties
-        if _model_class && _model_class.ancestors.collect { |ancestor| ancestor.name }.include?('ActiveRecord::Base')
-          model_association = _model_class.reflect_on_association(relationship_name)
-          if model_association
-            options = options.reverse_merge(class_name: model_association.class_name)
-          end
-        end
-
         relationship = register_relationship(
             relationship_name,
             relationship_klass.new(relationship_name, options)
         )
 
         define_foreign_key_setter(relationship)
-
-        case relationship
-          when JSONAPI::Relationship::ToOne
-            if relationship.belongs_to?
-              build_belongs_to(relationship)
-            else
-              build_has_one(relationship)
-            end
-          when JSONAPI::Relationship::ToMany
-            build_to_many(relationship)
-        end
       end
 
       def define_foreign_key_setter(relationship)
-        define_on_resource "#{relationship.foreign_key}=" do |value|
-          _model.method("#{relationship.foreign_key}=").call(value)
-        end
-      end
-
-      def build_belongs_to(relationship)
-        foreign_key = relationship.foreign_key
-        define_on_resource foreign_key do
-          self.class._record_accessor.foreign_key(self, relationship.name)
-        end
-
-        # Returns instantiated related resource object or nil
-        define_on_resource relationship.name do |options = {}|
-          self.class._record_accessor.related_resource(self, relationship.name, options)
-        end
-      end
-
-      def build_has_one(relationship)
-        foreign_key = relationship.foreign_key
-
-        # Returns primary key name of related resource class
-        define_on_resource foreign_key do
-          self.class._record_accessor.foreign_key(self, relationship.name)
-        end
-
-        # Returns instantiated related resource object or nil
-        define_on_resource relationship.name do |options = {}|
-          self.class._record_accessor.related_resource(self, relationship.name, options)
-        end
-      end
-
-      def build_to_many(relationship)
-        foreign_key = relationship.foreign_key
-
-        # Returns array of primary keys of related resource classes
-        define_on_resource foreign_key do
-          self.class._record_accessor.foreign_keys(self, relationship.name)
-        end
-
-        # Returns array of instantiated related resource objects
-        define_on_resource relationship.name do |options = {}|
-          self.class._record_accessor.related_resources(self, relationship.name, options)
+        if relationship.polymorphic?
+          define_on_resource "#{relationship.foreign_key}=" do |v|
+            _model.method("#{relationship.foreign_key}=").call(v[:id])
+            _model.public_send("#{relationship.polymorphic_type}=", v[:type])
+          end
+        else
+          define_on_resource "#{relationship.foreign_key}=" do |value|
+            _model.method("#{relationship.foreign_key}=").call(value)
+          end
         end
       end
 
@@ -1018,7 +1038,7 @@ module JSONAPI
       def check_reserved_attribute_name(name)
         # Allow :id since it can be used to specify the format. Since it is a method on the base Resource
         # an attribute method won't be created for it.
-        if [:type].include?(name.to_sym)
+        if [:type, :_cache_field, :cache_field].include?(name.to_sym)
           warn "[NAME COLLISION] `#{name}` is a reserved key in #{_resource_name_from_type(_type)}."
         end
       end

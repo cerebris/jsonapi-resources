@@ -226,14 +226,6 @@ class ResourceTest < ActiveSupport::TestCase
     assert_equal(relationships.size, 2)
   end
 
-  def test_replace_polymorphic_to_one_link
-    picture_resource = PictureResource.find_by_key(Picture.first)
-    picture_resource.replace_polymorphic_to_one_link('imageable', '9', 'Topic')
-
-    assert Picture.first.imageable_id == 9
-    assert Picture.first.imageable_type == Document::Topic.to_s
-  end
-
   def test_duplicate_relationship_name
     assert_output nil, "[DUPLICATE RELATIONSHIP] `mother` has already been defined in FelineResource.\n" do
       FelineResource.instance_eval do
@@ -251,64 +243,15 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_find_with_customized_base_records
-    author = Person.find(1)
+    author = Person.find(1001)
     posts = ArticleResource.find([], context: author).map(&:_model)
 
     assert(posts.include?(Post.find(1)))
     refute(posts.include?(Post.find(3)))
   end
 
-  def test_records_for
-    author = Person.find(1)
-    preferences = Preferences.first
-    refute(preferences == nil)
-    author.update! preferences: preferences
-    author_resource = PersonResource.new(author, nil)
-    assert_equal(author_resource.preferences._model, preferences)
-
-    author_resource = PersonWithCustomRecordsForResource.new(author, nil)
-    assert_equal(author_resource.preferences._model, :records_for)
-
-    author_resource = PersonWithCustomRecordsForErrorResource.new(author, nil)
-    assert_raises PersonWithCustomRecordsForErrorResource::AuthorizationError do
-      author_resource.posts
-    end
-  end
-
-  def test_records_for_meta_method_for_to_one
-    author = Person.find(1)
-    author.update! preferences: Preferences.first
-    author_resource = PersonWithCustomRecordsForRelationshipsResource.new(author, nil)
-    assert_equal(author_resource.class._record_accessor.records_for(
-        author_resource, :preferences), :record_for_preferences)
-  end
-
-  def test_records_for_meta_method_for_to_one_calling_records_for
-    author = Person.find(1)
-    author.update! preferences: Preferences.first
-    author_resource = PersonWithCustomRecordsForResource.new(author, nil)
-    assert_equal(author_resource.class._record_accessor.records_for(
-        author_resource, :preferences), :records_for)
-  end
-
-  def test_associated_records_meta_method_for_to_many
-    author = Person.find(1)
-    author.posts << Post.find(1)
-    author_resource = PersonWithCustomRecordsForRelationshipsResource.new(author, nil)
-    assert_equal(author_resource.class._record_accessor.records_for(
-        author_resource, :posts), :records_for_posts)
-  end
-
-  def test_associated_records_meta_method_for_to_many_calling_records_for
-    author = Person.find(1)
-    author.posts << Post.find(1)
-    author_resource = PersonWithCustomRecordsForResource.new(author, nil)
-    assert_equal(author_resource.class._record_accessor.records_for(
-        author_resource, :posts), :records_for)
-  end
-
   def test_find_by_key_with_customized_base_records
-    author = Person.find(1)
+    author = Person.find(1001)
 
     post = ArticleResource.find_by_key(1, context: author)._model
     assert_equal(post, Post.find(1))
@@ -344,83 +287,20 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_to_many_relationship_filters
     post_resource = PostResource.new(Post.find(1), nil)
-    comments = post_resource.comments
+
+    comments = PostResource.find_related_fragments([post_resource.identity], :comments)
     assert_equal(2, comments.size)
 
-    # define apply_filters method on post resource to not respect filters
-    PostResource.instance_eval do
-      def apply_filters(records, filters, options)
-        # :nocov:
-        records
-        # :nocov:
-      end
-    end
-
-    filtered_comments = post_resource.comments({ filters: { body: 'i liked it' } })
+    filtered_comments = PostResource.find_related_fragments([post_resource.identity], :comments, { filters: { body: 'i liked it' } })
     assert_equal(1, filtered_comments.size)
-
-  ensure
-    # reset method to original implementation
-    PostResource.instance_eval do
-      def apply_filters(records, filters, options)
-        # :nocov:
-        required_includes = []
-
-        if filters
-          filters.each do |filter, value|
-            if _relationships.include?(filter)
-              if _relationships[filter].belongs_to?
-                records = apply_filter(records, _relationships[filter].foreign_key, value, options)
-              else
-                required_includes.push(filter.to_s)
-                records = apply_filter(records, "#{_relationships[filter].table_name}.#{_relationships[filter].primary_key}", value, options)
-              end
-            else
-              records = apply_filter(records, filter, value, options)
-            end
-          end
-        end
-
-        if required_includes.any?
-          records = apply_includes(records, options.merge(include_directives: IncludeDirectives.new(self, required_includes, force_eager_load: true)))
-        end
-
-        records
-        # :nocov:
-      end
-    end
-  end
-
-  def test_custom_sorting
-    post_resource = PostResource.new(Post.find(1), nil)
-    comment_ids = post_resource.comments.map{|c| c._model.id }
-    assert_equal [1,2], comment_ids
-
-    # define apply_sort method on post resource that will never sort
-    PostResource.instance_eval do
-      def apply_sort(records, criteria, context = {})
-        if criteria.key?('name')
-          # this sort will never occure
-          records.order('name asc')
-        end
-      end
-    end
-
-    sorted_comment_ids = post_resource.comments(sort_criteria: [{ field: 'id', direction: :desc}]).map{|c| c._model.id }
-    assert_equal [2,1], sorted_comment_ids
-  ensure
-    # reset method to original implementation
-    PostResource.instance_eval do
-      undef :apply_sort
-    end
   end
 
   def test_to_many_relationship_sorts
     post_resource = PostResource.new(Post.find(1), nil)
-    comment_ids = post_resource.comments.map{|c| c._model.id }
+    comment_ids = post_resource.class.find_related_fragments([post_resource.identity], :comments).keys.collect {|c| c.id }
     assert_equal [1,2], comment_ids
 
-    # define apply_sort method on post resource to sort descending
+    # define apply_filters method on post resource to sort descending
     PostResource.instance_eval do
       def apply_sort(records, criteria, context = {})
         # :nocov:
@@ -430,13 +310,36 @@ class ResourceTest < ActiveSupport::TestCase
       end
     end
 
-    sorted_comment_ids = post_resource.comments(sort_criteria: [{ field: 'id', direction: :desc}]).map{|c| c._model.id }
+    sorted_comment_ids = post_resource.class.find_related_fragments(
+        [post_resource.identity],
+        :comments,
+        { sort_criteria: [{ field: 'id', direction: :desc }] }).keys.collect {|c| c.id}
+
     assert_equal [2,1], sorted_comment_ids
 
   ensure
-    # reset method to original implementation
     PostResource.instance_eval do
-      undef :apply_sort
+      def apply_sort(records, order_options, context = {})
+        if order_options.any?
+          order_options.each_pair do |field, direction|
+            if field.to_s.include?(".")
+              *model_names, column_name = field.split(".")
+
+              associations = _lookup_association_chain([records.model.to_s, *model_names])
+              joins_query = _build_joins([records.model, *associations])
+
+              # _sorting is appended to avoid name clashes with manual joins eg. overridden filters
+              order_by_query = "#{associations.last.name}_sorting.#{column_name} #{direction}"
+              records = records.joins(joins_query).order(order_by_query)
+            else
+              field = _attribute_delegated_name(field)
+              records = records.order(field => direction)
+            end
+          end
+        end
+
+        records
+      end
     end
   end
 
@@ -459,51 +362,53 @@ class ResourceTest < ActiveSupport::TestCase
   def test_build_joins
     model_names = %w(person posts parent_post author)
     associations = PostResource._lookup_association_chain(model_names)
-    result = PostResource._record_accessor._build_joins(associations)
+    result = PostResource.send(:_build_joins, associations)
 
     assert_equal "LEFT JOIN posts AS parent_post_sorting ON parent_post_sorting.id = posts.parent_post_id
 LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", result
   end
 
-  def test_to_many_relationship_pagination
-    post_resource = PostResource.new(Post.find(1), nil)
-    comments = post_resource.comments
-    assert_equal 2, comments.size
-
-    # define apply_filters method on post resource to not respect filters
-    PostResource.instance_eval do
-      def apply_pagination(records, criteria, order_options)
-        # :nocov:
-        records
-        # :nocov:
-      end
-    end
-
-    paginator_class = Class.new(JSONAPI::Paginator) do
-      def initialize(params)
-        # param parsing and validation here
-        @page = params.to_i
-      end
-
-      def apply(relation, order_options)
-        relation.offset(@page).limit(1)
-      end
-    end
-
-    paged_comments = post_resource.comments(paginator: paginator_class.new(1))
-    assert_equal 1, paged_comments.size
-
-  ensure
-    # reset method to original implementation
-    PostResource.instance_eval do
-      def apply_pagination(records, criteria, order_options)
-        # :nocov:
-        records = paginator.apply(records, order_options) if paginator
-        records
-        # :nocov:
-      end
-    end
-  end
+  # ToDo: Implement relationship pagination
+  #
+  # def test_to_many_relationship_pagination
+  #   post_resource = PostResource.new(Post.find(1), nil)
+  #   comments = post_resource.comments
+  #   assert_equal 2, comments.size
+  #
+  #   # define apply_filters method on post resource to not respect filters
+  #   PostResource.instance_eval do
+  #     def apply_pagination(records, criteria, order_options)
+  #       # :nocov:
+  #       records
+  #       # :nocov:
+  #     end
+  #   end
+  #
+  #   paginator_class = Class.new(JSONAPI::Paginator) do
+  #     def initialize(params)
+  #       # param parsing and validation here
+  #       @page = params.to_i
+  #     end
+  #
+  #     def apply(relation, order_options)
+  #       relation.offset(@page).limit(1)
+  #     end
+  #   end
+  #
+  #   paged_comments = post_resource.comments(paginator: paginator_class.new(1))
+  #   assert_equal 1, paged_comments.size
+  #
+  # ensure
+  #   # reset method to original implementation
+  #   PostResource.instance_eval do
+  #     def apply_pagination(records, criteria, order_options)
+  #       # :nocov:
+  #       records = paginator.apply(records, order_options) if paginator
+  #       records
+  #       # :nocov:
+  #     end
+  #   end
+  # end
 
   def test_key_type_integer
     FelineResource.instance_eval do
@@ -583,6 +488,8 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
   end
 
   def test_id_attr_deprecation
+
+    ActiveSupport::Deprecation.silenced = false
     _out, err = capture_io do
       eval <<-CODE
         class ProblemResource < JSONAPI::Resource
@@ -591,6 +498,8 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
       CODE
     end
     assert_match /DEPRECATION WARNING: Id without format is no longer supported. Please remove ids from attributes, or specify a format./, err
+  ensure
+    ActiveSupport::Deprecation.silenced = true
   end
 
   def test_id_attr_with_format

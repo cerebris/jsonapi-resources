@@ -36,9 +36,11 @@ module JSONAPI
       get_includes(@include_directives_hash)
     end
 
+    # :nocov:
     def all_paths
       delve_paths(get_includes(@include_directives_hash, false))
     end
+    # :nocov:
 
     private
 
@@ -84,6 +86,7 @@ module JSONAPI
       end
     end
 
+    # :nocov:
     def delve_paths(obj)
       case obj
         when Array
@@ -96,5 +99,7 @@ module JSONAPI
           raise "delve_paths cannot descend into #{obj.class.name}"
       end
     end
+    # :nocov:
+
   end
 end

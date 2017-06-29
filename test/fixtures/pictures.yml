@@ -13,3 +13,27 @@ picture_2:
 picture_3:
   id: 3
   name: group_photo.jpg
+
+picture_40:
+  id: 40
+  name: company_management_team_2015.jpg
+  imageable_id: 200
+  imageable_type: Document
+
+picture_41:
+  id: 41
+  name: company_management_team_2016.jpg
+  imageable_id: 200
+  imageable_type: Document
+
+picture_47:
+  id: 47
+  name: company_management_team_2017.jpg
+  imageable_id: 200
+  imageable_type: Document
+
+picture_48:
+  id: 48
+  name: JunkYardDogs.jpg
+  imageable_id: 201
+  imageable_type: Document

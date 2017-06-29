@@ -76,7 +76,7 @@ module JSONAPI
       transactional = request_parser.transactional?
 
       begin
-        run_in_transaction(transactional) do
+        process_operations(transactional) do
           run_callbacks :process_operations do
             request_parser.each(response_document) do |op|
               op.options[:serializer] = resource_serializer_klass.new(
@@ -103,7 +103,7 @@ module JSONAPI
       render_response_document
     end
 
-    def run_in_transaction(transactional)
+    def process_operations(transactional)
       if transactional
         run_callbacks :transaction do
           ActiveRecord::Base.transaction do
@@ -224,7 +224,10 @@ module JSONAPI
         # Bypassing ActiveSupport allows us to use CompiledJson objects for cached response fragments
         render_options[:body] = JSON.generate(content)
 
-        render_options[:location] = content['data']['links']['self'] if (response_document.status == 201 && content[:data].class != Array)
+        if (response_document.status == 201 && content[:data].class != Array) &&
+            content['data'] && content['data']['links'] && content['data']['links']['self']
+          render_options[:location] = content['data']['links']['self']
+        end
       end
 
       # For whatever reason, `render` ignores :status and :content_type when :body is set.
