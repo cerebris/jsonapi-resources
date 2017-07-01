@@ -833,6 +833,9 @@ module Api
 
     class LikesController < JSONAPI::ResourceController
     end
+
+    class PicturesController < JSONAPI::ResourceController
+    end
   end
 
   module V2
@@ -1492,6 +1495,10 @@ module Api
     class VehicleResource < VehicleResource; end
     class CarResource < CarResource; end
     class BoatResource < BoatResource; end
+    class ImageableResource < ImageableResource; end
+    class PictureResource < PictureResource; end
+    class ProductResource < ProductResource; end
+    class DocumentResource < DocumentResource; end
   end
 end
 

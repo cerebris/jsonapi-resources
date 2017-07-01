@@ -65,7 +65,8 @@ module JSONAPI
     end
 
     def to_real_resource
-      rs = Resource.resource_klass_for(self.type).find_by_keys([self.id], {context: self.context})
+      rs_klass = @resource_klass || Resource.resource_klass_for(self.type)
+      rs = rs_klass.find_by_keys([self.id], {context: self.context})
       return rs.try(:first)
     end
 

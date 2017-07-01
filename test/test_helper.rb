@@ -281,6 +281,7 @@ TestApp.routes.draw do
       jsonapi_resources :craters
       jsonapi_resources :preferences
       jsonapi_resources :likes
+      jsonapi_resources :pictures
     end
 
     JSONAPI.configuration.route_format = :underscored_route

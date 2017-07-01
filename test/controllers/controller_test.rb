@@ -3520,6 +3520,21 @@ class Api::V1::CratersControllerTest < ActionController::TestCase
   end
 end
 
+class Api::V1::PicturesControllerTest < ActionController::TestCase
+  def test_pictures_index
+    assert_cacheable_get :index
+    assert_response :success
+    assert_equal 3, json_response['data'].size
+  end
+
+  def test_pictures_index_with_polymorphic_include_one_level
+    assert_cacheable_get :index, params: {include: 'imageable'}
+    assert_response :success
+    assert_equal 3, json_response['data'].size
+    assert_equal 2, json_response['included'].size
+  end
+end
+
 class CarsControllerTest < ActionController::TestCase
   def setup
     JSONAPI.configuration.json_key_format = :camelized_key
