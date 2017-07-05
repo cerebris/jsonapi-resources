@@ -479,4 +479,26 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
     picture.imageable = original_imageable
     picture.save
   end
+
+  def test_polymorphic_delete_relationship_with_patch
+    picture = Picture.find(1)
+    original_imageable = picture.imageable
+    assert original_imageable
+
+    patch "/pictures/#{picture.id}/relationships/imageable", params:
+           {
+             data: nil
+           }.to_json,
+           headers: {
+             'Content-Type' => JSONAPI::MEDIA_TYPE,
+             'Accept' => JSONAPI::MEDIA_TYPE
+           }
+    assert_response :no_content
+    picture = Picture.find(1)
+    assert_nil picture.imageable
+
+    # restore data
+    picture.imageable = original_imageable
+    picture.save
+  end
 end
