@@ -653,8 +653,8 @@ module JSONAPI
 
       if relationship.is_a?(JSONAPI::Relationship::ToOne)
         if relationship.polymorphic?
-          options[:key_value] = verified_params[:to_one].values[0][:id]
-          options[:key_type] = verified_params[:to_one].values[0][:type]
+          options[:key_value] = verified_params[:to_one].values[0] && verified_params[:to_one].values[0][:id]
+          options[:key_type] = verified_params[:to_one].values[0] && verified_params[:to_one].values[0][:type]
 
           operation_type = :replace_polymorphic_to_one_relationship
         else

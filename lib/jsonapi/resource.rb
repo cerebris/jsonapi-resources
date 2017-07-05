@@ -321,7 +321,11 @@ module JSONAPI
       relationship = self.class._relationships[relationship_type.to_sym]
 
       _model.public_send("#{relationship.foreign_key}=", key_value)
-      _model.public_send("#{relationship.polymorphic_type}=", self.class.model_name_for_type(key_type))
+      if key_value.nil? && key_type.nil?
+        _model.public_send("#{relationship.polymorphic_type}=", nil)
+      else
+        _model.public_send("#{relationship.polymorphic_type}=", self.class.model_name_for_type(key_type))
+      end
 
       @save_needed = true
 
