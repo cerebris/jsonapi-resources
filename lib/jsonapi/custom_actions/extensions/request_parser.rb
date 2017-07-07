@@ -8,7 +8,7 @@ module JSONAPI
     def setup_custom_actions_action(params, resource_klass)
       action_resource = custom_action_resource(params[resource_klass._as_parent_key], resource_klass)
       custom_action = params.require(:custom_action)
-      data = transform_data(params[:data])
+      data = custom_action[:type] == :get ? params.except('custom_action') : transform_data(params[:data])
 
       action_result = resolve_custom_action(custom_action[:name], action_resource, data)
 
@@ -22,7 +22,7 @@ module JSONAPI
 
     def resolve_operation(action_result, resource_klass, options)
       case action_result
-      when ActiveRecord::Relation
+      when ActiveRecord::Relation, Array
         return action_operation(resource_klass, options.merge(results: action_result), false)
       when ActiveRecord::Base
         return action_operation(resource_klass, options.merge(id: action_result.id))

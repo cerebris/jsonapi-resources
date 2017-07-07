@@ -24,10 +24,10 @@ module ActionDispatch
           resource_klass = JSONAPI::Resource.resource_klass_for(resource_type_with_module_prefix(@resource_type))
 
           resource_klass._custom_actions.each_value do |custom_action|
-            path = format_route(custom_action[:name])
+            path = format_route("#{@resource_type}/#{custom_action[:name]}")
 
             next unless custom_action[:level] == :collection
-            match "#{@resource_type}/#{path}",
+            match path,
                   to: "#{@resource_type}#custom_actions",
                   via: [custom_action[:type]],
                   custom_action: custom_action

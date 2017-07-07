@@ -20,7 +20,7 @@ module JSONAPI
     #
     # @return [ResourceOperationResult]
     def custom_actions_collection
-      resources = resource_klass.find_by_keys(params[:results], custom_actions_options)
+      resources = resource_klass.resources_for(params[:results], custom_actions_options)
       JSONAPI::ResourceOperationResult.new(:ok, resources, result_options)
     end
 
