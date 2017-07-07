@@ -339,6 +339,9 @@ module JSONAPI
     end
 
     def related_link(source, relationship)
+      custom_related_link = source.custom_related_link(relationship, custom_generation_options)
+      return custom_related_link if custom_related_link.present?
+
       link_builder.relationships_related_link(source, relationship)
     end
 

@@ -1435,6 +1435,12 @@ class SimpleCustomLinkResource < JSONAPI::Resource
   def custom_links(options)
     { raw: options[:serializer].link_builder.self_link(self) + "/raw" }
   end
+
+  def custom_related_link(relationship, options)
+    if relationship.name == 'section' && @model.section_id.present?
+      return options[:serializer].link_builder.base_url + "/sections/#{@model.section_id}"
+    end
+  end
 end
 
 class CustomLinkWithRelativePathOptionResource < JSONAPI::Resource

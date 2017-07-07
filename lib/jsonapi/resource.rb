@@ -167,6 +167,11 @@ module JSONAPI
       {}
     end
 
+    # Override this to return a custom related link for a given relationship
+    def custom_related_link(relationship, _options)
+      nil
+    end
+
     private
 
     def save

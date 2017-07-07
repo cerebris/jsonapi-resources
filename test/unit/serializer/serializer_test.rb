@@ -2195,6 +2195,49 @@
 #     assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
 #   end
 #
+#   def test_custom_related_link
+#     post = Post.find(2)
+#     serialized_custom_link_resource = JSONAPI::ResourceSerializer.new(SimpleCustomLinkResource, base_url: 'http://example.com').serialize_to_hash(SimpleCustomLinkResource.new(post, {}))
+#
+#     custom_related_link_spec = {
+#         data: {
+#           type: 'simpleCustomLinks',
+#           id: '2',
+#           attributes: {
+#             title: "JR Solves your serialization woes!",
+#             body: "Use JR",
+#             subject: "JR Solves your serialization woes!"
+#           },
+#         links: {
+#           self: "http://example.com/simpleCustomLinks/2",
+#           raw: "http://example.com/simpleCustomLinks/2/raw"
+#         },
+#         relationships: {
+#           writer: {
+#             links: {
+#               self: "http://example.com/simpleCustomLinks/2/relationships/writer",
+#               related: "http://example.com/simpleCustomLinks/2/writer"
+#             }
+#           },
+#           section: {
+#             links: {
+#               self: "http://example.com/simpleCustomLinks/2/relationships/section",
+#               related: "http://example.com/sections/#{post.section_id}"
+#             }
+#           },
+#           comments: {
+#             links: {
+#               self: "http://example.com/simpleCustomLinks/2/relationships/comments",
+#               related: "http://example.com/simpleCustomLinks/2/comments"
+#             }
+#           }
+#         }
+#       }
+#     }
+#
+#     assert_hash_equals(custom_related_link_spec, serialized_custom_link_resource)
+#   end
+#
 #   def test_includes_two_relationships_with_same_foreign_key
 #     serialized_resource = JSONAPI::ResourceSerializer
 #       .new(PersonWithEvenAndOddPostsResource, include: ['even_posts','odd_posts'])
