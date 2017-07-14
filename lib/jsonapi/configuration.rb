@@ -1,5 +1,7 @@
 require 'jsonapi/formatter'
 require 'jsonapi/processor'
+require 'jsonapi/record_accessor'
+require 'jsonapi/active_record_accessor'
 require 'concurrent'
 
 module JSONAPI
@@ -14,6 +16,7 @@ module JSONAPI
                 :default_paginator,
                 :default_page_size,
                 :maximum_page_size,
+                :default_record_accessor_klass,
                 :default_processor_klass,
                 :use_text_errors,
                 :top_level_links_include_pagination,
@@ -22,7 +25,9 @@ module JSONAPI
                 :top_level_meta_include_page_count,
                 :top_level_meta_page_count_key,
                 :allow_transactions,
+                :include_backtraces_in_errors,
                 :exception_class_whitelist,
+                :whitelist_all_exceptions,
                 :always_include_to_one_linkage_data,
                 :always_include_to_many_linkage_data,
                 :cache_formatters,
@@ -68,6 +73,10 @@ module JSONAPI
 
       self.use_text_errors = false
 
+      # Whether or not to include exception backtraces in JSONAPI error
+      # responses.  Defaults to `false` in production, and `true` otherwise.
+      self.include_backtraces_in_errors = !Rails.env.production?
+
       # List of classes that should not be rescued by the operations processor.
       # For example, if you use Pundit for authorization, you might
       # raise a Pundit::NotAuthorizedError at some point during operations
@@ -76,11 +85,21 @@ module JSONAPI
       # the `Pundit::NotAuthorizedError` to the `exception_class_whitelist`.
       self.exception_class_whitelist = []
 
+      # If enabled, will override configuration option `exception_class_whitelist`
+      # and whitelist all exceptions.
+      self.whitelist_all_exceptions = false
+
       # Resource Linkage
       # Controls the serialization of resource linkage for non compound documents
       # NOTE: always_include_to_many_linkage_data is not currently implemented
       self.always_include_to_one_linkage_data = false
       self.always_include_to_many_linkage_data = false
+
+      # Record Accessor
+      # The default Record Accessor is the ActiveRecordAccessor which provides
+      # caching access to ActiveRecord backed models. Custom Accessors can be specified
+      # in order to support other models.
+      self.default_record_accessor_klass = JSONAPI::ActiveRecordAccessor
 
       # The default Operation Processor to use if one is not defined specifically
       # for a Resource.
@@ -183,11 +202,16 @@ module JSONAPI
     end
 
     def exception_class_whitelisted?(e)
-      @exception_class_whitelist.flatten.any? { |k| e.class.ancestors.map(&:to_s).include?(k.to_s) }
+      @whitelist_all_exceptions ||
+        @exception_class_whitelist.flatten.any? { |k| e.class.ancestors.map(&:to_s).include?(k.to_s) }
     end
 
     def default_processor_klass=(default_processor_klass)
       @default_processor_klass = default_processor_klass
+    end
+
+    def default_record_accessor_klass=(default_record_accessor_klass)
+      @default_record_accessor_klass = default_record_accessor_klass
     end
 
     attr_writer :allow_include, :allow_sort, :allow_filter
@@ -212,7 +236,11 @@ module JSONAPI
 
     attr_writer :allow_transactions
 
+    attr_writer :include_backtraces_in_errors
+
     attr_writer :exception_class_whitelist
+
+    attr_writer :whitelist_all_exceptions
 
     attr_writer :always_include_to_one_linkage_data
 

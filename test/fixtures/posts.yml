@@ -100,3 +100,21 @@ post_17:
   title: No Author!!!!!!
   body: This post has no Author
   author_id:
+
+post_18:
+  id: 18
+  title: Delete This later 18
+  body: AAAA
+  author_id: 3
+
+post_19:
+  id: 19
+  title: Update Later - Operations
+  body: AAAA This should be updated
+  author_id: 3
+
+post_20:
+  id: 20
+  title: Update Later - Ops Multiple
+  body: AAAA This should also be updated
+  author_id: 3

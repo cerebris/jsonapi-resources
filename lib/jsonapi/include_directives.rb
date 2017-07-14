@@ -36,7 +36,7 @@ module JSONAPI
       get_includes(@include_directives_hash)
     end
 
-    def paths
+    def all_paths
       delve_paths(get_includes(@include_directives_hash, false))
     end
 
@@ -52,7 +52,7 @@ module JSONAPI
           current_relationship = current_resource_klass._relationships[fragment]
           current_resource_klass = current_relationship.try(:resource_klass)
         else
-          warn "[RELATIONSHIP NOT FOUND] Relationship could not be found for #{current_path}."
+          raise JSONAPI::Exceptions::InvalidInclude.new(current_resource_klass, current_path)
         end
 
         include_in_join = @force_eager_load || !current_relationship || current_relationship.eager_load_on_include
@@ -65,7 +65,7 @@ module JSONAPI
 
     def get_includes(directive, only_joined_includes = true)
       ir = directive[:include_related]
-      ir = ir.select { |k,v| v[:include_in_join] } if only_joined_includes
+      ir = ir.select { |_k,v| v[:include_in_join] } if only_joined_includes
 
       ir.map do |name, sub_directive|
         sub = get_includes(sub_directive, only_joined_includes)

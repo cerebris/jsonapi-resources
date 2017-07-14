@@ -143,4 +143,22 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
     directives = JSONAPI::IncludeDirectives.new(PersonResource, ['posts.comments.tags'])
     assert_array_equals([{:posts=>[{:comments=>[:tags]}]}], directives.model_includes)
   end
+
+  def test_invalid_includes_1
+    assert_raises JSONAPI::Exceptions::InvalidInclude do
+      JSONAPI::IncludeDirectives.new(PersonResource, ['../../../../']).include_directives
+    end
+  end
+
+  def test_invalid_includes_2
+    assert_raises JSONAPI::Exceptions::InvalidInclude do
+      JSONAPI::IncludeDirectives.new(PersonResource, ['posts./sdaa./........']).include_directives
+    end
+  end
+
+  def test_invalid_includes_3
+    assert_raises JSONAPI::Exceptions::InvalidInclude do
+      JSONAPI::IncludeDirectives.new(PersonResource, ['invalid../../../../']).include_directives
+    end
+  end
 end

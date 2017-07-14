@@ -1,7 +1,7 @@
 module JSONAPI
   class ResourceSerializer
 
-    attr_reader :link_builder, :key_formatter, :serialization_options, :primary_class_name,
+    attr_reader :link_builder, :key_formatter, :serialization_options,
                 :fields, :include_directives, :always_include_to_one_linkage_data,
                 :always_include_to_many_linkage_data
 
@@ -15,11 +15,10 @@ module JSONAPI
     #              relationship ids in the links section for a resource. Fields are global for a resource type.
     #     Example: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}
     # key_formatter: KeyFormatter instance to override the default configuration
-    # serializer_options: additional options that will be passed to resource meta and links lambdas
+    # serialization_options: additional options that will be passed to resource meta and links lambdas
 
     def initialize(primary_resource_klass, options = {})
       @primary_resource_klass = primary_resource_klass
-      @primary_class_name     = primary_resource_klass._type
       @fields                 = options.fetch(:fields, {})
       @include                = options.fetch(:include, [])
       @include_directives     = options[:include_directives]
@@ -50,23 +49,43 @@ module JSONAPI
 
       @included_objects = {}
 
-      process_primary(source, @include_directives.include_directives)
+      process_source_objects(source, @include_directives.include_directives)
+
+      primary_objects = []
+
+      # pull the processed objects corresponding to the source objects. Ensures we preserve order.
+      if is_resource_collection
+        source.each do |primary|
+          if primary.id
+            case primary
+              when CachedResourceFragment then primary_objects.push(@included_objects[primary.type][primary.id][:object_hash])
+              when Resource then primary_objects.push(@included_objects[primary.class._type][primary.id][:object_hash])
+              else raise "Unknown source type #{primary.inspect}"
+            end
+          end
+        end
+      else
+        if source.try(:id)
+          case source
+            when CachedResourceFragment then primary_objects.push(@included_objects[source.type][source.id][:object_hash])
+            when Resource then primary_objects.push(@included_objects[source.class._type][source.id][:object_hash])
+            else raise "Unknown source type #{source.inspect}"
+          end
+        end
+      end
 
       included_objects = []
-      primary_objects = []
       @included_objects.each_value do |objects|
         objects.each_value do |object|
-          if object[:primary]
-            primary_objects.push(object[:object_hash])
-          else
+          unless object[:primary]
             included_objects.push(object[:object_hash])
           end
         end
       end
 
-      primary_hash = { data: is_resource_collection ? primary_objects : primary_objects[0] }
+      primary_hash = { 'data' => is_resource_collection ? primary_objects : primary_objects[0] }
 
-      primary_hash[:included] = included_objects if included_objects.size > 0
+      primary_hash['included'] = included_objects if included_objects.size > 0
       primary_hash
     end
 
@@ -78,11 +97,11 @@ module JSONAPI
       end
 
       {
-        links: {
-          self: self_link(source, requested_relationship),
-          related: related_link(source, requested_relationship)
+        'links' => {
+          'self' => self_link(source, requested_relationship),
+          'related' => related_link(source, requested_relationship)
         },
-        data: data
+        'data' => data
       }
     end
 
@@ -168,9 +187,9 @@ module JSONAPI
     # requested includes. Fields are controlled fields option for each resource type, such
     # as fields: { people: [:id, :email, :comments], posts: [:id, :title, :author], comments: [:id, :body, :post]}
     # The fields options controls both fields and included links references.
-    def process_primary(source, include_directives)
+    def process_source_objects(source, include_directives)
       if source.respond_to?(:to_ary)
-        source.each { |resource| process_primary(resource, include_directives) }
+        source.each { |resource| process_source_objects(resource, include_directives) }
       else
         return {} if source.nil?
         add_resource(source, include_directives, true)
@@ -231,7 +250,7 @@ module JSONAPI
 
     def links_hash(source)
       links = custom_links_hash(source)
-      links[:self] = link_builder.self_link(source) unless links.key?(:self)
+      links['self'] = link_builder.self_link(source) unless links.key?('self')
       links.compact
     end
 
@@ -259,7 +278,7 @@ module JSONAPI
 
       include_directives[:include_related] ||= {}
 
-      relationships = source.class._relationships.select{|k,v| fetchable_fields.include?(k) }
+      relationships = source.class._relationships.select{|k,_v| fetchable_fields.include?(k) }
       field_set = supplying_relationship_fields(source.class) & relationships.keys
 
       relationships.each_with_object({}) do |(name, relationship), hash|
@@ -298,32 +317,45 @@ module JSONAPI
       h = source.relationships || {}
       return h unless include_directives.has_key?(:include_related)
 
-      relationships = source.resource_klass._relationships.select{|k,v| source.fetchable_fields.include?(k) }
+      relationships = source.resource_klass._relationships.select do |k,_v|
+        source.fetchable_fields.include?(k)
+      end
 
+      real_res = nil
       relationships.each do |rel_name, relationship|
-        key = @key_formatter.format(rel_name)
+        key = format_key(rel_name)
         to_many = relationship.is_a? JSONAPI::Relationship::ToMany
 
         ia = include_directives[:include_related][rel_name]
         if ia
           if h.has_key?(key)
-            h[key][:data] = to_many ? [] : nil
+            h[key]['data'] = to_many ? [] : nil
           end
 
-          source.preloaded_fragments[key].each do |id, f|
+          fragments = source.preloaded_fragments[key]
+          if fragments.nil?
+            # The resources we want were not preloaded, we'll have to bypass the cache.
+            # This happens when including through belongs_to polymorphic relationships
+            if real_res.nil?
+              real_res = source.to_real_resource
+            end
+            relation_resources = [real_res.public_send(rel_name)].flatten(1).compact
+            fragments = relation_resources.map{|r| [r.id, r]}.to_h
+          end
+          fragments.each do |id, f|
             add_resource(f, ia)
 
             if h.has_key?(key)
               # The hash already has everything we need except the :data field
               data = {
-                type: format_key(f.is_a?(Resource) ? f.class._type : f.type),
-                id: @id_formatter.format(id)
+                'type' => format_key(f.is_a?(Resource) ? f.class._type : f.type),
+                'id' => @id_formatter.format(id)
               }
 
               if to_many
-                h[key][:data] << data
+                h[key]['data'] << data
               else
-                h[key][:data] = data
+                h[key]['data'] = data
               end
             end
           end
@@ -353,8 +385,8 @@ module JSONAPI
       return unless linkage_id.present? && linkage_type.present?
 
       {
-        type: linkage_type,
-        id: linkage_id,
+        'type' => linkage_type,
+        'id' => linkage_id,
       }
     end
 
@@ -384,7 +416,7 @@ module JSONAPI
 
       linkage_types_and_values.each do |type, value|
         if type && value
-          linkage.append({type: format_key(type), id: @id_formatter.format(value)})
+          linkage.append({'type' => format_key(type), 'id' => @id_formatter.format(value)})
         end
       end
       linkage
@@ -393,20 +425,20 @@ module JSONAPI
     def link_object_to_one(source, relationship, include_linkage)
       include_linkage = include_linkage | @always_include_to_one_linkage_data | relationship.always_include_linkage_data
       link_object_hash = {}
-      link_object_hash[:links] = {}
-      link_object_hash[:links][:self] = self_link(source, relationship)
-      link_object_hash[:links][:related] = related_link(source, relationship)
-      link_object_hash[:data] = to_one_linkage(source, relationship) if include_linkage
+      link_object_hash['links'] = {}
+      link_object_hash['links']['self'] = self_link(source, relationship)
+      link_object_hash['links']['related'] = related_link(source, relationship)
+      link_object_hash['data'] = to_one_linkage(source, relationship) if include_linkage
       link_object_hash
     end
 
     def link_object_to_many(source, relationship, include_linkage)
       include_linkage = include_linkage | relationship.always_include_linkage_data
       link_object_hash = {}
-      link_object_hash[:links] = {}
-      link_object_hash[:links][:self] = self_link(source, relationship)
-      link_object_hash[:links][:related] = related_link(source, relationship)
-      link_object_hash[:data] = to_many_linkage(source, relationship) if include_linkage
+      link_object_hash['links'] = {}
+      link_object_hash['links']['self'] = self_link(source, relationship)
+      link_object_hash['links']['related'] = related_link(source, relationship)
+      link_object_hash['data'] = to_many_linkage(source, relationship) if include_linkage
       link_object_hash
     end
 
@@ -422,44 +454,16 @@ module JSONAPI
     def foreign_key_value(source, relationship)
       related_resource_id = if source.preloaded_fragments.has_key?(format_key(relationship.name))
         source.preloaded_fragments[format_key(relationship.name)].values.first.try(:id)
-      elsif source.respond_to?("#{relationship.name}_id")
+      elsif !relationship.redefined_pkey? && !relationship.polymorphic? && source.respond_to?(relationship.foreign_key)
         # If you have direct access to the underlying id, you don't have to load the relationship
         # which can save quite a lot of time when loading a lot of data.
         # This does not apply to e.g. has_one :through relationships.
-        source.public_send("#{relationship.name}_id")
+        source.public_send(relationship.foreign_key)
       else
         source.public_send(relationship.name).try(:id)
       end
       return nil unless related_resource_id
       @id_formatter.format(related_resource_id)
-    end
-
-    def foreign_key_types_and_values(source, relationship)
-      if relationship.is_a?(JSONAPI::Relationship::ToMany)
-        if relationship.polymorphic?
-          assoc = source._model.public_send(relationship.name)
-          # Avoid hitting the database again for values already pre-loaded
-          if assoc.respond_to?(:loaded?) and assoc.loaded?
-            assoc.map do |obj|
-              [obj.type.underscore.pluralize, @id_formatter.format(obj.id)]
-            end
-          else
-            assoc.pluck(:type, :id).map do |type, id|
-              [type.underscore.pluralize, @id_formatter.format(id)]
-            end
-          end
-        else
-          source.public_send(relationship.name).map do |value|
-            [relationship.type, @id_formatter.format(value.id)]
-          end
-        end
-      end
-    end
-
-    # Sets that an object should be included in the primary document of the response.
-    def set_primary(type, id)
-      type = format_key(type)
-      @included_objects[type][id][:primary] = true
     end
 
     def add_resource(source, include_directives, primary = false)

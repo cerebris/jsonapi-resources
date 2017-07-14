@@ -7,6 +7,8 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
     @pictures = Picture.all
     @person = Person.find(1)
 
+    @questions = Question.all
+
     JSONAPI.configuration.json_key_format = :camelized_key
     JSONAPI.configuration.route_format = :camelized_route
   end
@@ -128,7 +130,7 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
     )
   end
 
-  def test_polymorphic_to_one_serialization
+  def test_polymorphic_belongs_to_serialization
     serialized_data = JSONAPI::ResourceSerializer.new(
       PictureResource,
       include: %w(imageable)
@@ -242,6 +244,99 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
                 }
               }
             }
+          }
+        ]
+      },
+      serialized_data
+    )
+  end
+
+  def test_polymorphic_has_one_serialization
+    serialized_data = JSONAPI::ResourceSerializer.new(
+      QuestionResource,
+      include: %w(respondent)
+    ).serialize_to_hash(@questions.map { |p| QuestionResource.new p, nil })
+
+    assert_hash_equals(
+      {
+        data: [
+          {
+            id: '1',
+            type: 'questions',
+            links: {
+              self: '/questions/1'
+            },
+            attributes: {
+              text: 'How are you feeling today?'
+            },
+            relationships: {
+              answer: {
+                links: {
+                  self: '/questions/1/relationships/answer',
+                  related: '/questions/1/answer'
+                }
+              },
+              respondent: {
+                links: {
+                  self: '/questions/1/relationships/respondent',
+                  related: '/questions/1/respondent'
+                },
+                data: {
+                  type: 'patients',
+                  id: '1'
+                }
+              }
+            }
+          },
+          {
+            id: '2',
+            type: 'questions',
+            links: {
+              self: '/questions/2'
+            },
+            attributes: {
+              text: 'How does the patient look today?'
+            },
+            relationships: {
+              answer: {
+                links: {
+                  self: '/questions/2/relationships/answer',
+                  related: '/questions/2/answer'
+                }
+              },
+              respondent: {
+                links: {
+                  self: '/questions/2/relationships/respondent',
+                  related: '/questions/2/respondent'
+                },
+                data: {
+                  type: 'doctors',
+                  id: '1'
+                }
+              }
+            }
+          }
+        ],
+        :included => [
+          {
+            id: '1',
+            type: 'patients',
+            links: {
+              self: '/patients/1'
+            },
+            attributes: {
+              name: 'Bob Smith'
+            },
+          },
+          {
+            id: '1',
+            type: 'doctors',
+            links: {
+              self: '/doctors/1'
+            },
+            attributes: {
+              name: 'Henry Jones Jr'
+            },
           }
         ]
       },

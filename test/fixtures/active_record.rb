@@ -25,7 +25,7 @@ ActiveRecord::Schema.define do
   end
 
   create_table :posts, force: true do |t|
-    t.string     :title
+    t.string     :title, length: 255
     t.text       :body
     t.integer    :author_id
     t.integer    :parent_post_id
@@ -291,7 +291,49 @@ ActiveRecord::Schema.define do
     t.timestamps null: false
   end
 
-  # special cases
+  create_table :questions, force: true do |t|
+    t.string :text
+  end
+
+  create_table :answers, force: true do |t|
+    t.references :question
+    t.integer :respondent_id
+    t.string  :respondent_type
+    t.string :text
+  end
+
+  create_table :patients, force: true do |t|
+    t.string :name
+  end
+
+  create_table :doctors, force: true do |t|
+    t.string :name
+  end
+
+  create_table :storages, force: true do |t|
+    t.string :token, null: false
+    t.string :name
+    t.timestamps null: false
+  end
+
+  create_table :keepers, force: true do |t|
+    t.string :name
+    t.string :keepable_type, null: false
+    t.integer :keepable_id, null: false
+    t.timestamps null: false
+  end
+
+  create_table :access_cards, force: true do |t|
+    t.string :token, null: false
+    t.string :security_level
+    t.timestamps null: false
+  end
+
+  create_table :workers, force: true do |t|
+    t.string :name
+    t.integer :access_card_id, null: false
+    t.timestamps null: false
+  end
 end
 
 ### MODELS
@@ -375,6 +417,7 @@ class Section < ActiveRecord::Base
 end
 
 class HairCut < ActiveRecord::Base
+  has_many :people
 end
 
 class Property < ActiveRecord::Base
@@ -572,6 +615,9 @@ class Document < ActiveRecord::Base
   has_many :pictures, as: :imageable
 end
 
+class Document::Topic < Document
+end
+
 class Product < ActiveRecord::Base
   has_one :picture, as: :imageable
 end
@@ -603,6 +649,25 @@ class RelatedThing < ActiveRecord::Base
   belongs_to :to, class_name: Thing, foreign_key: :to_id
 end
 
+class Question < ActiveRecord::Base
+  has_one :answer
+
+  def respondent
+    answer.try(:respondent)
+  end
+end
+
+class Answer < ActiveRecord::Base
+  belongs_to :question
+  belongs_to :respondent, polymorphic: true
+end
+
+class Patient < ActiveRecord::Base
+end
+
+class Doctor < ActiveRecord::Base
+end
+
 module Api
   module V7
     class Client < Customer
@@ -611,6 +676,22 @@ module Api
     class Customer < Customer
     end
   end
+end
+
+class Storage < ActiveRecord::Base
+  has_one :keeper, class_name: 'Keeper', as: :keepable
+end
+
+class Keeper < ActiveRecord::Base
+  belongs_to :keepable, polymorphic: true
+end
+
+class AccessCard < ActiveRecord::Base
+  has_one :worker, class_name: 'Worker'
+end
+
+class Worker < ActiveRecord::Base
+  belongs_to :access_card
 end
 
 ### CONTROLLERS
@@ -634,15 +715,6 @@ class PostsController < BaseController
   # the operations dispatcher.
   rescue_from PostsController::SpecialError do
     head :forbidden
-  end
-
-  def handle_exceptions(e)
-    case e
-      when PostsController::SpecialError
-        raise e
-      else
-        super(e)
-    end
   end
 
   #called by test_on_server_error
@@ -714,6 +786,9 @@ class BoatsController < JSONAPI::ResourceController
 end
 
 class BooksController < JSONAPI::ResourceController
+  def context
+    { title: 'Title' }
+  end
 end
 
 ### CONTROLLERS
@@ -762,6 +837,9 @@ module Api
 
   module V2
     class AuthorsController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
     end
 
     class PeopleController < JSONAPI::ResourceController
@@ -876,6 +954,32 @@ module Api
   end
 end
 
+class QuestionsController < JSONAPI::ResourceController
+end
+
+class AnswersController < JSONAPI::ResourceController
+end
+
+class PatientsController < JSONAPI::ResourceController
+end
+
+class DoctorsController < JSONAPI::ResourceController
+end
+
+class RespondentController < JSONAPI::ResourceController
+end
+
+class StoragesController < BaseController
+end
+
+class KeepersController < BaseController
+end
+
+class AccessCardsController < BaseController
+end
+
+class WorkersController < BaseController
+end
 ### RESOURCES
 class BaseResource < JSONAPI::Resource
   abstract
@@ -885,8 +989,7 @@ class PersonResource < BaseResource
   attributes :name, :email
   attribute :date_joined, format: :date_with_timezone
 
-  has_many :comments
-  has_many :posts
+  has_many :comments, :posts
   has_many :vehicles, polymorphic: true
 
   has_one :preferences
@@ -955,6 +1058,7 @@ class CompanyResource < JSONAPI::Resource
 end
 
 class FirmResource < CompanyResource
+  model_name "Firm"
 end
 
 class TagResource < JSONAPI::Resource
@@ -989,6 +1093,10 @@ class PostResource < JSONAPI::Resource
 
   # Not needed - just for testing
   primary_key :id
+
+  def self.default_sort
+    [{field: 'title', direction: :desc}, {field: 'id', direction: :desc}]
+  end
 
   before_save do
     msg = "Before save"
@@ -1060,7 +1168,7 @@ class PostResource < JSONAPI::Resource
   end
 
   def self.creatable_fields(context)
-    super(context) - [:subject, :id]
+    super(context) - [:subject]
   end
 
   def self.sortable_fields(context)
@@ -1081,6 +1189,7 @@ end
 
 class IsoCurrencyResource < JSONAPI::Resource
   attributes :name, :country_name, :minor_unit
+  attribute :id, format: :id, readonly: false
 
   filter :country_name
 
@@ -1132,10 +1241,6 @@ class PlanetResource < JSONAPI::Resource
   has_one :planet_type
 
   has_many :tags, acts_as_set: true
-
-  def records_for_moons(opts = {})
-    Moon.joins(:craters).select('moons.*, craters.code').distinct
-  end
 end
 
 class PropertyResource < JSONAPI::Resource
@@ -1209,6 +1314,11 @@ class DocumentResource < JSONAPI::Resource
   has_many :pictures
 end
 
+class TopicResource < JSONAPI::Resource
+  model_name 'Document::Topic'
+  has_many :pictures
+end
+
 class ProductResource < JSONAPI::Resource
   attribute :name
   has_one :picture, always_include_linkage_data: true
@@ -1238,7 +1348,13 @@ class AuthorResource < JSONAPI::Resource
 end
 
 class BookResource < JSONAPI::Resource
+  attribute :title
+
   has_many :authors, class_name: 'Author', inverse_relationship: :books
+
+  def title
+    context[:title]
+  end
 end
 
 class AuthorDetailResource < JSONAPI::Resource
@@ -1385,13 +1501,31 @@ module Api
     class PersonResource < PersonResource; end
     class PostResource < PostResource; end
 
+    class AuthorResource < JSONAPI::Resource
+      model_name 'Person'
+      attributes :name
+
+      has_many :books, inverse_relationship: :authors
+
+      def records_for(rel_name)
+        records = _model.public_send(rel_name)
+        if rel_name == :books
+          # Hide indirect access to banned books unless current user is a book admin
+          unless context[:current_user].try(:book_admin)
+            records = records.where(banned: false)
+          end
+        end
+        return records
+      end
+    end
+
     class BookResource < JSONAPI::Resource
-      attribute :title
+      attribute "title"
       attributes :isbn, :banned
 
-      has_many :authors
+      has_many "authors"
 
-      has_many :book_comments, relation_name: -> (options = {}) {
+      has_many "book_comments", relation_name: -> (options = {}) {
         context = options[:context]
         current_user = context ? context[:current_user] : nil
 
@@ -1402,9 +1536,13 @@ module Api
         end
       }, reflect: true
 
-      has_many :aliased_comments, class_name: 'BookComments', relation_name: :approved_book_comments
+      has_many "aliased_comments", class_name: 'BookComments', relation_name: :approved_book_comments
 
-      filters :book_comments
+      filter :book_comments,
+              apply: ->(records, value, options) {
+                return records.where('book_comments.id' => value)
+              }
+
       filter :banned, apply: :apply_filter_banned
 
       class << self
@@ -1420,7 +1558,7 @@ module Api
           context = options[:context]
           current_user = context ? context[:current_user] : nil
 
-          records = _model_class
+          records = _model_class.all
           # Hide the banned books from people who are not book admins
           unless current_user && current_user.book_admin
             records = records.where(not_banned_books)
@@ -1555,7 +1693,7 @@ module Api
     class PostResource < PostResource
       # Test caching with SQL fragments
       def self.records(options = {})
-        super.joins('INNER JOIN people on people.id = author_id')
+        _model_class.all.joins('INNER JOIN people on people.id = author_id')
       end
     end
 
@@ -1713,6 +1851,24 @@ end
 class FlatPostsController < JSONAPI::ResourceController
 end
 
+class BlogPost < ActiveRecord::Base
+  self.table_name = 'posts'
+end
+
+class BlogPostsController < JSONAPI::ResourceController
+
+end
+
+class BlogPostResource < JSONAPI::Resource
+  model_name 'BlogPost', add_model_hint: false
+  model_hint model: 'BlogPost', resource: BlogPostResource
+
+  attribute :name, :delegate => :title
+  attribute :body
+
+  filter :name
+end
+
 # CustomProcessors
 class Api::V4::BookProcessor < JSONAPI::Processor
   after_find do
@@ -1780,6 +1936,59 @@ module Api
   class UserResource < JSONAPI::Resource
     has_many :things
   end
+end
+
+class QuestionResource < JSONAPI::Resource
+  has_one :answer
+  has_one :respondent, polymorphic: true, class_name: "Respondent", foreign_key_on: :related
+
+  attributes :text
+end
+
+class AnswerResource < JSONAPI::Resource
+  has_one :question
+  has_one :respondent, polymorphic: true
+end
+
+class PatientResource < JSONAPI::Resource
+  attributes :name
+end
+
+class DoctorResource < JSONAPI::Resource
+  attributes :name
+end
+
+class RespondentResource < JSONAPI::Resource
+  abstract
+end
+
+class StorageResource < JSONAPI::Resource
+  key_type :string
+  primary_key :token
+
+  attribute :name
+end
+
+class KeeperResource < JSONAPI::Resource
+  has_one :keepable, polymorphic: true, foreign_key: :keepable_id
+
+  attribute :name
+end
+
+class KeepableResource < JSONAPI::Resource
+end
+
+class AccessCardResource < JSONAPI::Resource
+  key_type :string
+  primary_key :token
+
+  attribute :security_level
+end
+
+class WorkerResource < JSONAPI::Resource
+  has_one :access_card
+
+  attribute :name
 end
 
 ### PORO Data - don't do this in a production app

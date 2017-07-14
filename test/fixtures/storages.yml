@@ -1,0 +1,4 @@
+warehouse_1:
+  id: 1
+  name: "Warehouse 1"
+  token: "some-token"
