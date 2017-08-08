@@ -87,7 +87,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
 
     request.parse_include_directives(ExpenseEntryResource, params[:include])
     refute request.errors.empty?
-    assert_equal 'iso_currency is not a valid relationship of expense-entries', request.errors[0].detail
+    assert_equal 'iso_currency is not a valid includable relationship of expense-entries', request.errors[0].detail
   end
 
   def test_parse_fields_underscored
