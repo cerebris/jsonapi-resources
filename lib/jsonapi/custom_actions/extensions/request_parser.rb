@@ -32,7 +32,7 @@ module JSONAPI
     end
 
     def transform_data(data)
-      data.nil? ? {} : data.deep_transform_keys { |key| unformat_key(key) }
+      data.nil? ? {} : data.to_unsafe_h.deep_transform_keys { |key| unformat_key(key) }
     end
 
     def action_operation(resource_klass, options, instance = true)
