@@ -25,10 +25,10 @@ module JSONAPI
       when ActiveRecord::Relation, Array
         return action_operation(resource_klass, options.merge(results: action_result), false)
       when ActiveRecord::Base
-        return action_operation(resource_klass, options.merge(id: action_result.id))
+        return action_operation(resource_klass, options.merge(result: action_result))
       end
 
-      action_operation(resource_klass, id: nil, context: @context)
+      action_operation(resource_klass, result: nil, context: @context)
     end
 
     def transform_data(data)

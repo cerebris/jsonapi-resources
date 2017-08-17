@@ -2,36 +2,25 @@ module JSONAPI
   class Processor
     define_jsonapi_resources_callbacks :custom_actions_instance, :custom_actions_collection
 
-    # Processing custom actions results for model instance or other classes
-    # It will handle for example: api/v1/posts/1/publish
+    # Processing custom actions results for single model
+    # It will handle action result if returns one single model
     #
     # @return [ResourceOperationResult]
     def custom_actions_instance
-      id = params[:id]
-      return JSONAPI::OperationResult.new(:accepted, result_options) unless id
-
-      key = resource_klass.verify_key(id, context)
-      resource = resource_klass.find_by_key(key, custom_actions_options)
+      result = params[:result]
+      resource = resource_klass.resource_for(result, result_options)
       JSONAPI::ResourceOperationResult.new(:ok, resource, result_options)
+    rescue
+      JSONAPI::OperationResult.new(:accepted, result_options)
     end
 
-    # Processing custom actions results for models collections
-    # It will handle for example: api/v1/posts/remove-all
+    # Processing custom actions results for many models
+    # It will handle action result if returns array or ActiveRecord::Relation
     #
-    # @return [ResourceOperationResult]
+    # @return [ResourcesOperationResult]
     def custom_actions_collection
-      resources = resource_klass.resources_for(params[:results], custom_actions_options)
-      JSONAPI::ResourceOperationResult.new(:ok, resources, result_options)
-    end
-
-    private
-
-    def custom_actions_options
-      {
-        context: context,
-        fields: params[:fields],
-        include_directives: params[:include_directives]
-      }
+      resources = resource_klass.resources_for(params[:results], context)
+      JSONAPI::ResourcesOperationResult.new(:ok, resources, result_options)
     end
   end
 end
