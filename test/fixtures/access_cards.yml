@@ -1,0 +1,4 @@
+john_doe_worker_card:
+  id: 1
+  token: "some-token"
+  security_level: "admin"

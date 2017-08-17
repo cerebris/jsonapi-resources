@@ -1,11 +1,12 @@
 begin
   require 'bundler/inline'
+  require 'bundler'
 rescue LoadError => e
   STDERR.puts 'Bundler version 1.10 or later is required. Please update your Bundler'
   raise e
 end
 
-gemfile(true) do
+gemfile(true, ui: ENV['SILENT'] ? Bundler::UI::Silent.new : Bundler::UI::Shell.new) do
   source 'https://rubygems.org'
 
   gem 'rails', require: false
@@ -27,8 +28,17 @@ end
 # prepare active_record database
 require 'active_record'
 
+class NullLogger < Logger
+  def initialize(*_args)
+  end
+
+  def add(*_args, &_block)
+  end
+end
+
 ActiveRecord::Base.establish_connection(adapter: 'sqlite3', database: ':memory:')
-ActiveRecord::Base.logger = Logger.new(STDOUT)
+ActiveRecord::Base.logger = ENV['SILENT'] ? NullLogger.new : Logger.new(STDOUT)
+ActiveRecord::Migration.verbose = !ENV['SILENT']
 
 ActiveRecord::Schema.define do
   # Add your schema here
@@ -61,7 +71,7 @@ end
 
 class TestApp < Rails::Application
   config.root = File.dirname(__FILE__)
-  config.logger = Logger.new(STDOUT)
+  config.logger = ENV['SILENT'] ? NullLogger.new : Logger.new(STDOUT)
   Rails.logger = config.logger
 
   secrets.secret_token = 'secret_token'

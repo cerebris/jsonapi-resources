@@ -1818,7 +1818,6 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /author is not allowed./, response.body
     assert_match /subject is not allowed./, response.body
   end
 
@@ -2043,13 +2042,24 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
     assert_cacheable_get :show, params: {id: 1, include: 'isoCurrencies,employees'}
     assert_response :bad_request
     assert_match /isoCurrencies is not a valid relationship of expenseEntries/, json_response['errors'][0]['detail']
-    assert_match /employees is not a valid relationship of expenseEntries/, json_response['errors'][1]['detail']
   end
 
   def test_expense_entries_show_bad_include_missing_sub_relationship
     assert_cacheable_get :show, params: {id: 1, include: 'isoCurrency,employee.post'}
     assert_response :bad_request
     assert_match /post is not a valid relationship of people/, json_response['errors'][0]['detail']
+  end
+
+  def test_invalid_include
+    assert_cacheable_get :index, params: {include: 'invalid../../../../'}
+    assert_response :bad_request
+    assert_match /invalid is not a valid relationship of expenseEntries/, json_response['errors'][0]['detail']
+  end
+
+  def test_invalid_include_long_garbage_string
+    assert_cacheable_get :index, params: {include: 'invalid.foo.bar.dfsdfs,dfsdfs.sdfwe.ewrerw.erwrewrew'}
+    assert_response :bad_request
+    assert_match /invalid is not a valid relationship of expenseEntries/, json_response['errors'][0]['detail']
   end
 
   def test_expense_entries_show_fields
@@ -3755,5 +3765,28 @@ class Api::BoxesControllerTest < ActionController::TestCase
     assert_equal 'things', json_response['included'][1]['type']
     assert_equal '1',  json_response['included'][1]['relationships']['user']['data']['id']
     assert_equal '2',  json_response['included'][1]['relationships']['things']['data'][0]['id']
+  end
+end
+
+class BlogPostsControllerTest < ActionController::TestCase
+  def test_filter_by_delegated_attribute
+    assert_cacheable_get :index, params: {filter: {name: 'some title'}}
+    assert_response :success
+  end
+
+  def test_sorting_by_delegated_attribute
+    assert_cacheable_get :index, params: {sort: 'name'}
+    assert_response :success
+  end
+
+  def test_fields_with_delegated_attribute
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.json_key_format = :underscored_key
+
+    assert_cacheable_get :index, params: {fields: {blog_posts: 'name'}}
+    assert_response :success
+    assert_equal ['name'], json_response['data'].first['attributes'].keys
+  ensure
+    JSONAPI.configuration = original_config
   end
 end
