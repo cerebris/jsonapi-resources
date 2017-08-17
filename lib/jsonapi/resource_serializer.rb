@@ -454,7 +454,7 @@ module JSONAPI
     def foreign_key_value(source, relationship)
       related_resource_id = if source.preloaded_fragments.has_key?(format_key(relationship.name))
         source.preloaded_fragments[format_key(relationship.name)].values.first.try(:id)
-      elsif !relationship.redefined_pkey? && !relationship.polymorphic? && source.respond_to?(relationship.foreign_key)
+      elsif !relationship.redefined_pkey? && source.respond_to?(relationship.foreign_key)
         # If you have direct access to the underlying id, you don't have to load the relationship
         # which can save quite a lot of time when loading a lot of data.
         # This does not apply to e.g. has_one :through relationships.
