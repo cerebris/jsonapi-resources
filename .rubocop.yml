@@ -1,0 +1,25 @@
+Rails:
+  Enabled: true
+AllCops:
+  TargetRubyVersion: 2.1
+  Include:
+    - '**/Gemfile'
+    - '**/Rakefile'
+  Exclude:
+   - 'lib/generators/jsonapi/templates/*'
+   - 'test/**/*'
+Documentation:
+  Enabled: false
+Rails/DynamicFindBy:
+  Enabled: false
+Metrics/LineLength:
+  Max: 120
+Metrics/MethodLength:
+  Max: 15
+ClassLength:
+  Max: 250
+Metrics/BlockLength:
+  Exclude:
+    - 'test/routes.rb'
+    - 'Rakefile'
+    - '**/*.rake'

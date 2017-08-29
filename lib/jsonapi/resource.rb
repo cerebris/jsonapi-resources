@@ -407,6 +407,7 @@ module JSONAPI
         subclass.immutable(false)
         subclass.caching(false)
         subclass._attributes = (_attributes || {}).dup
+        subclass._custom_actions = (_custom_actions || {}).dup
 
         subclass._model_hints = (_model_hints || {}).dup
 

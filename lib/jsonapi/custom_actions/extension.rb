@@ -1,0 +1,5 @@
+require 'jsonapi/custom_actions/extensions/resource'
+require 'jsonapi/custom_actions/extensions/processor'
+require 'jsonapi/custom_actions/extensions/routing_ext'
+require 'jsonapi/custom_actions/extensions/request_parser'
+require 'jsonapi/custom_actions/extensions/acts_as_resource_controller'
