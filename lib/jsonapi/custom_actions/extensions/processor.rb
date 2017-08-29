@@ -7,8 +7,7 @@ module JSONAPI
     #
     # @return [ResourceOperationResult]
     def custom_actions_instance
-      result = params[:result]
-      resource = resource_klass.resource_for(result, result_options)
+      resource = resource_klass.resource_for(params[:result], context)
       JSONAPI::ResourceOperationResult.new(:ok, resource, result_options)
     rescue
       JSONAPI::OperationResult.new(:accepted, result_options)
