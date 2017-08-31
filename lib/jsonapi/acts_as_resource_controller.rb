@@ -215,19 +215,17 @@ module JSONAPI
     end
 
     def render_response_document
-      content = response_document.contents
-
       render_options = {}
       if response_document.has_errors?
-        render_options[:json] = content
+        render_options[:json] = response_document_contents
       else
         # Bypassing ActiveSupport allows us to use CompiledJson objects for cached response fragments
-        render_options[:body] = JSON.generate(content)
+        render_options[:body] = JSON.generate(response_document_contents)
+  
+        return unless response_document.status == 201
+        return unless response_document_contents[:data].class != Array
 
-        if (response_document.status == 201 && content[:data].class != Array) &&
-            content['data'] && content['data']['links'] && content['data']['links']['self']
-          render_options[:location] = content['data']['links']['self']
-        end
+        render_options[:location] = response_document_contents.fetch('data', {}).fetch('links', {}).fetch('self', nil)
       end
 
       # For whatever reason, `render` ignores :status and :content_type when :body is set.
@@ -236,6 +234,10 @@ module JSONAPI
       response.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
 
       render(render_options)
+    end
+    
+    def response_document_contents
+      @response_document_contents ||= response_document.contents
     end
 
     def create_response_document
