@@ -223,9 +223,9 @@ module JSONAPI
         render_options[:body] = JSON.generate(response_document_contents)
   
         return unless response_document.status == 201
-        return unless content[:data].class != Array
+        return unless response_document_contents[:data].class != Array
 
-        render_options[:location] = content.fetch('data', {}).fetch('links', {}).fetch('self', nil)
+        render_options[:location] = response_document_contents.fetch('data', {}).fetch('links', {}).fetch('self', nil)
       end
 
       # For whatever reason, `render` ignores :status and :content_type when :body is set.
