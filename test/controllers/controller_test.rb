@@ -3443,6 +3443,10 @@ class Api::V4::BooksControllerTest < ActionController::TestCase
     JSONAPI.configuration = original_config
   end
 
+  def test_inherited_pagination
+    assert_equal :paged, Api::V4::BiggerBookResource._paginator
+  end
+
   def test_books_operation_links
     original_config = JSONAPI.configuration.dup
     Api::V4::BookResource.paginator :offset
