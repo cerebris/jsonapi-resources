@@ -14,7 +14,22 @@ module JSONAPI
 
     private
     def processor
-      JSONAPI::Processor.processor_instance_for(resource_klass, operation_type, options)
+      self.class.processor_instance_for(resource_klass, operation_type, options)
+    end
+
+    class << self
+      def processor_instance_for(resource_klass, operation_type, params)
+        _processor_from_resource_type(resource_klass).new(resource_klass, operation_type, params)
+      end
+
+      def _processor_from_resource_type(resource_klass)
+        processor = resource_klass.name.gsub(/Resource$/,'Processor').safe_constantize
+        if processor.nil?
+          processor = JSONAPI.configuration.default_processor_klass
+        end
+
+        return processor
+      end
     end
   end
 end

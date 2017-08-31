@@ -39,6 +39,8 @@ JSONAPI.configure do |config|
   config.json_key_format = :camelized_key
 end
 
+ActiveSupport::Deprecation.silenced = true
+
 puts "Testing With RAILS VERSION #{Rails.version}"
 
 class TestApp < Rails::Application
@@ -190,11 +192,24 @@ end
 
 def assert_query_count(expected, msg = nil, &block)
   @queries = []
-  callback = lambda {|_, _, _, _, payload| @queries.push payload[:sql] }
+  callback = lambda {|_, _, _, _, payload|
+    @queries.push payload[:sql]
+  }
   ActiveSupport::Notifications.subscribed(callback, 'sql.active_record', &block)
 
   show_queries unless expected == @queries.size
   assert expected == @queries.size, "Expected #{expected} queries, ran #{@queries.size} queries"
+  @queries = nil
+end
+
+def track_queries(&block)
+  @queries = []
+  callback = lambda {|_, _, _, _, payload|
+    @queries.push payload[:sql]
+  }
+  ActiveSupport::Notifications.subscribed(callback, 'sql.active_record', &block)
+
+  show_queries
   @queries = nil
 end
 
@@ -380,6 +395,7 @@ TestApp.routes.draw do
   end
 
   jsonapi_resources :keepers, only: [:show]
+  jsonapi_resources :storages
   jsonapi_resources :workers, only: [:show]
 
   mount MyEngine::Engine => "/boomshaka", as: :my_engine
@@ -522,7 +538,9 @@ class ActionController::TestCase
       [:warmup, :lookup].each do |phase|
         begin
           cache_queries = []
-          cache_query_callback = lambda {|_, _, _, _, payload| cache_queries.push payload[:sql] }
+          cache_query_callback = lambda { |_, _, _, _, payload|
+            cache_queries.push payload[:sql]
+          }
           cache_activity[phase] = with_resource_caching(cache, cached_resources) do
             ActiveSupport::Notifications.subscribed(cache_query_callback, 'sql.active_record') do
               @controller = nil
@@ -552,7 +570,7 @@ class ActionController::TestCase
         assert_operator(
           cache_queries.size,
           :<=,
-          normal_queries.size*2, # Allow up to double the number of queries as the uncached action
+          normal_queries.size,
           "Cache (mode: #{mode}) #{phase} action made too many queries:\n#{cache_queries.pretty_inspect}"
         )
       end

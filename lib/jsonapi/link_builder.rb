@@ -138,7 +138,11 @@ module JSONAPI
     end
 
     def regular_resource_path(source)
-      "#{regular_resources_path(source.class)}/#{source.id}"
+      if source.is_a?(JSONAPI::CachedResponseFragment)
+        "#{regular_resources_path(source.resource_klass)}/#{source.id}"
+      else
+        "#{regular_resources_path(source.class)}/#{source.id}"
+      end
     end
 
     def regular_resource_url(source)
