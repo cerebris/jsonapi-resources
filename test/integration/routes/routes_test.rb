@@ -2,6 +2,18 @@ require File.expand_path('../../../test_helper', __FILE__)
 
 class RoutesTest < ActionDispatch::IntegrationTest
 
+  # def test_dump_routes
+  #   r = {}
+  #
+  #   Rails.application.routes.routes.each do |route|
+  #     r[route.path.spec.right.left.to_s] ||= {routes: {}}
+  #     r[route.path.spec.right.left.to_s][:routes][route.path.spec.to_s] ||= {}
+  #     r[route.path.spec.right.left.to_s][:routes][route.path.spec.to_s][route.defaults[:action]] = route
+  #   end
+  #
+  #   r
+  # end
+
   def test_routing_post
     assert_routing({path: 'posts', method: :post},
                    {controller: 'posts', action: 'create'})
@@ -64,21 +76,23 @@ class RoutesTest < ActionDispatch::IntegrationTest
   # end
 
   # Polymorphic
-  def test_routing_polymorphic_get_related_resource
-    assert_routing(
-      {
-        path: '/pictures/1/imageable',
-        method: :get
-      },
-      {
-        relationship: 'imageable',
-        source: 'pictures',
-        controller: 'imageables',
-        action: 'get_related_resource',
-        picture_id: '1'
-      }
-    )
-  end
+  # ToDo: refute this routing. Polymorphic relationships can't support a shared set of filters or includes so
+  # this this route is no longer supported
+  # def test_routing_polymorphic_get_related_resource
+  #   assert_routing(
+  #     {
+  #       path: '/pictures/1/imageable',
+  #       method: :get
+  #     },
+  #     {
+  #       relationship: 'imageable',
+  #       source: 'pictures',
+  #       controller: 'imageables',
+  #       action: 'get_related_resource',
+  #       picture_id: '1'
+  #     }
+  #   )
+  # end
 
   def test_routing_polymorphic_patch_related_resource
     assert_routing(
@@ -213,6 +227,6 @@ class RoutesTest < ActionDispatch::IntegrationTest
   #                  { controller: 'api/v3/posts', action: 'destroy_relationship', post_id: '1', keys: '1,2', relationship: 'tags' })
   # end
 
-  # Test that non acts as set to_many relationship update route is not created
+  # Test that non-acts-as-set to_many relationship update route is not created
 
 end

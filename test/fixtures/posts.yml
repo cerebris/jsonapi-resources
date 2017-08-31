@@ -2,98 +2,98 @@ post_1:
   id: 1
   title: New post
   body: A body!!!
-  author_id: 1
+  author_id: 1001
 
 post_2:
   id: 2
   title: JR Solves your serialization woes!
   body: Use JR
-  author_id: 1
+  author_id: 1001
   section_id: 2
 
 post_3:
   id: 3
   title: Update This Later
   body: AAAA
-  author_id: 3
+  author_id: 1003
 
 post_4:
   id: 4
   title: Delete This Later - Single
   body: AAAA
-  author_id: 3
+  author_id: 1003
 
 post_5:
   id: 5
   title: Delete This Later - Multiple1
   body: AAAA
-  author_id: 3
+  author_id: 1003
 
 post_6:
   id: 6
   title: Delete This Later - Multiple2
   body: AAAA
-  author_id: 3
+  author_id: 1003
 
 post_7:
   id: 7
   title: Delete This Later - Single2
   body: AAAA
-  author_id: 3
+  author_id: 1003
 
 post_8:
   id: 8
   title: Delete This Later - Multiple2-1
   body: AAAA
-  author_id: 3
+  author_id: 1003
 
 post_9:
   id: 9
   title: Delete This Later - Multiple2-2
   body: AAAA
-  author_id: 3
+  author_id: 1003
 
 post_10:
   id: 10
   title: Update This Later - Multiple
   body: AAAA
-  author_id: 3
+  author_id: 1003
 
 post_11:
   id: 11
   title: JR How To
   body: Use JR to write API apps
-  author_id: 1
+  author_id: 1001
 
 post_12:
   id: 12
   title: Tagged up post 1
   body: AAAA
-  author_id: 4
+  author_id: 1004
 
 post_13:
   id: 13
   title: Tagged up post 2
   body: BBBB
-  author_id: 4
+  author_id: 1004
 
 post_14:
   id: 14
   title: A First Post
   body: A First Post!!!!!!!!!
-  author_id: 3
+  author_id: 1003
 
 post_15:
   id: 15
   title: AAAA First Post
   body: First!!!!!!!!!
-  author_id: 3
+  author_id: 1003
 
 post_16:
   id: 16
   title: SDFGH
   body: Not First!!!!
-  author_id: 3
+  author_id: 1003
 
 post_17:
   id: 17
@@ -105,16 +105,16 @@ post_18:
   id: 18
   title: Delete This later 18
   body: AAAA
-  author_id: 3
+  author_id: 1003
 
 post_19:
   id: 19
   title: Update Later - Operations
   body: AAAA This should be updated
-  author_id: 3
+  author_id: 1003
 
 post_20:
   id: 20
   title: Update Later - Ops Multiple
   body: AAAA This should also be updated
-  author_id: 3
+  author_id: 1003

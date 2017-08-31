@@ -1,79 +1,79 @@
 post_1_short:
   post_id: 1
-  tag_id: 1
+  tag_id: 501
 
 post_1_whiny:
   post_id: 1
-  tag_id: 2
+  tag_id: 502
 
 post_1_grumpy:
   post_id: 1
-  tag_id: 3
+  tag_id: 503
 
 post_2_jr:
   post_id: 2
-  tag_id: 5
+  tag_id: 505
 
 post_11_jr:
   post_id: 11
-  tag_id: 5
+  tag_id: 505
 
 post_12_silly:
   post_id: 12
-  tag_id: 6
+  tag_id: 506
 
 post_12_sleepy:
   post_id: 12
-  tag_id: 7
+  tag_id: 507
 
 post_12_goofy:
   post_id: 12
-  tag_id: 8
+  tag_id: 508
 
 post_12_wacky:
   post_id: 12
-  tag_id: 9
+  tag_id: 509
 
 post_13_silly:
   post_id: 13
-  tag_id: 6
+  tag_id: 506
 
 post_13_sleepy:
   post_id: 13
-  tag_id: 7
+  tag_id: 507
 
 post_13_goofy:
   post_id: 13
-  tag_id: 8
+  tag_id: 508
 
 post_13_wacky:
   post_id: 13
-  tag_id: 9
+  tag_id: 509
 
 post_14_whiny:
   post_id: 14
-  tag_id: 2
+  tag_id: 502
 
 post_14_grumpy:
   post_id: 14
-  tag_id: 3
+  tag_id: 503
 
 post_15_11:
   post_id: 15
-  tag_id: 11
+  tag_id: 511
 
 post_15_2:
   post_id: 15
-  tag_id: 2
+  tag_id: 502
 
 post_15_4:
   post_id: 15
-  tag_id: 4
+  tag_id: 504
 
 post_15_10:
   post_id: 15
-  tag_id: 10
+  tag_id: 510
 
 post_15_16:
   post_id: 15
-  tag_id: 16
+  tag_id: 516

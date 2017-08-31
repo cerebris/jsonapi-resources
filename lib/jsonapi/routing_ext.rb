@@ -250,8 +250,8 @@ module ActionDispatch
         ensure
           @scope = @scope.parent
         end
-
         # :nocov:
+
         private
 
         def resource_type_with_module_prefix(resource = nil)

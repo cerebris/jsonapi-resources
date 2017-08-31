@@ -5,6 +5,7 @@ module JSONAPI
     end
 
     def self.of(obj)
+      # :nocov:
       case obj
         when NilClass then nil
         when CompiledJson then obj
@@ -12,6 +13,7 @@ module JSONAPI
         when Hash then CompiledJson.compile(obj)
         else raise "Can't figure out how to turn #{obj.inspect} into CompiledJson"
       end
+      # :nocov:
     end
 
     def initialize(json, h = nil)
@@ -27,8 +29,16 @@ module JSONAPI
       @json
     end
 
+    # :nocov:
     def to_h
       @h ||= JSON.parse(@json)
+    end
+    # :nocov:
+
+    def [](key)
+      # :nocov:
+      to_h[key]
+      # :nocov:
     end
 
     undef_method :as_json

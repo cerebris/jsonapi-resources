@@ -1,5 +1,6 @@
 test:
   adapter: sqlite3
   database: test_db
+#  database: ":memory:"
   pool: 5
   timeout: 5000
