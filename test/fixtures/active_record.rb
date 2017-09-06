@@ -903,6 +903,9 @@ module Api
   end
 
   module V6
+    class AuthorsController < JSONAPI::ResourceController
+    end
+
     class PostsController < JSONAPI::ResourceController
     end
 
@@ -1753,6 +1756,10 @@ module Api
       def fetchable_fields
         super - [:email]
       end
+
+      def self.sortable_fields(context)
+        super(context) + [:"author_detail.author_stuff"]
+      end
     end
 
     class AuthorDetailResource < JSONAPI::Resource
@@ -1772,6 +1779,23 @@ end
 
 module Api
   module V6
+    class AuthorDetailResource < JSONAPI::Resource
+      attributes :author_stuff
+    end
+
+    class AuthorResource < JSONAPI::Resource
+      attributes :name, :email
+      model_name 'Person'
+      relationship :posts, to: :many
+      relationship :author_detail, to: :one, foreign_key_on: :related
+
+      filter :name
+
+      def self.sortable_fields(context)
+        super(context) + [:"author_detail.author_stuff"]
+      end
+    end
+
     class PersonResource < PersonResource; end
     class TagResource < TagResource; end
 
