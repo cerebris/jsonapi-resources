@@ -1869,11 +1869,21 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :bad_request
   end
 
-  def test_delete_with_validation_error
+  def test_delete_with_validation_error_base
     post = Post.create!(title: "can't destroy me", author: Person.first)
     delete :destroy, params: { id: post.id }
 
     assert_equal "can't destroy me", json_response['errors'][0]['title']
+    assert_equal "/data", json_response['errors'][0]['source']['pointer']
+    assert_response :unprocessable_entity
+  end
+
+  def test_delete_with_validation_error_attr
+    post = Post.create!(title: "locked title", author: Person.first)
+    delete :destroy, params: { id: post.id }
+
+    assert_equal "is locked", json_response['errors'][0]['title']
+    assert_equal "/data/attributes/title", json_response['errors'][0]['source']['pointer']
     assert_response :unprocessable_entity
   end
 
@@ -3754,6 +3764,15 @@ class Api::V6::PostsControllerTest < ActionController::TestCase
   def test_caching_with_join_from_resource_with_sql_fragment
     assert_cacheable_get :index, params: {include: 'section'}
     assert_response :success
+  end
+
+  def test_delete_with_validation_error_base_on_resource
+    post = Post.create!(title: "can't destroy me either", author: Person.first)
+    delete :destroy, params: { id: post.id }
+
+    assert_equal "can't destroy me", json_response['errors'][0]['title']
+    assert_equal "/data/attributes/base", json_response['errors'][0]['source']['pointer']
+    assert_response :unprocessable_entity
   end
 end
 
