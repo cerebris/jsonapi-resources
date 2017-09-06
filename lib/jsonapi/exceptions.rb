@@ -465,11 +465,12 @@ module JSONAPI
     end
 
     class ValidationErrors < Error
-      attr_reader :error_messages, :error_metadata, :resource_relationships
+      attr_reader :error_messages, :error_metadata, :resource_relationships, :resource_class
 
       def initialize(resource, error_object_overrides = {})
         @error_messages = resource.model_error_messages
         @error_metadata = resource.validation_error_metadata
+        @resource_class = resource.class
         @resource_relationships = resource.class._relationships.keys
         @key_formatter = JSONAPI.configuration.key_formatter
         super(error_object_overrides)
@@ -491,7 +492,7 @@ module JSONAPI
         create_error_object(code: JSONAPI::VALIDATION_ERROR,
                             status: :unprocessable_entity,
                             title: message,
-                            detail: "#{format_key(attr_key)} - #{message}",
+                            detail: detail(attr_key, message),
                             source: { pointer: pointer(attr_key) },
                             meta: metadata_for(attr_key, message))
       end
@@ -501,13 +502,22 @@ module JSONAPI
         error_metadata[attr_key] ? error_metadata[attr_key][message] : nil
       end
 
+      def detail(attr_key, message)
+        general_error?(attr_key) ? message : "#{format_key(attr_key)} - #{message}"
+      end
+
       def pointer(attr_or_relationship_name)
+        return '/data' if general_error?(attr_or_relationship_name)
         formatted_attr_or_relationship_name = format_key(attr_or_relationship_name)
         if resource_relationships.include?(attr_or_relationship_name)
           "/data/relationships/#{formatted_attr_or_relationship_name}"
         else
           "/data/attributes/#{formatted_attr_or_relationship_name}"
         end
+      end
+
+      def general_error?(attr_key)
+        attr_key.to_sym == :base && !resource_class._has_attribute?(attr_key)
       end
     end
 

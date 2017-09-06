@@ -376,8 +376,19 @@ class Post < ActiveRecord::Base
   before_destroy :destroy_callback
 
   def destroy_callback
-    if title == "can't destroy me"
-      errors.add(:title, "can't destroy me")
+    case title
+    when "can't destroy me", "can't destroy me either"
+      errors.add(:base, "can't destroy me")
+
+      # :nocov:
+      if Rails::VERSION::MAJOR >= 5
+        throw(:abort)
+      else
+        return false
+      end
+      # :nocov:
+    when "locked title"
+      errors.add(:title, "is locked")
 
       # :nocov:
       if Rails::VERSION::MAJOR >= 5
@@ -1774,6 +1785,12 @@ module Api
       # Test caching with SQL fragments
       def self.records(options = {})
         _model_class.all.joins('INNER JOIN people on people.id = author_id')
+      end
+
+      attribute :base
+
+      def base
+        _model.title
       end
     end
 

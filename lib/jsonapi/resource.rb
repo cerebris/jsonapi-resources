@@ -837,6 +837,10 @@ module JSONAPI
         @_attributes.fetch(attr.to_sym, {}).fetch(:delegate, attr)
       end
 
+      def _has_attribute?(attr)
+        @_attributes.keys.include?(attr.to_sym)
+      end
+
       def _updatable_attributes
         _attributes.map { |key, options| key unless options[:readonly] }.compact
       end
