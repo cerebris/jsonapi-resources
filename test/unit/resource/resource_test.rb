@@ -360,12 +360,15 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_build_joins
-    model_names = %w(person posts parent_post author)
+    model_names = %w(person posts parent_post author author_detail)
     associations = PostResource._lookup_association_chain(model_names)
     result = PostResource.send(:_build_joins, associations)
 
-    assert_equal "LEFT JOIN posts AS parent_post_sorting ON parent_post_sorting.id = posts.parent_post_id
-LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", result
+    sql = "LEFT JOIN posts AS parent_post_sorting ON parent_post_sorting.parent_post_id = posts.id
+LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id
+LEFT JOIN author_details AS author_detail_sorting ON author_detail_sorting.person_id = people.id"
+
+    assert_equal sql, result
   end
 
   # ToDo: Implement relationship pagination

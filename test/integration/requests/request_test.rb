@@ -1100,6 +1100,26 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_jsonapi_response 400
   end
 
+  def test_sort_primary_attribute
+    get '/api/v6/authors?sort=name', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 200
+    assert_equal '1002', json_response['data'][0]['id']
+
+    get '/api/v6/authors?sort=-name', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 200
+    assert_equal '1005', json_response['data'][0]['id']
+  end
+
+  def test_sort_included_attribute
+    get '/api/v6/authors?sort=author_detail.author_stuff', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 200
+    assert_equal '1000', json_response['data'][0]['id']
+
+    get '/api/v6/authors?sort=-author_detail.author_stuff', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 200
+    assert_equal '1002', json_response['data'][0]['id']
+  end
+
   def test_include_parameter_quoted
     get '/api/v2/posts?include=%22author%22', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
     assert_jsonapi_response 200

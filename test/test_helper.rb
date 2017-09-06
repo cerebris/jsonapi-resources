@@ -354,6 +354,7 @@ TestApp.routes.draw do
 
     JSONAPI.configuration.route_format = :dasherized_route
     namespace :v6 do
+      jsonapi_resources :authors
       jsonapi_resources :posts
       jsonapi_resources :sections
       jsonapi_resources :customers
