@@ -393,7 +393,7 @@ module JSONAPI
         if resource_klass._allowed_filter?(filter)
           parsed_filters[filter] = value
         else
-          fail JSONAPI::Exceptions::FilterNotAllowed.new(filter)
+          fail JSONAPI::Exceptions::FilterNotAllowed.new(key)
         end
       end
 
