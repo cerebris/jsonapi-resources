@@ -131,7 +131,7 @@ module JSONAPI
         relationship = _relationship(relationship_name)
         related_klass = relationship.resource_klass
 
-        context = context
+        context = options[:context]
 
         records = records(context: context)
         records, table_alias = apply_join(records, relationship, options)
