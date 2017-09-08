@@ -387,28 +387,38 @@ module JSONAPI
         records
       end
 
-      def apply_sort(records, order_options, _context = {})
+      def apply_sort(records, order_options, context = {})
         if order_options.any?
           order_options.each_pair do |field, direction|
-            if field.to_s.include?(".")
-              *model_names, column_name = field.split(".")
-
-              associations = _lookup_association_chain([records.model.to_s, *model_names])
-              joins_query = _build_joins([records.model, *associations])
-
-              order_by_query = "#{_join_table_name(associations.last)}.#{column_name} #{direction}"
-              records = records.joins(joins_query).order(order_by_query)
-            else
-              field = _attribute_delegated_name(field)
-              records = records.order(field => direction)
-            end
+            records = apply_single_sort(records, field, direction, context)
           end
         end
 
         records
       end
 
-      def apply_basic_sort(records, order_options, context = {})
+      def apply_single_sort(records, field, direction, context = {})
+        strategy = _allowed_sort.fetch(field.to_sym, {})[:apply]
+
+        if strategy
+          call_method_or_proc(strategy, records, direction, context)
+        else
+          if field.to_s.include?(".")
+            *model_names, column_name = field.split(".")
+
+            associations = _lookup_association_chain([records.model.to_s, *model_names])
+            joins_query = _build_joins([records.model, *associations])
+
+            order_by_query = "#{_join_table_name(associations.last)}.#{column_name} #{direction}"
+            records.joins(joins_query).order(order_by_query)
+          else
+            field = _attribute_delegated_name(field)
+            records.order(field => direction)
+          end
+        end
+      end
+
+      def apply_basic_sort(records, order_options, _context = {})
         if order_options.any?
           order_options.each_pair do |field, direction|
             records = records.order("#{field} #{direction}")
@@ -476,11 +486,7 @@ module JSONAPI
         strategy = _allowed_filters.fetch(filter.to_sym, Hash.new)[:apply]
 
         if strategy
-          if strategy.is_a?(Symbol) || strategy.is_a?(String)
-            send(strategy, records, value, options)
-          else
-            strategy.call(records, value, options)
-          end
+          call_method_or_proc(strategy, records, value, options)
         else
           filter = _attribute_delegated_name(filter)
           table_alias = options[:table_alias]

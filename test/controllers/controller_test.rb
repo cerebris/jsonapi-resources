@@ -3952,4 +3952,37 @@ class IndicatorsControllerTest < ActionController::TestCase
     assert_equal indicator_2.id.to_s, json_response['data'].first['id']
     assert_equal 2, json_response['data'].size
   end
+
+end
+
+class RobotsControllerTest < ActionController::TestCase
+
+  def teardown
+    Robot.delete_all
+  end
+
+  def test_fetch_robots_with_sort_by_name
+    Robot.create! name: 'John', version: 1
+    Robot.create! name: 'jane', version: 1
+    assert_cacheable_get :index, params: {sort: 'name'}
+    assert_response :success
+    assert_equal 'John', json_response['data'].first['attributes']['name']
+  end
+
+  def test_fetch_robots_with_sort_by_lower_name
+    Robot.create! name: 'John', version: 1
+    Robot.create! name: 'jane', version: 1
+    assert_cacheable_get :index, params: {sort: 'lower_name'}
+    assert_response :success
+    assert_equal 'jane', json_response['data'].first['attributes']['name']
+  end
+
+  def test_fetch_robots_with_sort_by_version
+    Robot.create! name: 'John', version: 1
+    Robot.create! name: 'jane', version: 2
+    assert_cacheable_get :index, params: {sort: 'version'}
+    assert_response 400
+    assert_equal 'version is not a valid sort criteria for robots', json_response['errors'].first['detail']
+  end
+
 end
