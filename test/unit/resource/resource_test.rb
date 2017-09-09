@@ -345,7 +345,7 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_lookup_association_chain
     model_names = %w(person posts parent_post)
-    result = PostResource._lookup_association_chain(model_names)
+    result = PersonResource._lookup_association_chain(model_names)
     assert_equal 2, result.length
 
     posts_reflection, parent_post_reflection = result
@@ -361,12 +361,15 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_build_joins
     model_names = %w(person posts parent_post author author_detail)
-    associations = PostResource._lookup_association_chain(model_names)
-    result = PostResource.send(:_build_joins, associations)
+    associations = PersonResource._lookup_association_chain(model_names)
+    result = PersonResource.send(:_build_joins, [Person, *associations])
 
-    sql = "LEFT JOIN posts AS parent_post_sorting ON parent_post_sorting.parent_post_id = posts.id
-LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id
-LEFT JOIN author_details AS author_detail_sorting ON author_detail_sorting.person_id = people.id"
+    sql = [
+        'LEFT JOIN posts AS posts_sorting ON posts_sorting.author_id = people.id',
+        'LEFT JOIN posts AS parent_post_sorting ON parent_post_sorting.id = posts_sorting.parent_post_id',
+        'LEFT JOIN people AS author_sorting ON author_sorting.id = parent_post_sorting.author_id',
+        'LEFT JOIN author_details AS author_detail_sorting ON author_detail_sorting.person_id = author_sorting.id'
+    ].join("\n")
 
     assert_equal sql, result
   end
