@@ -22,6 +22,10 @@ module JSONAPI
       @primary_key ||= resource_klass._primary_key
     end
 
+    def relationship_forgien_key
+      @relationship_forgien_key ||= JSONAPI.configuration.relationship_forgien_key
+    end
+
     def resource_klass
       @resource_klass ||= @parent_resource.resource_for(@class_name)
     end
@@ -66,7 +70,7 @@ module JSONAPI
       def initialize(name, options = {})
         super
         @class_name = options.fetch(:class_name, name.to_s.camelize)
-        @foreign_key ||= "#{name}_id".to_sym
+        @foreign_key ||= "#{name}_#{relationship_forgien_key}".to_sym
         @foreign_key_on = options.fetch(:foreign_key_on, :self)
       end
 
@@ -85,7 +89,7 @@ module JSONAPI
       def initialize(name, options = {})
         super
         @class_name = options.fetch(:class_name, name.to_s.camelize.singularize)
-        @foreign_key ||= "#{name.to_s.singularize}_ids".to_sym
+        @foreign_key ||= "#{name.to_s.singularize}_#{relationship_forgien_key}s".to_sym
         @reflect = options.fetch(:reflect, true) == true
         @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type.to_s.singularize.to_sym) if parent_resource
       end
