@@ -32,7 +32,8 @@ module JSONAPI
                 :resource_cache,
                 :default_resource_cache_field,
                 :resource_cache_digest_function,
-                :resource_cache_usage_report_function
+                :resource_cache_usage_report_function,
+                :relationship_forgien_key
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -43,6 +44,9 @@ module JSONAPI
 
       #:integer, :uuid, :string, or custom (provide a proc)
       self.resource_key_type = :integer
+
+      # optioanl set the default relationship foreign_key
+      self.relationship_forgien_key = 'id'
 
       # optional request features
       self.allow_include = true
@@ -175,6 +179,10 @@ module JSONAPI
 
     def resource_key_type=(key_type)
       @resource_key_type = key_type
+    end
+
+    def relationship_forgien_key=(foreign_key)
+      @relationship_forgien_key = foreign_key
     end
 
     def route_formatter
