@@ -255,9 +255,9 @@ module ActionDispatch
         private
 
         def resource_type_with_module_prefix(resource = nil)
-          if (resource && resource[0] == '/')¬
-            resource¬
-          else¬
+          if (resource && resource[0] == '/')
+            resource
+          else
             resource_name = resource || @scope[:jsonapi_resource]
             [@scope[:module], resource_name].compact.collect(&:to_s).join('/')
           end
