@@ -346,7 +346,7 @@
 #     )
 #   end
 #
-#   def test_polymorphic_get_related_resource
+#   def test_polymorphic_show_related_resource
 #     get '/pictures/1/imageable', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
 #     serialized_data = JSON.parse(response.body)
 #       assert_hash_equals(

@@ -37,7 +37,7 @@ module JSONAPI
 
     def transactional?
       case params[:action]
-        when 'index', 'get_related_resource', 'get_related_resources', 'show', 'show_relationship'
+        when 'index', 'show_related_resource', 'index_related_resources', 'show', 'show_relationship'
           return false
         else
           return true
@@ -80,7 +80,7 @@ module JSONAPI
       )
     end
 
-    def setup_get_related_resource_action(params, resource_klass)
+    def setup_show_related_resource_action(params, resource_klass)
       source_klass = Resource.resource_klass_for(params.require(:source))
       source_id = source_klass.verify_key(params.require(source_klass._as_parent_key), @context)
 
@@ -101,7 +101,7 @@ module JSONAPI
       )
     end
 
-    def setup_get_related_resources_action(params, resource_klass)
+    def setup_index_related_resources_action(params, resource_klass)
       source_klass = Resource.resource_klass_for(params.require(:source))
       source_id = source_klass.verify_key(params.require(source_klass._as_parent_key), @context)
 
