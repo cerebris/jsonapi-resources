@@ -1951,26 +1951,26 @@ class PostsControllerTest < ActionController::TestCase
                        }
   end
 
-  def test_get_related_resources_sorted
-    assert_cacheable_get :get_related_resources, params: {person_id: '1001', relationship: 'posts', source:'people', sort: 'title' }
+  def test_index_related_resources_sorted
+    assert_cacheable_get :index_related_resources, params: {person_id: '1001', relationship: 'posts', source:'people', sort: 'title' }
     assert_response :success
     assert_equal 'JR How To', json_response['data'][0]['attributes']['title']
     assert_equal 'New post', json_response['data'][2]['attributes']['title']
-    assert_cacheable_get :get_related_resources, params: {person_id: '1001', relationship: 'posts', source:'people', sort: '-title' }
+    assert_cacheable_get :index_related_resources, params: {person_id: '1001', relationship: 'posts', source:'people', sort: '-title' }
     assert_response :success
     assert_equal 'New post', json_response['data'][0]['attributes']['title']
     assert_equal 'JR How To', json_response['data'][2]['attributes']['title']
   end
 
-  def test_get_related_resources_default_sorted
-    assert_cacheable_get :get_related_resources, params: {person_id: '1001', relationship: 'posts', source:'people'}
+  def test_index_related_resources_default_sorted
+    assert_cacheable_get :index_related_resources, params: {person_id: '1001', relationship: 'posts', source:'people'}
     assert_response :success
     assert_equal 'New post', json_response['data'][0]['attributes']['title']
     assert_equal 'JR How To', json_response['data'][2]['attributes']['title']
   end
 
-  def test_get_related_resources_has_many_filtered
-    assert_cacheable_get :get_related_resources, params: {person_id: '1001', relationship: 'posts', source:'people', filter: { title: 'JR How To' } }
+  def test_index_related_resources_has_many_filtered
+    assert_cacheable_get :index_related_resources, params: {person_id: '1001', relationship: 'posts', source:'people', filter: { title: 'JR How To' } }
     assert_response :success
     assert_equal 'JR How To', json_response['data'][0]['attributes']['title']
     assert_equal 1, json_response['data'].size
@@ -2494,8 +2494,8 @@ class PeopleControllerTest < ActionController::TestCase
     assert_response :bad_request
   end
 
-  def test_invalid_filter_value_for_get_related_resources
-    assert_cacheable_get :get_related_resources, params: {
+  def test_invalid_filter_value_for_index_related_resources
+    assert_cacheable_get :index_related_resources, params: {
           hair_cut_id: 1,
           relationship: 'people',
           source: 'hair_cuts',
@@ -2513,11 +2513,11 @@ class PeopleControllerTest < ActionController::TestCase
     assert_equal 'Joe Author', json_response['data'][0]['attributes']['name']
   end
 
-  def test_get_related_resource_no_namespace
+  def test_show_related_resource_no_namespace
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :dasherized_key
     JSONAPI.configuration.route_format = :underscored_key
-    assert_cacheable_get :get_related_resource, params: {post_id: '2', relationship: 'author', source:'posts'}
+    assert_cacheable_get :show_related_resource, params: {post_id: '2', relationship: 'author', source:'posts'}
     assert_response :success
 
     assert_hash_equals(
@@ -2579,19 +2579,19 @@ class PeopleControllerTest < ActionController::TestCase
     JSONAPI.configuration = original_config
   end
 
-  def test_get_related_resource_includes
+  def test_show_related_resource_includes
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :dasherized_key
     JSONAPI.configuration.route_format = :underscored_key
-    assert_cacheable_get :get_related_resource, params: {post_id: '2', relationship: 'author', source:'posts', include: 'posts'}
+    assert_cacheable_get :show_related_resource, params: {post_id: '2', relationship: 'author', source:'posts', include: 'posts'}
     assert_response :success
     assert_equal 'posts', json_response['included'][0]['type']
   ensure
     JSONAPI.configuration = original_config
   end
 
-  def test_get_related_resource_nil
-    get :get_related_resource, params: {post_id: '17', relationship: 'author', source:'posts'}
+  def test_show_related_resource_nil
+    get :show_related_resource, params: {post_id: '17', relationship: 'author', source:'posts'}
     assert_response :success
     assert_hash_equals json_response,
                        {
@@ -3390,10 +3390,10 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     book_comment.delete
   end
 
-  def test_get_related_resources_pagination
+  def test_index_related_resources_pagination
     Api::V2::BookResource.paginator :offset
 
-    assert_cacheable_get :get_related_resources, params: {author_id: '1003', relationship: 'books', source:'api/v2/authors'}
+    assert_cacheable_get :index_related_resources, params: {author_id: '1003', relationship: 'books', source:'api/v2/authors'}
     assert_response :success
     assert_equal 10, json_response['data'].size
     assert_equal 3, json_response['links'].size
@@ -3525,8 +3525,8 @@ class Api::V1::PlanetsControllerTest < ActionController::TestCase
 end
 
 class Api::V1::MoonsControllerTest < ActionController::TestCase
-  def test_get_related_resource
-    assert_cacheable_get :get_related_resource, params: {crater_id: 'S56D', relationship: 'moon', source: "api/v1/craters"}
+  def test_show_related_resource
+    assert_cacheable_get :show_related_resource, params: {crater_id: 'S56D', relationship: 'moon', source: "api/v1/craters"}
     assert_response :success
     assert_hash_equals({
                          data: {
@@ -3541,12 +3541,12 @@ class Api::V1::MoonsControllerTest < ActionController::TestCase
                        }, json_response)
   end
 
-  def test_get_related_resources_with_select_some_db_columns
+  def test_index_related_resources_with_select_some_db_columns
     Api::V1::MoonResource.paginator :paged
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.top_level_meta_include_record_count = true
     JSONAPI.configuration.json_key_format = :dasherized_key
-    assert_cacheable_get :get_related_resources, params: {planet_id: '1', relationship: 'moons', source: 'api/v1/planets'}
+    assert_cacheable_get :index_related_resources, params: {planet_id: '1', relationship: 'moons', source: 'api/v1/planets'}
     assert_response :success
     assert_equal 1, json_response['meta']['record-count']
   ensure
@@ -3564,8 +3564,8 @@ class Api::V1::CratersControllerTest < ActionController::TestCase
     assert_nil json_response['included']
   end
 
-  def test_get_related_resources
-    assert_cacheable_get :get_related_resources, params: {moon_id: '1', relationship: 'craters', source: "api/v1/moons"}
+  def test_index_related_resources
+    assert_cacheable_get :index_related_resources, params: {moon_id: '1', relationship: 'craters', source: "api/v1/moons"}
     assert_response :success
     assert_hash_equals({
                          data: [
@@ -3587,9 +3587,9 @@ class Api::V1::CratersControllerTest < ActionController::TestCase
                        }, json_response)
   end
 
-  def test_get_related_resources_filtered
+  def test_index_related_resources_filtered
     $test_user = Person.find(1001)
-    assert_cacheable_get :get_related_resources,
+    assert_cacheable_get :index_related_resources,
                          params: {
                              moon_id: '1',
                              relationship: 'craters',

@@ -51,12 +51,24 @@ module JSONAPI
       process_request
     end
 
-    def get_related_resource
+    def show_related_resource
       process_request
     end
 
-    def get_related_resources
+    def index_related_resources
       process_request
+    end
+
+    def get_related_resource
+      ActiveSupport::Deprecation.warn "In #{self.class.name} you exposed a `get_related_resource`"\
+                                      " action. Please use `show_related_resource` instead."
+      show_related_resource
+    end
+
+    def get_related_resources
+      ActiveSupport::Deprecation.warn "In #{self.class.name} you exposed a `get_related_resources`"\
+                                      " action. Please use `index_related_resource` instead."
+      index_related_resources
     end
 
     def process_request

@@ -78,7 +78,7 @@ class RoutesTest < ActionDispatch::IntegrationTest
   # Polymorphic
   # ToDo: refute this routing. Polymorphic relationships can't support a shared set of filters or includes so
   # this this route is no longer supported
-  # def test_routing_polymorphic_get_related_resource
+  # def test_routing_polymorphic_show_related_resource
   #   assert_routing(
   #     {
   #       path: '/pictures/1/imageable',
@@ -88,7 +88,7 @@ class RoutesTest < ActionDispatch::IntegrationTest
   #       relationship: 'imageable',
   #       source: 'pictures',
   #       controller: 'imageables',
-  #       action: 'get_related_resource',
+  #       action: 'show_related_resource',
   #       picture_id: '1'
   #     }
   #   )
