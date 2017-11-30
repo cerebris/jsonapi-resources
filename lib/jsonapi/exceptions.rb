@@ -49,6 +49,12 @@ module JSONAPI
           meta[:backtrace] = exception.backtrace
         end
 
+        if JSONAPI.configuration.include_application_backtraces_in_errors
+          meta ||= Hash.new
+          meta[:exception] ||= exception.message
+          meta[:application_backtrace] = exception.backtrace.select{|line| line =~ /#{Rails.root}/}
+        end
+
         [create_error_object(code: JSONAPI::INTERNAL_SERVER_ERROR,
                              status: :internal_server_error,
                              title: I18n.t('jsonapi-resources.exceptions.internal_server_error.title',

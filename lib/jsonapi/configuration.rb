@@ -26,6 +26,7 @@ module JSONAPI
                 :top_level_meta_page_count_key,
                 :allow_transactions,
                 :include_backtraces_in_errors,
+                :include_application_backtraces_in_errors,
                 :exception_class_whitelist,
                 :whitelist_all_exceptions,
                 :always_include_to_one_linkage_data,
@@ -79,6 +80,10 @@ module JSONAPI
       # Whether or not to include exception backtraces in JSONAPI error
       # responses.  Defaults to `false` in production, and `true` otherwise.
       self.include_backtraces_in_errors = !Rails.env.production?
+
+      # Whether or not to include exception application backtraces in JSONAPI error
+      # responses.  Defaults to `false` in production, and `true` otherwise.
+      self.include_application_backtraces_in_errors = !Rails.env.production?
 
       # List of classes that should not be rescued by the operations processor.
       # For example, if you use Pundit for authorization, you might
@@ -245,6 +250,8 @@ module JSONAPI
     attr_writer :allow_transactions
 
     attr_writer :include_backtraces_in_errors
+
+    attr_writer :include_application_backtraces_in_errors
 
     attr_writer :exception_class_whitelist
 
