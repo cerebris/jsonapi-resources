@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'bundler', '~> 1.5'
   spec.add_development_dependency 'rake'
   spec.add_development_dependency 'minitest', '~> 5.10', '!= 5.10.2'
-  spec.add_development_dependency 'minitest-spec-rails'
+  spec.add_development_dependency 'minitest-spec-rails', '~> 5.4.0'
   spec.add_development_dependency 'simplecov'
   spec.add_development_dependency 'pry'
   spec.add_development_dependency 'concurrent-ruby-ext'
