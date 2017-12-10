@@ -3,7 +3,7 @@ module JSONAPI
     def self.included(base)
       base.extend ClassMethods
     end
-    
+
     module ClassMethods
 
       # Finds Resources using the `filters`. Pagination and sort options are used when provided
@@ -387,7 +387,7 @@ module JSONAPI
         records
       end
 
-      def apply_sort(records, order_options, context = {})
+      def apply_sort(records, order_options, _context = {})
         if order_options.any?
           order_options.each_pair do |field, direction|
             if field.to_s.include?(".")
@@ -396,8 +396,7 @@ module JSONAPI
               associations = _lookup_association_chain([records.model.to_s, *model_names])
               joins_query = _build_joins([records.model, *associations])
 
-              # _sorting is appended to avoid name clashes with manual joins eg. overridden filters
-              order_by_query = "#{associations.last.name}_sorting.#{column_name} #{direction}"
+              order_by_query = "#{_join_table_name(associations.last)}.#{column_name} #{direction}"
               records = records.joins(joins_query).order(order_by_query)
             else
               field = _attribute_delegated_name(field)
@@ -423,15 +422,26 @@ module JSONAPI
         joins = []
 
         associations.inject do |prev, current|
-          if current.has_one?
-            joins << "LEFT JOIN #{current.table_name} AS #{current.name}_sorting ON #{current.name}_sorting.#{current.foreign_key} = #{prev.table_name}.id"
+          prev_table_name = _join_table_name(prev)
+          curr_table_name = _join_table_name(current)
+          if current.belongs_to?
+            joins << "LEFT JOIN #{current.table_name} AS #{curr_table_name} ON #{curr_table_name}.id = #{prev_table_name}.#{current.foreign_key}"
           else
-            joins << "LEFT JOIN #{current.table_name} AS #{current.name}_sorting ON #{current.name}_sorting.id = #{prev.table_name}.#{current.foreign_key}"
+            joins << "LEFT JOIN #{current.table_name} AS #{curr_table_name} ON #{curr_table_name}.#{current.foreign_key} = #{prev_table_name}.id"
           end
 
           current
         end
         joins.join("\n")
+      end
+
+      # _sorting is appended to avoid name clashes with manual joins eg. overridden filters
+      def _join_table_name(association)
+        if association.is_a?(ActiveRecord::Reflection::AssociationReflection)
+          "#{association.name}_sorting"
+        else
+          association.table_name
+        end
       end
 
       # Assumes ActiveRecord's counting. Override if you need a different counting method

@@ -333,6 +333,23 @@ ActiveRecord::Schema.define do
     t.integer :access_card_id, null: false
     t.timestamps null: false
   end
+
+  create_table :agencies, force: true do |t|
+    t.string :name
+    t.timestamps null: false
+  end
+
+  create_table :indicators, force: true do |t|
+    t.string :name
+    t.integer :agency_id, null: false
+    t.timestamps null: false
+  end
+
+  create_table :widgets, force: true do |t|
+    t.string :name
+    t.integer :indicator_id, null: false
+    t.timestamps null: false
+  end
 end
 
 ### MODELS
@@ -368,7 +385,7 @@ class Post < ActiveRecord::Base
   has_many :special_post_tags, source: :tag
   has_many :special_tags, through: :special_post_tags, source: :tag
   belongs_to :section
-  has_one :parent_post, class_name: 'Post', foreign_key: 'parent_post_id'
+  belongs_to :parent_post, class_name: 'Post', foreign_key: 'parent_post_id'
 
   validates :author, presence: true
   validates :title, length: { maximum: 35 }
@@ -696,6 +713,18 @@ class Worker < ActiveRecord::Base
   belongs_to :access_card
 end
 
+class Agency < ActiveRecord::Base
+end
+
+class Indicator < ActiveRecord::Base
+  belongs_to :agency
+  has_many :widgets
+end
+
+class Widget < ActiveRecord::Base
+  belongs_to :indicator
+end
+
 ### CONTROLLERS
 class AuthorsController < JSONAPI::ResourceControllerMetal
 end
@@ -984,6 +1013,12 @@ class AccessCardsController < BaseController
 end
 
 class WorkersController < BaseController
+end
+
+class WidgetsController < JSONAPI::ResourceController
+end
+
+class IndicatorsController < JSONAPI::ResourceController
 end
 
 ### RESOURCES
@@ -1990,6 +2025,29 @@ class BlogPostResource < JSONAPI::Resource
   attribute :body
 
   filter :name
+end
+
+class AgencyResource < JSONAPI::Resource
+  attributes :name
+end
+
+class IndicatorResource < JSONAPI::Resource
+  attributes :name
+  has_one :agency
+  has_many :widgets
+
+  def self.sortable_fields(_context = nil)
+    super + [:'widgets.name']
+  end
+end
+
+class WidgetResource < JSONAPI::Resource
+  attributes :name
+  has_one :indicator
+
+  def self.sortable_fields(_context = nil)
+    super + [:'indicator.agency.name']
+  end
 end
 
 # CustomProcessors

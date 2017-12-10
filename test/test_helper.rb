@@ -398,6 +398,8 @@ TestApp.routes.draw do
   jsonapi_resources :keepers, only: [:show]
   jsonapi_resources :storages
   jsonapi_resources :workers, only: [:show]
+  jsonapi_resources :widgets, only: [:index]
+  jsonapi_resources :indicators, only: [:index]
 
   mount MyEngine::Engine => "/boomshaka", as: :my_engine
   mount ApiV2Engine::Engine => "/api_v2", as: :api_v2_engine
