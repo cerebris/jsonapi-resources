@@ -350,6 +350,12 @@ ActiveRecord::Schema.define do
     t.integer :indicator_id, null: false
     t.timestamps null: false
   end
+
+  create_table :robots, force: true do |t|
+    t.string :name
+    t.integer :version
+    t.timestamps null: false
+  end
 end
 
 ### MODELS
@@ -725,6 +731,9 @@ class Widget < ActiveRecord::Base
   belongs_to :indicator
 end
 
+class Robot < ActiveRecord::Base
+end
+
 ### CONTROLLERS
 class AuthorsController < JSONAPI::ResourceControllerMetal
 end
@@ -1019,6 +1028,9 @@ class WidgetsController < JSONAPI::ResourceController
 end
 
 class IndicatorsController < JSONAPI::ResourceController
+end
+
+class RobotsController < JSONAPI::ResourceController
 end
 
 ### RESOURCES
@@ -2184,6 +2196,15 @@ class WorkerResource < JSONAPI::Resource
   has_one :access_card
 
   attribute :name
+end
+
+class RobotResource < ::JSONAPI::Resource
+  attribute :name
+  attribute :version, sortable: false
+
+  sort :lower_name, apply: ->(records, direction, _context) do
+    records.order("LOWER(robots.name) #{direction}")
+  end
 end
 
 ### PORO Data - don't do this in a production app

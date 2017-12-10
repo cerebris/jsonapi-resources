@@ -416,6 +416,8 @@ module JSONAPI
 
         subclass._allowed_filters = (_allowed_filters || Set.new).dup
 
+        subclass._allowed_sort = _allowed_sort.dup
+
         type = subclass.name.demodulize.sub(/Resource$/, '').underscore
         subclass._type = type.pluralize.to_sym
 
@@ -537,7 +539,7 @@ module JSONAPI
       end
 
       attr_accessor :_attributes, :_relationships, :_type, :_model_hints
-      attr_writer :_allowed_filters, :_paginator
+      attr_writer :_allowed_filters, :_paginator, :_allowed_sort
 
       def create(context)
         new(create_model, context)
@@ -583,6 +585,10 @@ module JSONAPI
         define_method "#{attr}=" do |value|
           @model.public_send("#{options[:delegate] ? options[:delegate].to_sym : attr}=", value)
         end unless method_defined?("#{attr}=")
+
+        if options.fetch(:sortable, true) && !_has_sort?(attr)
+          sort attr
+        end
       end
 
       def attribute_to_model_field(attribute)
@@ -669,6 +675,15 @@ module JSONAPI
         @_allowed_filters[attr.to_sym] = args.extract_options!
       end
 
+      def sort(sorting, options = {})
+        self._allowed_sort[sorting.to_sym] = options
+      end
+
+      def sorts(*args)
+        options = args.extract_options!
+        _allowed_sort.merge!(args.inject({}) { |h, sorting| h[sorting.to_sym] = options.dup; h })
+      end
+
       def primary_key(key)
         @_primary_key = key.to_sym
       end
@@ -689,7 +704,7 @@ module JSONAPI
 
       # Override in your resource to filter the sortable keys
       def sortable_fields(_context = nil)
-        _attributes.keys
+        _allowed_sort.keys
       end
 
       def sortable_field?(key, context = nil)
@@ -759,11 +774,7 @@ module JSONAPI
         strategy = _allowed_filters.fetch(filter, Hash.new)[:verify]
 
         if strategy
-          if strategy.is_a?(Symbol) || strategy.is_a?(String)
-            values = send(strategy, filter_values, context)
-          else
-            values = strategy.call(filter_values, context)
-          end
+          values = call_method_or_proc(strategy, filter_values, context)
           [filter, values]
         else
           if is_filter_relationship?(filter)
@@ -771,6 +782,14 @@ module JSONAPI
           else
             verify_custom_filter(filter, filter_values, context)
           end
+        end
+      end
+
+      def call_method_or_proc(strategy, *args)
+        if strategy.is_a?(Symbol) || strategy.is_a?(String)
+          send(strategy, *args)
+        else
+          strategy.call(*args)
         end
       end
 
@@ -890,6 +909,10 @@ module JSONAPI
         defined?(@_allowed_filters) ? @_allowed_filters : { id: {} }
       end
 
+      def _allowed_sort
+        @_allowed_sort ||= {}
+      end
+
       def _paginator
         @_paginator ||= JSONAPI.configuration.default_paginator
       end
@@ -961,6 +984,10 @@ module JSONAPI
 
       def _allowed_filter?(filter)
         !_allowed_filters[filter].nil?
+      end
+
+      def _has_sort?(sorting)
+        !_allowed_sort[sorting.to_sym].nil?
       end
 
       def module_path
