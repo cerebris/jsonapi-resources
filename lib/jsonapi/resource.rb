@@ -925,6 +925,10 @@ module JSONAPI
         @abstract = val
       end
 
+      def type(type)
+        self._type = type
+      end
+
       def _abstract
         @abstract
       end

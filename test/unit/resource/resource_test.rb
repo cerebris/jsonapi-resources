@@ -58,6 +58,10 @@ class FelineResource < JSONAPI::Resource
   has_one :father, class_name: 'Cat'
 end
 
+class PersonWithCustomResourceTypeResource < PersonResource
+  type 'this-is-a-custom-type'
+end
+
 class PersonWithCustomRecordsForResource < PersonResource
   def records_for(relationship_name)
     :records_for
@@ -625,5 +629,11 @@ class ResourceTest < ActiveSupport::TestCase
     assert(PostResource.sortable_field?(:title))
     assert(PostResource.sortable_field?(:body))
     refute(PostResource.sortable_field?(:color))
+  end
+
+  def test_custom_resource_type
+    author = Person.find(1)
+    author_resource = PersonWithCustomResourceTypeResource.new(author, nil)
+    assert_equal(author_resource.class._type, "this-is-a-custom-type")
   end
 end
