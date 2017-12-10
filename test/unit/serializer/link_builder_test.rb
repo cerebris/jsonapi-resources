@@ -39,8 +39,7 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
         primary_resource_klass: ApiV2Engine::PersonResource
     ).engine_name
 
-    assert_equal nil,
-      JSONAPI::LinkBuilder.new(
+    assert_nil JSONAPI::LinkBuilder.new(
         primary_resource_klass: Api::V1::PersonResource
     ).engine_name
   end
