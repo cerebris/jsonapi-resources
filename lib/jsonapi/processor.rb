@@ -69,7 +69,7 @@ module JSONAPI
                                                            include_directives: include_directives)
       end
 
-      if (JSONAPI.configuration.top_level_meta_include_page_count && page_options[:record_count])
+      if (JSONAPI.configuration.top_level_meta_include_page_count && paginator && page_options[:record_count])
         page_options[:page_count] = paginator ? paginator.calculate_page_count(page_options[:record_count]) : 1
       end
 
