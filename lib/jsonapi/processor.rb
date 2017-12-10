@@ -186,32 +186,28 @@ module JSONAPI
                                                serializer,
                                                find_options)
 
+      opts = result_options
       if ((JSONAPI.configuration.top_level_meta_include_record_count) ||
           (paginator && paginator.class.requires_record_count) ||
           (JSONAPI.configuration.top_level_meta_include_page_count))
 
-        record_count = source_resource.class.count_related(
+        opts[:record_count] = source_resource.class.count_related(
             source_resource.identity,
             relationship_type,
             find_options)
       end
 
-      if (JSONAPI.configuration.top_level_meta_include_page_count && record_count)
-        page_count = paginator.calculate_page_count(record_count)
+      if (JSONAPI.configuration.top_level_meta_include_page_count && opts[:record_count])
+        opts[:page_count] = paginator.calculate_page_count(opts[:record_count])
       end
 
-      pagination_params = if paginator && JSONAPI.configuration.top_level_links_include_pagination
-                            page_options = {}
-                            page_options[:record_count] = record_count if paginator.class.requires_record_count
-                            paginator.links_page_params(page_options.merge(fetched_resources: resource_set))
-                          else
-                            {}
-                          end
-
-      opts = result_options
-      opts.merge!(pagination_params: pagination_params) if JSONAPI.configuration.top_level_links_include_pagination
-      opts.merge!(record_count: record_count) if JSONAPI.configuration.top_level_meta_include_record_count
-      opts.merge!(page_count: page_count) if JSONAPI.configuration.top_level_meta_include_page_count
+      opts[:pagination_params] = if paginator && JSONAPI.configuration.top_level_links_include_pagination
+                                   page_options = {}
+                                   page_options[:record_count] = opts[:record_count] if paginator.class.requires_record_count
+                                   paginator.links_page_params(page_options.merge(fetched_resources: resource_set))
+                                 else
+                                   {}
+                                 end
 
       return JSONAPI::RelatedResourcesSetOperationResult.new(:ok,
                                                              source_resource,
