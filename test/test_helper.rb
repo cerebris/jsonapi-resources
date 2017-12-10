@@ -515,7 +515,7 @@ class ActionController::TestCase
     ActiveSupport::Notifications.subscribed(normal_query_callback, 'sql.active_record') do
       get action, *args
     end
-    non_caching_response = json_response_sans_backtraces
+    non_caching_response = json_response_sans_all_backtraces
     non_caching_status = response.status
 
     # Don't let all the cache-testing requests mess with assert_query_count
@@ -567,7 +567,7 @@ class ActionController::TestCase
         )
         assert_equal(
           non_caching_response.pretty_inspect,
-          json_response_sans_backtraces.pretty_inspect,
+          json_response_sans_all_backtraces.pretty_inspect,
           "Cache (mode: #{mode}) #{phase} response body must match normal response"
         )
         assert_operator(
@@ -607,12 +607,13 @@ class ActionController::TestCase
 
   private
 
-  def json_response_sans_backtraces
+  def json_response_sans_all_backtraces
     return nil if response.body.to_s.strip.empty?
 
     r = json_response.dup
     (r["errors"] || []).each do |err|
       err["meta"].delete("backtrace") if err.has_key?("meta")
+      err["meta"].delete("application_backtrace") if err.has_key?("meta")
     end
     return r
   end

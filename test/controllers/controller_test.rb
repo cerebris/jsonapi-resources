@@ -126,16 +126,35 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration.include_backtraces_in_errors = true
     assert_cacheable_get :index
     assert_response 500
-    assert_includes @response.body, "backtrace", "expected backtrace in error body"
+    assert_includes @response.body, '"backtrace"', "expected backtrace in error body"
 
     JSONAPI.configuration.include_backtraces_in_errors = false
     assert_cacheable_get :index
     assert_response 500
-    refute_includes @response.body, "backtrace", "expected backtrace in error body"
+    refute_includes @response.body, '"backtrace"', "expected backtrace in error body"
 
   ensure
     $PostProcessorRaisesErrors = false
     JSONAPI.configuration.include_backtraces_in_errors = original_config
+  end
+
+  def test_exception_includes_application_backtrace_when_enabled
+    original_config = JSONAPI.configuration.include_application_backtraces_in_errors
+    $PostProcessorRaisesErrors = true
+
+    JSONAPI.configuration.include_application_backtraces_in_errors = true
+    assert_cacheable_get :index
+    assert_response 500
+    assert_includes @response.body, '"application_backtrace"', "expected application backtrace in error body"
+
+    JSONAPI.configuration.include_application_backtraces_in_errors = false
+    assert_cacheable_get :index
+    assert_response 500
+    refute_includes @response.body, '"application_backtrace"', "expected application backtrace in error body"
+
+  ensure
+    $PostProcessorRaisesErrors = false
+    JSONAPI.configuration.include_application_backtraces_in_errors = original_config
   end
 
   def test_on_server_error_block_callback_with_exception
