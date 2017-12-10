@@ -28,25 +28,34 @@ which *should* be compatible with JSON:API compliant server implementations such
 
 Add JR to your application's `Gemfile`:
 
-    gem 'jsonapi-resources'
+``` 
+gem 'jsonapi-resources'
+```
 
 And then execute:
 
-    $ bundle
+```bash 
+bundle
+```
 
 Or install it yourself as:
 
-    $ gem install jsonapi-resources
+```bash 
+gem install jsonapi-resources
+```
 
 **For further usage see the [v0.10 alpha Guide](http://jsonapi-resources.com/v0.10/guide/)**
 
 ## Contributing
 
+1. Submit an issue describing any new features you wish it add or the bug you intend to fix
 1. Fork it ( http://github.com/cerebris/jsonapi-resources/fork )
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create a new Pull Request
+1. Create your feature branch (`git checkout -b my-new-feature`)
+1. Run the full test suite (`rake test`)
+1. Fix any failing tests
+1. Commit your changes (`git commit -am 'Add some feature'`)
+1. Push to the branch (`git push origin my-new-feature`)
+1. Create a new Pull Request
 
 ## Did you find a bug?
 
@@ -58,7 +67,7 @@ and a **code sample** or an **executable test case** demonstrating the expected 
 
 * If possible, use the relevant bug report templates to create the issue. 
 Simply copy the content of the appropriate template into a .rb file, make the necessary changes to demonstrate the issue, 
-and **paste the content into the issue description**:
+and **paste the content into the issue description or attach as a file**:
   * [**Rails 5** issues](https://github.com/cerebris/jsonapi-resources/blob/master/lib/bug_report_templates/rails_5_master.rb)
 
 
