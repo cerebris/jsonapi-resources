@@ -33,12 +33,18 @@ module ActionDispatch
           end
 
           if res._immutable
+            options[:except] << :options unless options[:except].include?(:options) || options[:except].include?('options')
             options[:except] << :create unless options[:except].include?(:create) || options[:except].include?('create')
             options[:except] << :update unless options[:except].include?(:update) || options[:except].include?('update')
             options[:except] << :destroy unless options[:except].include?(:destroy) || options[:except].include?('destroy')
           end
 
           resource @resource_type, options do
+            if JSONAPI.configuration.enable_options_endpoint
+              collection do
+                match '/', action: :options, via: :options
+              end
+            end
             # :nocov:
             if @scope.respond_to? :[]=
               # Rails 4
@@ -102,12 +108,18 @@ module ActionDispatch
           end
 
           if res._immutable
+            options[:except] << :options unless options[:except].include?(:options) || options[:except].include?('options')
             options[:except] << :create unless options[:except].include?(:create) || options[:except].include?('create')
             options[:except] << :update unless options[:except].include?(:update) || options[:except].include?('update')
             options[:except] << :destroy unless options[:except].include?(:destroy) || options[:except].include?('destroy')
           end
 
           resources @resource_type, options do
+            if JSONAPI.configuration.enable_options_endpoint
+              collection do
+                match '/', action: :options, via: :options
+              end
+            end
             # :nocov:
             if @scope.respond_to? :[]=
               # Rails 4

@@ -61,6 +61,10 @@ module JSONAPI
       @errors.concat(e.errors)
     end
 
+    def setup_options_action(params, resource_klass)
+      JSONAPI::Operation.new(:options, resource_klass, context: context)
+    end
+
     def setup_index_action(params, resource_klass)
       fields = parse_fields(resource_klass, params[:fields])
       include_directives = parse_include_directives(resource_klass, params[:include])

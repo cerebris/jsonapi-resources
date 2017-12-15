@@ -15,6 +15,10 @@ module JSONAPI
 
     attr_reader :response_document
 
+    def options
+      process_request
+    end
+
     def index
       process_request
     end
