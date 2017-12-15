@@ -1,7 +1,8 @@
 module JSONAPI
   class Processor
     include Callbacks
-    define_jsonapi_resources_callbacks :find,
+    define_jsonapi_resources_callbacks :options,
+                                       :find,
                                        :show,
                                        :show_relationship,
                                        :show_related_resource,
@@ -37,6 +38,20 @@ module JSONAPI
 
     rescue JSONAPI::Exceptions::Error => e
       @result = JSONAPI::ErrorsOperationResult.new(e.errors[0].code, e.errors)
+    end
+
+    def options
+      parameters = {}
+      parameters[:meta] = {}
+
+      if JSONAPI.configuration.expose_active_record_enumerations_via_options
+        # TODO: Add per resource policy
+        if @resource_klass._model_class < ActiveRecord::Base
+          parameters[:meta][:enumerations] = @resource_klass._model_class.defined_enums
+        end
+      end
+
+      JSONAPI::OperationResult.new(:ok, parameters)
     end
 
     def find

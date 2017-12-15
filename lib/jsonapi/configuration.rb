@@ -37,7 +37,9 @@ module JSONAPI
                 :default_caching,
                 :default_resource_cache_field,
                 :resource_cache_digest_function,
-                :resource_cache_usage_report_function
+                :resource_cache_usage_report_function,
+                :enable_options_endpoint,
+                :expose_active_record_enumerations_via_options
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -153,6 +155,12 @@ module JSONAPI
       # Optionally provide a callable which JSONAPI will call with information about cache
       # performance. Should accept three arguments: resource name, hits count, misses count.
       self.resource_cache_usage_report_function = nil
+
+      # Enable hit on options endoint
+      self.enable_options_endpoint = true
+
+      # Expose active record enums on options endpoint
+      self.expose_active_record_enumerations_via_options = true
     end
 
     def cache_formatters=(bool)
@@ -276,6 +284,10 @@ module JSONAPI
     attr_writer :resource_cache_digest_function
 
     attr_writer :resource_cache_usage_report_function
+
+    attr_writer :enable_options_endpoint
+
+    attr_writer :expose_active_record_enumerations_via_options
   end
 
   class << self
