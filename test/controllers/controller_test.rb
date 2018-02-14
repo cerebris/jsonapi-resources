@@ -90,6 +90,25 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration.exception_class_whitelist = original_whitelist
   end
 
+  def test_exception_class_action_dispatch_whitelist
+    original_whitelist = JSONAPI.configuration.exception_class_action_dispatch_whitelist.dup
+    $PostProcessorRaisesErrors = true
+    # test that the operations dispatcher rescues the error when it
+    # has not been added to the exception_class_whitelist
+    assert_cacheable_get :index
+    assert_response 500
+    assert_not_nil @request.env['action_dispatch.exception']
+
+    @request.env['action_dispatch.exception'] = nil
+    JSONAPI.configuration.exception_class_action_dispatch_whitelist << PostsController::SpecialError
+    assert_cacheable_get :index
+    assert_response 500
+    assert_nil @request.env['action_dispatch.exception']
+  ensure
+    $PostProcessorRaisesErrors = false
+    JSONAPI.configuration.exception_class_action_dispatch_whitelist = original_whitelist
+  end
+
   def test_whitelist_all_exceptions
     original_config = JSONAPI.configuration.whitelist_all_exceptions
     $PostProcessorRaisesErrors = true

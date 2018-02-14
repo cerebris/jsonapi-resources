@@ -278,7 +278,9 @@ module JSONAPI
             end
 
             # Store exception for other middlewares
-            request.env['action_dispatch.exception'] ||= e
+            unless JSONAPI.configuration.exception_class_action_dispatch_whitelisted?(e)
+              request.env['action_dispatch.exception'] ||= e
+            end
 
             internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
             Rails.logger.error { "Internal Server Error: #{e.message} #{e.backtrace.join("\n")}" }
