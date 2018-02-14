@@ -28,6 +28,7 @@ module JSONAPI
                 :include_backtraces_in_errors,
                 :include_application_backtraces_in_errors,
                 :exception_class_whitelist,
+                :exception_class_action_dispatch_whitelist,
                 :whitelist_all_exceptions,
                 :always_include_to_one_linkage_data,
                 :always_include_to_many_linkage_data,
@@ -92,6 +93,10 @@ module JSONAPI
       # catch this error and render a 403 status code, you should add
       # the `Pundit::NotAuthorizedError` to the `exception_class_whitelist`.
       self.exception_class_whitelist = []
+
+      # List of classes that should not set in request.env['action_dispatch.exception'].
+      # For example, if you want JSON API resources to handle an error but not notify Rollbar.
+      self.exception_class_action_dispatch_whitelist = []
 
       # If enabled, will override configuration option `exception_class_whitelist`
       # and whitelist all exceptions.
@@ -219,6 +224,10 @@ module JSONAPI
         @exception_class_whitelist.flatten.any? { |k| e.class.ancestors.map(&:to_s).include?(k.to_s) }
     end
 
+    def exception_class_action_dispatch_whitelisted?(e)
+      @exception_class_action_dispatch_whitelist.flatten.any? { |k| e.class.ancestors.map(&:to_s).include?(k.to_s) }
+    end
+
     def default_processor_klass=(default_processor_klass)
       @default_processor_klass = default_processor_klass
     end
@@ -254,6 +263,8 @@ module JSONAPI
     attr_writer :include_application_backtraces_in_errors
 
     attr_writer :exception_class_whitelist
+
+    attr_writer :exception_class_action_dispatch_whitelist
 
     attr_writer :whitelist_all_exceptions
 
