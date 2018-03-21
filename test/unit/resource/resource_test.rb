@@ -88,6 +88,12 @@ module MyModule
     has_one :default_profile, class_name: "Nested::Profile"
   end
 
+  class SearchWithCommaResource < MyModule::MyNamespacedResource
+    def self.parse_values_as_array
+      false
+    end
+  end
+
   class RelatedResource < JSONAPI::Resource
     model_name "Comment"
   end
@@ -160,6 +166,12 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_resource_for_namespaced_resource
     assert_equal(MyModule::MyNamespacedResource.resource_klass_for('related'), MyModule::RelatedResource)
+  end
+
+  def test_resource_for_comma_parse_method
+    assert_equal(JSONAPI::Resource.respond_to?(:parse_values_as_array), true)
+    assert_equal(JSONAPI::Resource.parse_values_as_array, true)
+    assert_equal(MyModule::SearchWithCommaResource.parse_values_as_array, false)
   end
 
   def test_resource_for_nested_namespaced_resource
