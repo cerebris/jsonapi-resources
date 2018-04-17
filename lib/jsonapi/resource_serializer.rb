@@ -97,13 +97,16 @@ module JSONAPI
         data = to_many_linkage(source, requested_relationship)
       end
 
-      {
-        links: {
+      object_hash = { data: data }
+
+      if requested_relationship.async
+        object_hash[:links] = {
           self: self_link(source, requested_relationship),
           related: related_link(source, requested_relationship)
-        },
-        data: data
-      }
+        }
+      end
+
+      object_hash
     end
 
     def query_link(query_params)
@@ -289,7 +292,8 @@ module JSONAPI
 
         options = { filters: ia && ia[:include_filters] || {} }
         if field_set.include?(name)
-          hash[format_key(name)] = link_object(source, relationship, include_linkage)
+          object_hash = link_object(source, relationship, include_linkage)
+          hash[format_key(name)] = object_hash if object_hash && !object_hash.empty?
         end
 
         # If the object has been serialized once it will be in the related objects list,
@@ -430,9 +434,13 @@ module JSONAPI
     def link_object_to_one(source, relationship, include_linkage)
       include_linkage = include_linkage | @always_include_to_one_linkage_data | relationship.always_include_linkage_data
       link_object_hash = {}
-      link_object_hash[:links] = {}
-      link_object_hash[:links][:self] = self_link(source, relationship)
-      link_object_hash[:links][:related] = related_link(source, relationship)
+
+      if relationship.async
+        link_object_hash[:links] = {}
+        link_object_hash[:links][:self] = self_link(source, relationship)
+        link_object_hash[:links][:related] = related_link(source, relationship)
+      end
+
       link_object_hash[:data] = to_one_linkage(source, relationship) if include_linkage
       link_object_hash
     end
@@ -440,9 +448,13 @@ module JSONAPI
     def link_object_to_many(source, relationship, include_linkage)
       include_linkage = include_linkage | relationship.always_include_linkage_data
       link_object_hash = {}
-      link_object_hash[:links] = {}
-      link_object_hash[:links][:self] = self_link(source, relationship)
-      link_object_hash[:links][:related] = related_link(source, relationship)
+
+      if relationship.async
+        link_object_hash[:links] = {}
+        link_object_hash[:links][:self] = self_link(source, relationship)
+        link_object_hash[:links][:related] = related_link(source, relationship)
+      end
+
       link_object_hash[:data] = to_many_linkage(source, relationship) if include_linkage
       link_object_hash
     end

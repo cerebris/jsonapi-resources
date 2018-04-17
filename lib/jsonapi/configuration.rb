@@ -27,6 +27,7 @@ module JSONAPI
                 :whitelist_all_exceptions,
                 :always_include_to_one_linkage_data,
                 :always_include_to_many_linkage_data,
+                :relationships_async_default,
                 :cache_formatters,
                 :use_relationship_reflection,
                 :resource_cache,
@@ -91,6 +92,10 @@ module JSONAPI
       # NOTE: always_include_to_many_linkage_data is not currently implemented
       self.always_include_to_one_linkage_data = false
       self.always_include_to_many_linkage_data = false
+
+      # Relationship async default
+      # Allows to globally disable async relationships
+      self.relationships_async_default = true
 
       # The default Operation Processor to use if one is not defined specifically
       # for a Resource.
@@ -232,6 +237,8 @@ module JSONAPI
     attr_writer :always_include_to_one_linkage_data
 
     attr_writer :always_include_to_many_linkage_data
+
+    attr_writer :relationships_async_default
 
     attr_writer :raise_if_parameters_not_allowed
 

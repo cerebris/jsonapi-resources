@@ -476,6 +476,8 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['data'].is_a?(Hash)
     assert_equal 'New post', json_response['data']['attributes']['title']
     assert_equal 'A body!!!', json_response['data']['attributes']['body']
+    assert_hash_equals({links: {self: "http://test.host/posts/1/relationships/comments", related: "http://test.host/posts/1/comments"}},
+                       json_response['data']['relationships']['comments'])
     assert_nil json_response['included']
   end
 
@@ -2751,6 +2753,22 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     assert_equal 1, json_response['meta']['record-count']
   ensure
     JSONAPI.configuration = original_config
+  end
+
+  def test_show_single_with_non_async_relationships
+    assert_cacheable_get :show, params: {id: '1'}
+    assert_response :success
+    assert json_response['data'].is_a?(Hash)
+    assert_nil json_response['data']['relationships']['authors']
+  end
+
+  def test_show_single_with_non_async_relationships_and_include
+    assert_cacheable_get :show, params: {id: '1', include: 'authors'}
+    assert_response :success
+    assert json_response['data'].is_a?(Hash)
+    assert_equal 1, json_response['included'].size
+    assert_hash_equals({data: [{'type' => 'people', 'id' => '1'}]},
+                       json_response['data']['relationships']['authors'])
   end
 end
 

@@ -1503,7 +1503,7 @@ module Api
 
       paginator :offset
 
-      has_many "authors"
+      has_many "authors", async: false
 
       has_many "book_comments", relation_name: -> (options = {}) {
         context = options[:context]

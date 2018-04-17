@@ -2,7 +2,7 @@ module JSONAPI
   class Relationship
     attr_reader :acts_as_set, :foreign_key, :options, :name,
                 :class_name, :polymorphic, :always_include_linkage_data,
-                :parent_resource, :eager_load_on_include
+                :parent_resource, :eager_load_on_include, :async
 
     def initialize(name, options = {})
       @name = name.to_s
@@ -14,6 +14,7 @@ module JSONAPI
       @polymorphic = options.fetch(:polymorphic, false) == true
       @always_include_linkage_data = options.fetch(:always_include_linkage_data, false) == true
       @eager_load_on_include = options.fetch(:eager_load_on_include, true) == true
+      @async = options.fetch(:async, JSONAPI.configuration.relationships_async_default)
     end
 
     alias_method :polymorphic?, :polymorphic
