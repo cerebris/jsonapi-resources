@@ -121,6 +121,36 @@ class ActiveRelationResourceFinderTest < ActiveSupport::TestCase
     assert_equal 2, related_identities[JSONAPI::ResourceIdentity.new(TagResource, 502)][:related][:tags].length
   end
 
+  def test_find_related_has_many_fragments_pagination
+    params = ActionController::Parameters.new(number: 2, size: 4)
+    options = { paginator: PagedPaginator.new(params) }
+    source_rids = [JSONAPI::ResourceIdentity.new(ARPostResource, 15)]
+
+    related_identities = ARPostResource.find_related_fragments(source_rids, 'tags', options)
+
+    assert_equal 1, related_identities.length
+    assert_equal JSONAPI::ResourceIdentity.new(TagResource, 516), related_identities.keys[0]
+    assert_equal JSONAPI::ResourceIdentity.new(TagResource, 516), related_identities.values[0][:identity]
+    assert related_identities.values[0].is_a?(Hash)
+    assert_equal 2, related_identities.values[0].length
+    assert_equal 1, related_identities.values[0][:related][:tags].length
+  end
+
+  def test_find_related_has_many_fragments_pagination_included_key
+    params = ActionController::Parameters.new(number: 2, size: 4)
+    options = { paginator: PagedPaginator.new(params) }
+    source_rids = [JSONAPI::ResourceIdentity.new(ARPostResource, 15)]
+
+    related_identities = ARPostResource.find_related_fragments(source_rids, 'tags', options, :tags)
+
+    assert_equal 5, related_identities.length
+    assert_equal JSONAPI::ResourceIdentity.new(TagResource, 502), related_identities.keys[0]
+    assert_equal JSONAPI::ResourceIdentity.new(TagResource, 502), related_identities.values[0][:identity]
+    assert related_identities.values[0].is_a?(Hash)
+    assert_equal 2, related_identities.values[0].length
+    assert_equal 1, related_identities.values[0][:related][:tags].length
+  end
+
   def test_find_related_has_many_fragments_cache_field
     options = { cache: true }
     source_rids = [JSONAPI::ResourceIdentity.new(ARPostResource, 1),
@@ -200,7 +230,7 @@ class ActiveRelationResourceFinderTest < ActiveSupport::TestCase
   end
 
   def test_find_related_polymorphic_fragments_cache_field_attributes
-    options = { cache: true , attributes: [:name] }
+    options = { cache: true, attributes: [:name] }
     source_rids = [JSONAPI::ResourceIdentity.new(PictureResource, 1),
                    JSONAPI::ResourceIdentity.new(PictureResource, 2),
                    JSONAPI::ResourceIdentity.new(PictureResource, 20)]
