@@ -341,13 +341,14 @@ ActiveRecord::Schema.define do
 
   create_table :indicators, force: true do |t|
     t.string :name
+    t.string :import_id
     t.integer :agency_id, null: false
     t.timestamps null: false
   end
 
   create_table :widgets, force: true do |t|
     t.string :name
-    t.integer :indicator_id, null: false
+    t.string :indicator_import_id, null: false
     t.timestamps null: false
   end
 
@@ -724,11 +725,11 @@ end
 
 class Indicator < ActiveRecord::Base
   belongs_to :agency
-  has_many :widgets
+  has_many :widgets, primary_key: :import_id, foreign_key: :indicator_import_id
 end
 
 class Widget < ActiveRecord::Base
-  belongs_to :indicator
+  belongs_to :indicator, primary_key: :import_id, foreign_key: :indicator_import_id
 end
 
 class Robot < ActiveRecord::Base
@@ -2046,7 +2047,7 @@ end
 class IndicatorResource < JSONAPI::Resource
   attributes :name
   has_one :agency
-  has_many :widgets
+  has_many :widgets, foreign_key: :indicator_import_id, primary_key: :import_id
 
   def self.sortable_fields(_context = nil)
     super + [:'widgets.name']
@@ -2055,7 +2056,7 @@ end
 
 class WidgetResource < JSONAPI::Resource
   attributes :name
-  has_one :indicator
+  has_one :indicator, foreign_key: :indicator_import_id, primary_key: :import_id
 
   def self.sortable_fields(_context = nil)
     super + [:'indicator.agency.name']

@@ -4,7 +4,7 @@ class ARPostResource < JSONAPI::Resource
   model_name 'Post'
   attribute :headline, delegate: :title
   has_one :author
-  has_many :tags
+  has_many :tags, primary_key: :tags_import_id
 end
 
 class ActiveRelationResourceFinderTest < ActiveSupport::TestCase
