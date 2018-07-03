@@ -1977,6 +1977,13 @@ module DasherizedNamespace
   end
 end
 
+module OptionalNamespace
+  module V1
+    class PersonResource < JSONAPI::Resource
+    end
+  end
+end
+
 module MyEngine
   module Api
     module V1
@@ -1993,6 +2000,13 @@ module MyEngine
   end
 
   module DasherizedNamespace
+    module V1
+      class PersonResource < JSONAPI::Resource
+      end
+    end
+  end
+
+  module OptionalNamespace
     module V1
       class PersonResource < JSONAPI::Resource
       end

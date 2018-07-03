@@ -424,6 +424,12 @@ MyEngine::Engine.routes.draw do
       jsonapi_resources :people
     end
   end
+
+  namespace :optional_namespace, path: 'optional_namespace' do
+    namespace :v1, path: '' do
+      jsonapi_resources :people
+    end
+  end
 end
 
 ApiV2Engine::Engine.routes.draw do
@@ -671,6 +677,19 @@ class TitleValueFormatter < JSONAPI::ValueFormatter
 
     def unformat(value)
       value.to_s.downcase
+    end
+  end
+end
+
+class OptionalRouteFormatter < JSONAPI::RouteFormatter
+  class << self
+    def format(route)
+      return if route == 'v1'
+      super
+    end
+
+    def unformat(formatted_route)
+      super
     end
   end
 end
