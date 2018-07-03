@@ -469,7 +469,9 @@ module JSONAPI
         find_related_resource_options[:sort_criteria] = relationship.resource_klass.default_sort
         find_related_resource_options[:cache] = resource_klass.caching?
 
-        related_identities = resource_klass.find_related_fragments(source_rids, relationship_name, find_related_resource_options)
+        related_identities = resource_klass.find_related_fragments(
+          source_rids, relationship_name, find_related_resource_options, key
+        )
 
         related_identities.each_pair do |identity, v|
           related[relationship_name][:resources][identity] =

@@ -110,13 +110,13 @@ module JSONAPI
       # @return [Hash{ResourceIdentity => {identity: => ResourceIdentity, cache: cache_field, attributes: => {name => value}, related: {relationship_name: [] }}}]
       #    the ResourceInstances matching the filters, sorting, and pagination rules along with any request
       #    additional_field values
-      def find_related_fragments(source_rids, relationship_name, options = {})
+      def find_related_fragments(source_rids, relationship_name, options = {}, included_key = nil)
         relationship = _relationship(relationship_name)
 
         if relationship.polymorphic? && relationship.foreign_key_on == :self
           find_related_polymorphic_fragments(source_rids, relationship, options)
         else
-          find_related_monomorphic_fragments(source_rids, relationship, options)
+          find_related_monomorphic_fragments(source_rids, relationship, included_key, options)
         end
       end
 
@@ -162,7 +162,7 @@ module JSONAPI
         records.where({ _primary_key => keys })
       end
 
-      def find_related_monomorphic_fragments(source_rids, relationship, options = {})
+      def find_related_monomorphic_fragments(source_rids, relationship, included_key, options = {})
         source_ids = source_rids.collect {|rid| rid.id}
 
         context = options[:context]
@@ -185,7 +185,8 @@ module JSONAPI
 
         # ToDO: Remove count check. Currently pagination isn't working with multiple source_rids (i.e. it only works
         # for show relationships, not related includes).
-        if paginator && source_rids.count == 1
+        # Check included_key to not paginate included resources but ensure that nested resources can be paginated
+        if paginator && source_rids.count == 1 && !included_key
           records = related_klass.apply_pagination(records, paginator, order_options)
         end
 
