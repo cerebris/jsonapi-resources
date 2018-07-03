@@ -167,6 +167,13 @@ module JSONAPI
       {}
     end
 
+    # Override this to change the default
+    # A value of false will cause a filter value of 'a,b' -> IN ('a','b')
+    # A value of true will cause a filter value of 'a,b' -> ('a,b')
+    def self.parse_values_as_array
+      true
+    end
+
     private
 
     def save
@@ -765,7 +772,11 @@ module JSONAPI
         filter_values = []
         if raw.present?
           begin
-            filter_values += raw.is_a?(String) ? CSV.parse_line(raw) : [raw]
+            filter_values += if self.parse_values_as_array
+                                 raw.is_a?(String) ? CSV.parse_line(raw) : [raw]
+                               else
+                                 [raw]
+                               end
           rescue CSV::MalformedCSVError
             filter_values << raw
           end
