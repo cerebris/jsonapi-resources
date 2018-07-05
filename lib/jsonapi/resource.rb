@@ -266,7 +266,9 @@ module JSONAPI
           end
           @reload_needed = true
         else
-          @model.public_send(relation_name) << related_resource._model
+          unless @model.public_send(relation_name).include?(related_resource._model)
+            @model.public_send(relation_name) << related_resource._model
+          end
         end
       end
 
