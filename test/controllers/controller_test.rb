@@ -1508,8 +1508,9 @@ class PostsControllerTest < ActionController::TestCase
 
     post :create_relationship, params: {post_id: 3, relationship: 'tags', data: [{type: 'tags', id: 502}, {type: 'tags', id: 505}]}
 
-    assert_response :bad_request
-    assert_match /The relation to 502 already exists./, response.body
+    assert_response :no_content
+    post_object.reload
+    assert_equal [502,503,505], post_object.tag_ids
   end
 
   def test_update_relationship_to_many_missing_tags
