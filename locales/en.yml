@@ -16,9 +16,6 @@ en:
       unsupported_media_type:
         title: 'Unsupported media type'
         detail: "All requests that create or update must use the '%{needed_media_type}' Content-Type. This request specified '%{media_type}.'"
-      has_many_relation:
-        title: 'Relation exists'
-        detail: "The relation to %{id} already exists."
       to_many_set_replacement_forbidden:
         title: 'Complete replacement forbidden'
         detail: 'Complete replacement forbidden for this relationship'

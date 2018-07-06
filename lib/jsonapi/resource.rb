@@ -238,14 +238,7 @@ module JSONAPI
 
     def _create_to_many_links(relationship_type, relationship_key_values, options)
       relationship = self.class._relationships[relationship_type]
-
-      # check if relationship_key_values are already members of this relationship
       relation_name = relationship.relation_name(context: @context)
-      existing_relations = @model.public_send(relation_name).where(relationship.primary_key => relationship_key_values)
-      if existing_relations.count > 0
-        # todo: obscure id so not to leak info
-        fail JSONAPI::Exceptions::HasManyRelationExists.new(existing_relations.first.id)
-      end
 
       if options[:reflected_source]
         @model.public_send(relation_name) << options[:reflected_source]._model
@@ -273,7 +266,9 @@ module JSONAPI
           end
           @reload_needed = true
         else
-          @model.public_send(relation_name) << related_resource._model
+          unless @model.public_send(relation_name).include?(related_resource._model)
+            @model.public_send(relation_name) << related_resource._model
+          end
         end
       end
 
