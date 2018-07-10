@@ -385,6 +385,7 @@ end
 
 ### MODELS
 class Session < ActiveRecord::Base
+  self.primary_key = "id"
   has_many :responses
 end
 
@@ -1121,12 +1122,12 @@ class SessionResource < JSONAPI::Resource
 
   def responses=params
     params[:data].each { |datum|
-      response = @model.responses.build(datum[:attributes].permit(:response_type, :question_id))
+      response = @model.responses.build(((datum[:attributes].respond_to?(:permit))? datum[:attributes].permit(:response_type, :question_id) : datum[:attributes]))
 
       (datum[:relationships] || {}).each_pair { |k,v|
         case k
         when "paragraph"
-          response.paragraph = ResponseText::Paragraph.create(v[:data][:attributes].permit(:text))
+          response.paragraph = ResponseText::Paragraph.create(((v[:data][:attributes].respond_to?(:permit))? v[:data][:attributes].permit(:text) : v[:data][:attributes]))
         end
       }
     }
