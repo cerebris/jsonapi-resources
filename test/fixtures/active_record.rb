@@ -8,6 +8,31 @@ end
 
 ### DATABASE
 ActiveRecord::Schema.define do
+  create_table :sessions, id: false, force: true do |t|
+    t.string :id, :limit => 36, :primary_key => true, null: false
+    t.string :survey_id, :limit => 36, null: false
+
+    t.timestamps
+  end
+
+  create_table :responses, force: true do |t|
+    #t.string :id, :limit => 36, :primary_key => true, null: false
+
+    t.string :session_id, limit: 36, null: false
+
+    t.string :type
+    t.string :question_id, limit: 36
+
+    t.timestamps
+  end
+
+  create_table :response_texts, force: true do |t|
+    t.text :text
+    t.integer :response_id
+
+    t.timestamps
+  end
+
   create_table :people, force: true do |t|
     t.string     :name
     t.string     :email
@@ -360,6 +385,43 @@ ActiveRecord::Schema.define do
 end
 
 ### MODELS
+class Session < ActiveRecord::Base
+  self.primary_key = "id"
+  has_many :responses
+end
+
+class Response < ActiveRecord::Base
+	belongs_to :session
+	has_one :paragraph, :class_name => "ResponseText::Paragraph"
+
+	def response_type
+		case self.type
+		when "Response::SingleTextbox"
+          "single_textbox"
+		else
+          "question"
+		end
+	end
+	def response_type=type
+		self.type = case type
+		when "single_textbox"
+          "Response::SingleTextbox"
+		else
+		  "Response"
+		end
+	end
+end
+
+class Response::SingleTextbox < Response
+  has_one :paragraph, :class_name => "ResponseText::Paragraph", :foreign_key => :response_id
+end
+
+class ResponseText < ActiveRecord::Base
+end
+
+class ResponseText::Paragraph < ResponseText
+end
+
 class Person < ActiveRecord::Base
   has_many :posts, foreign_key: 'author_id'
   has_many :comments, foreign_key: 'author_id'
@@ -736,6 +798,19 @@ class Robot < ActiveRecord::Base
 end
 
 ### CONTROLLERS
+class SessionsController < ActionController::Base
+  include JSONAPI::ActsAsResourceController
+  before_action :create_responses_relationships, :only => [:create,:update]
+
+  private
+    def create_responses_relationships
+      if !params[:data][:relationships].nil? && !params[:data][:relationships][:responses].nil?
+        responses_params = params[:data][:relationships].delete(:responses)
+        params[:data][:attributes][:responses] = responses_params
+      end
+    end
+end
+
 class AuthorsController < JSONAPI::ResourceControllerMetal
 end
 
@@ -1037,6 +1112,57 @@ end
 ### RESOURCES
 class BaseResource < JSONAPI::Resource
   abstract
+end
+
+class SessionResource < JSONAPI::Resource
+  key_type :uuid
+
+  attributes :survey_id, :responses
+
+  has_many :responses
+
+  def responses=params
+    params[:data].each { |datum|
+      response = @model.responses.build(((datum[:attributes].respond_to?(:permit))? datum[:attributes].permit(:response_type, :question_id) : datum[:attributes]))
+
+      (datum[:relationships] || {}).each_pair { |k,v|
+        case k
+        when "paragraph"
+          response.paragraph = ResponseText::Paragraph.create(((v[:data][:attributes].respond_to?(:permit))? v[:data][:attributes].permit(:text) : v[:data][:attributes]))
+        end
+      }
+    }
+  end
+  def responses
+  end
+
+  def self.creatable_fields(context)
+    super + [
+      :id,
+    ]
+  end
+
+  def fetchable_fields
+    super - [:responses]
+  end
+end
+
+class ResponseResource < JSONAPI::Resource
+  model_hint model: Response::SingleTextbox, resource: :response
+
+  has_one :session
+
+  attributes :question_id, :response_type
+
+  has_one :paragraph
+end
+
+class ParagraphResource < JSONAPI::Resource
+  model_name 'ResponseText::Paragraph'
+
+  attributes :text
+
+  has_one :response
 end
 
 class PersonResource < BaseResource

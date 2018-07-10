@@ -20,6 +20,69 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_cacheable_jsonapi_get '/api/v2/books?include=book_comments,book_comments.author'
   end
 
+  def test_post_sessions
+    session_id = SecureRandom.uuid
+
+    post '/sessions', params: {
+      data: {
+        id: session_id,
+        type: "sessions",
+        attributes: {
+          survey_id: SecureRandom.uuid,
+        },
+        relationships: {
+          responses: {
+            data: [
+              {
+                type: "responses",
+                attributes: {
+                  response_type: "single_textbox",
+                  question_id: SecureRandom.uuid,
+                },
+                relationships: {
+                  paragraph: {
+                    data: {
+                      type: "responses",
+                      response_type: "paragraph",
+                      attributes: {
+                        text: "This is my single textbox response"
+                      }
+                    }
+                  }
+                }
+              },
+            ],
+          },
+        },
+      }
+    }.to_json,
+    headers: {
+      'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
+      'Accept' => JSONAPI::MEDIA_TYPE
+    }
+    assert_jsonapi_response 201
+    json_body = JSON.parse(response.body)
+    session_id = json_body["data"]["id"]
+
+    # Get what we just created
+    get "/sessions/#{session_id}?include=responses"
+    assert_jsonapi_response 200
+    json_body = JSON.parse(response.body)
+
+    assert(json_body.is_a?(Object));
+    assert(json_body["included"].is_a?(Array));
+    assert_equal("single_textbox", json_body["included"][0]["attributes"]["response_type"]["single_textbox"]);
+
+    get "/sessions/#{session_id}?include=responses,responses.paragraph"
+    assert_jsonapi_response 200
+    json_body = JSON.parse(response.body)
+
+    assert_equal("single_textbox", json_body["included"][0]["attributes"]["response_type"]["single_textbox"]);
+
+    # Rails 4.2.x branch will not retrieve the responses.paragraph, 5.x branch will - this looks to be a deeper, but unrelated bug
+    #assert_equal("paragraphs", json_body["included"][1]["type"]);
+  end
+
   def test_get_inflected_resource
     assert_cacheable_jsonapi_get '/api/v8/numeros_telefone'
   end

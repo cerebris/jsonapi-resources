@@ -64,11 +64,11 @@ module JSONAPI
         records = find_records(filters, options)
 
         table_name = _model_class.table_name
-        pluck_fields = [concat_table_field(table_name, _primary_key)]
+        pluck_fields = ["#{concat_table_field(table_name, _primary_key)} AS #{table_name}_#{_primary_key}"]
 
         cache_field = attribute_to_model_field(:_cache_field) if options[:cache]
         if cache_field
-          pluck_fields << concat_table_field(table_name, cache_field[:name])
+          pluck_fields << "#{concat_table_field(table_name, cache_field[:name])} AS #{table_name}_#{cache_field[:name]}"
         end
 
         model_fields = {}
@@ -76,7 +76,7 @@ module JSONAPI
         attributes.try(:each) do |attribute|
           model_field = attribute_to_model_field(attribute)
           model_fields[attribute] = model_field
-          pluck_fields << concat_table_field(table_name, model_field[:name])
+          pluck_fields << "#{concat_table_field(table_name, model_field[:name])} AS #{table_name}_#{model_field[:name]}"
         end
 
         fragments = {}
@@ -204,13 +204,13 @@ module JSONAPI
         records = related_klass.apply_filters(records, filters, filter_options)
 
         pluck_fields = [
-            primary_key_field,
-            concat_table_field(table_alias, related_klass._primary_key)
+            "#{primary_key_field} AS #{_table_name}_#{_primary_key}",
+            "#{concat_table_field(table_alias, related_klass._primary_key)} AS #{table_alias}_#{related_klass._primary_key}"
         ]
 
         cache_field = related_klass.attribute_to_model_field(:_cache_field) if options[:cache]
         if cache_field
-          pluck_fields << concat_table_field(table_alias, cache_field[:name])
+          pluck_fields << "#{concat_table_field(table_alias, cache_field[:name])} AS #{table_alias}_#{cache_field[:name]}"
         end
 
         model_fields = {}
@@ -218,7 +218,7 @@ module JSONAPI
         attributes.try(:each) do |attribute|
           model_field = related_klass.attribute_to_model_field(attribute)
           model_fields[attribute] = model_field
-          pluck_fields << concat_table_field(table_alias, model_field[:name])
+          pluck_fields << "#{concat_table_field(table_alias, model_field[:name])} AS #{table_alias}_#{model_field[:name]}"
         end
 
         rows = records.pluck(*pluck_fields)
@@ -264,7 +264,11 @@ module JSONAPI
         related_key = concat_table_field(_table_name, relationship.foreign_key)
         related_type = concat_table_field(_table_name, relationship.polymorphic_type)
 
-        pluck_fields = [primary_key, related_key, related_type]
+        pluck_fields = [
+          "#{primary_key} AS #{_table_name}_#{_primary_key}",
+          "#{related_key} AS #{_table_name}_#{relationship.foreign_key}",
+          "#{related_type} AS #{_table_name}_#{relationship.polymorphic_type}"
+        ]
 
         relations = relationship.polymorphic_relations
 
