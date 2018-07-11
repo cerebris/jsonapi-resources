@@ -605,33 +605,27 @@ class RequestTest < ActionDispatch::IntegrationTest
   # end
 
   def test_query_count_related_resources
-    counter = QueryCounter.new
-    assert_equal 0, counter.query_count
-    ActiveSupport::Notifications.subscribe('sql.active_record', counter)
-    get '/api/v2/books/1/book_comments?page[limit]=20'
-    assert_equal 20, json_response['data'].size
-
     # Expected Queries:
     # * Fetch specified book record
     # * Fetch book comment records associated with specified book
     # * Select count of book comment records for pagination
-    assert_equal 3, counter.query_count
+    assert_query_count 3 do
+      get '/api/v2/books/1/book_comments?page[limit]=20'
+    end
+    assert_equal 20, json_response['data'].size
   end
 
   def test_query_count_related_resources_with_includes
-    counter = QueryCounter.new
-    assert_equal 0, counter.query_count
-    ActiveSupport::Notifications.subscribe('sql.active_record', counter)
-    get '/api/v2/books/1/book_comments?page[limit]=20&include=author'
-    assert_equal 20, json_response['data'].size
-    assert_equal 5, json_response['included'].size
-
     # Expected Queries:
     # * Fetch specified book record
     # * Fetch book comment records associated with specified book
     # * Fetch all author records the book comments to be returned
     # * Select count of book comment records for pagination
-    assert_equal 4, counter.query_count
+    assert_query_count 4 do
+      get '/api/v2/books/1/book_comments?page[limit]=20&include=author'
+    end
+    assert_equal 20, json_response['data'].size
+    assert_equal 5, json_response['included'].size
   end
 
 

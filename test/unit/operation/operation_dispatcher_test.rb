@@ -85,7 +85,7 @@ class OperationDispatcherTest < Minitest::Test
 
     op.process(operations)
     saturn.reload
-    assert_nil(saturn.planet_type_id)
+    assert_nil saturn.planet_type_id
 
     # Reset
     operations = [
