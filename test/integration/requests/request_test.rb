@@ -604,6 +604,30 @@ class RequestTest < ActionDispatch::IntegrationTest
   #   assert_equal 'This is comment 18 on book 1.', json_response['data'][9]['attributes']['body']
   # end
 
+  def test_query_count_related_resources
+    # Expected Queries:
+    # * Fetch specified book record
+    # * Fetch book comment records associated with specified book
+    # * Select count of book comment records for pagination
+    assert_query_count 3 do
+      get '/api/v2/books/1/book_comments?page[limit]=20'
+    end
+    assert_equal 20, json_response['data'].size
+  end
+
+  def test_query_count_related_resources_with_includes
+    # Expected Queries:
+    # * Fetch specified book record
+    # * Fetch book comment records associated with specified book
+    # * Fetch all author records the book comments to be returned
+    # * Select count of book comment records for pagination
+    assert_query_count 4 do
+      get '/api/v2/books/1/book_comments?page[limit]=20&include=author'
+    end
+    assert_equal 20, json_response['data'].size
+    assert_equal 5, json_response['included'].size
+  end
+
 
   def test_flow_self
     assert_cacheable_jsonapi_get '/posts/1'
