@@ -609,6 +609,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     # * Fetch specified book record
     # * Fetch book comment records associated with specified book
     # * Select count of book comment records for pagination
+    Api::V2::BookCommentResource.paginator :offset
     assert_query_count 3 do
       get '/api/v2/books/1/book_comments?page[limit]=20'
     end
@@ -621,6 +622,8 @@ class RequestTest < ActionDispatch::IntegrationTest
     # * Fetch book comment records associated with specified book
     # * Fetch all author records the book comments to be returned
     # * Select count of book comment records for pagination
+    Api::V2::BookCommentResource.paginator :offset
+
     assert_query_count 4 do
       get '/api/v2/books/1/book_comments?page[limit]=20&include=author'
     end
