@@ -1465,6 +1465,8 @@ module Api
       attribute "title"
       attributes :isbn, :banned
 
+      paginator :offset
+
       has_many "authors"
 
       has_many "book_comments", relation_name: -> (options = {}) {
@@ -1522,6 +1524,8 @@ module Api
 
       has_one :book
       has_one :author, class_name: 'Person'
+
+      paginator :offset
 
       filters :book
       filter :approved, apply: ->(records, value, options) {
