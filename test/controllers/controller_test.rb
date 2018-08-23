@@ -538,7 +538,25 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration.top_level_meta_include_page_count = false
   end
 
-  def test_show_single_with_includes
+  def test_show_single_with_has_one_include_included_exists
+    assert_cacheable_get :show, params: {id: '1', include: 'author'}
+    assert_response :success
+    assert_equal 1, json_response['included'].size
+    assert json_response['data']['relationships']['author'].has_key?('data'), 'Missing required data key'
+    refute_nil json_response['data']['relationships']['author']['data'], 'Data should not be nil'
+    refute json_response['data']['relationships']['tags'].has_key?('data'), 'Not included relationships should not have data'
+  end
+
+  def test_show_single_with_has_one_include_included_does_not_exist
+    assert_cacheable_get :show, params: {id: '1', include: 'section'}
+    assert_response :success
+    assert_nil json_response['included']
+    assert json_response['data']['relationships']['section'].has_key?('data'), 'Missing required data key'
+    assert_nil json_response['data']['relationships']['section']['data'], 'Data should be nil'
+    refute json_response['data']['relationships']['tags'].has_key?('data'), 'Not included relationships should not have data'
+  end
+
+  def test_show_single_with_has_many_include
     assert_cacheable_get :show, params: {id: '1', include: 'comments'}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
@@ -3887,17 +3905,113 @@ class Api::BoxesControllerTest < ActionController::TestCase
 
     assert_response :success
 
-    # The test is hardcoded with the include order. This should be changed at some
-    # point since either thing could come first and still be valid
-    assert_equal '10', json_response['included'][0]['id']
-    assert_equal 'things', json_response['included'][0]['type']
-    assert_nil json_response['included'][0]['relationships']['user']['data']
-    assert_equal '20', json_response['included'][0]['relationships']['things']['data'][0]['id']
-
-    assert_equal '20', json_response['included'][1]['id']
-    assert_equal 'things', json_response['included'][1]['type']
-    assert_nil json_response['included'][1]['relationships']['user']['data']
-    assert_equal '10', json_response['included'][1]['relationships']['things']['data'][0]['id']
+    assert_hash_equals(
+        {
+            "data": [
+                {
+                    "id": "100",
+                    "type": "boxes",
+                    "links": {
+                        "self": "http://test.host/api/boxes/100"
+                    },
+                    "relationships": {
+                        "things": {
+                            "links": {
+                                "self": "http://test.host/api/boxes/100/relationships/things",
+                                "related": "http://test.host/api/boxes/100/things"
+                            },
+                            "data": [
+                                {
+                                    "type": "things",
+                                    "id": "10"
+                                },
+                                {
+                                    "type": "things",
+                                    "id": "20"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ],
+            "included": [
+                {
+                    "id": "10",
+                    "type": "things",
+                    "links": {
+                        "self": "http://test.host/api/things/10"
+                    },
+                    "relationships": {
+                        "box": {
+                            "links": {
+                                "self": "http://test.host/api/things/10/relationships/box",
+                                "related": "http://test.host/api/things/10/box"
+                            },
+                            "data": {
+                                "type": "boxes",
+                                "id": "100"
+                            }
+                        },
+                        "user": {
+                            "links": {
+                                "self": "http://test.host/api/things/10/relationships/user",
+                                "related": "http://test.host/api/things/10/user"
+                            }
+                        },
+                        "things": {
+                            "links": {
+                                "self": "http://test.host/api/things/10/relationships/things",
+                                "related": "http://test.host/api/things/10/things"
+                            },
+                            "data": [
+                                {
+                                    "type": "things",
+                                    "id": "20"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "id": "20",
+                    "type": "things",
+                    "links": {
+                        "self": "http://test.host/api/things/20"
+                    },
+                    "relationships": {
+                        "box": {
+                            "links": {
+                                "self": "http://test.host/api/things/20/relationships/box",
+                                "related": "http://test.host/api/things/20/box"
+                            },
+                            "data": {
+                                "type": "boxes",
+                                "id": "100"
+                            }
+                        },
+                        "user": {
+                            "links": {
+                                "self": "http://test.host/api/things/20/relationships/user",
+                                "related": "http://test.host/api/things/20/user"
+                            }
+                        },
+                        "things": {
+                            "links": {
+                                "self": "http://test.host/api/things/20/relationships/things",
+                                "related": "http://test.host/api/things/20/things"
+                            },
+                            "data": [
+                                {
+                                    "type": "things",
+                                    "id": "10"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        json_response)
   end
 
   def test_complex_includes_nested_things_secondary_users
@@ -3955,8 +4069,8 @@ class WidgetsControllerTest < ActionController::TestCase
   def test_fetch_widgets_sort_by_agency_name
     agency_1 = Agency.create! name: 'beta'
     agency_2 = Agency.create! name: 'alpha'
-    indicator_1 = Indicator.create! name: 'bar', agency: agency_1
-    indicator_2 = Indicator.create! name: 'foo', agency: agency_2
+    indicator_1 = Indicator.create! import_id: 'foobar', name: 'bar', agency: agency_1
+    indicator_2 = Indicator.create! import_id: 'foobar2', name: 'foo', agency: agency_2
     Widget.create! name: 'bar', indicator: indicator_1
     widget = Widget.create! name: 'foo', indicator: indicator_2
     assert_cacheable_get :index, params: {sort: 'indicator.agency.name'}
@@ -3974,8 +4088,8 @@ class IndicatorsControllerTest < ActionController::TestCase
 
   def test_fetch_indicators_sort_by_widgets_name
     agency = Agency.create! name: 'test'
-    indicator_1 = Indicator.create! name: 'bar', agency: agency
-    indicator_2 = Indicator.create! name: 'foo', agency: agency
+    indicator_1 = Indicator.create! import_id: 'bar', name: 'bar', agency: agency
+    indicator_2 = Indicator.create! import_id: 'foo', name: 'foo', agency: agency
     Widget.create! name: 'omega', indicator: indicator_1
     Widget.create! name: 'beta', indicator: indicator_1
     Widget.create! name: 'alpha', indicator: indicator_2
@@ -3985,7 +4099,6 @@ class IndicatorsControllerTest < ActionController::TestCase
     assert_equal indicator_2.id.to_s, json_response['data'].first['id']
     assert_equal 2, json_response['data'].size
   end
-
 end
 
 class RobotsControllerTest < ActionController::TestCase

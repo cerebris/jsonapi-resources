@@ -434,7 +434,7 @@ module JSONAPI
       #   cache: <optional: the resource's cache value>
       #   attributes: <optional: attributes hash for attributes requested - currently unused>
       #   related: {
-      #     <relationship_name>: <ResourceIndentity of a source resource in find_related_fragments>
+      #     <relationship_name>: <ResourceIdentity of a source resource in find_related_fragments>
       #   }
       # }
       #
@@ -469,11 +469,17 @@ module JSONAPI
           # :nocov:
         end
 
-        def find_related_fragments(_source_rids, _relationship_name, _options = {})
+        def find_related_fragments(_source_rids, _relationship_name, _options)
           # :nocov:
           raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
           # :nocov:
         end
+
+      def find_relationship_fragments(_source_rids, _relationship_name, _options, _included_key)
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
 
         def count_related(_source_rid, _relationship_name, _options = {})
           # :nocov:
