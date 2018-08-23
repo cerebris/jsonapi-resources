@@ -1,5 +1,7 @@
 user_1:
   id: 10001
+  name: user 1
 
 user_2:
   id: 10002
+  name: user 2

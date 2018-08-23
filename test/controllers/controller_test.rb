@@ -538,7 +538,25 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration.top_level_meta_include_page_count = false
   end
 
-  def test_show_single_with_includes
+  def test_show_single_with_has_one_include_included_exists
+    assert_cacheable_get :show, params: {id: '1', include: 'author'}
+    assert_response :success
+    assert_equal 1, json_response['included'].size
+    assert json_response['data']['relationships']['author'].has_key?('data'), 'Missing required data key'
+    refute_nil json_response['data']['relationships']['author']['data'], 'Data should not be nil'
+    refute json_response['data']['relationships']['tags'].has_key?('data'), 'Not included relationships should not have data'
+  end
+
+  def test_show_single_with_has_one_include_included_does_not_exist
+    assert_cacheable_get :show, params: {id: '1', include: 'section'}
+    assert_response :success
+    assert_nil json_response['included']
+    assert json_response['data']['relationships']['section'].has_key?('data'), 'Missing required data key'
+    assert_nil json_response['data']['relationships']['section']['data'], 'Data should be nil'
+    refute json_response['data']['relationships']['tags'].has_key?('data'), 'Not included relationships should not have data'
+  end
+
+  def test_show_single_with_has_many_include
     assert_cacheable_get :show, params: {id: '1', include: 'comments'}
     assert_response :success
     assert json_response['data'].is_a?(Hash)
@@ -2543,40 +2561,40 @@ class PeopleControllerTest < ActionController::TestCase
 
     assert_hash_equals(
       {
-        data: {
-          id: '1001',
-          type: 'people',
-          links: {
-              self: 'http://test.host/people/1001'
+        "data" => {
+          "id" => "1001",
+          "type" => "people",
+          "links" => {
+              "self" => "http://test.host/people/1001"
           },
-          attributes: {
-            name: 'Joe Author',
-            email: 'joe@xyz.fake',
-            "date-joined" => '2013-08-07 16:25:00 -0400'
+          "attributes" => {
+            "name" => "Joe Author",
+            "email" => "joe@xyz.fake",
+            "date-joined" => "2013-08-07 16:25:00 -0400"
           },
-          relationships: {
-            comments: {
-              links: {
-                self: 'http://test.host/people/1001/relationships/comments',
-                related: 'http://test.host/people/1001/comments'
+          "relationships" => {
+            "comments" => {
+              "links" => {
+                "self" => "http://test.host/people/1001/relationships/comments",
+                "related" => "http://test.host/people/1001/comments"
               }
             },
-            posts: {
-              links: {
-                self: 'http://test.host/people/1001/relationships/posts',
-                related: 'http://test.host/people/1001/posts'
+            "posts" => {
+              "links" => {
+                "self" => "http://test.host/people/1001/relationships/posts",
+                "related" => "http://test.host/people/1001/posts"
               }
             },
-            preferences: {
-              links: {
-                self: 'http://test.host/people/1001/relationships/preferences',
-                related: 'http://test.host/people/1001/preferences'
+            "preferences" => {
+              "links" => {
+                "self" => "http://test.host/people/1001/relationships/preferences",
+                "related" => "http://test.host/people/1001/preferences"
               }
             },
-            vehicles: {
-              links: {
-                self: "http://test.host/people/1001/relationships/vehicles",
-                related: "http://test.host/people/1001/vehicles"
+            "vehicles" => {
+              "links" => {
+                "self" => "http://test.host/people/1001/relationships/vehicles",
+                "related" => "http://test.host/people/1001/vehicles"
               }
             },
             "hair-cut" => {
@@ -3880,39 +3898,561 @@ class Api::BoxesControllerTest < ActionController::TestCase
   end
 
   def test_complex_includes_things_nested_things
-    get :index, params: {include: 'things,things.things'}
+    assert_cacheable_get :index, params: {include: 'things,things.things,things.things.things'}
 
     assert_response :success
+    assert_hash_equals(
+        {
+            "data" => [
+                {
+                    "id" => "100",
+                    "type" => "boxes",
+                    "links" => {
+                        "self" => "http://test.host/api/boxes/100"
+                    },
+                    "relationships" => {
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/boxes/100/relationships/things",
+                                "related" => "http://test.host/api/boxes/100/things"
+                            },
+                            "data" => [
+                                {
+                                    "type" => "things",
+                                    "id" => "10"
+                                },
+                                {
+                                    "type" => "things",
+                                    "id" => "20"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "id" => "102",
+                    "type" => "boxes",
+                    "links" => {
+                        "self" => "http://test.host/api/boxes/102"
+                    },
+                    "relationships" => {
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/boxes/102/relationships/things",
+                                "related" => "http://test.host/api/boxes/102/things"
+                            },
+                            "data" => [
+                                {
+                                    "type" => "things",
+                                    "id" => "30"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ],
+            "included" => [
+                {
+                    "id" => "10",
+                    "type" => "things",
+                    "links" => {
+                        "self" => "http://test.host/api/things/10"
+                    },
+                    "relationships" => {
+                        "box" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/10/relationships/box",
+                                "related" => "http://test.host/api/things/10/box"
+                            },
+                            "data" => {
+                                "type" => "boxes",
+                                "id" => "100"
+                            }
+                        },
+                        "user" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/10/relationships/user",
+                                "related" => "http://test.host/api/things/10/user"
+                            }
+                        },
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/10/relationships/things",
+                                "related" => "http://test.host/api/things/10/things"
+                            },
+                            "data" => [
+                                {
+                                    "type" => "things",
+                                    "id" => "20"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "id" => "20",
+                    "type" => "things",
+                    "links" => {
+                        "self" => "http://test.host/api/things/20"
+                    },
+                    "relationships" => {
+                        "box" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/20/relationships/box",
+                                "related" => "http://test.host/api/things/20/box"
+                            },
+                            "data" => {
+                                "type" => "boxes",
+                                "id" => "100"
+                            }
+                        },
+                        "user" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/20/relationships/user",
+                                "related" => "http://test.host/api/things/20/user"
+                            }
+                        },
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/20/relationships/things",
+                                "related" => "http://test.host/api/things/20/things"
+                            },
+                            "data" => [
+                                {
+                                    "type" => "things",
+                                    "id" => "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "id" => "30",
+                    "type" => "things",
+                    "links" => {
+                        "self" => "http://test.host/api/things/30"
+                    },
+                    "relationships" => {
+                        "box" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/30/relationships/box",
+                                "related" => "http://test.host/api/things/30/box"
+                            },
+                            "data" => {
+                                "type" => "boxes",
+                                "id" => "102"
+                            }
+                        },
+                        "user" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/30/relationships/user",
+                                "related" => "http://test.host/api/things/30/user"
+                            }
+                        },
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/30/relationships/things",
+                                "related" => "http://test.host/api/things/30/things"
+                            },
+                            "data" => [
+                                {
+                                    "type" => "things",
+                                    "id" => "40"
+                                },
+                                {
+                                    "type" => "things",
+                                    "id" => "50"
+                                }
 
-    # The test is hardcoded with the include order. This should be changed at some
-    # point since either thing could come first and still be valid
-    assert_equal '10', json_response['included'][0]['id']
-    assert_equal 'things', json_response['included'][0]['type']
-    assert_nil json_response['included'][0]['relationships']['user']['data']
-    assert_equal '20', json_response['included'][0]['relationships']['things']['data'][0]['id']
-
-    assert_equal '20', json_response['included'][1]['id']
-    assert_equal 'things', json_response['included'][1]['type']
-    assert_nil json_response['included'][1]['relationships']['user']['data']
-    assert_equal '10', json_response['included'][1]['relationships']['things']['data'][0]['id']
+                            ]
+                        }
+                    }
+                },
+                {
+                    "id" => "40",
+                    "type" => "things",
+                    "links" => {
+                        "self" => "http://test.host/api/things/40"
+                    },
+                    "relationships" => {
+                        "box" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/40/relationships/box",
+                                "related" => "http://test.host/api/things/40/box"
+                            }
+                        },
+                        "user" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/40/relationships/user",
+                                "related" => "http://test.host/api/things/40/user"
+                            }
+                        },
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/40/relationships/things",
+                                "related" => "http://test.host/api/things/40/things"
+                            }
+                        }
+                    }
+                },
+                {
+                    "id" => "50",
+                    "type" => "things",
+                    "links" => {
+                        "self" => "http://test.host/api/things/50"
+                    },
+                    "relationships" => {
+                        "box" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/50/relationships/box",
+                                "related" => "http://test.host/api/things/50/box"
+                            }
+                        },
+                        "user" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/50/relationships/user",
+                                "related" => "http://test.host/api/things/50/user"
+                            }
+                        },
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/50/relationships/things",
+                                "related" => "http://test.host/api/things/50/things"
+                            },
+                            "data" => [
+                                {
+                                    "type" => "things",
+                                    "id" => "60"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "id" => "60",
+                    "type" => "things",
+                    "links" => {
+                        "self" => "http://test.host/api/things/60"
+                    },
+                    "relationships" => {
+                        "box" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/60/relationships/box",
+                                "related" => "http://test.host/api/things/60/box"
+                            }
+                        },
+                        "user" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/60/relationships/user",
+                                "related" => "http://test.host/api/things/60/user"
+                            }
+                        },
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/60/relationships/things",
+                                "related" => "http://test.host/api/things/60/things"
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        json_response)
   end
 
   def test_complex_includes_nested_things_secondary_users
-    get :index, params: {include: 'things,things.user,things.things'}
+    assert_cacheable_get :index, params: {include: 'things,things.user,things.things'}
 
     assert_response :success
+    assert_hash_equals(
+        {
+            "data" => [
+                {
+                    "id" => "100",
+                    "type" => "boxes",
+                    "links" => {
+                        "self" => "http://test.host/api/boxes/100"
+                    },
+                    "relationships" => {
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/boxes/100/relationships/things",
+                                "related" => "http://test.host/api/boxes/100/things"
+                            },
+                            "data" => [
+                                {
+                                    "type" => "things",
+                                    "id" => "10"
+                                },
+                                {
+                                    "type" => "things",
+                                    "id" => "20"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "id" => "102",
+                    "type" => "boxes",
+                    "links" => {
+                        "self" => "http://test.host/api/boxes/102"
+                    },
+                    "relationships" => {
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/boxes/102/relationships/things",
+                                "related" => "http://test.host/api/boxes/102/things"
+                            },
+                            "data" => [
+                                {
+                                    "type" => "things",
+                                    "id" => "30"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ],
+            "included" => [
+                {
+                    "id" => "10",
+                    "type" => "things",
+                    "links" => {
+                        "self" => "http://test.host/api/things/10"
+                    },
+                    "relationships" => {
+                        "box" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/10/relationships/box",
+                                "related" => "http://test.host/api/things/10/box"
+                            },
+                            "data" => {
+                                "type" => "boxes",
+                                "id" => "100"
+                            }
+                        },
+                        "user" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/10/relationships/user",
+                                "related" => "http://test.host/api/things/10/user"
+                            },
+                            "data" => {
+                                "type" => "users",
+                                "id" => "10001"
+                            }
+                        },
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/10/relationships/things",
+                                "related" => "http://test.host/api/things/10/things"
+                            },
+                            "data" => [
+                                {
+                                    "type" => "things",
+                                    "id" => "20"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "id" => "20",
+                    "type" => "things",
+                    "links" => {
+                        "self" => "http://test.host/api/things/20"
+                    },
+                    "relationships" => {
+                        "box" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/20/relationships/box",
+                                "related" => "http://test.host/api/things/20/box"
+                            },
+                            "data" => {
+                                "type" => "boxes",
+                                "id" => "100"
+                            }
+                        },
+                        "user" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/20/relationships/user",
+                                "related" => "http://test.host/api/things/20/user"
+                            },
+                            "data" => {
+                                "type" => "users",
+                                "id" => "10001"
+                            }
+                        },
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/20/relationships/things",
+                                "related" => "http://test.host/api/things/20/things"
+                            },
+                            "data" => [
+                                {
+                                    "type" => "things",
+                                    "id" => "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "id" => "30",
+                    "type" => "things",
+                    "links" => {
+                        "self" => "http://test.host/api/things/30"
+                    },
+                    "relationships" => {
+                        "box" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/30/relationships/box",
+                                "related" => "http://test.host/api/things/30/box"
+                            },
+                            "data" => {
+                                "type" => "boxes",
+                                "id" => "102"
+                            }
+                        },
+                        "user" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/30/relationships/user",
+                                "related" => "http://test.host/api/things/30/user"
+                            },
+                            "data" => {
+                                "type" => "users",
+                                "id" => "10002"
+                            }
 
-    # The test is hardcoded with the include order. This should be changed at some
-    # point since either thing could come first and still be valid
-    assert_equal '10', json_response['included'][0]['id']
-    assert_equal 'things', json_response['included'][0]['type']
-    assert_equal '10001',  json_response['included'][0]['relationships']['user']['data']['id']
-    assert_equal '20',  json_response['included'][0]['relationships']['things']['data'][0]['id']
+                        },
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/30/relationships/things",
+                                "related" => "http://test.host/api/things/30/things"
+                            },
+                            "data" => [
+                                {
+                                    "type" => "things",
+                                    "id" => "40"
+                                },
+                                {
+                                    "type" => "things",
+                                    "id" => "50"
+                                }
 
-    assert_equal '20', json_response['included'][1]['id']
-    assert_equal 'things', json_response['included'][1]['type']
-    assert_equal '10001',  json_response['included'][1]['relationships']['user']['data']['id']
-    assert_equal '10',  json_response['included'][1]['relationships']['things']['data'][0]['id']
+                            ]
+                        }
+                    }
+                },
+                {
+                    "id" => "40",
+                    "type" => "things",
+                    "links" => {
+                        "self" => "http://test.host/api/things/40"
+                    },
+                    "relationships" => {
+                        "box" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/40/relationships/box",
+                                "related" => "http://test.host/api/things/40/box"
+                            }
+                        },
+                        "user" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/40/relationships/user",
+                                "related" => "http://test.host/api/things/40/user"
+                            }
+                        },
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/40/relationships/things",
+                                "related" => "http://test.host/api/things/40/things"
+                            }
+                        }
+                    }
+                },
+                {
+                    "id" => "50",
+                    "type" => "things",
+                    "links" => {
+                        "self" => "http://test.host/api/things/50"
+                    },
+                    "relationships" => {
+                        "box" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/50/relationships/box",
+                                "related" => "http://test.host/api/things/50/box"
+                            }
+                        },
+                        "user" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/50/relationships/user",
+                                "related" => "http://test.host/api/things/50/user"
+                            }
+                        },
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/things/50/relationships/things",
+                                "related" => "http://test.host/api/things/50/things"
+                            }
+                        }
+                    }
+                },
+                {
+                    "id" => "10001",
+                    "type" => "users",
+                    "links" => {
+                        "self" => "http://test.host/api/users/10001"
+                    },
+                    "attributes" => {
+                        "name" => "user 1"
+                    },
+                    "relationships" => {
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/users/10001/relationships/things",
+                                "related" => "http://test.host/api/users/10001/things"
+                            },
+                            "data" => [
+                                {
+                                    "type" => "things",
+                                    "id" => "10"
+                                },
+                                {
+                                    "type" => "things",
+                                    "id" => "20"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "id" => "10002",
+                    "type" => "users",
+                    "links" => {
+                        "self" => "http://test.host/api/users/10002"
+                    },
+                    "attributes" => {
+                        "name" => "user 2"
+                    },
+                    "relationships" => {
+                        "things" => {
+                            "links" => {
+                                "self" => "http://test.host/api/users/10002/relationships/things",
+                                "related" => "http://test.host/api/users/10002/things"
+                            },
+                            "data" => [
+                                {
+                                    "type" => "things",
+                                    "id" => "30"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        json_response)
   end
 end
 

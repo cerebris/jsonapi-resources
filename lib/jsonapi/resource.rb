@@ -276,7 +276,7 @@ module JSONAPI
     end
 
     def _replace_to_many_links(relationship_type, relationship_key_values, options)
-      relationship = self.class._relationships[relationship_type]
+      relationship = self.class._relationship(relationship_type)
 
       reflect = reflect_relationship?(relationship, options)
 
@@ -434,7 +434,7 @@ module JSONAPI
       #   cache: <optional: the resource's cache value>
       #   attributes: <optional: attributes hash for attributes requested - currently unused>
       #   related: {
-      #     <relationship_name>: <ResourceIndentity of a source resource in find_related_fragments>
+      #     <relationship_name>: <ResourceIdentity of a source resource in find_included_fragments>
       #   }
       # }
       #
@@ -464,6 +464,12 @@ module JSONAPI
         end
 
         def find_fragments(_filters, _options = {})
+          # :nocov:
+          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+          # :nocov:
+        end
+
+        def find_included_fragments(_source_rids, _relationship_name, _options = {})
           # :nocov:
           raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
           # :nocov:

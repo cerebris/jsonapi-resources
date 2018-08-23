@@ -1459,11 +1459,12 @@ module BreedResourceFinder
 
     # Records
     def find_fragments(filters, options = {})
-      identities = {}
+      fragments = {}
       find_records(filters, options).each do |breed|
-        identities[JSONAPI::ResourceIdentity.new(BreedResource, breed.id)] = { cache_field: nil }
+        rid = JSONAPI::ResourceIdentity.new(BreedResource, breed.id)
+        fragments[rid] = JSONAPI::ResourceFragment.new(rid)
       end
-      identities
+      fragments
     end
 
     def find_by_key(key, options = {})
@@ -2348,6 +2349,7 @@ module Api
 
   class UserResource < JSONAPI::Resource
     has_many :things
+    attribute :name
   end
 end
 

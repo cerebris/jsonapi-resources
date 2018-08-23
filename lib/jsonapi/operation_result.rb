@@ -49,7 +49,7 @@ module JSONAPI
 
     def to_hash(serializer)
       if serializer
-        serializer.serialize_resource_set_to_hash(resource_set)
+        serializer.serialize_resource_set_to_hash_single(resource_set)
       else
         # :nocov:
         {}
@@ -71,7 +71,7 @@ module JSONAPI
 
     def to_hash(serializer)
       if serializer
-        serializer.serialize_resources_set_to_hash(resource_set)
+        serializer.serialize_resource_set_to_hash_plural(resource_set)
       else
         # :nocov:
         {}
@@ -91,7 +91,7 @@ module JSONAPI
 
     def to_hash(serializer = nil)
       if serializer
-        serializer.serialize_related_resources_set_to_hash(source_resource, resource_set)
+        serializer.serialize_related_resource_set_to_hash_plural(resource_set, source_resource)
       else
         # :nocov:
         {}

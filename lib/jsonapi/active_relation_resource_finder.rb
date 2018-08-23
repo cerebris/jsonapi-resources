@@ -82,17 +82,17 @@ module JSONAPI
         fragments = {}
         records.pluck(*pluck_fields).collect do |row|
           rid = JSONAPI::ResourceIdentity.new(self, pluck_fields.length == 1 ? row : row[0])
-          fragments[rid] = { identity: rid }
+
+          fragments[rid] ||= JSONAPI::ResourceFragment.new(rid)
           attributes_offset = 1
 
           if cache_field
-            fragments[rid][:cache] = cast_to_attribute_type(row[1], cache_field[:type])
+            fragments[rid].cache = cast_to_attribute_type(row[1], cache_field[:type])
             attributes_offset+= 1
           end
 
-          fragments[rid][:attributes]= {} unless model_fields.empty?
           model_fields.each_with_index do |k, idx|
-            fragments[rid][:attributes][k[0]]= cast_to_attribute_type(row[idx + attributes_offset], k[1][:type])
+            fragments[rid].attributes[k[0]]= cast_to_attribute_type(row[idx + attributes_offset], k[1][:type])
           end
         end
 
@@ -110,13 +110,23 @@ module JSONAPI
       # @return [Hash{ResourceIdentity => {identity: => ResourceIdentity, cache: cache_field, attributes: => {name => value}, related: {relationship_name: [] }}}]
       #    the ResourceInstances matching the filters, sorting, and pagination rules along with any request
       #    additional_field values
-      def find_related_fragments(source_rids, relationship_name, options = {}, included_key = nil)
+      def find_related_fragments(source_rids, relationship_name, options = {})
         relationship = _relationship(relationship_name)
 
         if relationship.polymorphic? && relationship.foreign_key_on == :self
-          find_related_polymorphic_fragments(source_rids, relationship, options)
+          find_related_polymorphic_fragments(source_rids, relationship, options, false)
         else
-          find_related_monomorphic_fragments(source_rids, relationship, included_key, options)
+          find_related_monomorphic_fragments(source_rids, relationship, options, false)
+        end
+      end
+
+      def find_included_fragments(source_rids, relationship_name, options = {})
+        relationship = _relationship(relationship_name)
+
+        if relationship.polymorphic? && relationship.foreign_key_on == :self
+          find_related_polymorphic_fragments(source_rids, relationship, options, true)
+        else
+          find_related_monomorphic_fragments(source_rids, relationship, options, true)
         end
       end
 
@@ -215,7 +225,7 @@ module JSONAPI
         records(options).where({ _primary_key => keys })
       end
 
-      def find_related_monomorphic_fragments(source_rids, relationship, included_key, options = {})
+      def find_related_monomorphic_fragments(source_rids, relationship, options, connect_source_identity)
         opts = options.dup
 
         source_ids = source_rids.collect {|rid| rid.id}
@@ -260,8 +270,7 @@ module JSONAPI
 
         # ToDO: Remove count check. Currently pagination isn't working with multiple source_rids (i.e. it only works
         # for show relationships, not related includes).
-        # Check included_key to not paginate included resources but ensure that nested resources can be paginated
-        if paginator && source_rids.count == 1 && !included_key
+        if paginator && source_rids.count == 1
           records = related_klass.apply_pagination(records, paginator, order_options)
         end
 
@@ -287,28 +296,35 @@ module JSONAPI
 
         rows = records.pluck(*pluck_fields)
 
-        relation_name = relationship.name.to_sym
-
         related_fragments = {}
 
         rows.each do |row|
           unless row[1].nil?
             rid = JSONAPI::ResourceIdentity.new(related_klass, row[1])
-            related_fragments[rid] ||= { identity: rid, related: {relation_name => [] } }
+
+            related_fragments[rid] ||= JSONAPI::ResourceFragment.new(rid)
 
             attributes_offset = 2
 
             if cache_field
-              related_fragments[rid][:cache] = cast_to_attribute_type(row[attributes_offset], cache_field[:type])
+              related_fragments[rid].cache = cast_to_attribute_type(row[attributes_offset], cache_field[:type])
               attributes_offset+= 1
             end
 
-            related_fragments[rid][:attributes]= {} unless model_fields.empty?
             model_fields.each_with_index do |k, idx|
-              related_fragments[rid][:attributes][k[0]] = cast_to_attribute_type(row[idx + attributes_offset], k[1][:type])
+              related_fragments[rid].attributes[k[0]] = cast_to_attribute_type(row[idx + attributes_offset], k[1][:type])
             end
 
-            related_fragments[rid][:related][relation_name] << JSONAPI::ResourceIdentity.new(self, row[0])
+            source_rid = JSONAPI::ResourceIdentity.new(self, row[0])
+
+            related_fragments[rid].add_related_from(source_rid)
+
+            if connect_source_identity
+              related_relationship = related_klass._relationships[relationship.inverse_relationship]
+              if related_relationship
+                related_fragments[rid].add_related_identity(related_relationship.name, source_rid)
+              end
+            end
           end
         end
 
@@ -317,7 +333,7 @@ module JSONAPI
 
       # Gets resource identities where the related resource is polymorphic and the resource type and id
       # are stored on the primary resources. Cache fields will always be on the related resources.
-      def find_related_polymorphic_fragments(source_rids, relationship, options = {})
+      def find_related_polymorphic_fragments(source_rids, relationship, options, connect_source_identity)
         source_ids = source_rids.collect {|rid| rid.id}
 
         context = options[:context]
@@ -393,8 +409,6 @@ module JSONAPI
 
         rows = records.pluck(*pluck_fields)
 
-        relation_name = relationship.name.to_sym
-
         related_fragments = {}
 
         rows.each do |row|
@@ -402,8 +416,17 @@ module JSONAPI
             related_klass = resource_klass_for(row[2])
 
             rid = JSONAPI::ResourceIdentity.new(related_klass, row[1])
-            related_fragments[rid] ||= { identity: rid, related: { relation_name => [] } }
-            related_fragments[rid][:related][relation_name] << JSONAPI::ResourceIdentity.new(self, row[0])
+            related_fragments[rid] ||= JSONAPI::ResourceFragment.new(rid)
+
+            source_rid = JSONAPI::ResourceIdentity.new(self, row[0])
+            related_fragments[rid].add_related_from(source_rid)
+
+            if connect_source_identity
+              related_relationship = related_klass._relationships[relationship.inverse_relationship]
+              if related_relationship
+                related_fragments[rid].add_related_identity(related_relationship.name, source_rid)
+              end
+            end
 
             relation_position = relation_positions[row[2]]
             model_fields = relation_position[:model_fields]
@@ -413,14 +436,13 @@ module JSONAPI
             attributes_offset = 0
 
             if cache_field
-              related_fragments[rid][:cache] = cast_to_attribute_type(row[field_offset], cache_field[:type])
+              related_fragments[rid].cache = cast_to_attribute_type(row[field_offset], cache_field[:type])
               attributes_offset+= 1
             end
 
             if attributes.length > 0
-              related_fragments[rid][:attributes]= {}
               model_fields.each_with_index do |k, idx|
-                related_fragments[rid][:attributes][k[0]] = cast_to_attribute_type(row[idx + field_offset + attributes_offset], k[1][:type])
+                related_fragments[rid].add_attribute(k[0], cast_to_attribute_type(row[idx + field_offset + attributes_offset], k[1][:type]))
               end
             end
           end

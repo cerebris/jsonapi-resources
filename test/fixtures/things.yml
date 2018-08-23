@@ -19,19 +19,19 @@ thing_30:
 thing_40:
   id: 40
   user_id: 10002
-  box_id: 102
+  box_id:
   name: Thing40
 
 thing_50:
   id: 50
   user_id: 10002
-  box_id: 102
+  box_id:
   name: Thing50
 
 thing_60:
   id: 60
   user_id: 10002
-  box_id: 102
+  box_id:
   name: Thing60
 
 #thing_70:
