@@ -911,6 +911,10 @@ module JSONAPI
         default_attribute_options.merge(@_attributes[attr])
       end
 
+      def _has_attribute?(attr)
+        @_attributes.keys.include?(attr.to_sym)
+      end
+
       def _updatable_relationships
         @_relationships.map { |key, _relationship| key }
       end
