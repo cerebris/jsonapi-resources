@@ -8,10 +8,12 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
 
     assert_hash_equals(
       {
+        include_linkage: {},
         include_related: {
           posts: {
             include: true,
-            include_related:{},
+            include_linkage: {},
+            include_related: {},
             include_in_join: true
           }
         }
@@ -19,25 +21,47 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
       directives)
   end
 
+  def test_no_includes_always_include_linkage
+    JSONAPI.configuration.always_include_to_one_linkage_data = true
+
+    directives = JSONAPI::IncludeDirectives.new(PersonResource, ['']).include_directives
+
+    assert_hash_equals(
+        {
+            include_related: {},
+            include_linkage: {
+                preferences: {},
+                hair_cut: {}
+            }
+        },
+        directives)
+  ensure
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
+  end
+
   def test_one_level_multiple_includes
     directives = JSONAPI::IncludeDirectives.new(PersonResource, ['posts', 'comments', 'tags']).include_directives
 
     assert_hash_equals(
       {
+        include_linkage: {},
         include_related: {
           posts: {
             include: true,
-            include_related:{},
+            include_linkage: {},
+            include_related: {},
             include_in_join: true
           },
           comments: {
             include: true,
-            include_related:{},
+            include_linkage: {},
+            include_related: {},
             include_in_join: true
           },
           tags: {
             include: true,
-            include_related:{},
+            include_linkage: {},
+            include_related: {},
             include_in_join: true
           }
         }
@@ -50,13 +74,16 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
 
     assert_hash_equals(
       {
+        include_linkage: {},
         include_related: {
           posts: {
             include: true,
+            include_linkage: {},
             include_related:{
               comments: {
                 include: true,
-                include_related:{},
+                include_linkage: {},
+                include_related: {},
                 include_in_join: true
               }
             },
@@ -72,13 +99,16 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
 
     assert_hash_equals(
       {
+        include_linkage: {},
         include_related: {
           posts: {
             include: true,
+            include_linkage: {},
             include_related:{
               tags: {
                 include: true,
-                include_related:{},
+                include_linkage: {},
+                include_related: {},
                 include_in_join: false
               }
             },
@@ -94,13 +124,16 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
 
     assert_hash_equals(
       {
+        include_linkage: {},
         include_related: {
           posts: {
             include: true,
+            include_linkage: {},
             include_related:{
               comments: {
                 include: true,
-                include_related:{},
+                include_linkage: {},
+                include_related: {},
                 include_in_join: true
               }
             },
@@ -116,16 +149,20 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
 
     assert_hash_equals(
       {
+        include_linkage: {},
         include_related: {
           posts: {
             include: true,
+            include_linkage: {},
             include_related:{
               comments: {
                 include: true,
+                include_linkage: {},
                 include_related:{
                   tags: {
                     include: true,
-                    include_related:{},
+                    include_linkage: {},
+                    include_related: {},
                     include_in_join: true
                   }
                 },

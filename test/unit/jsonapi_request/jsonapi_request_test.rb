@@ -43,7 +43,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
   end
 
   def test_parse_blank_includes
-    include_directives = JSONAPI::RequestParser.new.parse_include_directives(nil, '')
+    include_directives = JSONAPI::RequestParser.new.parse_include_directives(PostResource, '')
     assert_empty include_directives.model_includes
   end
 

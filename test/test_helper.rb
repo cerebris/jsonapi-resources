@@ -265,6 +265,7 @@ TestApp.routes.draw do
   jsonapi_resources :pictures
   jsonapi_resources :documents
   jsonapi_resources :products
+  jsonapi_resources :file_properties
   jsonapi_resources :vehicles
   jsonapi_resources :cars
   jsonapi_resources :boats
@@ -356,6 +357,7 @@ TestApp.routes.draw do
     JSONAPI.configuration.route_format = :dasherized_route
     namespace :v6 do
       jsonapi_resources :authors
+      jsonapi_resources :author_details
       jsonapi_resources :posts
       jsonapi_resources :sections
       jsonapi_resources :customers

@@ -60,7 +60,7 @@ module JSONAPI
       # @return [Hash{ResourceIdentity => {identity: => ResourceIdentity, cache: cache_field, attributes: => {name => value}}}]
       #    the ResourceInstances matching the filters, sorting, and pagination rules along with any request
       #    additional_field values
-      def find_fragments(filters, options = {})
+      def find_fragments(filters, include_directives, options = {})
         records = find_records(filters, options)
 
         table_name = _model_class.table_name
@@ -69,6 +69,30 @@ module JSONAPI
         cache_field = attribute_to_model_field(:_cache_field) if options[:cache]
         if cache_field
           pluck_fields << Arel.sql("#{concat_table_field(table_name, cache_field[:name])} AS #{table_name}_#{cache_field[:name]}")
+        end
+
+        linkage_fields = {}
+        if include_directives[:include_linkage]
+          include_directives[:include_linkage].each_key do |relationship_name|
+            relationship = self._relationships[relationship_name]
+            if relationship.is_a?(JSONAPI::Relationship::ToOne)
+              linkage_fields[relationship_name] = {resource_klass: relationship.resource_klass}
+
+              if relationship.belongs_to?
+                foreign_key = relationship.foreign_key
+                pluck_fields << "#{concat_table_field(self._table_name, foreign_key)} AS #{relationship_name}_#{foreign_key}"
+                if relationship.polymorphic?
+                  pluck_fields << "#{concat_table_field(self._table_name, relationship.polymorphic_type)} AS #{relationship_name}_#{relationship.polymorphic_type}"
+                  linkage_fields[relationship_name][:polymorphic] = true
+                end
+              else
+                records, table_alias = apply_related_linkage_join(records, relationship, table_name, options)
+                linkage_field = "#{table_alias}_#{relationship.resource_klass._primary_key}"
+                pluck_fields << "#{concat_table_field(table_alias, relationship.resource_klass._primary_key)} AS #{linkage_field}"
+                linkage_fields[relationship_name] = {resource_klass: relationship.resource_klass}
+              end
+            end
+          end
         end
 
         model_fields = {}
@@ -80,7 +104,8 @@ module JSONAPI
         end
 
         fragments = {}
-        records.pluck(*pluck_fields).collect do |row|
+        rows = records.pluck(*pluck_fields)
+        rows.collect do |row|
           rid = JSONAPI::ResourceIdentity.new(self, pluck_fields.length == 1 ? row : row[0])
 
           fragments[rid] ||= JSONAPI::ResourceFragment.new(rid)
@@ -88,6 +113,22 @@ module JSONAPI
 
           if cache_field
             fragments[rid].cache = cast_to_attribute_type(row[1], cache_field[:type])
+            attributes_offset+= 1
+          end
+
+          linkage_fields.each do |relationship_name, linkage_field_details|
+            fragments[rid].initialize_related(relationship_name)
+            related_id = row[attributes_offset]
+            if related_id
+              if linkage_field_details[:polymorphic]
+                attributes_offset+= 1
+                related_type = row[attributes_offset]
+                related_rid = JSONAPI::ResourceIdentity.new(JSONAPI::Resource.resource_klass_for(related_type), related_id)
+              else
+                related_rid = JSONAPI::ResourceIdentity.new(linkage_field_details[:resource_klass], related_id)
+              end
+              fragments[rid].add_related_identity(relationship_name, related_rid)
+            end
             attributes_offset+= 1
           end
 
@@ -110,23 +151,23 @@ module JSONAPI
       # @return [Hash{ResourceIdentity => {identity: => ResourceIdentity, cache: cache_field, attributes: => {name => value}, related: {relationship_name: [] }}}]
       #    the ResourceInstances matching the filters, sorting, and pagination rules along with any request
       #    additional_field values
-      def find_related_fragments(source_rids, relationship_name, options, included_key = nil)
+      def find_related_fragments(source_rids, include_directives, relationship_name, options, included_key = nil)
         relationship = _relationship(relationship_name)
 
-        if relationship.polymorphic? && relationship.foreign_key_on == :self
-          find_related_polymorphic_fragments(source_rids, relationship, options, false)
+        if relationship.polymorphic?
+          find_related_polymorphic_fragments(source_rids, include_directives, relationship, options, false)
         else
-          find_related_monomorphic_fragments(source_rids, relationship, included_key, options, false)
+          find_related_monomorphic_fragments(source_rids, include_directives, relationship, included_key, options, false)
         end
       end
 
-      def find_relationship_fragments(source_rids, relationship_name, options)
+      def find_relationship_fragments(source_rids, include_directives, relationship_name, options)
         relationship = _relationship(relationship_name)
 
-        if relationship.polymorphic? && relationship.foreign_key_on == :self
-          find_related_polymorphic_fragments(source_rids, relationship, options, true)
+        if relationship.polymorphic?
+          find_related_polymorphic_fragments(source_rids, include_directives, relationship, options, true)
         else
-          find_related_monomorphic_fragments(source_rids, relationship, nil, options, true)
+          find_related_monomorphic_fragments(source_rids, include_directives, relationship, nil, options, true)
         end
       end
 
@@ -143,8 +184,7 @@ module JSONAPI
 
         context = options[:context]
 
-        records = records(context: context)
-        records, table_alias = apply_join(records, relationship, options)
+        records, table_alias = apply_join(records(context: context), relationship, options)
 
         filters = options.fetch(:filters, {})
 
@@ -155,6 +195,33 @@ module JSONAPI
         filter_options[:table_alias] = table_alias
         records = related_klass.apply_filters(records, filters, filter_options)
         records.count(:all)
+      end
+
+      # Determine if a resource can provide linkage data for a relationship.
+      # Currently this Resource Finder can return Linkage data for to_one relationships, with the exception of
+      # to_one where the inverse relationship is polymorphic or the inverse_relationship is not resolved
+      #
+      # @param relationship_name [String | Symbol] The name of the relationship
+      #
+      # @return [Boolean]
+      def include_additional_relationship_linkage_data?(relationship_name)
+        relationship = _relationship(relationship_name.to_sym)
+
+        # relationship.is_a?(JSONAPI::Relationship::ToOne) && relationship.belongs_to? && relationship.include_linkage_data?
+        if relationship.include_linkage_data?
+          if relationship.is_a?(JSONAPI::Relationship::ToOne)
+            if relationship.foreign_key_on == :self
+              return true
+            end
+
+            inverse_relationship = relationship.resource_klass._relationship(relationship.inverse_relationship.to_sym)
+            if inverse_relationship && !inverse_relationship.polymorphic?
+              return true
+            end
+          end
+        end
+
+        false
       end
 
       protected
@@ -172,7 +239,7 @@ module JSONAPI
         records.where({ _primary_key => keys })
       end
 
-      def find_related_monomorphic_fragments(source_rids, relationship, included_key, options, relationship_request)
+      def find_related_monomorphic_fragments(source_rids, include_directives, relationship, included_key, options, relationship_request)
         source_ids = source_rids.collect {|rid| rid.id}
 
         context = options[:context]
@@ -222,6 +289,30 @@ module JSONAPI
           pluck_fields << Arel.sql("#{concat_table_field(table_alias, cache_field[:name])} AS #{table_alias}_#{cache_field[:name]}")
         end
 
+        linkage_fields = {}
+        if include_directives[:include_linkage]
+          include_directives[:include_linkage].each_key do |relationship_name|
+            include_relationship = related_klass._relationships[relationship_name]
+            if include_relationship.is_a?(JSONAPI::Relationship::ToOne)
+              linkage_fields[relationship_name] = {resource_klass: include_relationship.resource_klass}
+
+              if include_relationship.belongs_to?
+                foreign_key = include_relationship.foreign_key
+                pluck_fields << "#{concat_table_field(table_alias, foreign_key)} AS #{table_alias}_#{foreign_key}"
+              else
+                if relationship.inverse_relationship == relationship_name
+                  # This is the parent relationship so no need for joins
+                  pluck_fields << "#{primary_key_field} AS linkage_#{_table_name}_#{_primary_key}"
+                else
+                  records, related_table_alias = apply_related_linkage_join(records, include_relationship, table_alias, options)
+                  linkage_field = "#{related_table_alias}_#{include_relationship.resource_klass._primary_key}"
+                  pluck_fields << "#{concat_table_field(related_table_alias, include_relationship.resource_klass._primary_key)} AS #{linkage_field}"
+                end
+              end
+            end
+          end
+        end
+
         model_fields = {}
         attributes = options[:attributes]
         attributes.try(:each) do |attribute|
@@ -249,11 +340,22 @@ module JSONAPI
 
             model_fields.each_with_index do |k, idx|
               related_fragments[rid].add_attribute(k[0], cast_to_attribute_type(row[idx + attributes_offset], k[1][:type]))
+              attributes_offset+= 1
             end
 
             source_rid = JSONAPI::ResourceIdentity.new(self, row[0])
 
             related_fragments[rid].add_related_from(source_rid)
+
+            linkage_fields.each do |relationship_name, linkage_field_details|
+              related_fragments[rid].initialize_related(relationship_name)
+              related_id = row[attributes_offset]
+              if related_id
+                related_rid = JSONAPI::ResourceIdentity.new(linkage_field_details[:resource_klass], related_id)
+                related_fragments[rid].add_related_identity(relationship_name, related_rid)
+              end
+              attributes_offset+= 1
+            end
 
             unless relationship_request
               related_relationship = related_klass._relationships[relationship.inverse_relationship]
@@ -269,24 +371,24 @@ module JSONAPI
 
       # Gets resource identities where the related resource is polymorphic and the resource type and id
       # are stored on the primary resources. Cache fields will always be on the related resources.
-      def find_related_polymorphic_fragments(source_rids, relationship, options, relationship_request)
+      def find_related_polymorphic_fragments(source_rids, include_directives, relationship, options, relationship_request)
         source_ids = source_rids.collect {|rid| rid.id}
 
         context = options[:context]
 
         records = records(context: context)
 
-        primary_key = concat_table_field(_table_name, _primary_key)
+        primary_key_field = concat_table_field(_table_name, _primary_key)
         related_key = concat_table_field(_table_name, relationship.foreign_key)
         related_type = concat_table_field(_table_name, relationship.polymorphic_type)
 
         pluck_fields = [
-            Arel.sql("#{primary_key} AS #{_table_name}_#{_primary_key}"),
+            Arel.sql("#{primary_key_field} AS #{_table_name}_#{_primary_key}"),
             Arel.sql("#{related_key} AS #{_table_name}_#{relationship.foreign_key}"),
             Arel.sql("#{related_type} AS #{_table_name}_#{relationship.polymorphic_type}")
         ]
 
-        relations = relationship.polymorphic_relations
+        relations = relationship.polymorphic_resource_names
 
         # Get the additional fields from each relation. There's a limitation that the fields must exist in each relation
 
@@ -303,34 +405,59 @@ module JSONAPI
 
             cache_field = related_klass.attribute_to_model_field(:_cache_field) if options[:cache]
 
-            # We only need to join the relations if we are getting additional fields
-            if cache_field || attributes.length > 0
+            # We only need to join the relations if we are getting additional fields, including the cache field
+            if cache_field || attributes.length > 0 || (include_directives[:include_linkage] && include_directives[:include_linkage][relation])
               records, table_alias = apply_join(records, relationship, options, relation)
+            end
 
-              if cache_field
-                pluck_fields << concat_table_field(table_alias, cache_field[:name])
+            cache_offset = relation_index
+            if cache_field
+              pluck_fields << "#{concat_table_field(table_alias, cache_field[:name])} as cache_#{relation}_#{cache_field[:name]}"
+              relation_index+= 1
+            end
+
+            model_fields = {}
+            field_offset = relation_index
+            attributes.try(:each) do |attribute|
+              model_field = related_klass.attribute_to_model_field(attribute)
+              model_fields[attribute] = model_field
+              relation_index+= 1
+            end
+
+            model_fields.each do |_k, v|
+              pluck_fields << concat_table_field(table_alias, v[:name])
+            end
+
+            linkage_fields = {}
+            linkage_offset = relation_index
+            if include_directives[:include_linkage] && include_directives[:include_linkage][relation]
+              include_directives[:include_linkage][relation].each_key do |relationship_name|
+                include_relationship = related_klass._relationships[relationship_name]
+                if include_relationship.is_a?(JSONAPI::Relationship::ToOne)
+                  linkage_fields[relationship_name] = {resource_klass: include_relationship.resource_klass}
+
+                  if include_relationship.belongs_to?
+                    foreign_key = include_relationship.foreign_key
+                    relation_index+= 1
+                    pluck_fields << "#{concat_table_field(table_alias, foreign_key)} AS #{table_alias}_#{foreign_key}"
+                  end
+                else
+                  if relationship.inverse_relationship == relationship_name
+                    pluck_fields << "#{primary_key_field} AS linkage_#{relation}_#{_primary_key}"
+                  end
+                end
               end
-
-              model_fields = {}
-              attributes.try(:each) do |attribute|
-                model_field = related_klass.attribute_to_model_field(attribute)
-                model_fields[attribute] = model_field
-              end
-
-              model_fields.each do |_k, v|
-                pluck_fields << concat_table_field(table_alias, v[:name])
-              end
-
             end
 
             related = related_klass._model_class.name
             relation_positions[related] = { relation_klass: related_klass,
                                             cache_field: cache_field,
+                                            cache_offset: cache_offset,
                                             model_fields: model_fields,
-                                            field_offset: relation_index}
-
-            relation_index+= 1 if cache_field
-            relation_index+= attributes.length if attributes.length > 0
+                                            field_offset: field_offset,
+                                            linkage_fields: linkage_fields,
+                                            linkage_offset: linkage_offset
+            }
           end
         end
 
@@ -366,18 +493,27 @@ module JSONAPI
             relation_position = relation_positions[row[2]]
             model_fields = relation_position[:model_fields]
             cache_field = relation_position[:cache_field]
+            cache_offset = relation_position[:cache_offset]
             field_offset = relation_position[:field_offset]
-
-            attributes_offset = 0
+            linkage_fields = relation_position[:linkage_fields]
+            linkage_offset = relation_position[:linkage_offset]
 
             if cache_field
-              related_fragments[rid].cache = cast_to_attribute_type(row[field_offset], cache_field[:type])
-              attributes_offset+= 1
+              related_fragments[rid].cache = cast_to_attribute_type(row[cache_offset], cache_field[:type])
             end
 
             if attributes.length > 0
               model_fields.each_with_index do |k, idx|
-                related_fragments[rid].add_attribute(k[0], cast_to_attribute_type(row[idx + field_offset + attributes_offset], k[1][:type]))
+                related_fragments[rid].add_attribute(k[0], cast_to_attribute_type(row[idx + field_offset], k[1][:type]))
+              end
+            end
+
+            linkage_fields.each_with_index do |(relationship_name, linkage_field_details), idx|
+              related_fragments[rid].initialize_related(relationship_name)
+              related_id = row[linkage_offset + idx]
+              if related_id
+                related_rid = JSONAPI::ResourceIdentity.new(linkage_field_details[:resource_klass], related_id)
+                related_fragments[rid].add_related_identity(relationship_name, related_rid)
               end
             end
           end
@@ -597,22 +733,58 @@ module JSONAPI
           table_alias = custom_apply_options[:table_alias]
         else
           if relationship.polymorphic?
-            table_alias = relationship.parent_resource._table_name
+            parent_table_alias = relationship.parent_resource._table_name
 
             relation_name = polymorphic_relation_name
             related_klass = resource_klass_for(relation_name.to_s)
             related_table_name = related_klass._table_name
 
-            join_statement = "LEFT OUTER JOIN #{related_table_name} ON #{table_alias}.#{relationship.foreign_key} = #{related_table_name}.#{related_klass._primary_key} AND #{concat_table_field(table_alias, relationship.polymorphic_type, true)} = \"#{relation_name.capitalize}\""
+            join_statement = "LEFT OUTER JOIN #{related_table_name} ON #{parent_table_alias}.#{relationship.foreign_key} = #{related_table_name}.#{related_klass._primary_key} AND #{concat_table_field(parent_table_alias, relationship.polymorphic_type, true)} = \"#{relation_name.capitalize}\""
             records = records.joins(join_statement)
+
+            table_alias = related_klass._table_name
           else
             relation_name = relationship.relation_name(options)
             related_klass = relationship.resource_klass
+            table_alias = related_klass._table_name
 
             records = records.joins(relation_name).references(relation_name)
           end
+        end
 
-          table_alias = related_klass._table_name
+        return records, table_alias
+      end
+
+      def apply_related_linkage_join(records, relationship, parent_table_alias, options, polymorphic_relation_name = nil)
+        custom_apply_join = relationship.custom_methods[:apply_join]
+
+        if custom_apply_join
+          # Set a default alias for the join to use, which it may change by updating the option
+          table_alias = relationship.resource_klass._table_name
+
+          custom_apply_options = {
+              relationship: relationship,
+              polymorphic_relation_name: polymorphic_relation_name,
+              context: options[:context],
+              records: records,
+              parent_table_alias: parent_table_alias,
+              related_linkage_join: true,
+              table_alias: table_alias,
+              options: options}
+
+          records = custom_apply_join.call(custom_apply_options)
+
+          # Get the table alias in case it was changed
+          table_alias = custom_apply_options[:table_alias]
+        else
+          related_klass = relationship.resource_klass
+          parent_resource_klass = relationship.parent_resource
+          related_table_name = related_klass._table_name
+
+          table_alias = "#{parent_table_alias}_#{relationship.name}"
+
+          join_statement = "LEFT OUTER JOIN #{related_table_name} #{table_alias} ON #{table_alias}.#{relationship.foreign_key} = #{parent_table_alias}.#{parent_resource_klass._primary_key}"
+          records = records.joins(join_statement)
         end
 
         return records, table_alias

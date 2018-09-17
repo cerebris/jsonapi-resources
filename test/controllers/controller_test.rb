@@ -520,6 +520,22 @@ class PostsControllerTest < ActionController::TestCase
     assert_nil json_response['included']
   end
 
+  def test_show_single_include_belongs_to_linkage
+    JSONAPI.configuration.always_include_to_one_linkage_data = true
+
+    assert_cacheable_get :show, params: {id: '1'}
+    assert_response :success
+    assert json_response['data'].is_a?(Hash)
+    assert_equal 'New post', json_response['data']['attributes']['title']
+    assert_equal 'A body!!!', json_response['data']['attributes']['body']
+    assert_nil json_response['included']
+    assert_nil json_response['data']['relationships']['section']['data']
+    assert_equal '1001', json_response['data']['relationships']['author']['data']['id']
+    assert_equal 'people', json_response['data']['relationships']['author']['data']['type']
+  ensure
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
+  end
+
   def test_show_does_not_include_records_count_in_meta
     JSONAPI.configuration.top_level_meta_include_record_count = true
     assert_cacheable_get :show, params: { id: Post.first.id }
@@ -2076,6 +2092,24 @@ class PicturesControllerTest < ActionController::TestCase
     assert_response :success
     assert_equal 7, json_response['data'].try(:size)
     assert_equal 4, json_response['included'].try(:size)
+  end
+
+  def test_pictures_index_with_polymorphic_include_linkage
+    JSONAPI.configuration.always_include_to_one_linkage_data = true
+
+    assert_cacheable_get :index, params: {include: 'imageable'}
+    assert_response :success
+    assert json_response['data'].is_a?(Array)
+    assert_equal 7, json_response['data'].try(:size)
+    assert_equal 4, json_response['included'].try(:size)
+    assert_equal '1', json_response['data'][0]['relationships']['imageable']['data']['id']
+    assert_equal 'products', json_response['data'][0]['relationships']['imageable']['data']['type']
+    assert_equal '1001', json_response['included'][0]['relationships']['designer']['data']['id']
+    assert_equal 'people', json_response['included'][0]['relationships']['designer']['data']['type']
+    assert_equal '1002', json_response['included'][1]['relationships']['author']['data']['id']
+    assert_equal 'people', json_response['included'][1]['relationships']['author']['data']['type']
+  ensure
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
   end
 
   def test_update_relationship_to_one_polymorphic
@@ -3812,6 +3846,10 @@ class Api::V7::CategoriesControllerTest < ActionController::TestCase
 end
 
 class Api::V6::PostsControllerTest < ActionController::TestCase
+  def setup
+    JSONAPI.configuration.json_key_format = :camelized_key
+  end
+
   def test_caching_with_join_from_resource_with_sql_fragment
     assert_cacheable_get :index, params: {include: 'section'}
     assert_response :success
@@ -3825,12 +3863,128 @@ class Api::V6::PostsControllerTest < ActionController::TestCase
     assert_equal "/data/attributes/base", json_response['errors'][0]['source']['pointer']
     assert_response :unprocessable_entity
   end
+
+  def test_show_single_include_has_one_related_linkage_include
+    JSONAPI.configuration.always_include_to_one_linkage_data = true
+    assert_cacheable_get :show, params: {id: '2', include: 'author'}
+    assert_response :success
+    assert json_response['data'].is_a?(Hash)
+    assert_equal 'JR Solves your serialization woes!', json_response['data']['attributes']['title']
+    assert_equal 'sections', json_response['data']['relationships']['section']['data']['type']
+    assert_equal '2', json_response['data']['relationships']['section']['data']['id']
+    assert_equal 'authors', json_response['data']['relationships']['author']['data']['type']
+    assert_equal '1001', json_response['data']['relationships']['author']['data']['id']
+    refute_nil json_response['included']
+    assert_equal 'authorDetails', json_response['included'][0]['relationships']['authorDetail']['data']['type']
+    assert_equal '1', json_response['included'][0]['relationships']['authorDetail']['data']['id']
+  ensure
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
+  end
 end
 
 class Api::V6::SectionsControllerTest < ActionController::TestCase
   def test_caching_with_join_to_resource_with_sql_fragment
     assert_cacheable_get :index, params: {include: 'posts'}
     assert_response :success
+  end
+end
+
+class Api::V6::AuthorsControllerTest < ActionController::TestCase
+  def setup
+    JSONAPI.configuration.json_key_format = :camelized_key
+  end
+
+  def test_show_single_include_has_one_linkage
+    JSONAPI.configuration.always_include_to_one_linkage_data = true
+
+    assert_cacheable_get :show, params: {id: '1002'}
+    assert_response :success
+    assert json_response['data'].is_a?(Hash)
+    assert_equal 'Fred Reader', json_response['data']['attributes']['name']
+    assert_nil json_response['included']
+    assert_equal '2', json_response['data']['relationships']['authorDetail']['data']['id']
+    assert_equal 'authorDetails', json_response['data']['relationships']['authorDetail']['data']['type']
+  ensure
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
+  end
+
+  def test_show_single_include_has_one_linkage_include
+    JSONAPI.configuration.always_include_to_one_linkage_data = true
+
+    assert_cacheable_get :show, params: {id: '1002', include: 'authorDetail'}
+    assert_response :success
+    assert json_response['data'].is_a?(Hash)
+    assert_equal 'Fred Reader', json_response['data']['attributes']['name']
+    refute_nil json_response['included']
+    assert_equal '2', json_response['data']['relationships']['authorDetail']['data']['id']
+    assert_equal 'authorDetails', json_response['data']['relationships']['authorDetail']['data']['type']
+    assert_equal 'authors', json_response['included'][0]['relationships']['author']['data']['type']
+    assert_equal '1002', json_response['included'][0]['relationships']['author']['data']['id']
+  ensure
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
+  end
+end
+
+class Api::V6::AuthorDetailsControllerTest < ActionController::TestCase
+  def setup
+    JSONAPI.configuration.json_key_format = :camelized_key
+  end
+
+  def test_show_single_include_has_one_include_linkage
+    JSONAPI.configuration.always_include_to_one_linkage_data = true
+
+    assert_cacheable_get :show, params: {id: '2', include: 'author'}
+    assert_response :success
+    assert json_response['data'].is_a?(Hash)
+    assert_equal 'blah blah blah', json_response['data']['attributes']['authorStuff']
+    assert_equal '1002', json_response['data']['relationships']['author']['data']['id']
+    assert_equal 'authors', json_response['data']['relationships']['author']['data']['type']
+    assert json_response['included']
+    assert_equal '1002', json_response['included'][0]['id']
+    assert_equal 'authors', json_response['included'][0]['type']
+    assert_equal '2', json_response['included'][0]['relationships']['authorDetail']['data']['id']
+    assert_equal 'authorDetails', json_response['included'][0]['relationships']['authorDetail']['data']['type']
+    assert_equal '1', json_response['included'][0]['relationships']['hairCut']['data']['id']
+    assert_equal 'hairCuts', json_response['included'][0]['relationships']['hairCut']['data']['type']
+  ensure
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
+  end
+end
+
+class AnswersControllerTest < ActionController::TestCase
+  def test_index_polymorphic_include_has_one_linkage
+    JSONAPI.configuration.always_include_to_one_linkage_data = true
+
+    assert_cacheable_get :index
+    assert_response :success
+    assert json_response['data'].is_a?(Array)
+    assert_nil json_response['included']
+    assert_equal '1', json_response['data'][0]['relationships']['question']['data']['id']
+    assert_equal 'questions', json_response['data'][0]['relationships']['question']['data']['type']
+    assert_equal '1', json_response['data'][0]['relationships']['respondent']['data']['id']
+    assert_equal 'patients', json_response['data'][0]['relationships']['respondent']['data']['type']
+
+    assert_equal '2', json_response['data'][1]['relationships']['question']['data']['id']
+    assert_equal 'questions', json_response['data'][1]['relationships']['question']['data']['type']
+    assert_equal '1', json_response['data'][1]['relationships']['respondent']['data']['id']
+    assert_equal 'doctors', json_response['data'][1]['relationships']['respondent']['data']['type']
+  ensure
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
+  end
+
+  def test_index_polymorphic_do_not_include_has_one_linkage
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
+
+    assert_cacheable_get :index
+    assert_response :success
+    assert json_response['data'].is_a?(Array)
+    assert_nil json_response['included']
+    assert_nil json_response['data'][0]['relationships']['question']['data']
+    assert_nil json_response['data'][0]['relationships']['respondent']['data']
+    assert_nil json_response['data'][1]['relationships']['question']['data']
+    assert_nil json_response['data'][1]['relationships']['respondent']['data']
+  ensure
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
   end
 end
 

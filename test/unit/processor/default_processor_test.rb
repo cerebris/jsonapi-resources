@@ -27,7 +27,7 @@ class DefaultProcessorTest < ActionDispatch::IntegrationTest
         serializer: {}
     }
     p = JSONAPI::Processor.new(PostResource, :find, params)
-    $id_tree_no_includes = p.send(:find_resource_id_tree, PostResource, find_options, nil)
+    $id_tree_no_includes = p.send(:find_resource_id_tree, PostResource, find_options, {})
     $resource_set_no_includes = JSONAPI::ResourceSet.new($id_tree_no_includes)
     $populated_resource_set_no_includes = JSONAPI::ResourceSet.new($id_tree_no_includes).populate!($serializer, nil,{})
 
@@ -43,7 +43,7 @@ class DefaultProcessorTest < ActionDispatch::IntegrationTest
     }
     p = JSONAPI::Processor.new(PostResource, :find, params)
 
-    $id_tree_has_one_includes = p.send(:find_resource_id_tree, PostResource, find_options, directives[:include_related])
+    $id_tree_has_one_includes = p.send(:find_resource_id_tree, PostResource, find_options, directives)
     $resource_set_has_one_includes = JSONAPI::ResourceSet.new($id_tree_has_one_includes)
     $populated_resource_set_has_one_includes = JSONAPI::ResourceSet.new($id_tree_has_one_includes).populate!($serializer, nil,{})
   end
@@ -104,9 +104,6 @@ class DefaultProcessorTest < ActionDispatch::IntegrationTest
   def test_populated_resource_set_has_one_includes_relationships_are_resolved
     assert_equal 1003, $populated_resource_set_has_one_includes.resource_klasses[PostResource][10][:relationships][:author].first.id
     assert_equal 1004, $populated_resource_set_has_one_includes.resource_klasses[PostResource][12][:relationships][:author].first.id
-
-    assert_equal 10, $populated_resource_set_has_one_includes.resource_klasses[PersonResource][1003][:relationships][:posts].first.id
-    assert_equal 12, $populated_resource_set_has_one_includes.resource_klasses[PersonResource][1004][:relationships][:posts].first.id
   end
 
 end

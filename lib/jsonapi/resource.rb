@@ -281,7 +281,7 @@ module JSONAPI
       reflect = reflect_relationship?(relationship, options)
 
       if reflect
-        existing_rids = self.class.find_related_fragments([identity], relationship_type, options)
+        existing_rids = self.class.find_related_fragments([identity], {}, relationship_type, options)
 
         existing = existing_rids.keys.collect { |rid| rid.id }
 
@@ -439,53 +439,59 @@ module JSONAPI
       # }
       #
       # begin ResourceFinder Abstract methods
-        def find(_filters, _options = {})
-          # :nocov:
-          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-          # :nocov:
-        end
-
-        def count(_filters, _options = {})
-          # :nocov:
-          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-          # :nocov:
-        end
-
-        def find_by_keys(_keys, _options = {})
-          # :nocov:
-          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-          # :nocov:
-        end
-
-        def find_by_key(_key, _options = {})
-          # :nocov:
-          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-          # :nocov:
-        end
-
-        def find_fragments(_filters, _options = {})
-          # :nocov:
-          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-          # :nocov:
-        end
-
-        def find_related_fragments(_source_rids, _relationship_name, _options)
-          # :nocov:
-          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-          # :nocov:
-        end
-
-      def find_relationship_fragments(_source_rids, _relationship_name, _options, _included_key)
+      def find(_filters, _options = {})
         # :nocov:
         raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
         # :nocov:
       end
 
-        def count_related(_source_rid, _relationship_name, _options = {})
-          # :nocov:
-          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-          # :nocov:
-        end
+      def count(_filters, _options = {})
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
+
+      def find_by_keys(_keys, _options = {})
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
+
+      def find_by_key(_key, _options = {})
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
+
+      def find_fragments(_filters, _include_directives, _options = {})
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
+
+      def find_related_fragments(_source_rids, _include_directives, _relationship_name, _options)
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
+
+      def find_relationship_fragments(_source_rids, _include_directives, _relationship_name, _options, _included_key)
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
+
+      def count_related(_source_rid, _relationship_name, _options = {})
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
+
+      def include_additional_relationship_linkage_data?(_relationship_name)
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
 
       #end ResourceFinder Abstract methods
 
@@ -505,7 +511,7 @@ module JSONAPI
       end
 
       def resource_klass_for(type)
-        type = type.underscore
+        type = type.to_s.underscore
         type_with_module = type.start_with?(module_path) ? type : module_path + type
 
         resource_name = _resource_name_from_type(type_with_module)

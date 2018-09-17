@@ -1,0 +1,41 @@
+picture_2:
+  id: 20002
+  name: company_brochure.jpg
+  fileable_id: 2
+  fileable_type: Picture
+
+picture_3:
+  id: 20003
+  name: group_photo.jpg
+  fileable_id: 3
+  fileable_type: Picture
+
+picture_40:
+  id: 20040
+  name: company_management_team_2015.jpg
+  fileable_id: 40
+  fileable_type: Picture
+
+document_2:
+  id: 30002
+  name: Enagement Letter.doc
+  fileable_id: 2
+  fileable_type: Document
+
+document_200:
+  id: 30200
+  name: Management Through the Years.doc
+  fileable_id: 200
+  fileable_type: Document
+
+product_1:
+  id: 40001
+  name: Enterprise Gizmo.spec
+  fileable_id: 1
+  fileable_type: Product
+
+product_2:
+  id: 40002
+  name: Fighting Hot Sauce.spec
+  fileable_id: 2
+  fileable_type: Product

@@ -345,13 +345,13 @@ module JSONAPI
     end
 
     def parse_include_directives(resource_klass, raw_include)
-      return unless raw_include
+      unprocessed_includes = raw_include ? raw_include : ''
 
       included_resources = []
       begin
-        included_resources += raw_include.is_a?(Array) ? raw_include : CSV.parse_line(raw_include) || []
+        included_resources += unprocessed_includes.is_a?(Array) ? unprocessed_includes : CSV.parse_line(unprocessed_includes) || []
       rescue CSV::MalformedCSVError
-        fail JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type), raw_include)
+        fail JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type), unprocessed_includes)
       end
 
       return if included_resources.nil?

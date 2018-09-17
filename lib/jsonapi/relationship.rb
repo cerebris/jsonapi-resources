@@ -1,7 +1,7 @@
 module JSONAPI
   class Relationship
     attr_reader :acts_as_set, :foreign_key, :options, :name,
-                :class_name, :polymorphic, :always_include_linkage_data,
+                :class_name, :polymorphic,
                 :parent_resource, :eager_load_on_include, :custom_methods,
                 :inverse_relationship, :allow_include
 
@@ -16,7 +16,11 @@ module JSONAPI
       @relation_name = options.fetch(:relation_name, @name)
       @custom_methods = options.fetch(:custom_methods, {})
       @polymorphic = options.fetch(:polymorphic, false) == true
-      @polymorphic_relations = options[:polymorphic_relations]
+      polymorphic_resource_names = options[:polymorphic_resource_names]
+      if polymorphic_resource_names.is_a?(Array)
+        @polymorphic_resource_names = polymorphic_resource_names.collect {|resource_name| resource_name.to_sym}
+      end
+
       @always_include_linkage_data = options.fetch(:always_include_linkage_data, false) == true
       @eager_load_on_include = options.fetch(:eager_load_on_include, true) == true
       @allow_include = options[:allow_include]
@@ -42,7 +46,7 @@ module JSONAPI
           next unless Module === klass
           if ActiveRecord::Base > klass
             klass.reflect_on_all_associations(:has_many).select{|r| r.options[:as] }.each do |reflection|
-              (hash[reflection.options[:as]] ||= []) << klass.name.downcase
+              (hash[reflection.options[:as]] ||= []) << klass.name.downcase.to_sym
             end
           end
         end
@@ -50,8 +54,14 @@ module JSONAPI
       @poly_hash[name.to_sym]
     end
 
-    def polymorphic_relations
-      @polymorphic_relations ||= self.class.polymorphic_types(@relation_name)
+    def polymorphic_resource_names
+      @polymorphic_resource_names ||= self.class.polymorphic_types(name)
+    end
+
+    def polymorphic_resource_klasses
+      polymorphic_resource_names.collect do |resource_type|
+        @parent_resource.resource_klass_for(resource_type.to_s)
+      end
     end
 
     def type
@@ -92,7 +102,7 @@ module JSONAPI
         @foreign_key ||= "#{name}_id".to_sym
         @foreign_key_on = options.fetch(:foreign_key_on, :self)
         if parent_resource
-          @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type)
+          @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type.to_s.singularize).to_sym
         end
       end
 
@@ -102,6 +112,10 @@ module JSONAPI
 
       def polymorphic_type
         "#{name}_type" if polymorphic?
+      end
+
+      def include_linkage_data?
+        @always_include_linkage_data || JSONAPI::configuration.always_include_to_one_linkage_data
       end
 
       def allow_include?(context = nil)
@@ -130,8 +144,12 @@ module JSONAPI
         @foreign_key ||= "#{name.to_s.singularize}_ids".to_sym
         @reflect = options.fetch(:reflect, true) == true
         if parent_resource
-          @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type.to_s.singularize.to_sym)
+          @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type.to_s.singularize).to_sym
         end
+      end
+
+      def include_linkage_data?
+        @always_include_linkage_data || JSONAPI::configuration.always_include_to_many_linkage_data
       end
 
       def allow_include?(context = nil)
@@ -148,7 +166,6 @@ module JSONAPI
         else
           strategy.call(context)
         end
-
       end
     end
   end

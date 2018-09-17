@@ -3,6 +3,7 @@ require 'jsonapi-resources'
 
 ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.uncountable 'preferences'
+  inflect.uncountable 'file_properties'
   inflect.irregular 'numero_telefone', 'numeros_telefone'
 end
 
@@ -47,6 +48,7 @@ ActiveRecord::Schema.define do
   create_table :author_details, force: true do |t|
     t.integer :person_id
     t.string  :author_stuff
+    t.timestamps null: false
   end
 
   create_table :posts, force: true do |t|
@@ -244,12 +246,23 @@ ActiveRecord::Schema.define do
 
   create_table :documents, force: true do |t|
     t.string  :name
+    t.integer :author_id
     t.timestamps null: false
   end
 
   create_table :products, force: true do |t|
     t.string  :name
+    t.integer :designer_id
     t.timestamps null: false
+  end
+
+  create_table :file_properties, force: true do |t|
+    t.string :name
+    t.timestamps null: false
+    t.references :fileable, polymorphic: true, index: true
+    t.belongs_to :tag, index: true
+
+    t.integer :size
   end
 
   create_table :vehicles, force: true do |t|
@@ -317,6 +330,7 @@ ActiveRecord::Schema.define do
 
   create_table :questions, force: true do |t|
     t.string :text
+    t.timestamps null: false
   end
 
   create_table :answers, force: true do |t|
@@ -324,14 +338,17 @@ ActiveRecord::Schema.define do
     t.integer :respondent_id
     t.string  :respondent_type
     t.string :text
+    t.timestamps null: false
   end
 
   create_table :patients, force: true do |t|
     t.string :name
+    t.timestamps null: false
   end
 
   create_table :doctors, force: true do |t|
     t.string :name
+    t.timestamps null: false
   end
 
   create_table :storages, force: true do |t|
@@ -687,9 +704,7 @@ end
 
 class Picture < ActiveRecord::Base
   belongs_to :imageable, polymorphic: true
-
-  # belongs_to :document, -> { where( pictures: { imageable_type: 'Document' } ).includes( :pictures ) }, foreign_key: 'imageable_id'
-  # belongs_to :product, -> { where( pictures: { imageable_type: 'Product' } ).includes( :pictures ) }, foreign_key: 'imageable_id'
+  has_one :file_properties, as: 'fileable'
 end
 
 class Vehicle < ActiveRecord::Base
@@ -704,10 +719,19 @@ end
 
 class Document < ActiveRecord::Base
   has_many :pictures, as: :imageable
+  belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
+  has_one :file_properties, as: 'fileable'
 end
 
 class Product < ActiveRecord::Base
   has_many :pictures, as: :imageable
+  belongs_to :designer, class_name: 'Person', foreign_key: 'designer_id'
+  has_one :file_properties, as: 'fileable'
+end
+
+class FileProperties < ActiveRecord::Base
+  belongs_to :fileable, polymorphic: true
+  belongs_to :tag
 end
 
 class Make < ActiveRecord::Base
@@ -892,6 +916,9 @@ end
 class ImageablesController < JSONAPI::ResourceController
 end
 
+class FilePropertiesController < JSONAPI::ResourceController
+end
+
 class VehiclesController < JSONAPI::ResourceController
 end
 
@@ -1018,6 +1045,9 @@ module Api
 
   module V6
     class AuthorsController < JSONAPI::ResourceController
+    end
+
+    class AuthorDetailsController < JSONAPI::ResourceController
     end
 
     class PostsController < JSONAPI::ResourceController
@@ -1410,7 +1440,7 @@ module BreedResourceFinder
     end
 
     # Records
-    def find_fragments(filters, options = {})
+    def find_fragments(filters, include_directives, options = {})
       fragments = {}
       find_records(filters, options).each do |breed|
         rid = JSONAPI::ResourceIdentity.new(BreedResource, breed.id)
@@ -1545,26 +1575,44 @@ end
 
 class PictureResource < JSONAPI::Resource
   attribute :name
-  has_one :imageable, polymorphic: true 
-  # has_one :imageable, polymorphic: true, polymorphic_relations: [:document, :product]
+  has_one :imageable, polymorphic: true
+
+  has_one :file_properties, inverse_relationship: :fileable, :foreign_key_on => :related, polymorphic: true
+end
+
+# ToDo: Remove the need for the polymorphic fake resource
+class ImageableResource < JSONAPI::Resource
+end
+
+class FileableResource < JSONAPI::Resource
 end
 
 class DocumentResource < JSONAPI::Resource
   attribute :name
-  has_many :pictures
+  has_many :pictures, inverse_relationship: :imageable
+  has_one :author, class_name: 'Person'
+
+  has_one :file_properties, inverse_relationship: :fileable, :foreign_key_on => :related
 end
 
 class ProductResource < JSONAPI::Resource
   attribute :name
-  has_one :picture, always_include_linkage_data: true
+  has_many :pictures, inverse_relationship: :imageable
+  has_one :designer, class_name: 'Person'
+
+  has_one :file_properties, inverse_relationship: :fileable, :foreign_key_on => :related
 
   def picture_id
     _model.picture.id
   end
 end
 
-# ToDo: Remove the need for the polymorphic fake resource
-class ImageableResource < JSONAPI::Resource
+class FilePropertiesResource < JSONAPI::Resource
+  attribute :name
+  attribute :size
+
+  has_one :fileable, polymorphic: true
+  has_one :tag
 end
 
 class MakeResource < JSONAPI::Resource
@@ -1958,15 +2006,19 @@ end
 
 module Api
   module V6
+    class HairCutResource < HairCutResource; end
+
     class AuthorDetailResource < JSONAPI::Resource
       attributes :author_stuff
+      has_one :author, foreign_key: :person_id, inverse_relationship: :author_detail
     end
 
     class AuthorResource < JSONAPI::Resource
       attributes :name, :email
       model_name 'Person'
       relationship :posts, to: :many
-      relationship :author_detail, to: :one, foreign_key_on: :related
+      relationship :author_detail, to: :one, foreign_key_on: :related, foreign_key: :person_id
+      has_one :hair_cut
 
       filter :name
 
@@ -1975,6 +2027,7 @@ module Api
       end
     end
 
+    class PreferencesResource < PreferencesResource; end
     class PersonResource < PersonResource; end
     class TagResource < TagResource; end
 
@@ -1985,12 +2038,9 @@ module Api
     class CommentResource < CommentResource; end
 
     class PostResource < PostResource
-      # Test caching with SQL fragments
-      def self.records(options = {})
-        _model_class.all.joins('INNER JOIN people on people.id = author_id')
-      end
-
       attribute :base
+
+      has_one :author
 
       def base
         _model.title

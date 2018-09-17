@@ -58,7 +58,7 @@ module JSONAPI
       }
 
       resource_set = find_resource_set(resource_klass,
-                                       include_directives,
+                                       include_directives.include_directives,
                                        find_options)
 
       resource_set.populate!(serializer, context, find_options)
@@ -96,7 +96,7 @@ module JSONAPI
       }
 
       resource_set = find_resource_set(resource_klass,
-                                       include_directives,
+                                       include_directives.include_directives,
                                        find_options)
 
       resource_set.populate!(serializer, context, find_options)
@@ -125,7 +125,7 @@ module JSONAPI
                                                        JSONAPI::ResourceIdentity.new(resource_klass, parent_key),
                                                        relationship_type,
                                                        find_options,
-                                                       nil)
+                                                       include_directives.include_directives)
 
       return JSONAPI::LinksObjectOperationResult.new(:ok,
                                                      parent_resource,
@@ -152,7 +152,7 @@ module JSONAPI
 
       resource_set = find_related_resource_set(source_resource,
                                                relationship_type,
-                                               include_directives,
+                                               include_directives.include_directives,
                                                find_options)
 
       resource_set.populate!(serializer, context, find_options)
@@ -185,7 +185,7 @@ module JSONAPI
 
       resource_set = find_related_resource_set(source_resource,
                                                relationship_type,
-                                               include_directives,
+                                               include_directives.include_directives,
                                                find_options)
 
       resource_set.populate!(serializer, context, find_options)
@@ -236,7 +236,7 @@ module JSONAPI
       }
 
       resource_set = find_resource_set(resource_klass,
-                                       include_directives,
+                                       include_directives.include_directives,
                                        find_options)
 
       resource_set.populate!(serializer, context, find_options)
@@ -272,7 +272,7 @@ module JSONAPI
       }
 
       resource_set = find_resource_set(resource_klass,
-                                       include_directives,
+                                       include_directives.include_directives,
                                        find_options)
 
       resource_set.populate!(serializer, context, find_options)
@@ -359,62 +359,64 @@ module JSONAPI
     end
 
     def find_resource_set(resource_klass, include_directives, options)
-      include_related = include_directives.include_directives[:include_related] if include_directives
-
-      resource_id_tree = find_resource_id_tree(resource_klass, options, include_related)
+      resource_id_tree = find_resource_id_tree(resource_klass, options, include_directives)
 
       JSONAPI::ResourceSet.new(resource_id_tree)
     end
 
     def find_related_resource_set(resource, relationship_name, include_directives, options)
-      include_related = include_directives.include_directives[:include_related] if include_directives
-
-      resource_id_tree = find_resource_id_tree_from_resource_relationship(resource, relationship_name, options, include_related)
+      resource_id_tree = find_resource_id_tree_from_resource_relationship(resource, relationship_name, options, include_directives)
 
       JSONAPI::ResourceSet.new(resource_id_tree)
     end
 
     private
-    def find_related_resource_id_tree(resource_klass, source_id, relationship_name, find_options, include_related)
+    def find_related_resource_id_tree(resource_klass, source_id, relationship_name, find_options, include_directives)
+      include_related = include_directives[:include_related]
+
       options = find_options.except(:include_directives)
       options[:cache] = resource_klass.caching?
 
-      fragments = resource_klass.find_related_fragments([source_id], relationship_name, options)
+      fragments = resource_klass.find_related_fragments([source_id], include_directives, relationship_name, options)
 
       primary_resource_id_tree = PrimaryResourceIdTree.new
       primary_resource_id_tree.add_resource_fragments(fragments, include_related)
 
-      get_related(resource_klass, primary_resource_id_tree, include_related, options.except(:filters, :sort_criteria))
+      get_related(resource_klass, primary_resource_id_tree, include_directives, options.except(:filters, :sort_criteria))
 
       primary_resource_id_tree
     end
 
-    def find_resource_id_tree(resource_klass, find_options, include_related)
+    def find_resource_id_tree(resource_klass, find_options, include_directives)
+      include_related = include_directives[:include_related]
+
       options = find_options.except(:include_directives)
       options[:cache] = resource_klass.caching?
 
-      fragments = resource_klass.find_fragments(find_options[:filters], options)
+      fragments = resource_klass.find_fragments(find_options[:filters], include_directives, options)
 
       primary_resource_id_tree = PrimaryResourceIdTree.new
       primary_resource_id_tree.add_resource_fragments(fragments, include_related)
 
-      get_related(resource_klass, primary_resource_id_tree, include_related, options.except(:filters, :sort_criteria))
+      get_related(resource_klass, primary_resource_id_tree, include_directives, options.except(:filters, :sort_criteria))
 
       primary_resource_id_tree
     end
 
-    def find_resource_id_tree_from_resource_relationship(resource, relationship_name, find_options, include_related)
+    def find_resource_id_tree_from_resource_relationship(resource, relationship_name, find_options, include_directives)
+      include_related = include_directives[:include_related]
+
       relationship = resource.class._relationship(relationship_name)
 
       options = find_options.except(:include_directives)
       options[:cache] = relationship.resource_klass.caching?
 
-      fragments = resource.class.find_relationship_fragments([resource.identity], relationship_name, options)
+      fragments = resource.class.find_relationship_fragments([resource.identity], include_directives, relationship_name, options)
 
       primary_resource_id_tree = PrimaryResourceIdTree.new
       primary_resource_id_tree.add_resource_fragments(fragments, include_related)
 
-      get_related(resource_klass, primary_resource_id_tree, include_related, options.except(:filters, :sort_criteria))
+      get_related(resource_klass, primary_resource_id_tree, include_directives, options.except(:filters, :sort_criteria))
 
       primary_resource_id_tree
     end
@@ -422,28 +424,32 @@ module JSONAPI
     # Gets the related resource connections for the source resources
     # Note: source_resources must all be of the same type. This precludes includes through polymorphic
     # relationships. ToDo: Prevent this when parsing the includes
-    def get_related(resource_klass, source_resource_id_tree, include_related, options)
+    def get_related(resource_klass, source_resource_id_tree, include_directives, options)
+      include_related = include_directives[:include_related]
+
       source_rids = source_resource_id_tree.fragments.keys
 
-      include_related.try(:keys).try(:each) do |key|
-        relationship = resource_klass._relationship(key)
-        relationship_name = relationship.name.to_sym
+      include_related.try(:keys).try(:each) do |relationship_name|
+        relationship = resource_klass._relationship(relationship_name)
 
         find_related_resource_options = options.dup
         find_related_resource_options[:sort_criteria] = relationship.resource_klass.default_sort
         find_related_resource_options[:cache] = resource_klass.caching?
 
         related_fragments = resource_klass.find_related_fragments(
-          source_rids, relationship_name, find_related_resource_options, key
-        )
+          source_rids,
+          include_related[relationship_name],
+          relationship_name,
+          find_related_resource_options,
+          relationship_name)
 
         related_resource_id_tree = source_resource_id_tree.fetch_related_resource_id_tree(relationship)
-        related_resource_id_tree.add_resource_fragments(related_fragments, include_related[key][include_related])
+        related_resource_id_tree.add_resource_fragments(related_fragments, include_related[relationship_name][include_related])
 
         # Now recursively get the related resources for the currently found resources
         get_related(relationship.resource_klass,
                     related_resource_id_tree,
-                    include_related[relationship_name][:include_related],
+                    include_related[relationship_name],
                     options)
       end
     end

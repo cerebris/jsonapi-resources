@@ -288,16 +288,16 @@ class ResourceTest < ActiveSupport::TestCase
   def test_to_many_relationship_filters
     post_resource = PostResource.new(Post.find(1), nil)
 
-    comments = PostResource.find_related_fragments([post_resource.identity], :comments, {})
+    comments = PostResource.find_related_fragments([post_resource.identity], {}, :comments, {})
     assert_equal(2, comments.size)
 
-    filtered_comments = PostResource.find_related_fragments([post_resource.identity], :comments, { filters: { body: 'i liked it' } })
+    filtered_comments = PostResource.find_related_fragments([post_resource.identity], {}, :comments, { filters: { body: 'i liked it' } })
     assert_equal(1, filtered_comments.size)
   end
 
   def test_to_many_relationship_sorts
     post_resource = PostResource.new(Post.find(1), nil)
-    comment_ids = post_resource.class.find_related_fragments([post_resource.identity], :comments, {}).keys.collect {|c| c.id }
+    comment_ids = post_resource.class.find_related_fragments([post_resource.identity], {}, :comments, {}).keys.collect {|c| c.id }
     assert_equal [1,2], comment_ids
 
     # define apply_filters method on post resource to sort descending
@@ -312,6 +312,7 @@ class ResourceTest < ActiveSupport::TestCase
 
     sorted_comment_ids = post_resource.class.find_related_fragments(
         [post_resource.identity],
+        {},
         :comments,
         { sort_criteria: [{ field: 'id', direction: :desc }] }).keys.collect {|c| c.id}
 

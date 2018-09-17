@@ -1,15 +1,19 @@
 document_1:
   id: 1
   name: Company Brochure
+  author_id: 1002
 
 document_2:
   id: 2
   name: Enagement Letter
+  author_id: 1001
 
 document_200:
   id: 200
   name: Management Through the Years
+  author_id:
 
 document_201:
   id: 201
   name: Foo
+  author_id: 1001
