@@ -411,7 +411,9 @@ module JSONAPI
           end
         end
       else
-        options = { filters: include_directives.include_directives.dig(:include_related, relationship.name.to_sym, :include_filters) || {} }
+        include_config = include_directives.include_config(relationship.name.to_sym) if include_directives
+        include_filters = include_config[:include_filters] if include_config
+        options = { filters: include_filters || {} }
         source.public_send(relationship.name, options).map do |value|
           [relationship.type, value.id]
         end
