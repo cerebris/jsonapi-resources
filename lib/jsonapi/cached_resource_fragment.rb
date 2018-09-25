@@ -29,16 +29,17 @@ module JSONAPI
       return results
     end
 
-    attr_reader :resource_klass, :id, :type, :context, :fetchable_fields, :relationships,
+    attr_reader :resource_klass, :id, :type, :context, :model, :fetchable_fields, :relationships,
                 :links_json, :attributes_json, :meta_json,
                 :preloaded_fragments
 
-    def initialize(resource_klass, id, type, context, fetchable_fields, relationships,
+    def initialize(resource_klass, id, type, context, model, fetchable_fields, relationships,
                    links_json, attributes_json, meta_json)
       @resource_klass = resource_klass
       @id = id
       @type = type
       @context = context
+      @model = model
       @fetchable_fields = Set.new(fetchable_fields)
 
       # Relationships left uncompiled because we'll often want to insert included ids on retrieval
@@ -52,10 +53,15 @@ module JSONAPI
       @preloaded_fragments ||= Hash.new
     end
 
+    def _model
+      @model
+    end
+
     def to_cache_value
       {
         id: id,
         type: type,
+        model: model,
         fetchable: fetchable_fields,
         rels: relationships,
         links: links_json.try(:to_s),
@@ -95,6 +101,7 @@ module JSONAPI
         h.fetch(:id),
         h.fetch(:type),
         context,
+        h.fetch(:model, nil),
         h.fetch(:fetchable),
         h.fetch(:rels, nil),
         h.fetch(:links, nil),
@@ -105,12 +112,14 @@ module JSONAPI
 
     def self.write(resource_klass, resource, serializer, serializer_config_key, context, context_key)
       (id, cache_key) = resource.cache_id
+      model = resource._model
       json = serializer.object_hash(resource) # No inclusions passed to object_hash
       cr = self.new(
         resource_klass,
         json['id'],
         json['type'],
         context,
+        model,
         resource.fetchable_fields,
         json['relationships'],
         json['links'],
@@ -122,6 +131,5 @@ module JSONAPI
       JSONAPI.configuration.resource_cache.write(key, cr.to_cache_value)
       return [id, cr]
     end
-
   end
 end
