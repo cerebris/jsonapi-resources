@@ -102,11 +102,19 @@ module JSONAPI
         "#{name}_type" if polymorphic?
       end
 
-      def allow_include?
-        if @allow_include.nil?
-          JSONAPI.configuration.default_allow_include_to_one
+      def allow_include?(context = nil)
+        strategy = if @allow_include.nil?
+                     JSONAPI.configuration.default_allow_include_to_one
+                   else
+                     @allow_include
+                   end
+
+        if !!strategy == strategy #check for boolean
+          return strategy
+        elsif strategy.is_a?(Symbol) || strategy.is_a?(String)
+          parent_resource.send(strategy, context)
         else
-          @allow_include
+          strategy.call(context)
         end
       end
     end
@@ -124,12 +132,21 @@ module JSONAPI
         end
       end
 
-      def allow_include?
-        if @allow_include.nil?
-          JSONAPI.configuration.default_allow_include_to_one
+      def allow_include?(context = nil)
+        strategy = if @allow_include.nil?
+                     JSONAPI.configuration.default_allow_include_to_one
+                   else
+                     @allow_include
+                   end
+
+        if !!strategy == strategy #check for boolean
+          return strategy
+        elsif strategy.is_a?(Symbol) || strategy.is_a?(String)
+          parent_resource.send(strategy, context)
         else
-          @allow_include
+          strategy.call(context)
         end
+
       end
     end
   end

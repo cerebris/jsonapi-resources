@@ -1,5 +1,23 @@
 require File.expand_path('../../../test_helper', __FILE__)
 
+class LambdaBlogPostsResource < JSONAPI::Resource
+  model_name 'Post'
+
+  has_one :author, allow_include: -> (context) { context[:admin] }
+  has_many :comments, allow_include: -> (context) { context[:admin] }
+end
+
+class CallableBlogPostsResource < JSONAPI::Resource
+  model_name 'Post'
+
+  has_one :author, allow_include: :is_admin
+  has_many :comments, allow_include: :is_admin
+
+  def self.is_admin(context)
+    context[:admin]
+  end
+end
+
 class HasOneRelationshipTest < ActiveSupport::TestCase
 
   def test_polymorphic_type
@@ -72,4 +90,21 @@ class HasOneRelationshipTest < ActiveSupport::TestCase
   ensure
     JSONAPI.configuration = original_config
   end
+
+  def test_allow_include_set_by_lambda
+    assert LambdaBlogPostsResource._relationship(:author).allow_include?(admin: true)
+    refute LambdaBlogPostsResource._relationship(:author).allow_include?(admin: false)
+
+    assert LambdaBlogPostsResource._relationship(:comments).allow_include?(admin: true)
+    refute LambdaBlogPostsResource._relationship(:comments).allow_include?(admin: false)
+  end
+
+  def test_allow_include_set_by_callable
+    assert CallableBlogPostsResource._relationship(:author).allow_include?(admin: true)
+    refute CallableBlogPostsResource._relationship(:author).allow_include?(admin: false)
+
+    assert CallableBlogPostsResource._relationship(:comments).allow_include?(admin: true)
+    refute CallableBlogPostsResource._relationship(:comments).allow_include?(admin: false)
+  end
+
 end

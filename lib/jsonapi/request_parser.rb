@@ -330,7 +330,7 @@ module JSONAPI
 
       relationship = resource_klass._relationship(relationship_name)
       if relationship && format_key(relationship_name) == include_parts.first
-        unless relationship.allow_include?
+        unless relationship.allow_include?(context)
           fail JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type), include_parts.first)
         end
 
