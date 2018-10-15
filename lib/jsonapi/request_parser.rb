@@ -257,7 +257,6 @@ module JSONAPI
         if included_resource_name
           relationship = resource_klass._relationship(included_resource_name || '')
 
-
           unless relationship
             return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
           end
@@ -266,7 +265,7 @@ module JSONAPI
             return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
           end
 
-          unless @include_directives.model_includes.include?(relationship.name.to_sym)
+          unless @include_directives.include_config(relationship.name.to_sym).present?
             return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
           end
 
