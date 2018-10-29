@@ -578,14 +578,10 @@ module JSONAPI
 
         # fill in the missed resources, it there are any
         unless missed_ids.empty?
-          filters = {resource_klass._primary_key => missed_ids}
-          find_opts = {
-              context: context,
-              fields: find_options[:fields] }
+          missed_records = resource_klass.retrieve_records(missed_ids, find_options)
+          missed_resources = resource_klass.resources_for(missed_records, context)
 
-          found_resources = resource_klass.find(filters, find_opts)
-
-          found_resources.each do |resource|
+          missed_resources.each do |resource|
             relationship_data = resource_set[resource_klass][resource.id][:relationships]
 
             if resource_klass.caching?
