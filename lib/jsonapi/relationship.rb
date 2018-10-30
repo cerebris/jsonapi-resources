@@ -5,6 +5,8 @@ module JSONAPI
                 :parent_resource, :eager_load_on_include, :custom_methods,
                 :inverse_relationship, :allow_include
 
+    attr_writer :allow_include
+
     def initialize(name, options = {})
       @name = name.to_s
       @options = options
@@ -134,7 +136,7 @@ module JSONAPI
 
       def allow_include?(context = nil)
         strategy = if @allow_include.nil?
-                     JSONAPI.configuration.default_allow_include_to_one
+                     JSONAPI.configuration.default_allow_include_to_many
                    else
                      @allow_include
                    end
