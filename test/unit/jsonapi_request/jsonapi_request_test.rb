@@ -47,6 +47,72 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
     assert_empty include_directives.model_includes
   end
 
+  def test_check_include_allowed
+    assert JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "isoCurrency".partition('.'))
+  end
+
+  def test_check_nested_include_allowed
+    assert JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "employee.expenseEntries".partition('.'))
+  end
+
+  def test_check_include_relationship_does_not_exist
+    assert_raises JSONAPI::Exceptions::InvalidInclude do
+      assert JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "foo".partition('.'))
+    end
+  end
+
+  def test_check_nested_include_relationship_does_not_exist_wrong_format
+    assert_raises JSONAPI::Exceptions::InvalidInclude do
+      assert JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "employee.expense-entries".partition('.'))
+    end
+  end
+
+  def test_check_include_has_one_not_allowed_default
+    assert JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "isoCurrency".partition('.'))
+    JSONAPI.configuration.default_allow_include_to_one = false
+
+    assert_raises JSONAPI::Exceptions::InvalidInclude do
+      JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "isoCurrency".partition('.'))
+    end
+    ensure
+      JSONAPI.configuration.default_allow_include_to_one = true
+  end
+
+  def test_check_include_has_one_not_allowed_resource
+    assert JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "isoCurrency".partition('.'))
+    ExpenseEntryResource._relationship(:iso_currency).allow_include = false
+
+    assert_raises JSONAPI::Exceptions::InvalidInclude do
+      JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "isoCurrency".partition('.'))
+    end
+  ensure
+    ExpenseEntryResource._relationship(:iso_currency).allow_include = nil
+  end
+
+  def test_check_include_has_many_not_allowed_default
+    JSONAPI.configuration.default_allow_include_to_many = true
+
+    assert JSONAPI::RequestParser.new.check_include(EmployeeResource, "expenseEntries".partition('.'))
+    JSONAPI.configuration.default_allow_include_to_many = false
+
+    assert_raises JSONAPI::Exceptions::InvalidInclude do
+      JSONAPI::RequestParser.new.check_include(EmployeeResource, "expenseEntries".partition('.'))
+    end
+  ensure
+    JSONAPI.configuration.default_allow_include_to_many = true
+  end
+
+  def test_check_include_has_many_not_allowed_relationship
+    assert JSONAPI::RequestParser.new.check_include(EmployeeResource, "expenseEntries".partition('.'))
+    EmployeeResource._relationship(:expense_entries).allow_include = false
+
+    assert_raises JSONAPI::Exceptions::InvalidInclude do
+      JSONAPI::RequestParser.new.check_include(EmployeeResource, "expenseEntries".partition('.'))
+    end
+  ensure
+    EmployeeResource._relationship(:expense_entries).allow_include = nil
+  end
+
   def test_parse_dasherized_with_dasherized_include
     params = ActionController::Parameters.new(
       {

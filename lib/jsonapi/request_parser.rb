@@ -341,6 +341,7 @@ module JSONAPI
       else
         fail JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type), include_parts.first)
       end
+      true
     end
 
     def parse_include_directives(resource_klass, raw_include)
