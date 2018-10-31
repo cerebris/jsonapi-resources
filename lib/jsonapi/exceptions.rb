@@ -342,7 +342,7 @@ module JSONAPI
                              title: I18n.translate('jsonapi-resources.exceptions.invalid_include.title',
                                                    default: 'Invalid field'),
                              detail: I18n.translate('jsonapi-resources.exceptions.invalid_include.detail',
-                                                    default: "#{relationship} is not a valid relationship of #{resource}",
+                                                    default: "#{relationship} is not a valid includable relationship of #{resource}",
                                                     relationship: relationship, resource: resource))]
       end
     end

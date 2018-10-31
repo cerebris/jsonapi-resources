@@ -10,7 +10,8 @@ module JSONAPI
                 :route_format,
                 :raise_if_parameters_not_allowed,
                 :warn_on_route_setup_issues,
-                :allow_include,
+                :default_allow_include_to_one,
+                :default_allow_include_to_many,
                 :allow_sort,
                 :allow_filter,
                 :default_paginator,
@@ -50,7 +51,8 @@ module JSONAPI
       self.resource_key_type = :integer
 
       # optional request features
-      self.allow_include = true
+      self.default_allow_include_to_one = true
+      self.default_allow_include_to_many = true
       self.allow_sort = true
       self.allow_filter = true
 
@@ -227,7 +229,13 @@ module JSONAPI
       @resource_finder = resource_finder
     end
 
-    attr_writer :allow_include, :allow_sort, :allow_filter
+    def allow_include=(allow_include)
+      ActiveSupport::Deprecation.warn('`allow_include` has been replaced by `default_allow_include_to_one` and `default_allow_include_to_many` options.')
+      @default_allow_include_to_one = allow_include
+      @default_allow_include_to_many = allow_include
+    end
+
+    attr_writer :allow_sort, :allow_filter, :default_allow_include_to_one, :default_allow_include_to_many
 
     attr_writer :default_paginator
 

@@ -330,6 +330,10 @@ module JSONAPI
 
       relationship = resource_klass._relationship(relationship_name)
       if relationship && format_key(relationship_name) == include_parts.first
+        unless relationship.allow_include?(context)
+          fail JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type), include_parts.first)
+        end
+
         unless include_parts.last.empty?
           check_include(Resource.resource_klass_for(resource_klass.module_path + relationship.class_name.to_s.underscore),
                         include_parts.last.partition('.'))
@@ -337,14 +341,11 @@ module JSONAPI
       else
         fail JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type), include_parts.first)
       end
+      true
     end
 
     def parse_include_directives(resource_klass, raw_include)
       return unless raw_include
-
-      unless JSONAPI.configuration.allow_include
-        fail JSONAPI::Exceptions::ParameterNotAllowed.new(:include)
-      end
 
       included_resources = []
       begin

@@ -1125,14 +1125,53 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_cacheable_jsonapi_get '/api/v2/books/1/book_comments?include=author'
   end
 
-  def test_include_parameter_not_allowed
+  def test_deprecated_include_parameter_not_allowed
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.allow_include = false
     get '/api/v2/books/1/book_comments?include=author', headers: {
       'Accept' => JSONAPI::MEDIA_TYPE
     }
     assert_jsonapi_response 400
   ensure
-    JSONAPI.configuration.allow_include = true
+    JSONAPI.configuration = original_config
+  end
+
+  def test_deprecated_include_message
+    ActiveSupport::Deprecation.silenced = false
+    original_config = JSONAPI.configuration.dup
+    _out, err = capture_io do
+      eval <<-CODE
+        JSONAPI.configuration.allow_include = false
+      CODE
+    end
+    assert_match /DEPRECATION WARNING: `allow_include` has been replaced by `default_allow_include_to_one` and `default_allow_include_to_many` options./, err
+  ensure
+    JSONAPI.configuration = original_config
+    ActiveSupport::Deprecation.silenced = true
+  end
+
+
+  def test_to_one_include_parameter_not_allowed
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.default_allow_include_to_one = false
+    get '/api/v2/books/1/book_comments?include=author', headers: {
+        'Accept' => JSONAPI::MEDIA_TYPE
+    }
+    assert_jsonapi_response 400
+  ensure
+    JSONAPI.configuration = original_config
+  end
+
+  def test_to_one_include_parameter_allowed
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.default_allow_include_to_one = true
+    get '/api/v2/books/1/book_comments?include=author', headers: {
+        'Accept' => JSONAPI::MEDIA_TYPE
+    }
+    assert_jsonapi_response 200
+    assert_equal 1, json_response['included'].size
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_filter_parameter_not_allowed

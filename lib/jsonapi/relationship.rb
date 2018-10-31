@@ -3,7 +3,9 @@ module JSONAPI
     attr_reader :acts_as_set, :foreign_key, :options, :name,
                 :class_name, :polymorphic, :always_include_linkage_data,
                 :parent_resource, :eager_load_on_include, :custom_methods,
-                :inverse_relationship
+                :inverse_relationship, :allow_include
+
+    attr_writer :allow_include
 
     def initialize(name, options = {})
       @name = name.to_s
@@ -17,6 +19,7 @@ module JSONAPI
       @polymorphic_relations = options[:polymorphic_relations]
       @always_include_linkage_data = options.fetch(:always_include_linkage_data, false) == true
       @eager_load_on_include = options.fetch(:eager_load_on_include, true) == true
+      @allow_include = options[:allow_include]
     end
 
     alias_method :polymorphic?, :polymorphic
@@ -100,6 +103,22 @@ module JSONAPI
       def polymorphic_type
         "#{name}_type" if polymorphic?
       end
+
+      def allow_include?(context = nil)
+        strategy = if @allow_include.nil?
+                     JSONAPI.configuration.default_allow_include_to_one
+                   else
+                     @allow_include
+                   end
+
+        if !!strategy == strategy #check for boolean
+          return strategy
+        elsif strategy.is_a?(Symbol) || strategy.is_a?(String)
+          parent_resource.send(strategy, context)
+        else
+          strategy.call(context)
+        end
+      end
     end
 
     class ToMany < Relationship
@@ -113,6 +132,23 @@ module JSONAPI
         if parent_resource
           @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type.to_s.singularize.to_sym)
         end
+      end
+
+      def allow_include?(context = nil)
+        strategy = if @allow_include.nil?
+                     JSONAPI.configuration.default_allow_include_to_many
+                   else
+                     @allow_include
+                   end
+
+        if !!strategy == strategy #check for boolean
+          return strategy
+        elsif strategy.is_a?(Symbol) || strategy.is_a?(String)
+          parent_resource.send(strategy, context)
+        else
+          strategy.call(context)
+        end
+
       end
     end
   end

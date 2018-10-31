@@ -48,7 +48,7 @@ en:
         detail: "%{field} is not a valid field for %{type}."
       invalid_include:
         title: 'Invalid include'
-        detail: "%{relationship} is not a valid relationship of %{resource}"
+        detail: "%{relationship} is not a valid includable relationship of %{resource}"
       invalid_sort_criteria:
         title: 'Invalid sort criteria'
         detail: "%{sort_criteria} is not a valid sort criteria for %{resource}"
