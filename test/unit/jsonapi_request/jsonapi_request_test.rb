@@ -48,37 +48,55 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
   end
 
   def test_check_include_allowed
+    reset_includes
     assert JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "isoCurrency".partition('.'))
+  ensure
+    reset_includes
   end
 
   def test_check_nested_include_allowed
+    reset_includes
     assert JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "employee.expenseEntries".partition('.'))
+  ensure
+    reset_includes
   end
 
   def test_check_include_relationship_does_not_exist
+    reset_includes
+
     assert_raises JSONAPI::Exceptions::InvalidInclude do
       assert JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "foo".partition('.'))
     end
+  ensure
+    reset_includes
   end
 
   def test_check_nested_include_relationship_does_not_exist_wrong_format
+    reset_includes
+
     assert_raises JSONAPI::Exceptions::InvalidInclude do
       assert JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "employee.expense-entries".partition('.'))
     end
+  ensure
+    reset_includes
   end
 
   def test_check_include_has_one_not_allowed_default
+    reset_includes
+
     assert JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "isoCurrency".partition('.'))
     JSONAPI.configuration.default_allow_include_to_one = false
 
     assert_raises JSONAPI::Exceptions::InvalidInclude do
       JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "isoCurrency".partition('.'))
     end
-    ensure
-      JSONAPI.configuration.default_allow_include_to_one = true
+  ensure
+      reset_includes
   end
 
   def test_check_include_has_one_not_allowed_resource
+    reset_includes
+
     assert JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "isoCurrency".partition('.'))
     ExpenseEntryResource._relationship(:iso_currency).allow_include = false
 
@@ -86,11 +104,11 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "isoCurrency".partition('.'))
     end
   ensure
-    ExpenseEntryResource._relationship(:iso_currency).allow_include = nil
+    reset_includes
   end
 
   def test_check_include_has_many_not_allowed_default
-    JSONAPI.configuration.default_allow_include_to_many = true
+    reset_includes
 
     assert JSONAPI::RequestParser.new.check_include(EmployeeResource, "expenseEntries".partition('.'))
     JSONAPI.configuration.default_allow_include_to_many = false
@@ -99,10 +117,12 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       JSONAPI::RequestParser.new.check_include(EmployeeResource, "expenseEntries".partition('.'))
     end
   ensure
-    JSONAPI.configuration.default_allow_include_to_many = true
+    reset_includes
   end
 
-  def test_check_include_has_many_not_allowed_relationship
+  def test_check_include_has_many_not_allowed_resource
+    reset_includes
+
     assert JSONAPI::RequestParser.new.check_include(EmployeeResource, "expenseEntries".partition('.'))
     EmployeeResource._relationship(:expense_entries).allow_include = false
 
@@ -110,7 +130,7 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
       JSONAPI::RequestParser.new.check_include(EmployeeResource, "expenseEntries".partition('.'))
     end
   ensure
-    EmployeeResource._relationship(:expense_entries).allow_include = nil
+    reset_includes
   end
 
   def test_parse_dasherized_with_dasherized_include
@@ -307,5 +327,13 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
 
   def setup_request
     @request = JSONAPI::RequestParser.new
+  end
+
+  def reset_includes
+    JSONAPI.configuration.json_key_format = :camelized_key
+    JSONAPI.configuration.default_allow_include_to_one = true
+    JSONAPI.configuration.default_allow_include_to_many = true
+    ExpenseEntryResource._relationship(:iso_currency).allow_include = nil
+    EmployeeResource._relationship(:expense_entries).allow_include = nil
   end
 end
