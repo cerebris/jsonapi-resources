@@ -732,6 +732,10 @@ module JSONAPI
         _model_class.all
       end
 
+      def retrieve_records(ids, options = {})
+        _model_class.where(_primary_key => ids)
+      end
+
       def resources_for(records, context)
         records.collect do |record|
           resource_for(record, context)
