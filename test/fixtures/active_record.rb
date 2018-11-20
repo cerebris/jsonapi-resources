@@ -382,6 +382,25 @@ ActiveRecord::Schema.define do
     t.integer :version
     t.timestamps null: false
   end
+
+  create_table :options, force: true do |t|
+    t.integer :optionable_id
+    t.string :optionable_type
+    t.integer :maintainer_id
+    t.boolean :enabled, default: false, null: false
+    t.timestamps null: false
+  end
+
+  create_table :androids, force: true do |t|
+    t.string :version_name
+    t.timestamps null: false
+  end
+
+  create_table :maintainers, force: true do |t|
+    t.string :name
+    t.timestamps null: false
+  end
+
 end
 
 ### MODELS
@@ -797,6 +816,19 @@ end
 class Robot < ActiveRecord::Base
 end
 
+class Option < ActiveRecord::Base
+  belongs_to :optionable, polymorphic: true, required: false
+  belongs_to :maintainer, required: false
+end
+
+class Android < ActiveRecord::Base
+  has_one :option, as: :optionable
+end
+
+class Maintainer < ActiveRecord::Base
+  has_one :maintained_option
+end
+
 ### CONTROLLERS
 class SessionsController < ActionController::Base
   include JSONAPI::ActsAsResourceController
@@ -1107,6 +1139,9 @@ class IndicatorsController < JSONAPI::ResourceController
 end
 
 class RobotsController < JSONAPI::ResourceController
+end
+
+class OptionsController < JSONAPI::ResourceController
 end
 
 ### RESOURCES
@@ -2350,6 +2385,20 @@ class RobotResource < ::JSONAPI::Resource
   sort :lower_name, apply: ->(records, direction, _context) do
     records.order("LOWER(robots.name) #{direction}")
   end
+end
+
+class OptionResource < JSONAPI::Resource
+  attribute :enabled
+  has_one :optionable, polymorphic: true, class_name: 'Android'
+  has_one :maintainer, class_name: 'Maintainer'
+end
+
+class AndroidResource < JSONAPI::Resource
+  attribute :version_name
+end
+
+class MaintainerResource < JSONAPI::Resource
+  attribute :name
 end
 
 ### PORO Data - don't do this in a production app

@@ -1264,4 +1264,97 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal 'access_cards', included.first['type']
     assert_equal access_card.token, included.first['id']
   end
+
+  def test_update_option_link_with_optionable_include_optionable
+    android = Android.create! version_name: '1.0'
+    option = Option.create!
+    json_request = {
+        data: {
+            id: option.id.to_s,
+            type: 'options',
+            relationships: {
+                optionable: {
+                    data: {
+                        id: android.id.to_s,
+                        type: 'androids'
+                    }
+                }
+            }
+        }
+    }
+    json_api_headers = {
+        'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
+        'Accept' => JSONAPI::MEDIA_TYPE
+    }
+    patch "/options/#{option.id}?include=optionable", params: json_request.to_json, headers: json_api_headers
+    assert_jsonapi_response 200
+    relationship_data = {'id' => android.id.to_s, 'type' => 'androids'}
+    assert_equal relationship_data, json_response['data']['relationships']['optionable']['data']
+    assert_equal relationship_data, json_response['included'].first.slice('id', 'type')
+    assert_equal android, option.reload.optionable
+  end
+
+  def test_update_option_unlink_from_optionable_include_optionable
+    android = Android.create! version_name: '1.0'
+    option = Option.create! optionable: android
+    json_request = {
+        data: {
+            id: option.id.to_s,
+            type: 'options',
+            relationships: {
+                optionable: {
+                    data: nil
+                }
+            }
+        }
+    }
+    json_api_headers = {
+        'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
+        'Accept' => JSONAPI::MEDIA_TYPE
+    }
+    patch "/options/#{option.id}?include=optionable", params: json_request.to_json, headers: json_api_headers
+    assert_jsonapi_response 200
+    assert_equal true, json_response['data']['relationships']['optionable'].has_key?('data')
+    assert_nil json_response['data']['relationships']['optionable']['data']
+    assert_equal false, json_response.has_key?('included')
+    assert_nil option.reload.optionable
+  end
+
+  def test_fetch_option_linked_with_optionable_include_optionable
+    android = Android.create! version_name: '1.0'
+    option = Option.create! optionable: android
+    assert_cacheable_jsonapi_get "/options/#{option.id}?include=optionable"
+    assert_jsonapi_response 200
+    relationship_data = {'id' => android.id.to_s, 'type' => 'androids'}
+    assert_equal relationship_data, json_response['data']['relationships']['optionable']['data']
+    assert_equal relationship_data, json_response['included'].first.slice('id', 'type')
+  end
+
+  def test_fetch_option_not_linked_with_optionable_include_optionable
+    option = Option.create!
+    assert_cacheable_jsonapi_get "/options/#{option.id}?include=optionable"
+    assert_jsonapi_response 200
+    assert_equal true, json_response['data']['relationships']['optionable'].has_key?('data')
+    assert_nil json_response['data']['relationships']['optionable']['data']
+    assert_equal false, json_response.has_key?('included')
+  end
+
+  def test_fetch_option_not_linked_with_maintainer_include_maintainer
+    option = Option.create!
+    assert_cacheable_jsonapi_get "/options/#{option.id}?include=maintainer"
+    assert_jsonapi_response 200
+    assert_equal true, json_response['data']['relationships']['maintainer'].has_key?('data')
+    assert_nil json_response['data']['relationships']['maintainer']['data']
+    assert_equal false, json_response.has_key?('included')
+  end
+
+  def test_fetch_option_linked_with_maintainer_include_maintainer
+    maintainer = Maintainer.create! name: 'John Doe'
+    option = Option.create! maintainer: maintainer
+    assert_cacheable_jsonapi_get "/options/#{option.id}?include=maintainer"
+    assert_jsonapi_response 200
+    relationship_data = {'id' => maintainer.id.to_s, 'type' => 'maintainers'}
+    assert_equal relationship_data, json_response['data']['relationships']['maintainer']['data']
+    assert_equal relationship_data, json_response['included'].first.slice('id', 'type')
+  end
 end

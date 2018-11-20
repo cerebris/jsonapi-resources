@@ -44,6 +44,9 @@ module JSONAPI
             klass.reflect_on_all_associations(:has_many).select{|r| r.options[:as] }.each do |reflection|
               (hash[reflection.options[:as]] ||= []) << klass.name.downcase
             end
+            klass.reflect_on_all_associations(:has_one).select{|r| r.options[:as] }.each do |reflection|
+              (hash[reflection.options[:as]] ||= []) << klass.name.downcase
+            end
           end
         end
       end

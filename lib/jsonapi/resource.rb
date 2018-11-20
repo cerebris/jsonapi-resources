@@ -1038,8 +1038,10 @@ module JSONAPI
       def define_foreign_key_setter(relationship)
         if relationship.polymorphic?
           define_on_resource "#{relationship.foreign_key}=" do |v|
-            _model.method("#{relationship.foreign_key}=").call(v[:id])
-            _model.public_send("#{relationship.polymorphic_type}=", v[:type])
+            model_id = v.nil? ? nil : v[:id]
+            model_type = v.nil? ? nil : self.class.resource_klass_for(v[:type].to_s)._model_class.to_s
+            _model.method("#{relationship.foreign_key}=").call(model_id)
+            _model.public_send("#{relationship.polymorphic_type}=", model_type)
           end
         else
           define_on_resource "#{relationship.foreign_key}=" do |value|
