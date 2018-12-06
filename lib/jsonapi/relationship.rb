@@ -25,7 +25,9 @@ module JSONAPI
     alias_method :polymorphic?, :polymorphic
 
     def primary_key
+      # :nocov:
       @primary_key ||= resource_klass._primary_key
+      # :nocov:
     end
 
     def resource_klass
@@ -33,7 +35,9 @@ module JSONAPI
     end
 
     def table_name
+      # :nocov:
       @table_name ||= resource_klass._table_name
+      # :nocov:
     end
 
     def self.polymorphic_types(name)
@@ -72,7 +76,9 @@ module JSONAPI
     end
 
     def belongs_to?
+      # :nocov:
       false
+      # :nocov:
     end
 
     def readonly?
@@ -97,7 +103,9 @@ module JSONAPI
       end
 
       def belongs_to?
+        # :nocov:
         foreign_key_on == :self
+        # :nocov:
       end
 
       def polymorphic_type

@@ -60,15 +60,19 @@ module JSONAPI
     end
 
     def get_related_resource
-      ActiveSupport::Deprecation.warn "In #{self.class.name} you exposed a `get_related_resource`"\
+      # :nocov:
+    ActiveSupport::Deprecation.warn "In #{self.class.name} you exposed a `get_related_resource`"\
                                       " action. Please use `show_related_resource` instead."
       show_related_resource
+      # :nocov:
     end
 
     def get_related_resources
+      # :nocov:
       ActiveSupport::Deprecation.warn "In #{self.class.name} you exposed a `get_related_resources`"\
                                       " action. Please use `index_related_resource` instead."
       index_related_resources
+      # :nocov:
     end
 
     def process_request
