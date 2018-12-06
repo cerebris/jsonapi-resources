@@ -1924,7 +1924,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_show_to_one_relationship
-    get :show_relationship, params: {post_id: '1', relationship: 'author'}
+    assert_cacheable_get :show_relationship, params: {post_id: '1', relationship: 'author'}
     assert_response :success
     assert_hash_equals json_response,
                        {data: {
@@ -2054,7 +2054,7 @@ class PicturesControllerTest < ActionController::TestCase
   end
 
   def test_pictures_index_with_polymorphic_include_one_level
-    get :index, params: {include: 'imageable'}
+    assert_cacheable_get :index, params: {include: 'imageable'}
     assert_response :success
     assert_equal 8, json_response['data'].try(:size)
     assert_equal 5, json_response['included'].try(:size)
@@ -2612,7 +2612,7 @@ class PeopleControllerTest < ActionController::TestCase
   end
 
   def test_show_related_resource_nil
-    get :show_related_resource, params: {post_id: '17', relationship: 'author', source:'posts'}
+    assert_cacheable_get :show_related_resource, params: {post_id: '17', relationship: 'author', source:'posts'}
     assert_response :success
     assert_hash_equals json_response,
                        {
@@ -3818,7 +3818,7 @@ end
 
 class AuthorsControllerTest < ActionController::TestCase
   def test_show_author_recursive
-    get :show, params: {id: '1002', include: 'books.authors'}
+    assert_cacheable_get :show, params: {id: '1002', include: 'books.authors'}
     assert_response :success
     assert_equal '1002', json_response['data']['id']
     assert_equal 'authors', json_response['data']['type']

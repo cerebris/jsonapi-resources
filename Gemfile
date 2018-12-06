@@ -19,5 +19,6 @@ when 'master'
 when 'default'
   gem 'railties', '>= 5.0'
 else
+  gem 'left_join' if version.start_with?('4.2')
   gem 'railties', "~> #{version}"
 end

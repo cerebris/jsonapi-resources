@@ -453,9 +453,7 @@ class Person < ActiveRecord::Base
   has_one :author_detail
 
   has_and_belongs_to_many :books, join_table: :book_authors
-  has_and_belongs_to_many :not_banned_books, -> {
-    merge(Book.not_banned)
-  },
+  has_and_belongs_to_many :not_banned_books, -> { merge(Book.not_banned) },
                           class_name: 'Book',
                           join_table: :book_authors
 

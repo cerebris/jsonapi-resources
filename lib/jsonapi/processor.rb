@@ -54,7 +54,8 @@ module JSONAPI
         sort_criteria: sort_criteria,
         paginator: paginator,
         fields: fields,
-        filters: verified_filters
+        filters: verified_filters,
+        include_directives: include_directives
       }
 
       resource_set = find_resource_set(resource_klass,
@@ -406,7 +407,7 @@ module JSONAPI
     end
 
     def find_resource_id_tree(resource_klass, find_options, include_related)
-      options = find_options.except(:include_directives)
+      options = find_options
       options[:cache] = resource_klass.caching?
       resources = {}
 
@@ -455,7 +456,8 @@ module JSONAPI
 
       related = {}
 
-      include_related.try(:keys).try(:each) do |key|
+      include_related.try(:each_pair) do |key, value|
+        next unless value[:include]
         relationship = resource_klass._relationship(key)
         relationship_name = relationship.name.to_sym
 
