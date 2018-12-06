@@ -13,3 +13,8 @@ document_200:
 document_201:
   id: 201
   name: Foo
+
+#ToDo: rename this once we have different filter types by default. See test_polymorpic_relation_filter
+document_300:
+  id: 300
+  name: Enterprise Gizmo

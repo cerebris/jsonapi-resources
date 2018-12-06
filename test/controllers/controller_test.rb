@@ -245,7 +245,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 0, json_response['data'].size
   end
 
-  def test_index_filter_by_id
+  def test_index_filter_by_single_id
     assert_cacheable_get :index, params: {filter: {id: '1'}}
     assert_response :success
     assert json_response['data'].is_a?(Array)
@@ -266,7 +266,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 1, json_response['data'].size
   end
 
-  def test_index_filter_by_ids
+  def test_index_filter_by_array_of_ids
     assert_cacheable_get :index, params: {filter: {ids: '1,2'}}
     assert_response :success
     assert json_response['data'].is_a?(Array)
@@ -2050,14 +2050,14 @@ class PicturesControllerTest < ActionController::TestCase
   def test_pictures_index
     assert_cacheable_get :index
     assert_response :success
-    assert_equal 7, json_response['data'].size
+    assert_equal 8, json_response['data'].size
   end
 
   def test_pictures_index_with_polymorphic_include_one_level
-    assert_cacheable_get :index, params: {include: 'imageable'}
+    get :index, params: {include: 'imageable'}
     assert_response :success
-    assert_equal 7, json_response['data'].try(:size)
-    assert_equal 4, json_response['included'].try(:size)
+    assert_equal 8, json_response['data'].try(:size)
+    assert_equal 5, json_response['included'].try(:size)
   end
 
   def test_update_relationship_to_one_polymorphic
@@ -2075,14 +2075,14 @@ class DocumentsControllerTest < ActionController::TestCase
   def test_documents_index
     assert_cacheable_get :index
     assert_response :success
-    assert_equal 4, json_response['data'].size
+    assert_equal 5, json_response['data'].size
   end
 
   def test_documents_index_with_polymorphic_include_one_level
     assert_cacheable_get :index, params: {include: 'pictures'}
     assert_response :success
-    assert_equal 4, json_response['data'].size
-    assert_equal 5, json_response['included'].size
+    assert_equal 5, json_response['data'].size
+    assert_equal 6, json_response['included'].size
   end
 end
 
@@ -3877,9 +3877,6 @@ class Api::BoxesControllerTest < ActionController::TestCase
     assert_equal 'things', json_response['included'][1]['type']
     assert_equal '10001', json_response['included'][1]['relationships']['user']['data']['id']
     assert_nil json_response['included'][1]['relationships']['things']['data']
-
-    assert_equal '10001', json_response['included'][2]['id']
-    assert_equal 'users', json_response['included'][2]['type']
   end
 
   def test_complex_includes_things_nested_things
@@ -3916,9 +3913,6 @@ class Api::BoxesControllerTest < ActionController::TestCase
     assert_equal 'things', json_response['included'][1]['type']
     assert_equal '10001',  json_response['included'][1]['relationships']['user']['data']['id']
     assert_equal '10',  json_response['included'][1]['relationships']['things']['data'][0]['id']
-
-    assert_equal '10001', json_response['included'][2]['id']
-    assert_equal 'users', json_response['included'][2]['type']
   end
 end
 
@@ -3943,49 +3937,6 @@ class BlogPostsControllerTest < ActionController::TestCase
   ensure
     JSONAPI.configuration = original_config
   end
-end
-
-class WidgetsControllerTest < ActionController::TestCase
-  def teardown
-    Widget.delete_all
-    Indicator.delete_all
-    Agency.delete_all
-  end
-
-  def test_fetch_widgets_sort_by_agency_name
-    agency_1 = Agency.create! name: 'beta'
-    agency_2 = Agency.create! name: 'alpha'
-    indicator_1 = Indicator.create! name: 'bar', agency: agency_1
-    indicator_2 = Indicator.create! name: 'foo', agency: agency_2
-    Widget.create! name: 'bar', indicator: indicator_1
-    widget = Widget.create! name: 'foo', indicator: indicator_2
-    assert_cacheable_get :index, params: {sort: 'indicator.agency.name'}
-    assert_response :success
-    assert_equal widget.id.to_s, json_response['data'].first['id']
-  end
-end
-
-class IndicatorsControllerTest < ActionController::TestCase
-  def teardown
-    Widget.delete_all
-    Indicator.delete_all
-    Agency.delete_all
-  end
-
-  def test_fetch_indicators_sort_by_widgets_name
-    agency = Agency.create! name: 'test'
-    indicator_1 = Indicator.create! name: 'bar', agency: agency
-    indicator_2 = Indicator.create! name: 'foo', agency: agency
-    Widget.create! name: 'omega', indicator: indicator_1
-    Widget.create! name: 'beta', indicator: indicator_1
-    Widget.create! name: 'alpha', indicator: indicator_2
-    Widget.create! name: 'zeta', indicator: indicator_2
-    assert_cacheable_get :index, params: {sort: 'widgets.name'}
-    assert_response :success
-    assert_equal indicator_2.id.to_s, json_response['data'].first['id']
-    assert_equal 2, json_response['data'].size
-  end
-
 end
 
 class RobotsControllerTest < ActionController::TestCase
@@ -4017,5 +3968,4 @@ class RobotsControllerTest < ActionController::TestCase
     assert_response 400
     assert_equal 'version is not a valid sort criteria for robots', json_response['errors'].first['detail']
   end
-
 end

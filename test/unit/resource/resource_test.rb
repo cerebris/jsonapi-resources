@@ -58,29 +58,6 @@ class FelineResource < JSONAPI::Resource
   has_one :father, class_name: 'Cat'
 end
 
-class PersonWithCustomRecordsForResource < PersonResource
-  def records_for(relationship_name)
-    :records_for
-  end
-end
-
-class PersonWithCustomRecordsForRelationshipsResource < PersonResource
-  def records_for_posts
-    :records_for_posts
-  end
-
-  def record_for_preferences
-    :record_for_preferences
-  end
-end
-
-class PersonWithCustomRecordsForErrorResource < PersonResource
-  class AuthorizationError < StandardError; end
-  def records_for(relationship_name)
-    raise AuthorizationError
-  end
-end
-
 module MyModule
   class MyNamespacedResource < JSONAPI::Resource
     model_name "Person"
@@ -244,7 +221,7 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_find_with_customized_base_records
     author = Person.find(1001)
-    posts = ArticleResource.find([], context: author).map(&:_model)
+    posts = ArticleResource.find({}, context: author).map(&:_model)
 
     assert(posts.include?(Post.find(1)))
     refute(posts.include?(Post.find(3)))
@@ -302,9 +279,9 @@ class ResourceTest < ActiveSupport::TestCase
 
     # define apply_filters method on post resource to sort descending
     PostResource.instance_eval do
-      def apply_sort(records, criteria, context = {})
+      def apply_sort(records, _order_options, options)
         # :nocov:
-        order_by_query = 'id desc'
+        order_by_query = "#{options[:related_alias]}.id desc"
         records.order(order_by_query)
         # :nocov:
       end
@@ -322,56 +299,13 @@ class ResourceTest < ActiveSupport::TestCase
       def apply_sort(records, order_options, context = {})
         if order_options.any?
           order_options.each_pair do |field, direction|
-            if field.to_s.include?(".")
-              *model_names, column_name = field.split(".")
-
-              associations = _lookup_association_chain([records.model.to_s, *model_names])
-              joins_query = _build_joins([records.model, *associations])
-
-              # _sorting is appended to avoid name clashes with manual joins eg. overridden filters
-              order_by_query = "#{associations.last.name}_sorting.#{column_name} #{direction}"
-              records = records.joins(joins_query).order(order_by_query)
-            else
-              field = _attribute_delegated_name(field)
-              records = records.order(field => direction)
-            end
+            records = apply_single_sort(records, field, direction, context)
           end
         end
 
         records
       end
     end
-  end
-
-  def test_lookup_association_chain
-    model_names = %w(person posts parent_post)
-    result = PersonResource._lookup_association_chain(model_names)
-    assert_equal 2, result.length
-
-    posts_reflection, parent_post_reflection = result
-    assert_equal :posts, posts_reflection.name
-    assert_equal :parent_post, parent_post_reflection.name
-
-    assert_equal "posts", posts_reflection.table_name
-    assert_equal "posts", parent_post_reflection.table_name
-
-    assert_equal "author_id", posts_reflection.foreign_key
-    assert_equal "parent_post_id", parent_post_reflection.foreign_key
-  end
-
-  def test_build_joins
-    model_names = %w(person posts parent_post author author_detail)
-    associations = PersonResource._lookup_association_chain(model_names)
-    result = PersonResource.send(:_build_joins, [Person, *associations])
-
-    sql = [
-        'LEFT JOIN posts AS posts_sorting ON posts_sorting.author_id = people.id',
-        'LEFT JOIN posts AS parent_post_sorting ON parent_post_sorting.id = posts_sorting.parent_post_id',
-        'LEFT JOIN people AS author_sorting ON author_sorting.id = parent_post_sorting.author_id',
-        'LEFT JOIN author_details AS author_detail_sorting ON author_detail_sorting.person_id = author_sorting.id'
-    ].join("\n")
-
-    assert_equal sql, result
   end
 
   # ToDo: Implement relationship pagination

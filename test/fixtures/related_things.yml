@@ -7,3 +7,18 @@ related_thing_20:
   id: 201
   from_id: 20
   to_id: 10
+
+related_thing_3040:
+  id: 301
+  from_id: 30
+  to_id: 40
+
+related_thing_3050:
+  id: 302
+  from_id: 30
+  to_id: 50
+
+related_thing_5060:
+  id: 303
+  from_id: 50
+  to_id: 60

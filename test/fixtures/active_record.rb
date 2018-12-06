@@ -334,6 +334,26 @@ ActiveRecord::Schema.define do
     t.string :name
   end
 
+  create_table :painters, force: true do |t|
+    t.string :name
+
+    t.timestamps null: false
+  end
+
+  create_table :paintings, force: true do |t|
+    t.string :title
+    t.string :category
+    t.belongs_to :painter
+
+    t.timestamps null: false
+  end
+
+  create_table :collectors, force: true do |t|
+    t.string :name
+    t.belongs_to :painting
+  end
+
+  # special cases
   create_table :storages, force: true do |t|
     t.string :token, null: false
     t.string :name
@@ -433,6 +453,11 @@ class Person < ActiveRecord::Base
   has_one :author_detail
 
   has_and_belongs_to_many :books, join_table: :book_authors
+  has_and_belongs_to_many :not_banned_books, -> {
+    merge(Book.not_banned)
+  },
+                          class_name: 'Book',
+                          join_table: :book_authors
 
   has_many :even_posts, -> { where('posts.id % 2 = 0') }, class_name: 'Post', foreign_key: 'author_id'
   has_many :odd_posts, -> { where('posts.id % 2 = 1') }, class_name: 'Post', foreign_key: 'author_id'
@@ -619,6 +644,10 @@ class Book < ActiveRecord::Base
   has_many :approved_book_comments, -> { where(approved: true) }, class_name: "BookComment"
 
   has_and_belongs_to_many :authors, join_table: :book_authors, class_name: "Person"
+
+  scope :not_banned, -> {
+    where(banned: false)
+  }
 end
 
 class BookComment < ActiveRecord::Base
@@ -626,7 +655,7 @@ class BookComment < ActiveRecord::Base
   belongs_to :book
 
   def self.for_user(current_user)
-    records = self
+    records = self.all
     # Hide the unapproved comments from people who are not book admins
     unless current_user && current_user.book_admin
       records = records.where(approved: true)
@@ -688,8 +717,8 @@ end
 class Picture < ActiveRecord::Base
   belongs_to :imageable, polymorphic: true
 
-  # belongs_to :document, -> { where( pictures: { imageable_type: 'Document' } ).includes( :pictures ) }, foreign_key: 'imageable_id'
-  # belongs_to :product, -> { where( pictures: { imageable_type: 'Product' } ).includes( :pictures ) }, foreign_key: 'imageable_id'
+  belongs_to :document, -> { where( pictures: { imageable_type: 'Document' } ).eager_load( :pictures ) }, foreign_key: 'imageable_id'
+  belongs_to :product, -> { where( pictures: { imageable_type: 'Product' } ).eager_load( :pictures ) }, foreign_key: 'imageable_id'
 end
 
 class Vehicle < ActiveRecord::Base
@@ -795,6 +824,19 @@ class Widget < ActiveRecord::Base
 end
 
 class Robot < ActiveRecord::Base
+end
+
+class Painter < ActiveRecord::Base
+  has_many :paintings
+end
+
+class Painting < ActiveRecord::Base
+  belongs_to :painter
+  has_many :collectors
+end
+
+class Collector < ActiveRecord::Base
+  belongs_to :painting
 end
 
 ### CONTROLLERS
@@ -1013,6 +1055,9 @@ module Api
     end
 
     class IsoCurrenciesController < JSONAPI::ResourceController
+    end
+
+    class PaintersController < JSONAPI::ResourceController
     end
   end
 
@@ -1349,6 +1394,11 @@ class PostResource < JSONAPI::Resource
       records.where(title: values.first['title'])
     }
 
+  filter 'tags.name'
+
+  filter 'comments.author.name'
+  filter 'comments.tags.name'
+
   def self.updatable_fields(context)
     super(context) - [:author, :subject]
   end
@@ -1508,7 +1558,7 @@ class CraterResource < JSONAPI::Resource
 
   filter :description, apply: -> (records, value, options) {
     fail "context not set" unless options[:context][:current_user] != nil && options[:context][:current_user] == $test_user
-    records.where(concat_table_field(options[:table_alias], :description) => value)
+    records.where(concat_table_field(options[:related_alias], :description) => value)
   }
 
   def self.verify_key(key, context = nil)
@@ -1545,7 +1595,16 @@ end
 class PictureResource < JSONAPI::Resource
   attribute :name
   has_one :imageable, polymorphic: true 
-  # has_one :imageable, polymorphic: true, polymorphic_relations: [:document, :product]
+
+  filter 'imageable.name', perform_joins: true, apply: -> (records, value, options) {
+    joins = options[:joins]
+    relationship = _relationship(:imageable)
+    or_parts = relationship.polymorphic_relations.collect do |relation|
+      table_alias = joins["imageable[#{relation}]"][:alias]
+      "#{concat_table_field(table_alias, "name")} = '#{value.first}'"
+    end
+    records.where(or_parts.join(' OR '))
+  }
 end
 
 class DocumentResource < JSONAPI::Resource
@@ -1744,33 +1803,15 @@ module Api
       model_name 'Person'
       attributes :name
 
-      has_many :books, inverse_relationship: :authors,
-               custom_methods: {
-                 apply_join: -> (options) {
-                   relationship = options[:relationship]
-                   relation_name = relationship.relation_name(options[:options])
-
-                   records = options[:records].joins(relation_name).references(relation_name)
-
-                   unless options[:context][:current_user].try(:book_admin)
-                     records = records.where("#{relation_name}.banned" => false)
-                   end
-                   records
-                 }
-               }
+      has_many :books, inverse_relationship: :authors, relation_name: -> (options) {
+        if options[:context][:current_user].try(:book_admin)
+          :books
+        else
+          :not_banned_books
+        end
+      }
 
       has_many :book_comments
-
-      def records_for(rel_name)
-        records = _model.public_send(rel_name)
-        if rel_name == :books
-          # Hide indirect access to banned books unless current user is a book admin
-          unless context[:current_user].try(:book_admin)
-            records = records.where(banned: false)
-          end
-        end
-        return records
-      end
     end
 
     class BookResource < JSONAPI::Resource
@@ -1804,6 +1845,7 @@ module Api
                   :book_comments
                 end
 
+                # Using an inner join here, which is different than the new default left_join
                 return records.joins(relation).references(relation).where('book_comments.id' => value)
               }
 
@@ -1942,6 +1984,36 @@ module Api
 
     class AuthorDetailResource < JSONAPI::Resource
       attributes :author_stuff
+    end
+
+    class PaintingResource < JSONAPI::Resource
+      model_name 'Painting'
+      attributes :title, :category #, :collector_roster
+      has_one :painter
+      has_many :collectors
+
+      filter :title
+      filter :category
+      filter :collectors
+
+      def collector_roster
+        collectors.map(&:name)
+      end
+    end
+
+    class CollectorResource < JSONAPI::Resource
+      attributes :name
+      has_one :painting
+    end
+
+    class PainterResource < JSONAPI::Resource
+      model_name 'Painter'
+      attributes :name
+      has_many :paintings
+
+      filter :name, apply: lambda { |records, value, options|
+        records.where('name LIKE ?', value)
+      }
     end
 
     class PersonResource < PersonResource; end
@@ -2262,23 +2334,18 @@ end
 module Api
   class BoxResource < JSONAPI::Resource
     has_many :things
+
+    filter 'things.things.name'
+    filter 'things.name'
   end
 
   class ThingResource < JSONAPI::Resource
     has_one :box
     has_one :user
 
-    has_many :things,
-             custom_methods: {
-                 apply_join: -> (options) {
-                   table_alias = "aliased_#{options[:table_alias]}"
-                   options[:table_alias] = table_alias
+    has_many :things
 
-                   join_stmt = "LEFT OUTER JOIN related_things related_things_#{table_alias} ON related_things_#{table_alias}.from_id = things.id LEFT OUTER JOIN things \"#{table_alias}\" ON \"#{table_alias}\".id = related_things_#{table_alias}.to_id"
-
-                   return options[:records].joins(join_stmt)
-                 }
-             }
+    filter 'things.things.name'
   end
 
   class UserResource < JSONAPI::Resource

@@ -42,11 +42,6 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
     assert request.errors.empty?
   end
 
-  def test_parse_blank_includes
-    include_directives = JSONAPI::RequestParser.new.parse_include_directives(nil, '')
-    assert_empty include_directives.model_includes
-  end
-
   def test_check_include_allowed
     reset_includes
     assert JSONAPI::RequestParser.new.check_include(ExpenseEntryResource, "isoCurrency".partition('.'))

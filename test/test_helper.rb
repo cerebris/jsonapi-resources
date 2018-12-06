@@ -92,6 +92,10 @@ if Rails::VERSION::MAJOR >= 5
   end
 end
 
+if Rails::VERSION::MAJOR < 5
+  require 'left_join'
+end
+
 # Tests are now using the rails 5 format for the http methods. So for rails 4 we will simply convert them back
 # in a standard way.
 if Rails::VERSION::MAJOR < 5
@@ -346,7 +350,7 @@ TestApp.routes.draw do
     namespace :v5 do
       jsonapi_resources :posts do
       end
-
+      jsonapi_resources :painters
       jsonapi_resources :authors
       jsonapi_resources :expense_entries
       jsonapi_resources :iso_currencies

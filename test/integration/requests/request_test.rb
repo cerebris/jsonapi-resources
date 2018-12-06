@@ -678,7 +678,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   #   assert_equal 'This is comment 18 on book 1.', json_response['data'][9]['attributes']['body']
   # end
 
-  def test_polymorpic_related_resources
+  def test_polymorphic_related_resources
     assert_cacheable_jsonapi_get '/pictures/1/imageable'
     assert_equal 'Enterprise Gizmo', json_response['data']['attributes']['name']
 
