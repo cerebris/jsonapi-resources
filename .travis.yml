@@ -1,15 +1,15 @@
 language: ruby
 sudo: false
 env:
-  - "RAILS_VERSION=4.2.10"
-  - "RAILS_VERSION=5.0.7"
-  - "RAILS_VERSION=5.1.6"
-  - "RAILS_VERSION=5.2.1"
+  - "RAILS_VERSION=4.2.11"
+  - "RAILS_VERSION=5.0.7.1"
+  - "RAILS_VERSION=5.1.6.1"
+  - "RAILS_VERSION=5.2.2"
   - "RAILS_VERSION=master"
 rvm:
-  - 2.3.7
-  - 2.4.4
-  - 2.5.1
+  - 2.3.8
+  - 2.4.5
+  - 2.5.3
 matrix:
   allow_failures:
     - env: "RAILS_VERSION=master"
