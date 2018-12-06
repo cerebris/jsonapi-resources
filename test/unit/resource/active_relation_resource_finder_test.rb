@@ -249,4 +249,48 @@ class ActiveRelationResourceFinderTest < ActiveSupport::TestCase
     assert related_identities.values[0][:cache].is_a?(ActiveSupport::TimeWithZone)
     assert_equal 'Enterprise Gizmo', related_identities.values[0][:attributes][:name]
   end
+
+  def test_gets_relationship_chain_with_only_field
+    relationships, path, field = PictureResource.parse_relationship_path('name')
+    assert_equal [], relationships
+    assert_equal '', path
+    assert_equal 'name', field
+  end
+
+  def test_gets_relationship_chain_with_field_polymorphic_one_level
+    relationships, path, field = PictureResource.parse_relationship_path('imageable.name')
+    assert_equal [PictureResource._relationship(:imageable)], relationships
+    assert_equal 'imageable', path
+    assert_equal 'name', field
+  end
+
+  def test_gets_relationship_chain_with_field_one_level
+    relationships, path, field = PostResource.parse_relationship_path('author.name')
+    assert_equal [PostResource._relationship(:author)], relationships
+    assert_equal 'author', path
+    assert_equal 'name', field
+  end
+
+  def test_gets_relationship_chain_with_two_relationship_levels
+    relationships, path, field = PostResource.parse_relationship_path('author.comments')
+    assert_equal [PostResource._relationship(:author), PersonResource._relationship(:comments)], relationships
+    assert_equal 'author.comments', path
+    assert_nil field
+  end
+
+  def test_gets_relationship_chain_with_two_relationship_levels_and_field
+    relationships, path, field = PostResource.parse_relationship_path('author.comments.body')
+    assert_equal [PostResource._relationship(:author), PersonResource._relationship(:comments)], relationships
+    assert_equal 'author.comments', path
+    assert_equal 'body', field
+  end
+
+  def test_gets_relationship_chain_with_three_relationship_levels_and_field
+    relationships, path, field = PostResource.parse_relationship_path('author.comments.tags.name')
+    assert_equal [PostResource._relationship(:author),
+                  PersonResource._relationship(:comments),
+                 CommentResource._relationship(:tags)], relationships
+    assert_equal 'author.comments.tags', path
+    assert_equal 'name', field
+  end
 end

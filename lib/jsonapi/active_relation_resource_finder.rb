@@ -26,7 +26,7 @@ module JSONAPI
       #
       # @return [Integer] the count
       def count(filters, options = {})
-        count_records(filter_records(filters, options))
+        count_records(filter_records(records(options), filters, options))
       end
 
       # Returns the single Resource identified by `key`
@@ -128,23 +128,78 @@ module JSONAPI
       #
       # @return [Integer] the count
       def count_related(source_rid, relationship_name, options = {})
+        opts = options.dup
+
         relationship = _relationship(relationship_name)
         related_klass = relationship.resource_klass
 
-        context = options[:context]
+        context = opts[:context]
 
-        records = records(context: context)
-        records, table_alias = apply_join(records, relationship, options)
+        primary_key_field = "#{_table_name}.#{_primary_key}"
 
-        filters = options.fetch(:filters, {})
+        records = records(context: context).where(primary_key_field => source_rid.id)
 
-        primary_key_field = concat_table_field(_table_name, _primary_key)
-        filters[primary_key_field] = source_rid.id
+        # join in related to the source records
+        records, related_alias = get_join_alias(records) { |records| records.joins(relationship.relation_name(opts)) }
 
-        filter_options = options.dup
-        filter_options[:table_alias] = table_alias
-        records = related_klass.apply_filters(records, filters, filter_options)
+        join_tree = JoinTree.new(resource_klass: related_klass,
+                                 source_relationship: relationship,
+                                 filters: filters,
+                                 options: opts)
+
+        records, joins = apply_joins(records, join_tree, opts)
+
+        # Options for filtering
+        opts[:joins] = joins
+        opts[:related_alias] = related_alias
+
+        filters = opts.fetch(:filters, {})
+        records = related_klass.filter_records(records, filters,  opts)
+
         records.count(:all)
+      end
+
+      def parse_relationship_path(path)
+        relationships = []
+        relationship_names = []
+        field = nil
+
+        current_path = path
+        current_resource_klass = self
+        loop do
+          parts = current_path.to_s.partition('.')
+          relationship = current_resource_klass._relationship(parts[0])
+          if relationship
+            relationships << relationship
+            relationship_names << relationship.name
+          else
+            if parts[2].blank?
+              field = parts[0]
+              break
+            else
+              # :nocov:
+              warn "Unknown relationship #{parts[0]}"
+              # :nocov:
+            end
+          end
+
+          current_resource_klass = relationship.resource_klass
+
+          if parts[2].include?('.')
+            current_path = parts[2]
+          else
+            relationship = current_resource_klass._relationship(parts[2])
+            if relationship
+              relationships << relationship
+              relationship_names << relationship.name
+            else
+              field = parts[2]
+            end
+            break
+          end
+        end
+
+        return relationships, relationship_names.join('.'), field
       end
 
       protected
@@ -157,31 +212,51 @@ module JSONAPI
       end
 
       def find_records_by_keys(keys, options = {})
-        records = records(options)
-        records = apply_includes(records, options)
-        records.where({ _primary_key => keys })
+        records(options).where({ _primary_key => keys })
       end
 
       def find_related_monomorphic_fragments(source_rids, relationship, included_key, options = {})
+        opts = options.dup
+
         source_ids = source_rids.collect {|rid| rid.id}
 
-        context = options[:context]
+        context = opts[:context]
 
-        records = records(context: context)
         related_klass = relationship.resource_klass
 
-        records, table_alias = apply_join(records, relationship, options)
+        primary_key_field = "#{_table_name}.#{_primary_key}"
+
+        records = records(context: context).where(primary_key_field => source_ids)
+
+        # join in related to the source records
+        records, related_alias = get_join_alias(records) { |records| records.joins(relationship.relation_name(opts)) }
 
         sort_criteria = []
-        options[:sort_criteria].try(:each) do |sort|
+        opts[:sort_criteria].try(:each) do |sort|
           field = sort[:field].to_s == 'id' ? related_klass._primary_key : sort[:field]
-          sort_criteria << { field: concat_table_field(table_alias, field),
-                             direction: sort[:direction] }
+          sort_criteria << { field: field, direction: sort[:direction] }
         end
 
-        order_options = related_klass.construct_order_options(sort_criteria)
+        paginator = opts[:paginator]
 
-        paginator = options[:paginator]
+        filters = opts.fetch(:filters, {})
+
+        # Joins in this case are related to the related_klass
+        join_tree = JoinTree.new(resource_klass: related_klass,
+                                 source_relationship: relationship,
+                                 filters: filters,
+                                 sort_criteria: sort_criteria,
+                                 options: opts)
+
+        records, joins = apply_joins(records, join_tree, opts)
+
+        # Options for filtering
+        opts[:joins] = joins
+        opts[:related_alias] = related_alias
+
+        records = related_klass.filter_records(records, filters,  opts)
+
+        order_options = related_klass.construct_order_options(sort_criteria)
 
         # ToDO: Remove count check. Currently pagination isn't working with multiple source_rids (i.e. it only works
         # for show relationships, not related includes).
@@ -190,35 +265,24 @@ module JSONAPI
           records = related_klass.apply_pagination(records, paginator, order_options)
         end
 
-        records = related_klass.apply_basic_sort(records, order_options, context: context)
-
-        filters = options.fetch(:filters, {})
-
-        primary_key_field = concat_table_field(_table_name, _primary_key)
-
-        filters[primary_key_field] = source_ids
-
-        filter_options = options.dup
-        filter_options[:table_alias] = table_alias
-
-        records = related_klass.apply_filters(records, filters, filter_options)
+        records = sort_records(records, order_options, opts)
 
         pluck_fields = [
-            Arel.sql("#{primary_key_field} AS #{_table_name}_#{_primary_key}"),
-            Arel.sql("#{concat_table_field(table_alias, related_klass._primary_key)} AS #{table_alias}_#{related_klass._primary_key}")
+            Arel.sql(primary_key_field),
+            Arel.sql("#{concat_table_field(related_alias, related_klass._primary_key)} AS #{related_alias}_#{related_klass._primary_key}")
         ]
 
-        cache_field = related_klass.attribute_to_model_field(:_cache_field) if options[:cache]
+        cache_field = related_klass.attribute_to_model_field(:_cache_field) if opts[:cache]
         if cache_field
-          pluck_fields << Arel.sql("#{concat_table_field(table_alias, cache_field[:name])} AS #{table_alias}_#{cache_field[:name]}")
+          pluck_fields << Arel.sql("#{concat_table_field(related_alias, cache_field[:name])} AS #{related_alias}_#{cache_field[:name]}")
         end
 
         model_fields = {}
-        attributes = options[:attributes]
+        attributes = opts[:attributes]
         attributes.try(:each) do |attribute|
           model_field = related_klass.attribute_to_model_field(attribute)
           model_fields[attribute] = model_field
-          pluck_fields << Arel.sql("#{concat_table_field(table_alias, model_field[:name])} AS #{table_alias}_#{model_field[:name]}")
+          pluck_fields << Arel.sql("#{concat_table_field(related_alias, model_field[:name])} AS #{related_alias}_#{model_field[:name]}")
         end
 
         rows = records.pluck(*pluck_fields)
@@ -280,7 +344,9 @@ module JSONAPI
         attributes = options.fetch(:attributes, [])
 
         if relations.nil? || relations.length == 0
+          # :nocov:
           warn "No relations found for polymorphic relationship."
+          # :nocov:
         else
           relations.try(:each) do |relation|
             related_klass = resource_klass_for(relation.to_s)
@@ -289,7 +355,7 @@ module JSONAPI
 
             # We only need to join the relations if we are getting additional fields
             if cache_field || attributes.length > 0
-              records, table_alias = apply_join(records, relationship, options, relation)
+              records, table_alias = get_join_alias(records) { |records| records.left_joins(relation.to_sym) }
 
               if cache_field
                 pluck_fields << concat_table_field(table_alias, cache_field[:name])
@@ -364,27 +430,75 @@ module JSONAPI
       end
 
       def find_records(filters, options = {})
-        context = options[:context]
+        opts = options.dup
 
-        records = filter_records(filters, options)
+        sort_criteria = opts.fetch(:sort_criteria) { [] }
 
-        sort_criteria = options.fetch(:sort_criteria) { [] }
+        join_tree = JoinTree.new(resource_klass: self,
+                                 filters: filters,
+                                 sort_criteria: sort_criteria,
+                                 options: opts)
+
+        records, joins = apply_joins(records(opts), join_tree, opts)
+
+        opts[:joins] = joins
+
+        records = filter_records(records, filters, opts)
+
         order_options = construct_order_options(sort_criteria)
-        records = sort_records(records, order_options, context)
+        records = sort_records(records, order_options, opts)
 
-        records = apply_pagination(records, options[:paginator], order_options)
+        records = apply_pagination(records, opts[:paginator], order_options)
 
-        records
+        records.distinct
       end
 
-      def apply_includes(records, options = {})
-        include_directives = options[:include_directives]
-        if include_directives
-          model_includes = resolve_relationship_names_to_relations(self, include_directives.model_includes, options)
-          records = records.joins(model_includes).references(model_includes)
+      def get_join_alias(records, &block)
+        init_join_sources = records.arel.join_sources
+        init_join_sources_length = init_join_sources.length
+
+        records = yield(records)
+
+        join_sources = records.arel.join_sources
+        if join_sources.length > init_join_sources_length
+          last_join = (join_sources - init_join_sources).last
+          join_alias =
+              case last_join.left
+              when Arel::Table
+                last_join.left.name
+              when Arel::Nodes::TableAlias
+                last_join.left.right
+              when Arel::Nodes::StringJoin
+                # :nocov:
+                warn "get_join_alias: Unsupported join type - use custom filtering and sorting"
+                nil
+                # :nocov:
+              end
+        else
+          # :nocov:
+          warn "get_join_alias: No join added"
+          join_alias = nil
+          # :nocov:
         end
 
-        records
+        return records, join_alias
+      end
+
+      def apply_joins(records, join_tree, _options)
+        joins = join_tree.get_joins
+
+        joins.each do |key, join_details|
+          case join_details[:join_type]
+          when :inner
+            records, join_alias = get_join_alias(records) { |records| records.joins(join_details[:relation_path]) }
+          when :left
+            records, join_alias = get_join_alias(records) { |records| records.left_joins(join_details[:relation_path]) }
+          end
+
+          joins[key][:alias] = join_alias
+        end
+
+        return records, joins
       end
 
       def apply_pagination(records, paginator, order_options)
@@ -392,71 +506,27 @@ module JSONAPI
         records
       end
 
-      def apply_sort(records, order_options, context = {})
+      def apply_sort(records, order_options, options)
         if order_options.any?
           order_options.each_pair do |field, direction|
-            records = apply_single_sort(records, field, direction, context)
+            records = apply_single_sort(records, field, direction, options)
           end
         end
 
         records
       end
 
-      def apply_single_sort(records, field, direction, context = {})
+      def apply_single_sort(records, field, direction, options)
+        context = options[:context]
+
         strategy = _allowed_sort.fetch(field.to_sym, {})[:apply]
 
         if strategy
           call_method_or_proc(strategy, records, direction, context)
         else
-          if field.to_s.include?(".")
-            *model_names, column_name = field.split(".")
+          joins = options[:joins] || {}
 
-            associations = _lookup_association_chain([records.model.to_s, *model_names])
-            joins_query = _build_joins([records.model, *associations])
-
-            order_by_query = "#{_join_table_name(associations.last)}.#{column_name} #{direction}"
-            records.joins(joins_query).order(order_by_query)
-          else
-            field = _attribute_delegated_name(field)
-            records.order(field => direction)
-          end
-        end
-      end
-
-      def apply_basic_sort(records, order_options, _context = {})
-        if order_options.any?
-          order_options.each_pair do |field, direction|
-            records = records.order("#{field} #{direction}")
-          end
-        end
-
-        records
-      end
-
-      def _build_joins(associations)
-        joins = []
-
-        associations.inject do |prev, current|
-          prev_table_name = _join_table_name(prev)
-          curr_table_name = _join_table_name(current)
-          relationship_primary_key = current.options.fetch(:primary_key, "id")
-          if current.belongs_to?
-            joins << "LEFT JOIN #{current.table_name} AS #{curr_table_name} ON #{curr_table_name}.#{relationship_primary_key} = #{prev_table_name}.#{current.foreign_key}"
-          else
-            joins << "LEFT JOIN #{current.table_name} AS #{curr_table_name} ON #{curr_table_name}.#{current.foreign_key} = #{prev_table_name}.#{relationship_primary_key}"
-          end
-
-          current
-        end
-        joins.join("\n")
-      end
-
-      # _sorting is appended to avoid name clashes with manual joins eg. overridden filters
-      def _join_table_name(association)
-        if association.is_a?(ActiveRecord::Reflection::AssociationReflection)
-          "#{association.name}_sorting"
-        else
-          association.table_name
+          records.order("#{get_aliased_field(field, joins, options[:related_alias])} #{direction}")
         end
       end
 
@@ -465,134 +535,83 @@ module JSONAPI
         records.count(:all)
       end
 
-      def resolve_relationship_names_to_relations(resource_klass, model_includes, options = {})
-        case model_includes
-          when Array
-            return model_includes.map do |value|
-              resolve_relationship_names_to_relations(resource_klass, value, options)
-            end
-          when Hash
-            model_includes.keys.each do |key|
-              relationship = resource_klass._relationships[key]
-              value = model_includes[key]
-              model_includes.delete(key)
-              model_includes[relationship.relation_name(options)] = resolve_relationship_names_to_relations(relationship.resource_klass, value, options)
-            end
-            return model_includes
-          when Symbol
-            relationship = resource_klass._relationships[model_includes]
-            unless relationship
-              warn "relationship no found."
-            end
-            return relationship.relation_name(options)
-        end
-      end
-
-      def apply_filter(records, filter, value, options = {})
-        strategy = _allowed_filters.fetch(filter.to_sym, Hash.new)[:apply]
-
-        if strategy
-          call_method_or_proc(strategy, records, value, options)
-        else
-          filter = _attribute_delegated_name(filter)
-          table_alias = options[:table_alias]
-          records.where(concat_table_field(table_alias, filter) => value)
-        end
-      end
-
-      def apply_filters(records, filters, options = {})
-        required_includes = []
-
-        if filters
-          filters.each do |filter, value|
-            strategy = _allowed_filters.fetch(filter.to_sym, Hash.new)[:apply]
-
-            if strategy
-              records = apply_filter(records, filter, value, options)
-            elsif _relationships.include?(filter)
-              if _relationships[filter].belongs_to?
-                records = apply_filter(records, _relationships[filter].foreign_key, value, options)
-              else
-                required_includes.push(filter.to_s)
-                records = apply_filter(records, "#{_relationships[filter].table_name}.#{_relationships[filter].primary_key}", value, options)
-              end
-            else
-              records = apply_filter(records, filter, value, options)
-            end
-          end
-        end
-
-        if required_includes.any?
-          records = apply_includes(records, options.merge(include_directives: IncludeDirectives.new(self, required_includes, force_eager_load: true)))
-        end
-
-        records
-      end
-
-      def filter_records(filters, options, records = records(options))
+      def filter_records(records, filters, options)
         apply_filters(records, filters, options)
       end
 
-      def sort_records(records, order_options, context = {})
-        apply_sort(records, order_options, context)
+      def sort_records(records, order_options, options)
+        apply_sort(records, order_options, options)
       end
 
       def concat_table_field(table, field, quoted = false)
-        if table.nil? || field.to_s.include?('.')
+        if table.blank? || field.to_s.include?('.')
+          # :nocov:
           if quoted
             "\"#{field.to_s}\""
           else
             field.to_s
           end
+          # :nocov:
         else
           if quoted
+            # :nocov:
             "\"#{table.to_s}\".\"#{field.to_s}\""
+            # :nocov:
           else
             "#{table.to_s}.#{field.to_s}"
           end
         end
       end
 
-      def apply_join(records, relationship, options, polymorphic_relation_name = nil)
-        custom_apply_join = relationship.custom_methods[:apply_join]
-
-        if custom_apply_join
-          # Set a default alias for the join to use, which it may change by updating the option
-          table_alias = relationship.resource_klass._table_name
-
-          custom_apply_options = {
-              relationship: relationship,
-              polymorphic_relation_name: polymorphic_relation_name,
-              context: options[:context],
-              records: records,
-              table_alias: table_alias,
-              options: options}
-
-          records = custom_apply_join.call(custom_apply_options)
-
-          # Get the table alias in case it was changed
-          table_alias = custom_apply_options[:table_alias]
-        else
-          if relationship.polymorphic?
-            table_alias = relationship.parent_resource._table_name
-
-            relation_name = polymorphic_relation_name
-            related_klass = resource_klass_for(relation_name.to_s)
-            related_table_name = related_klass._table_name
-
-            join_statement = "LEFT OUTER JOIN #{related_table_name} ON #{table_alias}.#{relationship.foreign_key} = #{related_table_name}.#{related_klass._primary_key} AND #{concat_table_field(table_alias, relationship.polymorphic_type, true)} = \"#{relation_name.capitalize}\""
-            records = records.joins(join_statement)
-          else
-            relation_name = relationship.relation_name(options)
-            related_klass = relationship.resource_klass
-
-            records = records.joins(relation_name).references(relation_name)
+      def apply_filters(records, filters, options = {})
+        if filters
+          filters.each do |filter, value|
+            records = apply_filter(records, filter, value, options)
           end
-
-          table_alias = related_klass._table_name
         end
 
-        return records, table_alias
+        records
+      end
+
+      def get_aliased_field(path_with_field, joins, related_alias)
+        relationships, relationship_path, field = parse_relationship_path(path_with_field)
+        relationship = relationships.last
+
+        resource_klass = relationship ? relationship.resource_klass : self
+
+        if field.empty?
+          field_name = resource_klass._primary_key
+        else
+          field_name = resource_klass._attribute_delegated_name(field)
+        end
+
+        if relationship
+          join_name = relationship_path
+
+          join = joins.try(:[], join_name)
+
+          table_alias = join.try(:[], :alias)
+        else
+          table_alias = related_alias
+        end
+
+        table_alias ||= resource_klass._table_name
+
+        concat_table_field(table_alias, field_name)
+      end
+
+      def apply_filter(records, filter, value, options = {})
+        strategy = _allowed_filters.fetch(filter.to_sym, Hash.new)[:apply]
+
+        if strategy
+          records = call_method_or_proc(strategy, records, value, options)
+        else
+          joins = options[:joins] || {}
+          related_alias = options[:related_alias]
+          records = records.where(get_aliased_field(filter, joins, related_alias) => value)
+        end
+
+        records
       end
     end
   end

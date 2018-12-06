@@ -527,12 +527,6 @@ module JSONAPI
         end
       end
 
-      def model_name_for_type(key_type)
-        type_class_name = key_type.to_s.classify
-        resource_klass = resource_klass_for(type_class_name)
-        resource_klass ? resource_klass._model_name.to_s : type_class_name
-      end
-
       attr_accessor :_attributes, :_relationships, :_type, :_model_hints
       attr_writer :_allowed_filters, :_paginator, :_allowed_sort
 
@@ -708,24 +702,6 @@ module JSONAPI
 
       def fields
         _relationships.keys | _attributes.keys
-      end
-
-      def _lookup_association_chain(model_names)
-        associations = []
-        model_names.inject do |prev, current|
-          association = prev.classify.constantize.reflect_on_all_associations.detect do |assoc|
-            assoc.name.to_s.downcase == current.downcase
-          end
-          associations << association
-          association.class_name
-        end
-
-        associations
-      end
-
-      def find_count(filters, options = {})
-        # ToDo: Deprecation warning
-        count(filters, options)
       end
 
       def records(options = {})

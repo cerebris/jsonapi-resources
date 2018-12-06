@@ -14,12 +14,16 @@ module JSONAPI
       @foreign_key = options[:foreign_key] ? options[:foreign_key].to_sym : nil
       @parent_resource = options[:parent_resource]
       @relation_name = options.fetch(:relation_name, @name)
-      @custom_methods = options.fetch(:custom_methods, {})
       @polymorphic = options.fetch(:polymorphic, false) == true
       @polymorphic_relations = options[:polymorphic_relations]
       @always_include_linkage_data = options.fetch(:always_include_linkage_data, false) == true
-      @eager_load_on_include = options.fetch(:eager_load_on_include, true) == true
+      @eager_load_on_include = options.fetch(:eager_load_on_include, false) == true
       @allow_include = options[:allow_include]
+      @class_name = nil
+      @inverse_relationship = nil
+
+      # Custom methods are reserved for use in resource finders. Not used in the default ActiveRelationResourceFinder
+      @custom_methods = options.fetch(:custom_methods, {})
     end
 
     alias_method :polymorphic?, :polymorphic
@@ -83,10 +87,6 @@ module JSONAPI
 
     def readonly?
       @options[:readonly]
-    end
-
-    def redefined_pkey?
-      belongs_to? && primary_key != resource_klass._default_primary_key
     end
 
     class ToOne < Relationship
