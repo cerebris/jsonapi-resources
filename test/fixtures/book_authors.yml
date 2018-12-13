@@ -1,15 +1,23 @@
 book_author_1_1:
   book_id: 1
-  person_id: 1
+  person_id: 1001
 
 book_author_2_1:
   book_id: 2
-  person_id: 1
+  person_id: 1001
 
 book_author_2_2:
   book_id: 2
-  person_id: 2
+  person_id: 1002
 
 book_author_654_2:
   book_id: 654 # Banned book
-  person_id: 2
+  person_id: 1002
+
+
+<% for book_num in 300..343 %>
+book_author_1003_<%= book_num %>:
+  id: <%= book_num + 30321 %>
+  book_id: <%= book_num %>
+  person_id: 1003
+<% end %>

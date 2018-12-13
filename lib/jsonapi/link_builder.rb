@@ -61,8 +61,10 @@ module JSONAPI
         unless scopes.empty?
           "#{ scopes.first.to_s.camelize }::Engine".safe_constantize
         end
+      # :nocov:
       rescue LoadError => _e
         nil
+      # :nocov:
       end
     end
 
@@ -115,7 +117,7 @@ module JSONAPI
       scopes = module_scopes_from_class(klass)
 
       unless scopes.empty?
-        "/#{ scopes.map{ |scope| format_route(scope.to_s.underscore) }.join('/') }/"
+        "/#{ scopes.map{ |scope| format_route(scope.to_s.underscore) }.compact.join('/') }/"
       else
         "/"
       end
@@ -138,7 +140,13 @@ module JSONAPI
     end
 
     def regular_resource_path(source)
-      "#{regular_resources_path(source.class)}/#{source.id}"
+      if source.is_a?(JSONAPI::CachedResponseFragment)
+        # :nocov:
+        "#{regular_resources_path(source.resource_klass)}/#{source.id}"
+        # :nocov:
+      else
+        "#{regular_resources_path(source.class)}/#{source.id}"
+      end
     end
 
     def regular_resource_url(source)

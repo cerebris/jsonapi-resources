@@ -10,8 +10,7 @@ module JSONAPI
       base.include Callbacks
       base.cattr_reader :server_error_callbacks
       base.define_jsonapi_resources_callbacks :process_operations,
-                                              :transaction,
-                                              :rollback
+                                              :transaction
     end
 
     attr_reader :response_document
@@ -52,12 +51,28 @@ module JSONAPI
       process_request
     end
 
-    def get_related_resource
+    def show_related_resource
       process_request
     end
 
-    def get_related_resources
+    def index_related_resources
       process_request
+    end
+
+    def get_related_resource
+      # :nocov:
+    ActiveSupport::Deprecation.warn "In #{self.class.name} you exposed a `get_related_resource`"\
+                                      " action. Please use `show_related_resource` instead."
+      show_related_resource
+      # :nocov:
+    end
+
+    def get_related_resources
+      # :nocov:
+      ActiveSupport::Deprecation.warn "In #{self.class.name} you exposed a `get_related_resources`"\
+                                      " action. Please use `index_related_resource` instead."
+      index_related_resources
+      # :nocov:
     end
 
     def process_request
@@ -76,57 +91,46 @@ module JSONAPI
 
       transactional = request_parser.transactional?
 
-      force_rollback = false
-      run_in_transaction(transactional) do
-        begin
+      begin
+        process_operations(transactional) do
           run_callbacks :process_operations do
-            begin
-              request_parser.each(response_document) do |op|
-                op.options[:serializer] = resource_serializer_klass.new(
-                    op.resource_klass,
-                    include_directives: op.options[:include_directives],
-                    fields: op.options[:fields],
-                    base_url: base_url,
-                    key_formatter: key_formatter,
-                    route_formatter: route_formatter,
-                    serialization_options: serialization_options
-                )
-                op.options[:cache_serializer_output] = !JSONAPI.configuration.resource_cache.nil?
+            request_parser.each(response_document) do |op|
+              op.options[:serializer] = resource_serializer_klass.new(
+                  op.resource_klass,
+                  include_directives: op.options[:include_directives],
+                  fields: op.options[:fields],
+                  base_url: base_url,
+                  key_formatter: key_formatter,
+                  route_formatter: route_formatter,
+                  serialization_options: serialization_options
+              )
+              op.options[:cache_serializer_output] = !JSONAPI.configuration.resource_cache.nil?
 
-                process_operation(op)
-              end
-            rescue => e
-              handle_exceptions(e)
+              process_operation(op)
             end
           end
-        rescue => e
-          force_rollback = true
-          raise e
-        ensure
-          if response_document.has_errors? || force_rollback
-            rollback_transaction(transactional)
+          if response_document.has_errors?
+            raise ActiveRecord::Rollback
           end
         end
+      rescue => e
+        handle_exceptions(e)
       end
       render_response_document
     end
 
-    def run_in_transaction(transactional)
+    def process_operations(transactional)
       if transactional
         run_callbacks :transaction do
-          transaction do
+          ActiveRecord::Base.transaction do
             yield
           end
         end
       else
-        yield
-      end
-    end
-
-    def rollback_transaction(transactional)
-      if transactional
-        run_callbacks :rollback do
-          rollback
+        begin
+          yield
+        rescue ActiveRecord::Rollback
+          # Can't rollback without transaction, so just ignore it
         end
       end
     end
@@ -134,16 +138,6 @@ module JSONAPI
     def process_operation(operation)
       result = operation.process
       response_document.add_result(result, operation)
-    end
-
-    def transaction
-      ActiveRecord::Base.transaction do
-        yield
-      end
-    end
-
-    def rollback
-      fail ActiveRecord::Rollback
     end
 
     private
@@ -246,7 +240,10 @@ module JSONAPI
         # Bypassing ActiveSupport allows us to use CompiledJson objects for cached response fragments
         render_options[:body] = JSON.generate(content)
 
-        render_options[:location] = content['data']['links']['self'] if (response_document.status == 201 && content[:data].class != Array)
+        if (response_document.status == 201 && content[:data].class != Array) &&
+            content['data'] && content['data']['links'] && content['data']['links']['self']
+          render_options[:location] = content['data']['links']['self']
+        end
       end
 
       # For whatever reason, `render` ignores :status and :content_type when :body is set.
@@ -276,7 +273,7 @@ module JSONAPI
           errors = JSONAPI::Exceptions::ParameterMissing.new(e.param).errors
         else
           if JSONAPI.configuration.exception_class_whitelisted?(e)
-            fail e
+            raise e
           else
             if self.class.server_error_callbacks
               self.class.server_error_callbacks.each { |callback|

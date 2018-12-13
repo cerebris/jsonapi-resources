@@ -11,8 +11,7 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
         include_related: {
           posts: {
             include: true,
-            include_related:{},
-            include_in_join: true
+            include_related:{}
           }
         }
       },
@@ -27,18 +26,15 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
         include_related: {
           posts: {
             include: true,
-            include_related:{},
-            include_in_join: true
+            include_related:{}
           },
           comments: {
             include: true,
-            include_related:{},
-            include_in_join: true
+            include_related:{}
           },
           tags: {
             include: true,
-            include_related:{},
-            include_in_join: true
+            include_related:{}
           }
         }
       },
@@ -56,33 +52,9 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
             include_related:{
               comments: {
                 include: true,
-                include_related:{},
-                include_in_join: true
+                include_related:{}
               }
-            },
-            include_in_join: true
-          }
-        }
-      },
-      directives)
-  end
-
-  def test_no_eager_join
-    directives = JSONAPI::IncludeDirectives.new(PersonResource, ['posts.tags']).include_directives
-
-    assert_hash_equals(
-      {
-        include_related: {
-          posts: {
-            include: true,
-            include_related:{
-              tags: {
-                include: true,
-                include_related:{},
-                include_in_join: false
-              }
-            },
-            include_in_join: true
+            }
           }
         }
       },
@@ -100,11 +72,9 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
             include_related:{
               comments: {
                 include: true,
-                include_related:{},
-                include_in_join: true
+                include_related:{}
               }
-            },
-            include_in_join: true
+            }
           }
         }
       },
@@ -125,25 +95,22 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
                 include_related:{
                   tags: {
                     include: true,
-                    include_related:{},
-                    include_in_join: true
+                    include_related:{}
                   }
-                },
-                include_in_join: true
+                }
               }
-            },
-            include_in_join: true
+            }
           }
         }
       },
       directives)
   end
 
-  def test_three_levels_include_full_model_includes
-    directives = JSONAPI::IncludeDirectives.new(PersonResource, ['posts.comments.tags'])
-    assert_array_equals([{:posts=>[{:comments=>[:tags]}]}], directives.model_includes)
-  end
-
+  # def test_three_levels_include_full_model_includes
+  #   directives = JSONAPI::IncludeDirectives.new(PersonResource, ['posts.comments.tags'])
+  #   assert_array_equals([{:posts=>[{:comments=>[:tags]}]}], directives.model_includes)
+  # end
+  #
   def test_invalid_includes_1
     assert_raises JSONAPI::Exceptions::InvalidInclude do
       JSONAPI::IncludeDirectives.new(PersonResource, ['../../../../']).include_directives

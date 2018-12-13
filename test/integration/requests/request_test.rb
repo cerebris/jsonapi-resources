@@ -5,7 +5,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.json_key_format = :underscored_key
     JSONAPI.configuration.route_format = :underscored_route
     Api::V2::BookResource.paginator :offset
-    $test_user = Person.find(1)
+    $test_user = Person.find(1001)
   end
 
   def after_teardown
@@ -18,6 +18,69 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_large_get
     assert_cacheable_jsonapi_get '/api/v2/books?include=book_comments,book_comments.author'
+  end
+
+  def test_post_sessions
+    session_id = SecureRandom.uuid
+
+    post '/sessions', params: {
+      data: {
+        id: session_id,
+        type: "sessions",
+        attributes: {
+          survey_id: SecureRandom.uuid,
+        },
+        relationships: {
+          responses: {
+            data: [
+              {
+                type: "responses",
+                attributes: {
+                  response_type: "single_textbox",
+                  question_id: SecureRandom.uuid,
+                },
+                relationships: {
+                  paragraph: {
+                    data: {
+                      type: "responses",
+                      response_type: "paragraph",
+                      attributes: {
+                        text: "This is my single textbox response"
+                      }
+                    }
+                  }
+                }
+              },
+            ],
+          },
+        },
+      }
+    }.to_json,
+    headers: {
+      'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
+      'Accept' => JSONAPI::MEDIA_TYPE
+    }
+    assert_jsonapi_response 201
+    json_body = JSON.parse(response.body)
+    session_id = json_body["data"]["id"]
+
+    # Get what we just created
+    get "/sessions/#{session_id}?include=responses"
+    assert_jsonapi_response 200
+    json_body = JSON.parse(response.body)
+
+    assert(json_body.is_a?(Object));
+    assert(json_body["included"].is_a?(Array));
+    assert_equal("single_textbox", json_body["included"][0]["attributes"]["response_type"]["single_textbox"]);
+
+    get "/sessions/#{session_id}?include=responses,responses.paragraph"
+    assert_jsonapi_response 200
+    json_body = JSON.parse(response.body)
+
+    assert_equal("single_textbox", json_body["included"][0]["attributes"]["response_type"]["single_textbox"]);
+
+    # Rails 4.2.x branch will not retrieve the responses.paragraph, 5.x branch will - this looks to be a deeper, but unrelated bug
+    #assert_equal("paragraphs", json_body["included"][1]["type"]);
   end
 
   def test_get_inflected_resource
@@ -34,6 +97,39 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_get_nested_to_many_bad_param
     assert_cacheable_jsonapi_get '/posts/1/comments?relationship=books'
+  end
+
+  def test_nested_filters
+    assert_cacheable_jsonapi_get '/posts?filter[search][title]=New post'
+    assert_jsonapi_response 200
+    assert_equal 1, json_response['data'].size
+  end
+
+  def test_relationship_filters
+    assert_cacheable_jsonapi_get '/posts?filter[tags.name]=whiny&sort=-author.name'
+    assert_jsonapi_response 200
+    assert_equal 3, json_response['data'].size
+  end
+
+  # ToDo: change filter to return results
+  def test_relationship_filters_nested
+    assert_cacheable_jsonapi_get '/posts?filter[comments.author.name]=Lazy Author&filter[comments.tags.name]=whiny'
+    assert_jsonapi_response 200
+    assert_equal 0, json_response['data'].size
+  end
+
+  def test_filters_one_level
+    assert_cacheable_jsonapi_get '/api/boxes?filter[things.name]=Thing10'
+    assert_jsonapi_response 200
+    assert_equal 1, json_response['data'].size
+    assert_equal '100', json_response['data'][0]['id']
+  end
+
+  def test_filters_two_level
+    assert_cacheable_jsonapi_get '/api/boxes?filter[things.things.name]=Thing40'
+    assert_jsonapi_response 200
+    assert_equal 1, json_response['data'].size
+    assert_equal '102', json_response['data'][0]['id']
   end
 
   def test_get_underscored_key
@@ -122,8 +218,8 @@ class RequestTest < ActionDispatch::IntegrationTest
           'relationships' => {
             'tags' => {
               'data' => [
-                {'type' => 'tags', 'id' => '3'},
-                {'type' => 'tags', 'id' => '4'}
+                {'type' => 'tags', 'id' => '503'},
+                {'type' => 'tags', 'id' => '504'}
               ]
             }
           }
@@ -149,8 +245,8 @@ class RequestTest < ActionDispatch::IntegrationTest
             'relationships' => {
               'tags' => {
                 'data' => [
-                  {'type' => 'tags', 'id' => '3'},
-                  {'type' => 'tags', 'id' => '4'}
+                  {'type' => 'tags', 'id' => '503'},
+                  {'type' => 'tags', 'id' => '504'}
                 ]
               }
             }
@@ -174,8 +270,8 @@ class RequestTest < ActionDispatch::IntegrationTest
           'relationships' => {
             'tags' => {
               'data' => [
-                {'type' => 'tags', 'id' => '3'},
-                {'type' => 'tags', 'id' => '4'}
+                {'type' => 'tags', 'id' => '503'},
+                {'type' => 'tags', 'id' => '504'}
               ]
             }
           }
@@ -199,7 +295,7 @@ class RequestTest < ActionDispatch::IntegrationTest
             'body' => 'JSONAPIResources is the greatest thing since unsliced bread.'
           },
           'relationships' => {
-            'author' => {'data' => {'type' => 'people', 'id' => '3'}}
+            'author' => {'data' => {'type' => 'people', 'id' => '1003'}}
           }
         }
       }.to_json,
@@ -347,8 +443,8 @@ class RequestTest < ActionDispatch::IntegrationTest
             'relationships' => {
               'tags' => {
                 'data' => [
-                  {'type' => 'tags', 'id' => '3'},
-                  {'type' => 'tags', 'id' => '4'}
+                  {'type' => 'tags', 'id' => '503'},
+                  {'type' => 'tags', 'id' => '504'}
                 ]
               }
             }
@@ -407,8 +503,8 @@ class RequestTest < ActionDispatch::IntegrationTest
             'relationships' => {
               'tags' => {
                 'data' => [
-                  {'type' => 'tags', 'id' => '3'},
-                  {'type' => 'tags', 'id' => '4'}
+                  {'type' => 'tags', 'id' => '503'},
+                  {'type' => 'tags', 'id' => '504'}
                 ]
               }
             }
@@ -526,13 +622,24 @@ class RequestTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.top_level_meta_include_record_count = false
   end
 
-  def test_filter_related_resources
+  def test_filter_related_resources_relationship_filter
     Api::V2::BookCommentResource.paginator :offset
     JSONAPI.configuration.top_level_meta_include_record_count = true
     assert_cacheable_jsonapi_get '/api/v2/books/1/book_comments?filter[book]=2'
     assert_equal 0, json_response['meta']['record_count']
     assert_cacheable_jsonapi_get '/api/v2/books/1/book_comments?filter[book]=1&page[limit]=20'
+    assert_equal 20, json_response['data'].length
     assert_equal 26, json_response['meta']['record_count']
+  ensure
+    JSONAPI.configuration.top_level_meta_include_record_count = false
+  end
+
+  def test_filter_related_resources
+    Api::V2::BookCommentResource.paginator :offset
+    JSONAPI.configuration.top_level_meta_include_record_count = true
+    assert_cacheable_jsonapi_get '/api/v2/books/1/book_comments?filter[body]=2'
+    assert_equal 9, json_response['data'].length
+    assert_equal 9, json_response['meta']['record_count']
   ensure
     JSONAPI.configuration.top_level_meta_include_record_count = false
   end
@@ -604,6 +711,19 @@ class RequestTest < ActionDispatch::IntegrationTest
   #   assert_equal 'This is comment 18 on book 1.', json_response['data'][9]['attributes']['body']
   # end
 
+  def test_polymorphic_related_resources
+    assert_cacheable_jsonapi_get '/pictures/1/imageable'
+    assert_equal 'Enterprise Gizmo', json_response['data']['attributes']['name']
+
+    assert_cacheable_jsonapi_get '/pictures/2/imageable'
+    assert_equal 'Company Brochure', json_response['data']['attributes']['name']
+  end
+
+  def test_polymorphic_relation_filter
+    assert_cacheable_jsonapi_get '/pictures?include=imageable&filter[imageable.name]=Enterprise Gizmo'
+    assert_equal '1', json_response['data'][0]['id']
+    assert_equal '50', json_response['data'][1]['id']
+  end
 
   def test_flow_self
     assert_cacheable_jsonapi_get '/posts/1'
@@ -623,7 +743,7 @@ class RequestTest < ActionDispatch::IntegrationTest
                                         'self' => 'http://www.example.com/posts/1/relationships/author',
                                         'related' => 'http://www.example.com/posts/1/author'
                                       },
-                                      'data' => {'type' => 'people', 'id' => '1'}
+                                      'data' => {'type' => 'people', 'id' => '1001'}
                                     })
   end
 
@@ -639,9 +759,9 @@ class RequestTest < ActionDispatch::IntegrationTest
                            'related' => 'http://www.example.com/posts/1/tags'
                           },
                           'data' => [
-                            {'type' => 'tags', 'id' => '1'},
-                            {'type' => 'tags', 'id' => '2'},
-                            {'type' => 'tags', 'id' => '3'}
+                            {'type' => 'tags', 'id' => '501'},
+                            {'type' => 'tags', 'id' => '502'},
+                            {'type' => 'tags', 'id' => '503'}
                           ]
                        })
   end
@@ -651,7 +771,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     post_5 = json_response['data']
 
     post post_5['relationships']['tags']['links']['self'], params:
-         {'data' => [{'type' => 'tags', 'id' => '10'}]}.to_json,
+         {'data' => [{'type' => 'tags', 'id' => '510'}]}.to_json,
          headers: {
            'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
            'Accept' => JSONAPI::MEDIA_TYPE
@@ -667,7 +787,7 @@ class RequestTest < ActionDispatch::IntegrationTest
                            'related' => 'http://www.example.com/posts/5/tags'
                          },
                          'data' => [
-                           {'type' => 'tags', 'id' => '10'}
+                           {'type' => 'tags', 'id' => '510'}
                          ]
                        })
   end
@@ -896,7 +1016,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_patch_formatted_dasherized_replace_to_many_computed_relation
     $original_test_user = $test_user
-    $test_user = Person.find(5)
+    $test_user = Person.find(1005)
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
@@ -955,7 +1075,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_post_computed_relation_to_many
     $original_test_user = $test_user
-    $test_user = Person.find(5)
+    $test_user = Person.find(1005)
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
@@ -1000,7 +1120,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def test_patch_to_many_link_computed_relation
     $original_test_user = $test_user
-    $test_user = Person.find(5)
+    $test_user = Person.find(1005)
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
@@ -1044,14 +1164,53 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_cacheable_jsonapi_get '/api/v2/books/1/book_comments?include=author'
   end
 
-  def test_include_parameter_not_allowed
+  def test_deprecated_include_parameter_not_allowed
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.allow_include = false
     get '/api/v2/books/1/book_comments?include=author', headers: {
       'Accept' => JSONAPI::MEDIA_TYPE
     }
     assert_jsonapi_response 400
   ensure
-    JSONAPI.configuration.allow_include = true
+    JSONAPI.configuration = original_config
+  end
+
+  def test_deprecated_include_message
+    ActiveSupport::Deprecation.silenced = false
+    original_config = JSONAPI.configuration.dup
+    _out, err = capture_io do
+      eval <<-CODE
+        JSONAPI.configuration.allow_include = false
+      CODE
+    end
+    assert_match /DEPRECATION WARNING: `allow_include` has been replaced by `default_allow_include_to_one` and `default_allow_include_to_many` options./, err
+  ensure
+    JSONAPI.configuration = original_config
+    ActiveSupport::Deprecation.silenced = true
+  end
+
+
+  def test_to_one_include_parameter_not_allowed
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.default_allow_include_to_one = false
+    get '/api/v2/books/1/book_comments?include=author', headers: {
+        'Accept' => JSONAPI::MEDIA_TYPE
+    }
+    assert_jsonapi_response 400
+  ensure
+    JSONAPI.configuration = original_config
+  end
+
+  def test_to_one_include_parameter_allowed
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.default_allow_include_to_one = true
+    get '/api/v2/books/1/book_comments?include=author', headers: {
+        'Accept' => JSONAPI::MEDIA_TYPE
+    }
+    assert_jsonapi_response 200
+    assert_equal 1, json_response['included'].size
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_filter_parameter_not_allowed
@@ -1082,6 +1241,26 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_jsonapi_response 400
   end
 
+  def test_sort_primary_attribute
+    get '/api/v6/authors?sort=name', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 200
+    assert_equal '1002', json_response['data'][0]['id']
+
+    get '/api/v6/authors?sort=-name', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 200
+    assert_equal '1005', json_response['data'][0]['id']
+  end
+
+  def test_sort_included_attribute
+    get '/api/v6/authors?sort=author_detail.author_stuff', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 200
+    assert_equal '1000', json_response['data'][0]['id']
+
+    get '/api/v6/authors?sort=-author_detail.author_stuff', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 200
+    assert_equal '1002', json_response['data'][0]['id']
+  end
+
   def test_include_parameter_quoted
     get '/api/v2/posts?include=%22author%22', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
     assert_jsonapi_response 200
@@ -1101,28 +1280,6 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_getting_resource_with_correct_type_when_sti
     assert_cacheable_jsonapi_get '/vehicles/1'
     assert_equal 'cars', json_response['data']['type']
-  end
-
-  def test_get_resource_with_polymorphic_relationship_and_changed_primary_key
-    keeper = Keeper.find(1)
-    storage = keeper.keepable
-    assert_cacheable_jsonapi_get '/keepers/1?include=keepable'
-    assert_jsonapi_response 200
-
-    data = json_response['data']
-    refute_nil data
-    assert_equal keeper.id.to_s, data['id']
-
-    refute_nil data['relationships']
-    refute_nil data['relationships']['keepable']
-    refute_nil data['relationships']['keepable']['data']
-    assert_equal 'storages', data['relationships']['keepable']['data']['type']
-    assert_equal storage.token, data['relationships']['keepable']['data']['id']
-
-    included = json_response['included']
-    refute_nil included
-    assert_equal 'storages', included.first['type']
-    assert_equal storage.token, included.first['id']
   end
 
   def test_get_resource_with_belongs_to_relationship_and_changed_primary_key

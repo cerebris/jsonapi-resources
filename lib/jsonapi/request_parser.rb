@@ -37,7 +37,7 @@ module JSONAPI
 
     def transactional?
       case params[:action]
-        when 'index', 'get_related_resource', 'get_related_resources', 'show', 'show_relationship'
+        when 'index', 'show_related_resource', 'index_related_resources', 'show', 'show_relationship'
           return false
         else
           return true
@@ -80,7 +80,7 @@ module JSONAPI
       )
     end
 
-    def setup_get_related_resource_action(params, resource_klass)
+    def setup_show_related_resource_action(params, resource_klass)
       source_klass = Resource.resource_klass_for(params.require(:source))
       source_id = source_klass.verify_key(params.require(source_klass._as_parent_key), @context)
 
@@ -101,7 +101,7 @@ module JSONAPI
       )
     end
 
-    def setup_get_related_resources_action(params, resource_klass)
+    def setup_index_related_resources_action(params, resource_klass)
       source_klass = Resource.resource_klass_for(params.require(:source))
       source_id = source_klass.verify_key(params.require(source_klass._as_parent_key), @context)
 
@@ -146,13 +146,22 @@ module JSONAPI
     def setup_show_relationship_action(params, resource_klass)
       relationship_type = params[:relationship]
       parent_key = params.require(resource_klass._as_parent_key)
+      include_directives = parse_include_directives(resource_klass, params[:include])
+      filters = parse_filters(resource_klass, params[:filter])
+      sort_criteria = parse_sort_criteria(resource_klass, params[:sort])
+      paginator = parse_pagination(resource_klass, params[:page])
 
       JSONAPI::Operation.new(
           :show_relationship,
           resource_klass,
           context: @context,
           relationship_type: relationship_type,
-          parent_key: resource_klass.verify_key(parent_key)
+          parent_key: resource_klass.verify_key(parent_key),
+          filters: filters,
+          sort_criteria: sort_criteria,
+          paginator: paginator,
+          fields: fields,
+          include_directives: include_directives
       )
     end
 
@@ -321,6 +330,10 @@ module JSONAPI
 
       relationship = resource_klass._relationship(relationship_name)
       if relationship && format_key(relationship_name) == include_parts.first
+        unless relationship.allow_include?(context)
+          fail JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type), include_parts.first)
+        end
+
         unless include_parts.last.empty?
           check_include(Resource.resource_klass_for(resource_klass.module_path + relationship.class_name.to_s.underscore),
                         include_parts.last.partition('.'))
@@ -328,14 +341,11 @@ module JSONAPI
       else
         fail JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type), include_parts.first)
       end
+      true
     end
 
     def parse_include_directives(resource_klass, raw_include)
       return unless raw_include
-
-      unless JSONAPI.configuration.allow_include
-        fail JSONAPI::Exceptions::ParameterNotAllowed.new(:include)
-      end
 
       included_resources = []
       begin
@@ -384,7 +394,7 @@ module JSONAPI
         if resource_klass._allowed_filter?(filter)
           parsed_filters[filter] = value
         else
-          fail JSONAPI::Exceptions::FilterNotAllowed.new(filter)
+          fail JSONAPI::Exceptions::FilterNotAllowed.new(key)
         end
       end
 
@@ -527,7 +537,7 @@ module JSONAPI
 
       unless links_object[:id].nil?
         resource = resource_klass || Resource
-        relationship_resource = resource.resource_klass_for(unformat_key(links_object[:type]).to_s)
+        relationship_resource = resource.resource_klass_for(unformat_key(relationship.options[:class_name] || links_object[:type]).to_s)
         relationship_id = relationship_resource.verify_key(links_object[:id], @context)
         if relationship.polymorphic?
           { id: relationship_id, type: unformat_key(links_object[:type].to_s) }
@@ -540,9 +550,7 @@ module JSONAPI
     end
 
     def parse_to_many_relationship(resource_klass, link_value, relationship, &add_result)
-      if link_value.is_a?(Array) && link_value.length == 0
-        linkage = []
-      elsif (link_value.is_a?(Hash) || link_value.is_a?(ActionController::Parameters))
+      if (link_value.is_a?(Hash) || link_value.is_a?(ActionController::Parameters))
         linkage = link_value[:data]
       else
         fail JSONAPI::Exceptions::InvalidLinksObject.new(error_object_overrides)

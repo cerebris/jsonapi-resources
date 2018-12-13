@@ -6,6 +6,7 @@ require 'simplecov'
 # To test on a specific rails version use this:
 # export RAILS_VERSION=4.2.6; bundle update rails; bundle exec rake test
 # export RAILS_VERSION=5.0.0; bundle update rails; bundle exec rake test
+# export RAILS_VERSION=5.1.0; bundle update rails; bundle exec rake test
 
 # We are no longer having Travis test Rails 4.1.x., but you can try it with:
 # export RAILS_VERSION=4.1.0; bundle update rails; bundle exec rake test
@@ -38,6 +39,8 @@ JSONAPI.configure do |config|
   config.json_key_format = :camelized_key
 end
 
+ActiveSupport::Deprecation.silenced = true
+
 puts "Testing With RAILS VERSION #{Rails.version}"
 
 class TestApp < Rails::Application
@@ -57,6 +60,9 @@ class TestApp < Rails::Application
     config.active_support.halt_callback_chains_on_return_false = false
     config.active_record.time_zone_aware_types = [:time, :datetime]
     config.active_record.belongs_to_required_by_default = false
+    if Rails::VERSION::MINOR >= 2
+      config.active_record.sqlite3.represent_boolean_as_integer = true
+    end
   end
 end
 
@@ -84,6 +90,10 @@ if Rails::VERSION::MAJOR >= 5
   class ActionController::TestCase
     prepend ClearRawPostHeader
   end
+end
+
+if Rails::VERSION::MAJOR < 5
+  require 'left_join'
 end
 
 # Tests are now using the rails 5 format for the http methods. So for rails 4 we will simply convert them back
@@ -189,11 +199,24 @@ end
 
 def assert_query_count(expected, msg = nil, &block)
   @queries = []
-  callback = lambda {|_, _, _, _, payload| @queries.push payload[:sql] }
+  callback = lambda {|_, _, _, _, payload|
+    @queries.push payload[:sql]
+  }
   ActiveSupport::Notifications.subscribed(callback, 'sql.active_record', &block)
 
   show_queries unless expected == @queries.size
   assert expected == @queries.size, "Expected #{expected} queries, ran #{@queries.size} queries"
+  @queries = nil
+end
+
+def track_queries(&block)
+  @queries = []
+  callback = lambda {|_, _, _, _, payload|
+    @queries.push payload[:sql]
+  }
+  ActiveSupport::Notifications.subscribed(callback, 'sql.active_record', &block)
+
+  show_queries
   @queries = nil
 end
 
@@ -224,6 +247,7 @@ end
 
 JSONAPI.configuration.route_format = :underscored_route
 TestApp.routes.draw do
+  jsonapi_resources :sessions
   jsonapi_resources :people
   jsonapi_resources :special_people
   jsonapi_resources :comments
@@ -326,7 +350,7 @@ TestApp.routes.draw do
     namespace :v5 do
       jsonapi_resources :posts do
       end
-
+      jsonapi_resources :painters
       jsonapi_resources :authors
       jsonapi_resources :expense_entries
       jsonapi_resources :iso_currencies
@@ -338,6 +362,7 @@ TestApp.routes.draw do
 
     JSONAPI.configuration.route_format = :dasherized_route
     namespace :v6 do
+      jsonapi_resources :authors
       jsonapi_resources :posts
       jsonapi_resources :sections
       jsonapi_resources :customers
@@ -379,7 +404,11 @@ TestApp.routes.draw do
   end
 
   jsonapi_resources :keepers, only: [:show]
+  jsonapi_resources :storages
   jsonapi_resources :workers, only: [:show]
+  jsonapi_resources :widgets, only: [:index]
+  jsonapi_resources :indicators, only: [:index]
+  jsonapi_resources :robots, only: [:index]
 
   mount MyEngine::Engine => "/boomshaka", as: :my_engine
   mount ApiV2Engine::Engine => "/api_v2", as: :api_v2_engine
@@ -400,6 +429,12 @@ MyEngine::Engine.routes.draw do
 
   namespace :dasherized_namespace, path: 'dasherized-namespace' do
     namespace :v1 do
+      jsonapi_resources :people
+    end
+  end
+
+  namespace :optional_namespace, path: 'optional_namespace' do
+    namespace :v1, path: '' do
       jsonapi_resources :people
     end
   end
@@ -495,7 +530,7 @@ class ActionController::TestCase
     ActiveSupport::Notifications.subscribed(normal_query_callback, 'sql.active_record') do
       get action, *args
     end
-    non_caching_response = json_response_sans_backtraces
+    non_caching_response = json_response_sans_all_backtraces
     non_caching_status = response.status
 
     # Don't let all the cache-testing requests mess with assert_query_count
@@ -521,7 +556,9 @@ class ActionController::TestCase
       [:warmup, :lookup].each do |phase|
         begin
           cache_queries = []
-          cache_query_callback = lambda {|_, _, _, _, payload| cache_queries.push payload[:sql] }
+          cache_query_callback = lambda { |_, _, _, _, payload|
+            cache_queries.push payload[:sql]
+          }
           cache_activity[phase] = with_resource_caching(cache, cached_resources) do
             ActiveSupport::Notifications.subscribed(cache_query_callback, 'sql.active_record') do
               @controller = nil
@@ -545,13 +582,13 @@ class ActionController::TestCase
         )
         assert_equal(
           non_caching_response.pretty_inspect,
-          json_response_sans_backtraces.pretty_inspect,
+          json_response_sans_all_backtraces.pretty_inspect,
           "Cache (mode: #{mode}) #{phase} response body must match normal response"
         )
         assert_operator(
           cache_queries.size,
           :<=,
-          normal_queries.size*2, # Allow up to double the number of queries as the uncached action
+          normal_queries.size,
           "Cache (mode: #{mode}) #{phase} action made too many queries:\n#{cache_queries.pretty_inspect}"
         )
       end
@@ -585,12 +622,13 @@ class ActionController::TestCase
 
   private
 
-  def json_response_sans_backtraces
+  def json_response_sans_all_backtraces
     return nil if response.body.to_s.strip.empty?
 
     r = json_response.dup
     (r["errors"] || []).each do |err|
       err["meta"].delete("backtrace") if err.has_key?("meta")
+      err["meta"].delete("application_backtrace") if err.has_key?("meta")
     end
     return r
   end
@@ -647,6 +685,19 @@ class TitleValueFormatter < JSONAPI::ValueFormatter
 
     def unformat(value)
       value.to_s.downcase
+    end
+  end
+end
+
+class OptionalRouteFormatter < JSONAPI::RouteFormatter
+  class << self
+    def format(route)
+      return if route == 'v1'
+      super
+    end
+
+    def unformat(formatted_route)
+      super
     end
   end
 end

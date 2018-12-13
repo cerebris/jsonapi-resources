@@ -221,7 +221,7 @@ module ActionDispatch
 
           match formatted_relationship_name, controller: options[:controller],
                 relationship: relationship.name, source: resource_type_with_module_prefix(source._type),
-                action: 'get_related_resource', via: [:get]
+                action: 'show_related_resource', via: [:get]
         end
 
         def jsonapi_related_resources(*relationship)
@@ -238,7 +238,7 @@ module ActionDispatch
           match formatted_relationship_name,
                 controller: options[:controller],
                 relationship: relationship.name, source: resource_type_with_module_prefix(source._type),
-                action: 'get_related_resources', via: [:get]
+                action: 'index_related_resources', via: [:get]
         end
 
         protected
@@ -250,8 +250,8 @@ module ActionDispatch
         ensure
           @scope = @scope.parent
         end
-
         # :nocov:
+
         private
 
         def resource_type_with_module_prefix(resource = nil)

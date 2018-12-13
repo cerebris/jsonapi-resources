@@ -1,7 +1,6 @@
 require 'jsonapi/formatter'
 require 'jsonapi/processor'
-require 'jsonapi/record_accessor'
-require 'jsonapi/active_record_accessor'
+require 'jsonapi/active_relation_resource_finder'
 require 'concurrent'
 
 module JSONAPI
@@ -10,13 +9,15 @@ module JSONAPI
                 :resource_key_type,
                 :route_format,
                 :raise_if_parameters_not_allowed,
-                :allow_include,
+                :warn_on_route_setup_issues,
+                :default_allow_include_to_one,
+                :default_allow_include_to_many,
                 :allow_sort,
                 :allow_filter,
                 :default_paginator,
                 :default_page_size,
                 :maximum_page_size,
-                :default_record_accessor_klass,
+                :resource_finder,
                 :default_processor_klass,
                 :use_text_errors,
                 :top_level_links_include_pagination,
@@ -26,6 +27,7 @@ module JSONAPI
                 :top_level_meta_page_count_key,
                 :allow_transactions,
                 :include_backtraces_in_errors,
+                :include_application_backtraces_in_errors,
                 :exception_class_whitelist,
                 :whitelist_all_exceptions,
                 :always_include_to_one_linkage_data,
@@ -33,6 +35,7 @@ module JSONAPI
                 :cache_formatters,
                 :use_relationship_reflection,
                 :resource_cache,
+                :default_caching,
                 :default_resource_cache_field,
                 :resource_cache_digest_function,
                 :resource_cache_usage_report_function
@@ -48,11 +51,14 @@ module JSONAPI
       self.resource_key_type = :integer
 
       # optional request features
-      self.allow_include = true
+      self.default_allow_include_to_one = true
+      self.default_allow_include_to_many = true
       self.allow_sort = true
       self.allow_filter = true
 
       self.raise_if_parameters_not_allowed = true
+
+      self.warn_on_route_setup_issues = true
 
       # :none, :offset, :paged, or a custom paginator name
       self.default_paginator = :none
@@ -77,6 +83,10 @@ module JSONAPI
       # responses.  Defaults to `false` in production, and `true` otherwise.
       self.include_backtraces_in_errors = !Rails.env.production?
 
+      # Whether or not to include exception application backtraces in JSONAPI error
+      # responses.  Defaults to `false` in production, and `true` otherwise.
+      self.include_application_backtraces_in_errors = !Rails.env.production?
+
       # List of classes that should not be rescued by the operations processor.
       # For example, if you use Pundit for authorization, you might
       # raise a Pundit::NotAuthorizedError at some point during operations
@@ -95,11 +105,11 @@ module JSONAPI
       self.always_include_to_one_linkage_data = false
       self.always_include_to_many_linkage_data = false
 
-      # Record Accessor
-      # The default Record Accessor is the ActiveRecordAccessor which provides
-      # caching access to ActiveRecord backed models. Custom Accessors can be specified
-      # in order to support other models.
-      self.default_record_accessor_klass = JSONAPI::ActiveRecordAccessor
+      # ResourceFinder Mixin
+      # The default ResourceFinder is the ActiveRelationResourceFinder which provides
+      # access to ActiveRelation backed models. Custom ResourceFinders can be specified
+      # in order to support other ORMs.
+      self.resource_finder = JSONAPI::ActiveRelationResourceFinder
 
       # The default Operation Processor to use if one is not defined specifically
       # for a Resource.
@@ -125,6 +135,11 @@ module JSONAPI
       # Set to `nil` (the default) to disable caching, or to `Rails.cache` to use the
       # Rails cache store.
       self.resource_cache = nil
+
+      # Cache resources by default
+      # Cache resources by default. Individual resources can be excluded from caching by calling:
+      # `caching false`
+      self.default_caching = false
 
       # Default resource cache field
       # On Resources with caching enabled, this field will be used to check for out-of-date
@@ -210,11 +225,17 @@ module JSONAPI
       @default_processor_klass = default_processor_klass
     end
 
-    def default_record_accessor_klass=(default_record_accessor_klass)
-      @default_record_accessor_klass = default_record_accessor_klass
+    def resource_finder=(resource_finder)
+      @resource_finder = resource_finder
     end
 
-    attr_writer :allow_include, :allow_sort, :allow_filter
+    def allow_include=(allow_include)
+      ActiveSupport::Deprecation.warn('`allow_include` has been replaced by `default_allow_include_to_one` and `default_allow_include_to_many` options.')
+      @default_allow_include_to_one = allow_include
+      @default_allow_include_to_many = allow_include
+    end
+
+    attr_writer :allow_sort, :allow_filter, :default_allow_include_to_one, :default_allow_include_to_many
 
     attr_writer :default_paginator
 
@@ -238,6 +259,8 @@ module JSONAPI
 
     attr_writer :include_backtraces_in_errors
 
+    attr_writer :include_application_backtraces_in_errors
+
     attr_writer :exception_class_whitelist
 
     attr_writer :whitelist_all_exceptions
@@ -248,9 +271,13 @@ module JSONAPI
 
     attr_writer :raise_if_parameters_not_allowed
 
+    attr_writer :warn_on_route_setup_issues
+
     attr_writer :use_relationship_reflection
 
     attr_writer :resource_cache
+
+    attr_writer :default_caching
 
     attr_writer :default_resource_cache_field
 

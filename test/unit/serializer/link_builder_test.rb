@@ -302,6 +302,20 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
     assert_equal expected_link, builder.query_link(query)
   end
 
+  def test_query_link_for_regular_app_with_optional_scope
+    config = {
+        base_url: @base_url,
+        route_formatter: OptionalRouteFormatter,
+        primary_resource_klass: OptionalNamespace::V1::PersonResource
+    }
+
+    query         = { page: { offset: 0, limit: 12 } }
+    builder       = JSONAPI::LinkBuilder.new(config)
+    expected_link = "#{ @base_url }/optional_namespace/people?page%5Blimit%5D=12&page%5Boffset%5D=0"
+
+    assert_equal expected_link, builder.query_link(query)
+  end
+
   def test_query_link_for_engine
     config = {
       base_url: @base_url,
@@ -340,6 +354,20 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
     query         = { page: { offset: 0, limit: 12 } }
     builder       = JSONAPI::LinkBuilder.new(config)
     expected_link = "#{ @base_url }/boomshaka/dasherized-namespace/v1/people?page%5Blimit%5D=12&page%5Boffset%5D=0"
+
+    assert_equal expected_link, builder.query_link(query)
+  end
+
+  def test_query_link_for_engine_with_optional_scope
+    config = {
+        base_url: @base_url,
+        route_formatter: OptionalRouteFormatter,
+        primary_resource_klass: MyEngine::OptionalNamespace::V1::PersonResource
+    }
+
+    query         = { page: { offset: 0, limit: 12 } }
+    builder       = JSONAPI::LinkBuilder.new(config)
+    expected_link = "#{ @base_url }/boomshaka/optional_namespace/people?page%5Blimit%5D=12&page%5Boffset%5D=0"
 
     assert_equal expected_link, builder.query_link(query)
   end

@@ -1,9 +1,24 @@
-related_thing_1:
-  id: 1
-  from_id: 1
-  to_id: 2
+related_thing_10:
+  id: 101
+  from_id: 10
+  to_id: 20
 
-related_thing_2:
-  id: 2
-  from_id: 2
-  to_id: 1
+related_thing_20:
+  id: 201
+  from_id: 20
+  to_id: 10
+
+related_thing_3040:
+  id: 301
+  from_id: 30
+  to_id: 40
+
+related_thing_3050:
+  id: 302
+  from_id: 30
+  to_id: 50
+
+related_thing_5060:
+  id: 303
+  from_id: 50
+  to_id: 60

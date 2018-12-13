@@ -38,17 +38,18 @@ module JSONAPI
     end
   end
 
-  class ResourceOperationResult < OperationResult
-    attr_accessor :resource
+  class ResourceSetOperationResult < OperationResult
+    attr_accessor :resource_set, :pagination_params
 
-    def initialize(code, resource, options = {})
-      @resource = resource
+    def initialize(code, resource_set, options = {})
+      @resource_set = resource_set
+      @pagination_params = options.fetch(:pagination_params, {})
       super(code, options)
     end
 
-    def to_hash(serializer = nil)
+    def to_hash(serializer)
       if serializer
-        serializer.serialize_to_hash(resource)
+        serializer.serialize_resource_set_to_hash(resource_set)
       else
         # :nocov:
         {}
@@ -57,11 +58,11 @@ module JSONAPI
     end
   end
 
-  class ResourcesOperationResult < OperationResult
-    attr_accessor :resources, :pagination_params, :record_count, :page_count
+  class ResourcesSetOperationResult < OperationResult
+    attr_accessor :resource_set, :pagination_params, :record_count, :page_count
 
-    def initialize(code, resources, options = {})
-      @resources = resources
+    def initialize(code, resource_set, options = {})
+      @resource_set = resource_set
       @pagination_params = options.fetch(:pagination_params, {})
       @record_count = options[:record_count]
       @page_count = options[:page_count]
@@ -70,7 +71,7 @@ module JSONAPI
 
     def to_hash(serializer)
       if serializer
-        serializer.serialize_to_hash(resources)
+        serializer.serialize_resources_set_to_hash(resource_set)
       else
         # :nocov:
         {}
@@ -79,18 +80,18 @@ module JSONAPI
     end
   end
 
-  class RelatedResourcesOperationResult < ResourcesOperationResult
-    attr_accessor :source_resource, :_type
+  class RelatedResourcesSetOperationResult < ResourcesSetOperationResult
+    attr_accessor :resource_set, :source_resource, :_type
 
-    def initialize(code, source_resource, type, resources, options = {})
+    def initialize(code, source_resource, type, resource_set, options = {})
       @source_resource = source_resource
       @_type = type
-      super(code, resources, options)
+      super(code, resource_set, options)
     end
 
     def to_hash(serializer = nil)
       if serializer
-        serializer.serialize_to_hash(resources)
+        serializer.serialize_related_resources_set_to_hash(source_resource, resource_set)
       else
         # :nocov:
         {}
@@ -100,17 +101,18 @@ module JSONAPI
   end
 
   class LinksObjectOperationResult < OperationResult
-    attr_accessor :parent_resource, :relationship
+    attr_accessor :parent_resource, :relationship, :resource_ids
 
-    def initialize(code, parent_resource, relationship, options = {})
+    def initialize(code, parent_resource, relationship, resource_ids, options = {})
       @parent_resource = parent_resource
       @relationship = relationship
+      @resource_ids = resource_ids
       super(code, options)
     end
 
     def to_hash(serializer = nil)
       if serializer
-        serializer.serialize_to_links_hash(parent_resource, relationship)
+        serializer.serialize_to_links_hash(parent_resource, relationship, resource_ids)
       else
         # :nocov:
         {}
