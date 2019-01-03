@@ -641,8 +641,8 @@ class Thing < ActiveRecord::Base
 end
 
 class RelatedThing < ActiveRecord::Base
-  belongs_to :from, class_name: Thing, foreign_key: :from_id
-  belongs_to :to, class_name: Thing, foreign_key: :to_id
+  belongs_to :from, class_name: "Thing", foreign_key: :from_id
+  belongs_to :to, class_name: "Thing", foreign_key: :to_id
 end
 
 class Question < ActiveRecord::Base
