@@ -37,3 +37,9 @@ picture_48:
   name: JunkYardDogs.jpg
   imageable_id: 201
   imageable_type: Document
+
+picture_50:
+  id: 50
+  name: Gizmo_logo.png
+  imageable_id: 300
+  imageable_type: Document

@@ -1,7 +1,7 @@
 module JSONAPI
   module Exceptions
     class Error < RuntimeError
-      attr :error_object_overrides
+      attr_reader :error_object_overrides
 
       def initialize(error_object_overrides = {})
         @error_object_overrides = error_object_overrides

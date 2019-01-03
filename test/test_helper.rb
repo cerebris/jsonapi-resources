@@ -60,6 +60,9 @@ class TestApp < Rails::Application
     config.active_support.halt_callback_chains_on_return_false = false
     config.active_record.time_zone_aware_types = [:time, :datetime]
     config.active_record.belongs_to_required_by_default = false
+    if Rails::VERSION::MINOR >= 2
+      config.active_record.sqlite3.represent_boolean_as_integer = true
+    end
   end
 end
 
@@ -87,6 +90,10 @@ if Rails::VERSION::MAJOR >= 5
   class ActionController::TestCase
     prepend ClearRawPostHeader
   end
+end
+
+if Rails::VERSION::MAJOR < 5
+  require 'left_join'
 end
 
 # Tests are now using the rails 5 format for the http methods. So for rails 4 we will simply convert them back
@@ -343,7 +350,7 @@ TestApp.routes.draw do
     namespace :v5 do
       jsonapi_resources :posts do
       end
-
+      jsonapi_resources :painters
       jsonapi_resources :authors
       jsonapi_resources :expense_entries
       jsonapi_resources :iso_currencies

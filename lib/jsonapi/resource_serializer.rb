@@ -42,19 +42,19 @@ module JSONAPI
     end
 
     # Converts a resource_set to a hash, conforming to the JSONAPI structure
-    def serialize_resource_set_to_hash(result_set)
+    def serialize_resource_set_to_hash_single(resource_set)
 
       primary_objects = []
       included_objects = []
 
-      result_set.each_value do |values|
-        values.each_value do |value|
-          serialized_result = object_hash(value[:resource], value[:relationships])
+      resource_set.resource_klasses.each_value do |resource_klass|
+        resource_klass.each_value do |resource|
+          serialized_resource = object_hash(resource[:resource], resource[:relationships])
 
-          if value[:primary]
-            primary_objects.push(serialized_result)
+          if resource[:primary]
+            primary_objects.push(serialized_resource)
           else
-            included_objects.push(serialized_result)
+            included_objects.push(serialized_resource)
           end
         end
       end
@@ -66,19 +66,19 @@ module JSONAPI
       primary_hash
     end
 
-    def serialize_resources_set_to_hash(result_set)
+    def serialize_resource_set_to_hash_plural(resource_set)
 
       primary_objects = []
       included_objects = []
 
-      result_set.each_value do |resources|
-        resources.each_value do |resource|
-          serialized_result = object_hash(resource[:resource], resource[:relationships])
+      resource_set.resource_klasses.each_value do |resource_klass|
+        resource_klass.each_value do |resource|
+          serialized_resource = object_hash(resource[:resource], resource[:relationships])
 
           if resource[:primary]
-            primary_objects.push(serialized_result)
+            primary_objects.push(serialized_resource)
           else
-            included_objects.push(serialized_result)
+            included_objects.push(serialized_resource)
           end
         end
       end
@@ -89,27 +89,8 @@ module JSONAPI
       primary_hash
     end
 
-    def serialize_related_resources_set_to_hash(source_resource, result_set)
-
-      primary_objects = []
-      included_objects = []
-
-      result_set.each_value do |values|
-        values.each_value do |value|
-          serialized_result = object_hash(value[:resource], value[:relationships])
-
-          if value[:primary]
-            primary_objects.push(serialized_result)
-          else
-            included_objects.push(serialized_result)
-          end
-        end
-      end
-
-      primary_hash = { 'data' => primary_objects }
-
-      primary_hash['included'] = included_objects if included_objects.size > 0
-      primary_hash
+    def serialize_related_resource_set_to_hash_plural(resource_set, _source_resource)
+      return serialize_resource_set_to_hash_plural(resource_set)
     end
 
     def serialize_to_links_hash(source, requested_relationship, resource_ids)
@@ -282,16 +263,18 @@ module JSONAPI
       field_set = supplying_relationship_fields(source.class) & relationships.keys
 
       relationships.each_with_object({}) do |(name, relationship), hash|
+        include_data = false
         if field_set.include?(name)
           if relationship_data[name]
+            include_data = true
             if relationship.is_a?(JSONAPI::Relationship::ToOne)
-              rids = relationship_data[name][:rids].first
+              rids = relationship_data[name].first
             else
-              rids = relationship_data[name][:rids]
+              rids = relationship_data[name]
             end
           end
 
-          hash[format_key(name)] = link_object(source, relationship, rids)
+          hash[format_key(name)] = link_object(source, relationship, rids, include_data)
         end
       end
     end
@@ -316,16 +299,14 @@ module JSONAPI
           if relationship_klass.is_a?(JSONAPI::Relationship::ToOne)
             # include_linkage = @always_include_to_one_linkage_data | relationship_klass.always_include_linkage_data
             if relationship_data[relationship_name]
-              rids = relationship_data[relationship_name][:rids].first
-              include_linkage = rids
-              relationship['data'] = to_one_linkage(rids) if include_linkage
+              rids = relationship_data[relationship_name].first
+              relationship['data'] = to_one_linkage(rids)
             end
           else
             # include_linkage = relationship_klass.always_include_linkage_data
             if relationship_data[relationship_name]
-              rids = relationship_data[relationship_name][:rids]
-              include_linkage = !(rids.nil? || rids.empty?)
-              relationship['data'] = to_many_linkage(rids) if include_linkage
+              rids = relationship_data[relationship_name]
+              relationship['data'] = to_many_linkage(rids)
             end
           end
 
@@ -345,7 +326,7 @@ module JSONAPI
     def to_many_linkage(rids)
       linkage = []
 
-      rids.each do |details|
+      rids && rids.each do |details|
         id = details.id
         type = details.resource_klass.try(:_type)
         if type && id
@@ -365,33 +346,29 @@ module JSONAPI
       }
     end
 
-    def link_object_to_one(source, relationship, rid)
-      # include_linkage = @always_include_to_one_linkage_data | relationship.always_include_linkage_data
-      include_linkage = rid
+    def link_object_to_one(source, relationship, rid, include_data)
       link_object_hash = {}
       link_object_hash['links'] = {}
       link_object_hash['links']['self'] = self_link(source, relationship)
       link_object_hash['links']['related'] = related_link(source, relationship)
-      link_object_hash['data'] = to_one_linkage(rid) if include_linkage
+      link_object_hash['data'] = to_one_linkage(rid) if include_data
       link_object_hash
     end
 
-    def link_object_to_many(source, relationship, rids)
-      # include_linkage = relationship.always_include_linkage_data
-      include_linkage = rids && !rids.empty?
+    def link_object_to_many(source, relationship, rids, include_data)
       link_object_hash = {}
       link_object_hash['links'] = {}
       link_object_hash['links']['self'] = self_link(source, relationship)
       link_object_hash['links']['related'] = related_link(source, relationship)
-      link_object_hash['data'] = to_many_linkage(rids) if include_linkage
+      link_object_hash['data'] = to_many_linkage(rids) if include_data
       link_object_hash
     end
 
-    def link_object(source, relationship, rid)
+    def link_object(source, relationship, rid, include_data)
       if relationship.is_a?(JSONAPI::Relationship::ToOne)
-        link_object_to_one(source, relationship, rid)
+        link_object_to_one(source, relationship, rid, include_data)
       elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
-        link_object_to_many(source, relationship, rid)
+        link_object_to_many(source, relationship, rid, include_data)
       end
     end
 

@@ -276,7 +276,7 @@ module JSONAPI
     end
 
     def _replace_to_many_links(relationship_type, relationship_key_values, options)
-      relationship = self.class._relationships[relationship_type]
+      relationship = self.class._relationship(relationship_type)
 
       reflect = reflect_relationship?(relationship, options)
 
@@ -434,7 +434,7 @@ module JSONAPI
       #   cache: <optional: the resource's cache value>
       #   attributes: <optional: attributes hash for attributes requested - currently unused>
       #   related: {
-      #     <relationship_name>: <ResourceIndentity of a source resource in find_related_fragments>
+      #     <relationship_name>: <ResourceIdentity of a source resource in find_included_fragments>
       #   }
       # }
       #
@@ -464,6 +464,12 @@ module JSONAPI
         end
 
         def find_fragments(_filters, _options = {})
+          # :nocov:
+          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+          # :nocov:
+        end
+
+        def find_included_fragments(_source_rids, _relationship_name, _options = {})
           # :nocov:
           raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
           # :nocov:
@@ -525,12 +531,6 @@ module JSONAPI
         else
           model_name.rpartition('/').last
         end
-      end
-
-      def model_name_for_type(key_type)
-        type_class_name = key_type.to_s.classify
-        resource_klass = resource_klass_for(type_class_name)
-        resource_klass ? resource_klass._model_name.to_s : type_class_name
       end
 
       attr_accessor :_attributes, :_relationships, :_type, :_model_hints
@@ -708,24 +708,6 @@ module JSONAPI
 
       def fields
         _relationships.keys | _attributes.keys
-      end
-
-      def _lookup_association_chain(model_names)
-        associations = []
-        model_names.inject do |prev, current|
-          association = prev.classify.constantize.reflect_on_all_associations.detect do |assoc|
-            assoc.name.to_s.downcase == current.downcase
-          end
-          associations << association
-          association.class_name
-        end
-
-        associations
-      end
-
-      def find_count(filters, options = {})
-        # ToDo: Deprecation warning
-        count(filters, options)
       end
 
       def records(options = {})

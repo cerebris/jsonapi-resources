@@ -99,6 +99,39 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_cacheable_jsonapi_get '/posts/1/comments?relationship=books'
   end
 
+  def test_nested_filters
+    assert_cacheable_jsonapi_get '/posts?filter[search][title]=New post'
+    assert_jsonapi_response 200
+    assert_equal 1, json_response['data'].size
+  end
+
+  def test_relationship_filters
+    assert_cacheable_jsonapi_get '/posts?filter[tags.name]=whiny&sort=-author.name'
+    assert_jsonapi_response 200
+    assert_equal 3, json_response['data'].size
+  end
+
+  # ToDo: change filter to return results
+  def test_relationship_filters_nested
+    assert_cacheable_jsonapi_get '/posts?filter[comments.author.name]=Lazy Author&filter[comments.tags.name]=whiny'
+    assert_jsonapi_response 200
+    assert_equal 0, json_response['data'].size
+  end
+
+  def test_filters_one_level
+    assert_cacheable_jsonapi_get '/api/boxes?filter[things.name]=Thing10'
+    assert_jsonapi_response 200
+    assert_equal 1, json_response['data'].size
+    assert_equal '100', json_response['data'][0]['id']
+  end
+
+  def test_filters_two_level
+    assert_cacheable_jsonapi_get '/api/boxes?filter[things.things.name]=Thing40'
+    assert_jsonapi_response 200
+    assert_equal 1, json_response['data'].size
+    assert_equal '102', json_response['data'][0]['id']
+  end
+
   def test_get_underscored_key
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :underscored_key
@@ -678,12 +711,18 @@ class RequestTest < ActionDispatch::IntegrationTest
   #   assert_equal 'This is comment 18 on book 1.', json_response['data'][9]['attributes']['body']
   # end
 
-  def test_polymorpic_related_resources
+  def test_polymorphic_related_resources
     assert_cacheable_jsonapi_get '/pictures/1/imageable'
     assert_equal 'Enterprise Gizmo', json_response['data']['attributes']['name']
 
     assert_cacheable_jsonapi_get '/pictures/2/imageable'
     assert_equal 'Company Brochure', json_response['data']['attributes']['name']
+  end
+
+  def test_polymorphic_relation_filter
+    assert_cacheable_jsonapi_get '/pictures?include=imageable&filter[imageable.name]=Enterprise Gizmo'
+    assert_equal '1', json_response['data'][0]['id']
+    assert_equal '50', json_response['data'][1]['id']
   end
 
   def test_flow_self
