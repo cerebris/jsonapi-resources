@@ -568,6 +568,17 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 2, json_response['included'].size
   end
 
+  def test_includes_for_empty_relationships_shows_but_are_empty
+    assert_cacheable_get :show, params: {id: '17', include: 'author,tags'}
+
+    assert_response :success
+    assert json_response['data']['relationships']['author'].has_key?('data'), 'data key should exist for empty has_one relaionship'
+    assert_nil json_response['data']['relationships']['author']['data'], 'Data should be null'
+    assert json_response['data']['relationships']['tags'].has_key?('data'), 'data key should exist for empty has_many relationship'
+    assert json_response['data']['relationships']['tags']['data'].is_a?(Array), 'Data should be array'
+    assert json_response['data']['relationships']['tags']['data'].empty?, 'Data array should be empty'
+  end
+
   def test_show_single_with_include_disallowed
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.allow_include = false
