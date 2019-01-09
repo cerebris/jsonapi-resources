@@ -218,7 +218,7 @@ module JSONAPI
 
       included_resources = []
       begin
-        included_resources += CSV.parse_line(raw_include)
+        included_resources += Array(CSV.parse_line(raw_include))
       rescue CSV::MalformedCSVError
         fail JSONAPI::Exceptions::InvalidInclude.new(format_key(@resource_klass._type), raw_include)
       end
