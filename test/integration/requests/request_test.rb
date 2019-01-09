@@ -1119,6 +1119,11 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_jsonapi_response 400
   end
 
+  def test_include_value_missing
+    get '/api/v2/posts?include=', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_jsonapi_response 200
+  end
+
   def test_getting_different_resources_when_sti
     assert_cacheable_jsonapi_get '/vehicles'
     types = json_response['data'].map{|r| r['type']}.sort
