@@ -1499,10 +1499,6 @@ module BreedResourceFinder
       end
       breeds
     end
-
-    def retrieve_records(ids, options = {})
-      find_breeds_by_keys(ids, options)
-    end
   end
 end
 
