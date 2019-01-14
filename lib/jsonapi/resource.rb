@@ -710,10 +710,6 @@ module JSONAPI
         _relationships.keys | _attributes.keys
       end
 
-      def records(options = {})
-        _model_class.all
-      end
-
       def resources_for(records, context)
         records.collect do |record|
           resource_for(record, context)

@@ -169,6 +169,10 @@ module JSONAPI
         records.count(:all)
       end
 
+      def records(_options = {})
+        _model_class.all
+      end
+
       def parse_relationship_path(path)
         relationships = []
         relationship_names = []
