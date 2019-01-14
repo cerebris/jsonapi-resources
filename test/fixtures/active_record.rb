@@ -1453,14 +1453,14 @@ module BreedResourceFinder
 
   module ClassMethods
     def find(filters, options = {})
-      records = find_records(filters, options)
+      records = find_breeds(filters, options)
       resources_for(records, options[:context])
     end
 
     # Records
     def find_fragments(filters, options = {})
       fragments = {}
-      find_records(filters, options).each do |breed|
+      find_breeds(filters, options).each do |breed|
         rid = JSONAPI::ResourceIdentity.new(BreedResource, breed.id)
         fragments[rid] = JSONAPI::ResourceFragment.new(rid)
       end
@@ -1468,17 +1468,17 @@ module BreedResourceFinder
     end
 
     def find_by_key(key, options = {})
-      record = find_record_by_key(key, options)
+      record = find_breed_by_key(key, options)
       resource_for(record, options[:context])
     end
 
     def find_by_keys(keys, options = {})
-      records = find_records_by_keys(keys, options)
+      records = find_breeds_by_keys(keys, options)
       resources_for(records, options[:context])
     end
 
     #
-    def find_records(filters, options = {})
+    def find_breeds(filters, options = {})
       breeds = []
       id_filter = filters[:id]
       id_filter = [id_filter] unless id_filter.nil? || id_filter.is_a?(Array)
@@ -1488,11 +1488,11 @@ module BreedResourceFinder
       breeds
     end
 
-    def find_record_by_key(key, options = {})
+    def find_breed_by_key(key, options = {})
       $breed_data.breeds[key.to_i]
     end
 
-    def find_records_by_keys(keys, options = {})
+    def find_breeds_by_keys(keys, options = {})
       breeds = []
       keys.each do |key|
         breeds.push($breed_data.breeds[key.to_i])
@@ -1501,7 +1501,7 @@ module BreedResourceFinder
     end
 
     def retrieve_records(ids, options = {})
-      find_records_by_keys(ids, options)
+      find_breeds_by_keys(ids, options)
     end
   end
 end
@@ -1569,10 +1569,6 @@ class PreferencesResource < JSONAPI::Resource
   attribute :advanced_mode
 
   has_one :author, :foreign_key_on => :related, class_name: "Person"
-
-  def self.find_records(filters, options = {})
-    Preferences.limit(1)
-  end
 end
 
 class FactResource < JSONAPI::Resource

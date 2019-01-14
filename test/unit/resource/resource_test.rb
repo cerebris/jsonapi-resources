@@ -258,8 +258,8 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_filter_on_has_one_relationship_id
-    people = PreferencesResource.find(:author => 1)
-    assert_equal([1], people.map(&:id))
+    prefs = PreferencesResource.find(:author => 1001)
+    assert_equal([1], prefs.map(&:id))
   end
 
   def test_to_many_relationship_filters

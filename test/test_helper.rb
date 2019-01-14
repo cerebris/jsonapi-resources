@@ -596,7 +596,7 @@ class ActionController::TestCase
       if mode == :all
         # TODO Should also be caching :show_related_resource (non-plural) action
         if [:index, :show, :show_related_resources].include?(action)
-          if ar_resource_klass && response.status == 200 && json_response["data"].try(:size) > 0
+          if ar_resource_klass && response.status == 200 && json_response["data"].try(:size).try(:>, 0)
             assert_operator(
               cache_activity[:warmup][:total][:misses],
               :>,
