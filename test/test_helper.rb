@@ -329,6 +329,7 @@ TestApp.routes.draw do
       jsonapi_resources :posts do
       end
       jsonapi_resources :painters
+      jsonapi_resources :collectors
       jsonapi_resources :authors
       jsonapi_resources :expense_entries
       jsonapi_resources :iso_currencies

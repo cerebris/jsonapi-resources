@@ -2637,6 +2637,22 @@ class Api::V5::PaintersControllerTest < ActionController::TestCase
   end
 end
 
+class Api::V5::CollectorsControllerTest < ActionController::TestCase
+  def test_index_with_custom_filter_that_has_dot
+    get :index, params: {
+        filter: {
+            'name' => 'Alice',
+            'painting.title_equals': 'Helenka'
+        }
+    }
+
+    assert_response :success
+    assert_equal 1, json_response['data'].size
+    assert_equal '1', json_response['data'][0]['id']
+    refute json_response.key?('included')
+  end
+end
+
 class Api::V5::AuthorsControllerTest < ActionController::TestCase
   def test_get_person_as_author
     assert_cacheable_get :index, params: {filter: {id: '1'}}

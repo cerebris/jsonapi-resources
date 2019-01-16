@@ -251,34 +251,41 @@ module JSONAPI
       end
 
       filters.each do |key, value|
-        filter_method, included_resource_name =
-          key.to_s.split('.').map { |k| unformat_key(k) }.reverse
 
-        if included_resource_name
-          relationship = resource_klass._relationship(included_resource_name || '')
-
-          unless relationship
-            return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
-          end
-
-          unless  relationship.resource_klass._allowed_filter?(filter_method)
-            return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
-          end
-
-          unless @include_directives.include_config(relationship.name.to_sym).present?
-            return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
-          end
-
-          verified_filter = relationship.resource_klass.verify_filters(filter_method => value)
-          @include_directives.merge_filter(relationship.name, verified_filter)
-          next
+        unformatted_key = unformat_key(key)
+        if resource_klass._allowed_filter?(unformatted_key)
+          @filters[unformatted_key] = value
+        elsif unformatted_key.to_s.include?('.')
+          parse_relationship_filter(unformatted_key, value)
         else
-          unless resource_klass._allowed_filter?(filter_method)
-            return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
-          end
-
-          @filters[filter_method] = value
+          return @errors.concat(Exceptions::FilterNotAllowed.new(unformatted_key).errors)
         end
+      end
+    end
+
+    def parse_relationship_filter(key, value)
+      included_resource_name, filter_method = key.to_s.split('.')
+      filter_method = filter_method.to_sym if filter_method.present?
+
+      if included_resource_name
+        relationship = resource_klass._relationship(included_resource_name || '')
+
+        unless relationship
+          return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
+        end
+
+        unless  relationship.resource_klass._allowed_filter?(filter_method)
+          return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
+        end
+
+        unless @include_directives.include_config(relationship.name.to_sym).present?
+          return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
+        end
+
+        verified_filter = relationship.resource_klass.verify_filters(filter_method => value)
+        @include_directives.merge_filter(relationship.name, verified_filter)
+      else
+        return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
       end
     end
 
