@@ -899,6 +899,9 @@ module Api
 
     class PaintersController < JSONAPI::ResourceController
     end
+
+    class CollectorsController < JSONAPI::ResourceController
+    end
   end
 
   module V6
@@ -1671,6 +1674,11 @@ module Api
     class CollectorResource < JSONAPI::Resource
       attributes :name
       has_one :painting
+
+      filter :name
+      filter :'painting.title_equals', apply: -> (records, values, _opts) do
+        records.joins(:painting).where(paintings: { title: values })
+      end
     end
 
     class PainterResource < JSONAPI::Resource
