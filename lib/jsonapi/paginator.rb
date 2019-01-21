@@ -31,7 +31,8 @@ end
 class OffsetPaginator < JSONAPI::Paginator
   attr_reader :limit, :offset
 
-  def initialize(params)
+  def initialize(params, options = {})
+    @options = options
     parse_pagination_params(params)
     verify_pagination_params
   end
@@ -89,15 +90,17 @@ class OffsetPaginator < JSONAPI::Paginator
 
   private
 
+  attr_reader :options
+
   def parse_pagination_params(params)
     if params.nil?
-      @offset = 0
-      @limit = JSONAPI.configuration.default_page_size
+      @offset = default_offset
+      @limit  = default_limit
     elsif params.is_a?(ActionController::Parameters)
-      validparams = params.permit(:offset, :limit)
+      valid_params = params.permit(:offset, :limit)
 
-      @offset = validparams[:offset] ? validparams[:offset].to_i : 0
-      @limit = validparams[:limit] ? validparams[:limit].to_i : JSONAPI.configuration.default_page_size
+      @offset = (valid_params[:offset] || default_offset).to_i
+      @limit  = (valid_params[:limit] || default_limit).to_i
     else
       fail JSONAPI::Exceptions::InvalidPageObject.new
     end
@@ -117,12 +120,21 @@ class OffsetPaginator < JSONAPI::Paginator
       fail JSONAPI::Exceptions::InvalidPageValue.new(:offset, @offset)
     end
   end
+
+  def default_offset
+    options.try(:[], :offset) || 0
+  end
+
+  def default_limit
+    options.try(:[], :limit) || JSONAPI.configuration.default_page_size
+  end
 end
 
 class PagedPaginator < JSONAPI::Paginator
   attr_reader :size, :number
 
-  def initialize(params)
+  def initialize(params, options)
+    @options = options
     parse_pagination_params(params)
     verify_pagination_params
   end
@@ -177,18 +189,20 @@ class PagedPaginator < JSONAPI::Paginator
 
   private
 
+  attr_reader :options
+
   def parse_pagination_params(params)
     if params.nil?
-      @number = 1
-      @size = JSONAPI.configuration.default_page_size
+      @number = default_page_number
+      @size   = default_page_size
     elsif params.is_a?(ActionController::Parameters)
-      validparams = params.permit(:number, :size)
+      valid_params = params.permit(:number, :size)
 
-      @size = validparams[:size] ? validparams[:size].to_i : JSONAPI.configuration.default_page_size
-      @number = validparams[:number] ? validparams[:number].to_i : 1
+      @number = (valid_params[:number] || default_page_number).to_i
+      @size   = (valid_params[:size] || default_page_size).to_i
     else
-      @size = JSONAPI.configuration.default_page_size
       @number = params.to_i
+      @size   = default_page_size
     end
   rescue ActionController::UnpermittedParameters => e
     raise JSONAPI::Exceptions::PageParametersNotAllowed.new(e.params)
@@ -205,5 +219,13 @@ class PagedPaginator < JSONAPI::Paginator
     if @number < 1
       fail JSONAPI::Exceptions::InvalidPageValue.new(:number, @number)
     end
+  end
+
+  def default_page_size
+    options.try(:[], :default_page_size) || JSONAPI.configuration.default_page_size
+  end
+
+  def default_page_number
+    options.try(:[], :default_page_number) || 1
   end
 end

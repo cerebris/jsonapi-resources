@@ -268,7 +268,13 @@ module JSONAPI
 
     def parse_pagination(resource_klass, page)
       paginator_name = resource_klass._paginator
-      JSONAPI::Paginator.paginator_for(paginator_name).new(page) unless paginator_name == :none
+      return if paginator_name == :none
+
+      options   = resource_klass._paginator_options
+      paginator = JSONAPI::Paginator.paginator_for(paginator_name)
+      arity     = paginator.instance_method(:initialize).arity
+
+      arity == 2 ? paginator.new(page, options) : paginator.new(page)
     end
 
     def parse_fields(resource_klass, fields)
