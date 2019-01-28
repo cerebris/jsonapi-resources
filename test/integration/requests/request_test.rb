@@ -211,6 +211,52 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_jsonapi_response 201
   end
 
+  def test_post_polymorphic
+    post '/people', params:
+      {
+        'data' => {
+          'type' => 'people',
+          'attributes' => {
+            'name' => 'Reo',
+            'email' => 'reo@xyz.fake',
+            'date_joined' => 'Thu, 01 Jan 2019 00:00:00 UTC +00:00',
+          },
+          'relationships' => {
+            'vehicles' => {'data' => [{'type' => 'car', 'id' => '1'}]},
+          }
+        }
+      }.to_json,
+      headers: {
+        'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
+        'Accept' => JSONAPI::MEDIA_TYPE
+      }
+
+    assert_jsonapi_response 201
+  end
+
+  def test_post_polymorphic_invalid
+    post '/people', params:
+      {
+        'data' => {
+          'type' => 'people',
+          'attributes' => {
+            'name' => 'Reo',
+            'email' => 'reo@xyz.fake',
+            'date_joined' => 'Thu, 01 Jan 2019 00:00:00 UTC +00:00',
+          },
+          'relationships' => {
+            'vehicles' => {'data' => [{'type' => 'author', 'id' => '1'}]},
+          }
+        }
+      }.to_json,
+      headers: {
+        'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
+        'Accept' => JSONAPI::MEDIA_TYPE
+      }
+
+    assert_jsonapi_response 400, msg: "Submitting a thing as a vehicle should raise a type mismatch error"
+  end
+
   def test_post_single_missing_data_contents
     post '/posts', params:
          {

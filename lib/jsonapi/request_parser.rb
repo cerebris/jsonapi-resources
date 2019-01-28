@@ -521,19 +521,15 @@ module JSONAPI
 
       links_object = parse_to_many_links_object(linkage)
 
-      # Since we do not yet support polymorphic to_many relationships we will raise an error if the type does not match the
-      # relationship's type.
-      # ToDo: Support Polymorphic relationships
-
       if links_object.length == 0
         add_result.call([])
       else
-        if links_object.length > 1 || !links_object.has_key?(unformat_key(relationship.type).to_s)
-          fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
-        end
-
+        defined_relationship_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(relationship.type).to_s)
         links_object.each_pair do |type, keys|
           relationship_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(type).to_s)
+          if !relationship_resource.ancestors.include?(defined_relationship_resource)
+            fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
+          end
           add_result.call relationship_resource.verify_keys(keys, @context)
         end
       end
