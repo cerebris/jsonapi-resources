@@ -42,7 +42,7 @@ module JSONAPI
     def find
       filters = params[:filters]
       include_directives = params[:include_directives]
-      sort_criteria = params.fetch(:sort_criteria, [])
+      sort_criteria = params[:sort_criteria]
       paginator = params[:paginator]
       fields = params[:fields]
       serializer = params[:serializer]
@@ -93,7 +93,8 @@ module JSONAPI
       find_options = {
         context: context,
         fields: fields,
-        filters: { resource_klass._primary_key => key }
+        filters: { resource_klass._primary_key => key },
+        include_directives: include_directives
       }
 
       resource_set = find_resource_set(resource_klass,
@@ -109,7 +110,7 @@ module JSONAPI
       parent_key = params[:parent_key]
       relationship_type = params[:relationship_type].to_sym
       paginator = params[:paginator]
-      sort_criteria = params.fetch(:sort_criteria, [])
+      sort_criteria = params[:sort_criteria]
       include_directives = params[:include_directives]
       fields = params[:fields]
 
@@ -119,7 +120,8 @@ module JSONAPI
           context: context,
           sort_criteria: sort_criteria,
           paginator: paginator,
-          fields: fields
+          fields: fields,
+          include_directives: include_directives
       }
 
       resource_id_tree = find_related_resource_id_tree(resource_klass,
@@ -146,7 +148,8 @@ module JSONAPI
       find_options = {
           context: context,
           fields: fields,
-          filters: {}
+          filters: {},
+          include_directives: include_directives
       }
 
       source_resource = source_klass.find_by_key(source_id, context: context, fields: fields)
@@ -166,7 +169,7 @@ module JSONAPI
       source_id = params[:source_id]
       relationship_type = params[:relationship_type]
       filters = params[:filters]
-      sort_criteria = params.fetch(:sort_criteria, resource_klass.default_sort)
+      sort_criteria = params[:sort_criteria]
       paginator = params[:paginator]
       fields = params[:fields]
       include_directives = params[:include_directives]
@@ -179,7 +182,8 @@ module JSONAPI
         sort_criteria: sort_criteria,
         paginator: paginator,
         fields: fields,
-        context: context
+        context: context,
+        include_directives: include_directives
       }
 
       source_resource = source_klass.find_by_key(source_id, context: context, fields: fields)
@@ -233,7 +237,8 @@ module JSONAPI
       find_options = {
           context: context,
           fields: fields,
-          filters: { resource_klass._primary_key => resource.id }
+          filters: { resource_klass._primary_key => resource.id },
+          include_directives: include_directives
       }
 
       resource_set = find_resource_set(resource_klass,
@@ -269,7 +274,8 @@ module JSONAPI
       find_options = {
           context: context,
           fields: fields,
-          filters: { resource_klass._primary_key => resource.id }
+          filters: { resource_klass._primary_key => resource.id },
+          include_directives: include_directives
       }
 
       resource_set = find_resource_set(resource_klass,

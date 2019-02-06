@@ -400,6 +400,7 @@ module JSONAPI
         subclass.caching(_caching)
         subclass.paginator(_paginator)
         subclass._attributes = (_attributes || {}).dup
+        subclass.polymorphic(false)
 
         subclass._model_hints = (_model_hints || {}).dup
 
@@ -439,53 +440,53 @@ module JSONAPI
       # }
       #
       # begin ResourceFinder Abstract methods
-        def find(_filters, _options = {})
-          # :nocov:
-          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-          # :nocov:
-        end
+      def find(_filters, _options = {})
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
 
-        def count(_filters, _options = {})
-          # :nocov:
-          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-          # :nocov:
-        end
+      def count(_filters, _options = {})
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
 
-        def find_by_keys(_keys, _options = {})
-          # :nocov:
-          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-          # :nocov:
-        end
+      def find_by_keys(_keys, _options = {})
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
 
-        def find_by_key(_key, _options = {})
-          # :nocov:
-          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-          # :nocov:
-        end
+      def find_by_key(_key, _options = {})
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
 
-        def find_fragments(_filters, _options = {})
-          # :nocov:
-          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-          # :nocov:
-        end
+      def find_fragments(_filters, _options = {})
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
 
-        def find_included_fragments(_source_rids, _relationship_name, _options = {})
-          # :nocov:
-          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-          # :nocov:
-        end
+      def find_included_fragments(_source_rids, _relationship_name, _options = {})
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
 
-        def find_related_fragments(_source_rids, _relationship_name, _options = {})
-          # :nocov:
-          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-          # :nocov:
-        end
+      def find_related_fragments(_source_rids, _relationship_name, _options = {})
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
 
-        def count_related(_source_rid, _relationship_name, _options = {})
-          # :nocov:
-          raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-          # :nocov:
-        end
+      def count_related(_source_rid, _relationship_name, _options = {})
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
 
       #end ResourceFinder Abstract methods
 
@@ -842,19 +843,28 @@ module JSONAPI
       end
 
       def _relationship(type)
+        return nil unless type
         type = type.to_sym
         @_relationships[type]
       end
 
       def _model_name
         if _abstract
-          return ''
+           ''
         else
           return @_model_name.to_s if defined?(@_model_name)
           class_name = self.name
           return '' if class_name.nil?
           @_model_name = class_name.demodulize.sub(/Resource$/, '')
-          return @_model_name.to_s
+          @_model_name.to_s
+        end
+      end
+
+      def _polymorphic_name
+        if !_polymorphic
+          ''
+        else
+          @_polymorphic_name ||= _model_name.to_s.downcase
         end
       end
 
@@ -892,6 +902,34 @@ module JSONAPI
 
       def paginator(paginator)
         @_paginator = paginator
+      end
+
+      def _polymorphic
+        @_polymorphic
+      end
+
+      def polymorphic(polymorphic = true)
+        @_polymorphic = polymorphic
+      end
+
+      def _polymorphic_types
+        @poly_hash ||= {}.tap do |hash|
+          ObjectSpace.each_object do |klass|
+            next unless Module === klass
+            if ActiveRecord::Base > klass
+              klass.reflect_on_all_associations(:has_many).select{|r| r.options[:as] }.each do |reflection|
+                (hash[reflection.options[:as]] ||= []) << klass.name.downcase
+              end
+            end
+          end
+        end
+        @poly_hash[_polymorphic_name.to_sym]
+      end
+
+      def _polymorphic_resource_klasses
+        @_polymorphic_resource_klasses ||= _polymorphic_types.collect do |type|
+          resource_klass_for(type)
+        end
       end
 
       def abstract(val = true)

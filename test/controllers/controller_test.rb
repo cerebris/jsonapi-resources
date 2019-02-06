@@ -7,6 +7,7 @@ end
 class PostsControllerTest < ActionController::TestCase
   def setup
     JSONAPI.configuration.raise_if_parameters_not_allowed = true
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
   end
 
   def test_index
@@ -572,7 +573,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_cacheable_get :show, params: {id: '17', include: 'author,tags'}
 
     assert_response :success
-    assert json_response['data']['relationships']['author'].has_key?('data'), 'data key should exist for empty has_one relaionship'
+    assert json_response['data']['relationships']['author'].has_key?('data'), 'data key should exist for empty has_one relationship'
     assert_nil json_response['data']['relationships']['author']['data'], 'Data should be null'
     assert json_response['data']['relationships']['tags'].has_key?('data'), 'data key should exist for empty has_many relationship'
     assert json_response['data']['relationships']['tags']['data'].is_a?(Array), 'Data should be array'
@@ -586,6 +587,32 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :bad_request
   ensure
     JSONAPI.configuration = original_config
+  end
+
+  def test_show_single_include_linkage
+    JSONAPI.configuration.always_include_to_one_linkage_data = true
+
+    assert_cacheable_get :show, params: {id: '17'}
+    assert_response :success
+    assert json_response['data']['relationships']['author'].has_key?('data'), 'data key should exist for empty has_one relationship'
+    assert_nil json_response['data']['relationships']['author']['data'], 'Data should be null'
+    refute json_response['data']['relationships']['tags'].has_key?('data'), 'data key should not exist for empty has_many relationship if not included'
+
+  ensure
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
+  end
+
+  def test_index_single_include_linkage
+    JSONAPI.configuration.always_include_to_one_linkage_data = true
+
+    assert_cacheable_get :index, params: { filter: { id: '17'} }
+    assert_response :success
+    assert json_response['data'][0]['relationships']['author'].has_key?('data'), 'data key should exist for empty has_one relationship'
+    assert_nil json_response['data'][0]['relationships']['author']['data'], 'Data should be null'
+    refute json_response['data'][0]['relationships']['tags'].has_key?('data'), 'data key should not exist for empty has_many relationship if not included'
+
+  ensure
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
   end
 
   def test_show_single_with_fields
@@ -2089,6 +2116,32 @@ class PicturesControllerTest < ActionController::TestCase
     assert_equal 5, json_response['included'].try(:size)
   end
 
+  def test_pictures_index_with_polymorphic_to_one_linkage
+    JSONAPI.configuration.always_include_to_one_linkage_data = true
+    assert_cacheable_get :index
+    assert_response :success
+    assert_equal 8, json_response['data'].try(:size)
+    assert_equal '3', json_response['data'][2]['id']
+    assert_nil json_response['data'][2]['relationships']['imageable']['data']
+    assert_equal 'products', json_response['data'][0]['relationships']['imageable']['data']['type']
+    assert_equal '1', json_response['data'][0]['relationships']['imageable']['data']['id']
+  ensure
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
+  end
+
+  def test_pictures_index_with_polymorphic_include_one_level_to_one_linkages
+    JSONAPI.configuration.always_include_to_one_linkage_data = true
+    assert_cacheable_get :index, params: {include: 'imageable'}
+    assert_response :success
+    assert_equal 8, json_response['data'].try(:size)
+    assert_equal 5, json_response['included'].try(:size)
+    assert_nil json_response['data'][2]['relationships']['imageable']['data']
+    assert_equal 'products', json_response['data'][0]['relationships']['imageable']['data']['type']
+    assert_equal '1', json_response['data'][0]['relationships']['imageable']['data']['id']
+  ensure
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
+  end
+
   def test_update_relationship_to_one_polymorphic
     set_content_type_header!
 
@@ -2097,6 +2150,13 @@ class PicturesControllerTest < ActionController::TestCase
     assert_response :no_content
     picture_object = Picture.find(48)
     assert_equal 2, picture_object.imageable_id
+  end
+
+  def test_pictures_index_with_filter_documents
+    assert_cacheable_get :index, params: {include: 'imageable', filter: {'imageable#documents.name': 'Management Through the Years'}}
+    assert_response :success
+    assert_equal 3, json_response['data'].try(:size)
+    assert_equal 1, json_response['included'].try(:size)
   end
 end
 
@@ -3250,10 +3310,10 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
     assert_query_count(5) do
       assert_cacheable_get :index, params: {filter: {id: '0'}, include: 'book-comments'}
+      assert_response :success
+      assert_equal 1, json_response['data'].size
+      assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
     end
-    assert_response :success
-    assert_equal 1, json_response['data'].size
-    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
   end
 
   def test_books_banned_non_book_admin
@@ -3262,11 +3322,11 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     JSONAPI.configuration.top_level_meta_include_record_count = true
     assert_query_count(3) do
       assert_cacheable_get :index, params: {page: {offset: 50, limit: 12}}
+      assert_response :success
+      assert_equal 12, json_response['data'].size
+      assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
+      assert_equal 901, json_response['meta']['record-count']
     end
-    assert_response :success
-    assert_equal 12, json_response['data'].size
-    assert_equal 'Book 50', json_response['data'][0]['attributes']['title']
-    assert_equal 901, json_response['meta']['record-count']
   ensure
     JSONAPI.configuration.top_level_meta_include_record_count = false
   end
@@ -3277,15 +3337,14 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     JSONAPI.configuration.top_level_meta_include_record_count = true
     assert_query_count(5) do
       assert_cacheable_get :index, params: {page: {offset: 0, limit: 12}, include: 'book-comments'}
+      assert_response :success
+      assert_equal 12, json_response['data'].size
+      assert_equal 130, json_response['included'].size
+      assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+      assert_equal 26, json_response['data'][0]['relationships']['book-comments']['data'].size
+      assert_equal 'book-comments', json_response['included'][0]['type']
+      assert_equal 901, json_response['meta']['record-count']
     end
-
-    assert_response :success
-    assert_equal 12, json_response['data'].size
-    assert_equal 130, json_response['included'].size
-    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
-    assert_equal 26, json_response['data'][0]['relationships']['book-comments']['data'].size
-    assert_equal 'book-comments', json_response['included'][0]['type']
-    assert_equal 901, json_response['meta']['record-count']
   ensure
     JSONAPI.configuration.top_level_meta_include_record_count = false
   end
@@ -3296,12 +3355,12 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     Api::V2::BookResource.paginator :offset
     assert_query_count(7) do
       assert_cacheable_get :index, params: {page: {offset: 0, limit: 12}, include: 'book-comments.author'}
+      assert_response :success
+      assert_equal 12, json_response['data'].size
+      assert_equal 132, json_response['included'].size
+      assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
+      assert_equal 901, json_response['meta']['record-count']
     end
-    assert_response :success
-    assert_equal 12, json_response['data'].size
-    assert_equal 132, json_response['included'].size
-    assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
-    assert_equal 901, json_response['meta']['record-count']
   ensure
     JSONAPI.configuration.top_level_meta_include_record_count = false
   end
@@ -3603,6 +3662,29 @@ class Api::V1::MoonsControllerTest < ActionController::TestCase
                        }, json_response)
   end
 
+  def test_show_related_resource_to_one_linkage_data
+    JSONAPI.configuration.always_include_to_one_linkage_data = true
+
+    assert_cacheable_get :show_related_resource, params: {crater_id: 'S56D', relationship: 'moon', source: "api/v1/craters"}
+    assert_response :success
+    assert_hash_equals({
+                           data: {
+                               id: "1",
+                               type: "moons",
+                               links: {self: "http://test.host/api/v1/moons/1"},
+                               attributes: {name: "Titan", description: "Best known of the Saturn moons."},
+                               relationships: {
+                                   planet: {links: {self: "http://test.host/api/v1/moons/1/relationships/planet",
+                                                    related: "http://test.host/api/v1/moons/1/planet"},
+                                            data: {type: "planets", id: "1"}
+                                   },
+                                   craters: {links: {self: "http://test.host/api/v1/moons/1/relationships/craters", related: "http://test.host/api/v1/moons/1/craters"}}}
+                           }
+                       }, json_response)
+  ensure
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
+  end
+
   def test_index_related_resources_with_select_some_db_columns
     Api::V1::MoonResource.paginator :paged
     original_config = JSONAPI.configuration.dup
@@ -3859,6 +3941,32 @@ class AuthorsControllerTest < ActionController::TestCase
     assert_equal 'authors', json_response['included'][0]['type']
     assert_equal '2', json_response['included'][1]['id']
     assert_equal 'books', json_response['included'][1]['type']
+  end
+
+  def test_show_author_do_not_include_polymorphic_linkage
+    assert_cacheable_get :show, params: {id: '1002', include: 'pictures'}
+    assert_response :success
+    assert_equal '1002', json_response['data']['id']
+    assert_equal 'authors', json_response['data']['type']
+    assert_equal 'Fred Reader', json_response['data']['attributes']['name']
+    assert json_response['included'][0]['relationships']['imageable']['links']
+    refute json_response['included'][0]['relationships']['imageable']['data']
+  end
+
+  def test_show_author_include_polymorphic_linkage
+    JSONAPI.configuration.always_include_to_one_linkage_data = true
+
+    assert_cacheable_get :show, params: {id: '1002', include: 'pictures'}
+    assert_response :success
+    assert_equal '1002', json_response['data']['id']
+    assert_equal 'authors', json_response['data']['type']
+    assert_equal 'Fred Reader', json_response['data']['attributes']['name']
+    assert json_response['included'][0]['relationships']['imageable']['links']
+    assert json_response['included'][0]['relationships']['imageable']['data']
+    assert_equal 'products', json_response['included'][0]['relationships']['imageable']['data']['type']
+    assert_equal '1', json_response['included'][0]['relationships']['imageable']['data']['id']
+  ensure
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
   end
 end
 

@@ -1,7 +1,7 @@
 module JSONAPI
   class Relationship
     attr_reader :acts_as_set, :foreign_key, :options, :name,
-                :class_name, :polymorphic, :always_include_linkage_data,
+                :class_name, :polymorphic, :always_include_optional_linkage_data,
                 :parent_resource, :eager_load_on_include, :custom_methods,
                 :inverse_relationship, :allow_include
 
@@ -15,8 +15,13 @@ module JSONAPI
       @parent_resource = options[:parent_resource]
       @relation_name = options.fetch(:relation_name, @name)
       @polymorphic = options.fetch(:polymorphic, false) == true
-      @polymorphic_relations = options[:polymorphic_relations]
-      @always_include_linkage_data = options.fetch(:always_include_linkage_data, false) == true
+      @polymorphic_types = options[:polymorphic_types]
+      if options[:polymorphic_relations]
+        ActiveSupport::Deprecation.warn('Use polymorphic_types instead of polymorphic_relations')
+        @polymorphic_types ||= options[:polymorphic_relations]
+      end
+
+      @always_include_optional_linkage_data = options.fetch(:always_include_optional_linkage_data, false) == true
       @eager_load_on_include = options.fetch(:eager_load_on_include, false) == true
       @allow_include = options[:allow_include]
       @class_name = nil
@@ -58,8 +63,12 @@ module JSONAPI
       @poly_hash[name.to_sym]
     end
 
-    def polymorphic_relations
-      @polymorphic_relations ||= self.class.polymorphic_types(@relation_name)
+    def resource_types
+      if polymorphic? && belongs_to?
+        @polymorphic_types ||= self.class.polymorphic_types(@relation_name).collect {|t| t.pluralize}
+      else
+        [resource_klass._type.to_s.pluralize]
+      end
     end
 
     def type
@@ -102,6 +111,12 @@ module JSONAPI
         end
       end
 
+      def to_s
+        # :nocov: useful for debugging
+        "#{parent_resource._type}.#{name} => (#{belongs_to? ? 'ToOne' : 'BelongsToOne'}) #{resource_klass._type}"
+        # :nocov:
+      end
+
       def belongs_to?
         # :nocov:
         foreign_key_on == :self
@@ -110,6 +125,10 @@ module JSONAPI
 
       def polymorphic_type
         "#{name}_type" if polymorphic?
+      end
+
+      def include_optional_linkage_data?
+        @always_include_optional_linkage_data || JSONAPI::configuration.always_include_to_one_linkage_data
       end
 
       def allow_include?(context = nil)
@@ -142,6 +161,18 @@ module JSONAPI
         end
       end
 
+      def to_s
+        # :nocov: useful for debugging
+        "#{parent_resource._type}.#{name} => (ToMany) #{resource_klass._type}"
+        # :nocov:
+      end
+
+      def include_optional_linkage_data?
+        # :nocov:
+        @always_include_optional_linkage_data || JSONAPI::configuration.always_include_to_many_linkage_data
+        # :nocov:
+      end
+
       def allow_include?(context = nil)
         strategy = if @allow_include.nil?
                      JSONAPI.configuration.default_allow_include_to_many
@@ -156,8 +187,8 @@ module JSONAPI
         else
           strategy.call(context)
         end
-
       end
+
     end
   end
 end

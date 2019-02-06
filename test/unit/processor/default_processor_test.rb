@@ -32,7 +32,7 @@ class DefaultProcessorTest < ActionDispatch::IntegrationTest
     $populated_resource_set_no_includes = JSONAPI::ResourceSet.new($id_tree_no_includes).populate!($serializer, nil,{})
 
     # has_one included
-    directives = JSONAPI::IncludeDirectives.new(PersonResource, ['author']).include_directives
+    directives = JSONAPI::IncludeDirectives.new(PostResource, ['author']).include_directives
     params = {
         filters: filters,
         include_directives: directives,

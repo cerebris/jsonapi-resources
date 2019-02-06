@@ -34,6 +34,10 @@ module JSONAPI
       def resource_klass
         @resource_klass || @relationship.resource_klass
       end
+
+      def path_specified_resource_klass?
+        !@resource_klass.nil?
+      end
     end
 
     class Field
