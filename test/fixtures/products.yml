@@ -1,6 +1,7 @@
 product_1:
   id: 1
   name: Enterprise Gizmo
+  designer_id: 1001
 
 product_2:
   id: 2

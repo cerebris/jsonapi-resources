@@ -3,22 +3,26 @@ picture_1:
   name: enterprise_gizmo.jpg
   imageable_id: 1
   imageable_type: Product
+  author_id: 1002
 
 picture_2:
   id: 2
   name: company_brochure.jpg
   imageable_id: 1
   imageable_type: Document
+  author_id: 1002
 
 picture_3:
   id: 3
   name: group_photo.jpg
+  author_id: 1001
 
 picture_40:
   id: 40
   name: company_management_team_2015.jpg
   imageable_id: 200
   imageable_type: Document
+  author_id: 1001
 
 picture_41:
   id: 41
