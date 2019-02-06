@@ -248,7 +248,9 @@ module JSONAPI
         joins = join_tree.joins
         related_alias = joins[''][:alias]
 
-        records.select(Arel.sql("#{concat_table_field(related_alias, related_klass._primary_key)}")).count(:all)
+        records = records.select(Arel.sql("#{concat_table_field(related_alias, related_klass._primary_key)}"))
+
+        count_records(records)
       end
 
       def records(_options = {})
@@ -700,7 +702,11 @@ module JSONAPI
 
       # Assumes ActiveRecord's counting. Override if you need a different counting method
       def count_records(records)
-        records.count(:all)
+        if Rails::VERSION::MAJOR >= 5 && ActiveRecord::VERSION::MINOR >= 1
+          records.count(:all)
+        else
+          records.count
+        end
       end
 
       def filter_records(records, filters, options)
