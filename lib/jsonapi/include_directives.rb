@@ -33,35 +33,23 @@ module JSONAPI
 
     private
 
-    def get_related(current_path)
-      current = @include_directives_hash
-      current_resource_klass = @resource_klass
-      current_path.split('.').each do |fragment|
-        fragment = fragment.to_sym
-
-        if current_resource_klass
-          current_relationship = current_resource_klass._relationships[fragment]
-          current_resource_klass = current_relationship.try(:resource_klass)
-        else
-          raise JSONAPI::Exceptions::InvalidInclude.new(current_resource_klass, current_path)
-        end
-
-
-        current[:include_related][fragment] ||= { include: false, include_related: {} }
-        current = current[:include_related][fragment]
-      end
-      current
-    end
-
     def parse_include(include)
-      parts = include.split('.')
-      local_path = ''
+      path = JSONAPI::Path.new(resource_klass: @resource_klass,
+                               path_string: include,
+                               ensure_default_field: false,
+                               parse_fields: false)
 
-      parts.each do |name|
-        local_path += local_path.length > 0 ? ".#{name}" : name
-        related = get_related(local_path)
-        related[:include] = true
+      current = @include_directives_hash
+
+      path.parts.each do |part|
+        relationship_name = part.relationship.name.to_sym
+
+        current[:include_related][relationship_name] ||= { include: true, include_related: {} }
+        current = current[:include_related][relationship_name]
       end
+
+    rescue JSONAPI::Exceptions::InvalidRelationship => _e
+      raise JSONAPI::Exceptions::InvalidInclude.new(@resource_klass, include)
     end
   end
 end

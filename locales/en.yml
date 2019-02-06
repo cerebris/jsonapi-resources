@@ -46,6 +46,9 @@ en:
       invalid_field:
         title: 'Invalid field'
         detail: "%{field} is not a valid field for %{type}."
+      invalid_relationship:
+        title: 'Invalid relationship'
+        detail: "%{relationship_name} is not a valid relationship for %{type}."
       invalid_include:
         title: 'Invalid include'
         detail: "%{relationship} is not a valid includable relationship of %{resource}"
