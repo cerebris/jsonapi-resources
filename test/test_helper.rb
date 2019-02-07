@@ -92,10 +92,6 @@ if Rails::VERSION::MAJOR >= 5
   end
 end
 
-if Rails::VERSION::MAJOR < 5
-  require 'left_join'
-end
-
 # Tests are now using the rails 5 format for the http methods. So for rails 4 we will simply convert them back
 # in a standard way.
 if Rails::VERSION::MAJOR < 5

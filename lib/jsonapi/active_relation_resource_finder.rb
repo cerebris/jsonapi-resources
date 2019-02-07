@@ -1,3 +1,5 @@
+require 'jsonapi/active_relation_resource_finder/adapters/join_left_active_record_adapter'
+
 module JSONAPI
   module ActiveRelationResourceFinder
     def self.included(base)
@@ -662,7 +664,7 @@ module JSONAPI
             records, join_alias = get_join_alias(records) { |records| records.joins(join[:relation_join_hash]) }
             join[:alias] = join_alias
           when :left
-            records, join_alias = get_join_alias(records) { |records| records.left_joins(join[:relation_join_hash]) }
+            records, join_alias = get_join_alias(records) { |records| records.joins_left(join[:relation_join_hash]) }
             join[:alias] = join_alias
           end
         end
