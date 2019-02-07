@@ -42,19 +42,13 @@ module JSONAPI
       #
       # @return [Integer] the count
       def count(filters, options = {})
-        sort_criteria = options.fetch(:sort_criteria) { [] }
-
         join_tree = JoinTree.new(resource_klass: self,
                                  options: options,
-                                 filters: filters,
-                                 sort_criteria: sort_criteria)
-
-        paginator = options[:paginator]
+                                 filters: filters)
 
         records = find_records(records: records(options),
                                filters: filters,
                                join_tree: join_tree,
-                               paginator: paginator,
                                options: options)
 
         count_records(records)
