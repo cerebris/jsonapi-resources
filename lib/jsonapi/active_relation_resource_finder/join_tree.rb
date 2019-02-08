@@ -83,7 +83,12 @@ module JSONAPI
 
           segment.relationship.resource_types.each do |related_resource_type|
             related_resource_klass = resource_klass.resource_klass_for(related_resource_type)
-            if !segment.path_specified_resource_klass? || related_resource_klass == segment.resource_klass
+
+            # If the resource type was specified in the path segment we want to only process the next segments for
+            # that resource type, otherwise process for all
+            process_all_types = !segment.path_specified_resource_klass?
+
+            if process_all_types || related_resource_klass == segment.resource_klass
               related_resource_tree = process_path_to_tree(path_segments.dup, related_resource_klass, default_join_type, default_polymorphic_join_type)
               node[:resource_klasses][resource_klass][:relationships][segment.relationship].deep_merge!(related_resource_tree)
             end
