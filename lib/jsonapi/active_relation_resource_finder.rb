@@ -508,7 +508,7 @@ module JSONAPI
                                    path_string: "#{relationship.name}#{linkage_relationship_path}",
                                    ensure_default_field: false)
 
-          linkage_relationship = path.parts[-1].relationship
+          linkage_relationship = path.segments[-1].relationship
 
           if linkage_relationship.polymorphic? && linkage_relationship.belongs_to?
             linkage_relationship.resource_types.each do |resource_type|
@@ -761,8 +761,8 @@ module JSONAPI
       def get_aliased_field(path_with_field, joins)
         path = JSONAPI::Path.new(resource_klass: self, path_string: path_with_field)
 
-        relationship = path.parts[-2]
-        field = path.parts[-1]
+        relationship = path.segments[-2]
+        field = path.segments[-1]
         relationship_path = path.relationship_path_string
 
         if relationship

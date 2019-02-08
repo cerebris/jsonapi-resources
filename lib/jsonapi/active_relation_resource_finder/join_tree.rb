@@ -40,7 +40,7 @@ module JSONAPI
       def add_join(path, default_type = :inner, default_polymorphic_join_type = :left)
         if source_relationship
           if source_relationship.polymorphic?
-            # Polymorphic paths will come it with the resource_type as the first part (for example `#documents.comments`)
+            # Polymorphic paths will come it with the resource_type as the first segment (for example `#documents.comments`)
             # We just need to prepend the relationship portion the
             sourced_path = "#{source_relationship.name}#{path}"
           else
@@ -63,7 +63,7 @@ module JSONAPI
         }
       end
 
-      def process_path_to_tree(path_parts, resource_klass, default_join_type, default_polymorphic_join_type)
+      def process_path_to_tree(path_segments, resource_klass, default_join_type, default_polymorphic_join_type)
         node = {
             resource_klasses: {
                 resource_klass => {
@@ -72,20 +72,20 @@ module JSONAPI
             }
         }
 
-        part = path_parts.shift
+        segment = path_segments.shift
 
-        if part.is_a?(PathPart::Relationship)
-          node[:resource_klasses][resource_klass][:relationships][part.relationship] ||= {}
+        if segment.is_a?(PathSegment::Relationship)
+          node[:resource_klasses][resource_klass][:relationships][segment.relationship] ||= {}
 
           # join polymorphic as left joins
-          node[:resource_klasses][resource_klass][:relationships][part.relationship][:join_type] ||=
-              part.relationship.polymorphic? ? default_polymorphic_join_type : default_join_type
+          node[:resource_klasses][resource_klass][:relationships][segment.relationship][:join_type] ||=
+              segment.relationship.polymorphic? ? default_polymorphic_join_type : default_join_type
 
-          part.relationship.resource_types.each do |related_resource_type|
+          segment.relationship.resource_types.each do |related_resource_type|
             related_resource_klass = resource_klass.resource_klass_for(related_resource_type)
-            if !part.path_specified_resource_klass? || related_resource_klass == part.resource_klass
-              related_resource_tree = process_path_to_tree(path_parts.dup, related_resource_klass, default_join_type, default_polymorphic_join_type)
-              node[:resource_klasses][resource_klass][:relationships][part.relationship].deep_merge!(related_resource_tree)
+            if !segment.path_specified_resource_klass? || related_resource_klass == segment.resource_klass
+              related_resource_tree = process_path_to_tree(path_segments.dup, related_resource_klass, default_join_type, default_polymorphic_join_type)
+              node[:resource_klasses][resource_klass][:relationships][segment.relationship].deep_merge!(related_resource_tree)
             end
           end
         end
@@ -94,8 +94,8 @@ module JSONAPI
 
       def parse_path_to_tree(path_string, resource_klass, default_join_type = :inner, default_polymorphic_join_type = :left)
         path = JSONAPI::Path.new(resource_klass: resource_klass, path_string: path_string)
-        field = path.parts[-1]
-        return process_path_to_tree(path.parts, resource_klass, default_join_type, default_polymorphic_join_type), field
+        field = path.segments[-1]
+        return process_path_to_tree(path.segments, resource_klass, default_join_type, default_polymorphic_join_type), field
       end
 
       def add_source_relationship(source_relationship)
