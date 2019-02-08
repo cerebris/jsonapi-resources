@@ -916,7 +916,7 @@ module JSONAPI
         @poly_hash ||= {}.tap do |hash|
           ObjectSpace.each_object do |klass|
             next unless Module === klass
-            if ActiveRecord::Base > klass
+            if klass < ActiveRecord::Base
               klass.reflect_on_all_associations(:has_many).select{|r| r.options[:as] }.each do |reflection|
                 (hash[reflection.options[:as]] ||= []) << klass.name.downcase
               end
