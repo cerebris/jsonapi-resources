@@ -40,6 +40,8 @@ class PathTest < ActiveSupport::TestCase
     assert_equal Api::V1::PostResource._relationship(:comments), path.segments[0].relationship
     assert_equal Api::V1::CommentResource._relationship(:author), path.segments[1].relationship
     assert_equal 'name', path.segments[2].field_name
+
+    assert_equal 2, path.relationship_segments.length
   end
 
   def test_two_relationships_and_parse_fields_false_raises_with_field

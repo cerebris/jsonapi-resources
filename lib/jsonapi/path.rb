@@ -25,11 +25,7 @@ module JSONAPI
     end
 
     def relationship_segments
-      relationships = []
-      @segments.each do |segment|
-        relationships << segment if segment.is_a?(PathSegment::Relationship)
-      end
-      relationships
+      @segments.select {|p| p.is_a?(PathSegment::Relationship)}
     end
 
     def relationship_path_string
