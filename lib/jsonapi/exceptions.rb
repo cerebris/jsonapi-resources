@@ -327,6 +327,26 @@ module JSONAPI
       end
     end
 
+    class InvalidRelationship < Error
+      attr_accessor :relationship_name, :type
+
+      def initialize(type, relationship_name, error_object_overrides = {})
+        @relationship_name = relationship_name
+        @type = type
+        super(error_object_overrides)
+      end
+
+      def errors
+        [create_error_object(code: JSONAPI::INVALID_RELATIONSHIP,
+                             status: :bad_request,
+                             title: I18n.translate('jsonapi-resources.exceptions.invalid_relationship.title',
+                                                   default: 'Invalid relationship'),
+                             detail: I18n.translate('jsonapi-resources.exceptions.invalid_relationship.detail',
+                                                    default: "#{relationship_name} is not a valid field for #{type}.",
+                                                    relationship_name: relationship_name, type: type))]
+      end
+    end
+
     class InvalidInclude < Error
       attr_accessor :relationship, :resource
 

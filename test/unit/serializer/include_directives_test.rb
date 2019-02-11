@@ -19,7 +19,7 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
   end
 
   def test_one_level_multiple_includes
-    directives = JSONAPI::IncludeDirectives.new(PersonResource, ['posts', 'comments', 'tags']).include_directives
+    directives = JSONAPI::IncludeDirectives.new(PersonResource, ['posts', 'comments', 'expense_entries']).include_directives
 
     assert_hash_equals(
       {
@@ -32,7 +32,7 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
             include: true,
             include_related:{}
           },
-          tags: {
+          expense_entries: {
             include: true,
             include_related:{}
           }

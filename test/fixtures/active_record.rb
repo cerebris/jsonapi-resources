@@ -3,6 +3,7 @@ require 'jsonapi-resources'
 
 ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.uncountable 'preferences'
+  inflect.uncountable 'file_properties'
   inflect.irregular 'numero_telefone', 'numeros_telefone'
 end
 
@@ -47,6 +48,7 @@ ActiveRecord::Schema.define do
   create_table :author_details, force: true do |t|
     t.integer :person_id
     t.string  :author_stuff
+    t.timestamps null: false
   end
 
   create_table :posts, force: true do |t|
@@ -238,18 +240,30 @@ ActiveRecord::Schema.define do
 
   create_table :pictures, force: true do |t|
     t.string  :name
+    t.integer :author_id
     t.references :imageable, polymorphic: true, index: true
     t.timestamps null: false
   end
 
   create_table :documents, force: true do |t|
     t.string  :name
+    t.integer :author_id
     t.timestamps null: false
   end
 
   create_table :products, force: true do |t|
     t.string  :name
+    t.integer :designer_id
     t.timestamps null: false
+  end
+
+  create_table :file_properties, force: true do |t|
+    t.string :name
+    t.timestamps null: false
+    t.references :fileable, polymorphic: true, index: true
+    t.belongs_to :tag, index: true
+
+    t.integer :size
   end
 
   create_table :vehicles, force: true do |t|
@@ -317,6 +331,7 @@ ActiveRecord::Schema.define do
 
   create_table :questions, force: true do |t|
     t.string :text
+    t.timestamps null: false
   end
 
   create_table :answers, force: true do |t|
@@ -324,14 +339,17 @@ ActiveRecord::Schema.define do
     t.integer :respondent_id
     t.string  :respondent_type
     t.string :text
+    t.timestamps null: false
   end
 
   create_table :patients, force: true do |t|
     t.string :name
+    t.timestamps null: false
   end
 
   create_table :doctors, force: true do |t|
     t.string :name
+    t.timestamps null: false
   end
 
   create_table :painters, force: true do |t|
@@ -459,6 +477,8 @@ class Person < ActiveRecord::Base
 
   has_many :even_posts, -> { where('posts.id % 2 = 0') }, class_name: 'Post', foreign_key: 'author_id'
   has_many :odd_posts, -> { where('posts.id % 2 = 1') }, class_name: 'Post', foreign_key: 'author_id'
+
+  has_many :pictures, foreign_key: 'author_id'
 
   ### Validations
   validates :name, presence: true
@@ -713,10 +733,13 @@ class Category < ActiveRecord::Base
 end
 
 class Picture < ActiveRecord::Base
-  belongs_to :imageable, polymorphic: true
+  belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
 
+  belongs_to :imageable, polymorphic: true
   belongs_to :document, -> { where( pictures: { imageable_type: 'Document' } ).eager_load( :pictures ) }, foreign_key: 'imageable_id'
   belongs_to :product, -> { where( pictures: { imageable_type: 'Product' } ).eager_load( :pictures ) }, foreign_key: 'imageable_id'
+
+  has_one :file_properties, as: 'fileable'
 end
 
 class Vehicle < ActiveRecord::Base
@@ -731,10 +754,19 @@ end
 
 class Document < ActiveRecord::Base
   has_many :pictures, as: :imageable
+  belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
+  has_one :file_properties, as: 'fileable'
 end
 
 class Product < ActiveRecord::Base
   has_many :pictures, as: :imageable
+  belongs_to :designer, class_name: 'Person', foreign_key: 'designer_id'
+  has_one :file_properties, as: 'fileable'
+end
+
+class FileProperties < ActiveRecord::Base
+  belongs_to :fileable, polymorphic: true
+  belongs_to :tag
 end
 
 class Make < ActiveRecord::Base
@@ -932,6 +964,9 @@ end
 class ImageablesController < JSONAPI::ResourceController
 end
 
+class FilePropertiesController < JSONAPI::ResourceController
+end
+
 class VehiclesController < JSONAPI::ResourceController
 end
 
@@ -1061,6 +1096,9 @@ module Api
 
   module V6
     class AuthorsController < JSONAPI::ResourceController
+    end
+
+    class AuthorDetailsController < JSONAPI::ResourceController
     end
 
     class PostsController < JSONAPI::ResourceController
@@ -1453,14 +1491,14 @@ module BreedResourceFinder
 
   module ClassMethods
     def find(filters, options = {})
-      records = find_records(filters, options)
+      records = find_breeds(filters, options)
       resources_for(records, options[:context])
     end
 
     # Records
     def find_fragments(filters, options = {})
       fragments = {}
-      find_records(filters, options).each do |breed|
+      find_breeds(filters, options).each do |breed|
         rid = JSONAPI::ResourceIdentity.new(BreedResource, breed.id)
         fragments[rid] = JSONAPI::ResourceFragment.new(rid)
       end
@@ -1468,17 +1506,17 @@ module BreedResourceFinder
     end
 
     def find_by_key(key, options = {})
-      record = find_record_by_key(key, options)
+      record = find_breed_by_key(key, options)
       resource_for(record, options[:context])
     end
 
     def find_by_keys(keys, options = {})
-      records = find_records_by_keys(keys, options)
+      records = find_breeds_by_keys(keys, options)
       resources_for(records, options[:context])
     end
 
     #
-    def find_records(filters, options = {})
+    def find_breeds(filters, options = {})
       breeds = []
       id_filter = filters[:id]
       id_filter = [id_filter] unless id_filter.nil? || id_filter.is_a?(Array)
@@ -1488,20 +1526,16 @@ module BreedResourceFinder
       breeds
     end
 
-    def find_record_by_key(key, options = {})
+    def find_breed_by_key(key, options = {})
       $breed_data.breeds[key.to_i]
     end
 
-    def find_records_by_keys(keys, options = {})
+    def find_breeds_by_keys(keys, options = {})
       breeds = []
       keys.each do |key|
         breeds.push($breed_data.breeds[key.to_i])
       end
       breeds
-    end
-
-    def retrieve_records(ids, options = {})
-      find_records_by_keys(ids, options)
     end
   end
 end
@@ -1557,7 +1591,7 @@ class CraterResource < JSONAPI::Resource
 
   filter :description, apply: -> (records, value, options) {
     fail "context not set" unless options[:context][:current_user] != nil && options[:context][:current_user] == $test_user
-    records.where(concat_table_field(options[:related_alias], :description) => value)
+    records.where(concat_table_field(options[:joins][''][:alias], :description) => value)
   }
 
   def self.verify_key(key, context = nil)
@@ -1569,10 +1603,6 @@ class PreferencesResource < JSONAPI::Resource
   attribute :advanced_mode
 
   has_one :author, :foreign_key_on => :related, class_name: "Person"
-
-  def self.find_records(filters, options = {})
-    Preferences.limit(1)
-  end
 end
 
 class FactResource < JSONAPI::Resource
@@ -1593,35 +1623,58 @@ end
 
 class PictureResource < JSONAPI::Resource
   attribute :name
-  has_one :imageable, polymorphic: true 
+  has_one :author
+
+  has_one :imageable, polymorphic: true
+  has_one :file_properties, inverse_relationship: :fileable, :foreign_key_on => :related, polymorphic: true
 
   filter 'imageable.name', perform_joins: true, apply: -> (records, value, options) {
     joins = options[:joins]
     relationship = _relationship(:imageable)
-    or_parts = relationship.polymorphic_relations.collect do |relation|
-      table_alias = joins["imageable[#{relation}]"][:alias]
+    or_parts = relationship.resource_types.collect do |type|
+      table_alias = joins["imageable##{type}"][:alias]
       "#{concat_table_field(table_alias, "name")} = '#{value.first}'"
     end
     records.where(or_parts.join(' OR '))
   }
+
+  filter 'imageable#documents.name'
+end
+
+class ImageableResource < JSONAPI::Resource
+  polymorphic
+end
+
+class FileableResource < JSONAPI::Resource
+  polymorphic
 end
 
 class DocumentResource < JSONAPI::Resource
   attribute :name
-  has_many :pictures
+  has_many :pictures, inverse_relationship: :imageable
+  has_one :author, class_name: 'Person'
+
+  has_one :file_properties, inverse_relationship: :fileable, :foreign_key_on => :related
 end
 
 class ProductResource < JSONAPI::Resource
   attribute :name
-  has_one :picture, always_include_linkage_data: true
+  has_many :pictures, inverse_relationship: :imageable
+  has_one :designer, class_name: 'Person'
+
+  has_one :file_properties, inverse_relationship: :fileable, :foreign_key_on => :related
 
   def picture_id
     _model.picture.id
   end
 end
 
-# ToDo: Remove the need for the polymorphic fake resource
-class ImageableResource < JSONAPI::Resource
+class FilePropertiesResource < JSONAPI::Resource
+  attribute :name
+  attribute :size
+
+  has_one :fileable, polymorphic: true
+  has_one :tag
 end
 
 class MakeResource < JSONAPI::Resource
@@ -1638,6 +1691,7 @@ class AuthorResource < JSONAPI::Resource
   attributes :name
 
   has_many :books, inverse_relationship: :authors
+  has_many :pictures
 end
 
 class BookResource < JSONAPI::Resource
@@ -1958,19 +2012,10 @@ module Api
       relationship :posts, to: :many
       relationship :author_detail, to: :one, foreign_key_on: :related
 
-      filter :name
-
-      def self.find_records(filters, options = {})
-        rel = _model_class
-        filters.each do |attr, filter|
-          if attr.to_s == "id"
-            rel = rel.where(id: filter)
-          else
-            rel = rel.where("\"#{attr}\" LIKE \"%#{filter[0]}%\"")
-          end
-        end
-        rel
-      end
+      filter :name, apply: lambda { |records, value, options|
+        table_alias = options[:joins][''][:alias]
+        records.where("#{concat_table_field(table_alias, "name")} LIKE \"%#{value[0]}%\"")
+      }
 
       def fetchable_fields
         super - [:email]
@@ -2028,15 +2073,19 @@ end
 
 module Api
   module V6
+    class HairCutResource < HairCutResource; end
+
     class AuthorDetailResource < JSONAPI::Resource
       attributes :author_stuff
+      has_one :author, foreign_key: :person_id, inverse_relationship: :author_detail
     end
 
     class AuthorResource < JSONAPI::Resource
       attributes :name, :email
       model_name 'Person'
       relationship :posts, to: :many
-      relationship :author_detail, to: :one, foreign_key_on: :related
+      relationship :author_detail, to: :one, foreign_key_on: :related, foreign_key: :person_id
+      has_one :hair_cut
 
       filter :name
 
@@ -2045,6 +2094,7 @@ module Api
       end
     end
 
+    class PreferencesResource < PreferencesResource; end
     class PersonResource < PersonResource; end
     class TagResource < TagResource; end
 
@@ -2055,12 +2105,9 @@ module Api
     class CommentResource < CommentResource; end
 
     class PostResource < PostResource
-      # Test caching with SQL fragments
-      def self.records(options = {})
-        _model_class.all.joins('INNER JOIN people on people.id = author_id')
-      end
-
       attribute :base
+
+      has_one :author
 
       def base
         _model.title

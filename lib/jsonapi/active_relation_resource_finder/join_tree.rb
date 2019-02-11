@@ -4,22 +4,121 @@ module JSONAPI
       # Stores relationship paths starting from the resource_klass. This allows consolidation of duplicate paths from
       # relationships, filters and sorts. This enables the determination of table aliases as they are joined.
 
-      attr_reader :resource_klass, :options, :source_relationship
+      attr_reader :resource_klass, :options, :source_relationship, :resource_joins, :joins
 
-      def initialize(resource_klass:, options: {}, source_relationship: nil, filters: nil, sort_criteria: nil)
+      def initialize(resource_klass:,
+                     options: {},
+                     source_relationship: nil,
+                     relationships: nil,
+                     filters: nil,
+                     sort_criteria: nil)
+
         @resource_klass = resource_klass
         @options = options
-        @source_relationship = source_relationship
 
-        @join_relationships = {}
-
+        @resource_joins = {
+            root: {
+                join_type: :root,
+                resource_klasses: {
+                    resource_klass => {
+                        relationships: {}
+                    }
+                }
+            }
+        }
+        add_source_relationship(source_relationship)
         add_sort_criteria(sort_criteria)
         add_filters(filters)
+        add_relationships(relationships)
+
+        @joins = {}
+        construct_joins(@resource_joins)
       end
 
-      # A hash of joins that can be used to create the required joins
-      def get_joins
-        walk_relation_node(@join_relationships)
+      private
+
+      def add_join(path, default_type = :inner, default_polymorphic_join_type = :left)
+        if source_relationship
+          if source_relationship.polymorphic?
+            # Polymorphic paths will come it with the resource_type as the first segment (for example `#documents.comments`)
+            # We just need to prepend the relationship portion the
+            sourced_path = "#{source_relationship.name}#{path}"
+          else
+            sourced_path = "#{source_relationship.name}.#{path}"
+          end
+        else
+          sourced_path = path
+        end
+
+        join_tree, _field = parse_path_to_tree(sourced_path, resource_klass, default_type, default_polymorphic_join_type)
+
+        @resource_joins[:root].deep_merge!(join_tree) { |key, val, other_val|
+          if key == :join_type
+            if val == other_val
+              val
+            else
+              :inner
+            end
+          end
+        }
+      end
+
+      def process_path_to_tree(path_segments, resource_klass, default_join_type, default_polymorphic_join_type)
+        node = {
+            resource_klasses: {
+                resource_klass => {
+                    relationships: {}
+                }
+            }
+        }
+
+        segment = path_segments.shift
+
+        if segment.is_a?(PathSegment::Relationship)
+          node[:resource_klasses][resource_klass][:relationships][segment.relationship] ||= {}
+
+          # join polymorphic as left joins
+          node[:resource_klasses][resource_klass][:relationships][segment.relationship][:join_type] ||=
+              segment.relationship.polymorphic? ? default_polymorphic_join_type : default_join_type
+
+          segment.relationship.resource_types.each do |related_resource_type|
+            related_resource_klass = resource_klass.resource_klass_for(related_resource_type)
+
+            # If the resource type was specified in the path segment we want to only process the next segments for
+            # that resource type, otherwise process for all
+            process_all_types = !segment.path_specified_resource_klass?
+
+            if process_all_types || related_resource_klass == segment.resource_klass
+              related_resource_tree = process_path_to_tree(path_segments.dup, related_resource_klass, default_join_type, default_polymorphic_join_type)
+              node[:resource_klasses][resource_klass][:relationships][segment.relationship].deep_merge!(related_resource_tree)
+            end
+          end
+        end
+        node
+      end
+
+      def parse_path_to_tree(path_string, resource_klass, default_join_type = :inner, default_polymorphic_join_type = :left)
+        path = JSONAPI::Path.new(resource_klass: resource_klass, path_string: path_string)
+        field = path.segments[-1]
+        return process_path_to_tree(path.segments, resource_klass, default_join_type, default_polymorphic_join_type), field
+      end
+
+      def add_source_relationship(source_relationship)
+        @source_relationship = source_relationship
+
+        if @source_relationship
+          resource_klasses = {}
+          source_relationship.resource_types.each do |related_resource_type|
+            related_resource_klass = resource_klass.resource_klass_for(related_resource_type)
+            resource_klasses[related_resource_klass] = {relationships: {}}
+          end
+
+          join_type = source_relationship.polymorphic? ? :left : :inner
+
+          @resource_joins[:root][:resource_klasses][resource_klass][:relationships][@source_relationship] = {
+              source: true, resource_klasses: resource_klasses, join_type: join_type
+          }
+        end
       end
 
       def add_filters(filters)
@@ -41,42 +140,10 @@ module JSONAPI
         end
       end
 
-      private
-
-      def add_join_relationship(parent_joins, join_name, relation_name, type)
-        parent_joins[join_name] ||= {relation_name: relation_name, relationship: {}, type: type}
-        if parent_joins[join_name][:type] == :left && type == :inner
-          parent_joins[join_name][:type] = :inner
-        end
-        parent_joins[join_name][:relationship]
-      end
-
-      def add_join(path, default_type = :inner)
-        relationships, _field = resource_klass.parse_relationship_path(path)
-
-        current_joins = @join_relationships
-
-        terminated = false
-
+      def add_relationships(relationships)
+        return if relationships.blank?
         relationships.each do |relationship|
-          if terminated
-            # ToDo: Relax this, if possible
-            # :nocov:
-            warn "Can not nest joins under polymorphic join"
-            # :nocov:
-          end
-
-          if relationship.polymorphic?
-            relation_names = relationship.polymorphic_relations
-            relation_names.each do |relation_name|
-              join_name = "#{relationship.name}[#{relation_name}]"
-              add_join_relationship(current_joins, join_name, relation_name, :left)
-            end
-            terminated = true
-          else
-            join_name = relationship.name
-            current_joins = add_join_relationship(current_joins, join_name, relationship.relation_name(options), default_type)
-          end
+          add_join(relationship, :left)
         end
       end
 
@@ -92,34 +159,68 @@ module JSONAPI
       end
 
       # Returns the paths from shortest to longest, allowing the capture of the table alias for earlier paths. For
-      # example posts, posts.comments and then posts.comments.author joined in that order will alow each
+      # example posts, posts.comments and then posts.comments.author joined in that order will allow each
       # alias to be determined whereas just joining posts.comments.author will only record the author alias.
       # ToDo: Dependence on this specialized logic should be removed in the future, if possible.
-      def walk_relation_node(node, paths = {}, current_relation_path = [], current_relationship_path = [])
-        node.each do |key, value|
-          if current_relation_path.empty? && source_relationship
-            current_relation_path << source_relationship.relation_name(options)
+      def construct_joins(node, current_relation_path = [], current_relationship_path = [])
+        node.each do |relationship, relationship_details|
+          join_type = relationship_details[:join_type]
+          if relationship == :root
+            @joins[:root] = {alias: resource_klass._table_name, join_type: :root}
+
+            # alias to the default table unless a source_relationship is specified
+            unless source_relationship
+              @joins[''] = {alias: resource_klass._table_name, join_type: :root}
+            end
+
+            return construct_joins(relationship_details[:resource_klasses].values[0][:relationships],
+                                   current_relation_path,
+                                   current_relationship_path)
           end
 
-          current_relation_path << value[:relation_name].to_s
-          current_relationship_path << key.to_s
+          relationship_details[:resource_klasses].each do |resource_klass, resource_details|
+            if relationship.polymorphic? && relationship.belongs_to?
+              current_relationship_path << "#{relationship.name.to_s}##{resource_klass._type.to_s}"
+              relation_name = resource_klass._type.to_s.singularize
+            else
+              current_relationship_path << relationship.name.to_s
+              relation_name = relationship.relation_name(options).to_s
+            end
 
-          rel_path = current_relationship_path.join('.')
-          paths[rel_path] ||= {
-              alias: nil,
-              join_type: value[:type],
-              relation_join_hash: relation_join_hash(current_relation_path.dup)
-          }
+            current_relation_path << relation_name
 
-          walk_relation_node(value[:relationship],
-                             paths,
-                             current_relation_path,
-                             current_relationship_path)
+            rel_path = calc_path_string(current_relationship_path)
 
-          current_relation_path.pop
-          current_relationship_path.pop
+            @joins[rel_path] = {
+                alias: nil,
+                join_type: join_type,
+                relation_join_hash: relation_join_hash(current_relation_path.dup)
+            }
+
+            construct_joins(resource_details[:relationships],
+                            current_relation_path.dup,
+                            current_relationship_path.dup)
+
+            current_relation_path.pop
+            current_relationship_path.pop
+          end
         end
-        paths
+      end
+
+      def calc_path_string(path_array)
+        if source_relationship
+          if source_relationship.polymorphic?
+            _relationship_name, resource_name = path_array[0].split('#', 2)
+            path = path_array.dup
+            path[0] = "##{resource_name}"
+          else
+            path = path_array.dup.drop(1)
+          end
+        else
+          path = path_array.dup
+        end
+
+        path.join('.')
       end
     end
   end

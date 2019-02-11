@@ -48,12 +48,11 @@ module JSONAPI
 
         # fill in any missed resources
         unless missed_ids.empty?
-          filters = {resource_klass._primary_key => missed_ids}
           find_opts = {
               context: context,
               fields: find_options[:fields] }
 
-          found_resources = resource_klass.find(filters, find_opts)
+          found_resources = resource_klass.find_by_keys(missed_ids, find_opts)
 
           found_resources.each do |resource|
             relationship_data = @resource_klasses[resource_klass][resource.id][:relationships]

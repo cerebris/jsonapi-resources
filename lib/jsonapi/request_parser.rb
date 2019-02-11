@@ -345,7 +345,7 @@ module JSONAPI
     end
 
     def parse_include_directives(resource_klass, raw_include)
-      return unless raw_include
+      raw_include ||= ''
 
       included_resources = []
       begin
@@ -353,8 +353,6 @@ module JSONAPI
       rescue CSV::MalformedCSVError
         fail JSONAPI::Exceptions::InvalidInclude.new(format_key(resource_klass._type), raw_include)
       end
-
-      return if included_resources.nil?
 
       begin
         result = included_resources.compact.map do |included_resource|

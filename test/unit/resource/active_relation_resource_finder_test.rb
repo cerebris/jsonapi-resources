@@ -170,7 +170,7 @@ class ActiveRelationResourceFinderTest < ActiveSupport::TestCase
     options = {}
     source_rids = [JSONAPI::ResourceIdentity.new(PictureResource, 1),
                    JSONAPI::ResourceIdentity.new(PictureResource, 2),
-                   JSONAPI::ResourceIdentity.new(PictureResource, 20)]
+                   JSONAPI::ResourceIdentity.new(PictureResource, 3)]
 
     related_fragments = PictureResource.find_included_fragments(source_rids, 'imageable', options)
 
@@ -188,7 +188,7 @@ class ActiveRelationResourceFinderTest < ActiveSupport::TestCase
     options = { cache: true }
     source_rids = [JSONAPI::ResourceIdentity.new(PictureResource, 1),
                    JSONAPI::ResourceIdentity.new(PictureResource, 2),
-                   JSONAPI::ResourceIdentity.new(PictureResource, 20)]
+                   JSONAPI::ResourceIdentity.new(PictureResource, 3)]
 
     related_fragments = PictureResource.find_included_fragments(source_rids, 'imageable', options)
 
@@ -200,13 +200,14 @@ class ActiveRelationResourceFinderTest < ActiveSupport::TestCase
     assert related_fragments.values[0].is_a?(JSONAPI::ResourceFragment)
     assert_equal 1, related_fragments.values[0].related_from.length
     assert related_fragments.values[0].cache.is_a?(ActiveSupport::TimeWithZone)
+    assert related_fragments.values[1].cache.is_a?(ActiveSupport::TimeWithZone)
   end
 
   def test_find_related_polymorphic_fragments_cache_field_attributes
     options = { cache: true, attributes: [:name] }
     source_rids = [JSONAPI::ResourceIdentity.new(PictureResource, 1),
                    JSONAPI::ResourceIdentity.new(PictureResource, 2),
-                   JSONAPI::ResourceIdentity.new(PictureResource, 20)]
+                   JSONAPI::ResourceIdentity.new(PictureResource, 3)]
 
     related_fragments = PictureResource.find_included_fragments(source_rids, 'imageable', options)
 
@@ -219,50 +220,8 @@ class ActiveRelationResourceFinderTest < ActiveSupport::TestCase
     assert_equal 1, related_fragments.values[0].related_from.length
     assert_equal 1, related_fragments.values[0].attributes.length
     assert related_fragments.values[0].cache.is_a?(ActiveSupport::TimeWithZone)
+    assert related_fragments.values[1].cache.is_a?(ActiveSupport::TimeWithZone)
     assert_equal 'Enterprise Gizmo', related_fragments.values[0].attributes[:name]
-  end
-
-  def test_gets_relationship_chain_with_only_field
-    relationships, path, field = PictureResource.parse_relationship_path('name')
-    assert_equal [], relationships
-    assert_equal '', path
-    assert_equal 'name', field
-  end
-
-  def test_gets_relationship_chain_with_field_polymorphic_one_level
-    relationships, path, field = PictureResource.parse_relationship_path('imageable.name')
-    assert_equal [PictureResource._relationship(:imageable)], relationships
-    assert_equal 'imageable', path
-    assert_equal 'name', field
-  end
-
-  def test_gets_relationship_chain_with_field_one_level
-    relationships, path, field = PostResource.parse_relationship_path('author.name')
-    assert_equal [PostResource._relationship(:author)], relationships
-    assert_equal 'author', path
-    assert_equal 'name', field
-  end
-
-  def test_gets_relationship_chain_with_two_relationship_levels
-    relationships, path, field = PostResource.parse_relationship_path('author.comments')
-    assert_equal [PostResource._relationship(:author), PersonResource._relationship(:comments)], relationships
-    assert_equal 'author.comments', path
-    assert_nil field
-  end
-
-  def test_gets_relationship_chain_with_two_relationship_levels_and_field
-    relationships, path, field = PostResource.parse_relationship_path('author.comments.body')
-    assert_equal [PostResource._relationship(:author), PersonResource._relationship(:comments)], relationships
-    assert_equal 'author.comments', path
-    assert_equal 'body', field
-  end
-
-  def test_gets_relationship_chain_with_three_relationship_levels_and_field
-    relationships, path, field = PostResource.parse_relationship_path('author.comments.tags.name')
-    assert_equal [PostResource._relationship(:author),
-                  PersonResource._relationship(:comments),
-                 CommentResource._relationship(:tags)], relationships
-    assert_equal 'author.comments.tags', path
-    assert_equal 'name', field
+    assert_equal 'Company Brochure', related_fragments.values[1].attributes[:name]
   end
 end

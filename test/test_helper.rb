@@ -92,10 +92,6 @@ if Rails::VERSION::MAJOR >= 5
   end
 end
 
-if Rails::VERSION::MAJOR < 5
-  require 'left_join'
-end
-
 # Tests are now using the rails 5 format for the http methods. So for rails 4 we will simply convert them back
 # in a standard way.
 if Rails::VERSION::MAJOR < 5
@@ -272,6 +268,7 @@ TestApp.routes.draw do
   jsonapi_resources :pictures
   jsonapi_resources :documents
   jsonapi_resources :products
+  jsonapi_resources :file_properties
   jsonapi_resources :vehicles
   jsonapi_resources :cars
   jsonapi_resources :boats
@@ -363,6 +360,7 @@ TestApp.routes.draw do
     JSONAPI.configuration.route_format = :dasherized_route
     namespace :v6 do
       jsonapi_resources :authors
+      jsonapi_resources :author_details
       jsonapi_resources :posts
       jsonapi_resources :sections
       jsonapi_resources :customers
@@ -594,9 +592,8 @@ class ActionController::TestCase
       end
 
       if mode == :all
-        # TODO Should also be caching :show_related_resource (non-plural) action
-        if [:index, :show, :show_related_resources].include?(action)
-          if ar_resource_klass && response.status == 200 && json_response["data"].try(:size) > 0
+        if [:index, :show, :show_related_resource, :show_related_resources].include?(action)
+          if ar_resource_klass && response.status == 200 && json_response["data"].try(:size).try(:>, 0)
             assert_operator(
               cache_activity[:warmup][:total][:misses],
               :>,
