@@ -21,3 +21,5 @@ coverage
 test/log
 test_db
 test_db-journal
+*.iml
+.idea

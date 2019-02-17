@@ -283,7 +283,7 @@ module JSONAPI
       if reflect
         existing_rids = self.class.find_related_fragments([identity], relationship_type, options)
 
-        existing = existing_rids.keys.collect { |rid| rid.id }
+        existing = existing_rids.keys.collect {|rid| rid.id}
 
         to_delete = existing - (relationship_key_values & existing)
         to_delete.each do |key|
@@ -414,9 +414,6 @@ module JSONAPI
 
         subclass._allowed_sort = _allowed_sort.dup
 
-        type = subclass.name.demodulize.sub(/Resource$/, '').underscore
-        subclass._type = type.pluralize.to_sym
-
         unless subclass._attributes[:id]
           subclass.attribute :id, format: :id, readonly: true
         end
@@ -505,12 +502,47 @@ module JSONAPI
         end
       end
 
+      def root_path_for(klass)
+        root_for(klass).to_s.underscore
+      end
+
+      def root_path_for_path(path)
+        JSONAPI.configuration.root_paths.detect {|p| path.start_with? p}
+      end
+
+      # @param [Class] klass
+      # @return [String]
+      def root_for(klass)
+        s = klass.to_s
+        JSONAPI.configuration.root_names.detect {|root| s.start_with? root.to_s}
+      end
+
+      # @return [String]
+      def root
+        self.class.root_for(self)
+      end
+
+      # @return [String]
+      def root_path
+        self.class.root_path_for(self)
+      end
+
+      # This is the type with its root namespace removed API::V1::Foo::Bar ->  foo/bars
+      def _type
+        @_type ||= name.sub("#{self.root}::", '').sub(/Resource$/, '').underscore.pluralize.to_sym
+      end
+
+      # Called in two contexts
+      #
+      # 1) From within a namespace for resource resolution
+      #
+      # 2) Globally from the router context, in which case we have the fully qualified path
       def resource_klass_for(type)
         type = type.underscore
-        type_with_module = type.start_with?(module_path) ? type : module_path + type
 
-        resource_name = _resource_name_from_type(type_with_module)
+        resource_name = _resource_name_from_type(type)
         resource = resource_name.safe_constantize if resource_name
+
         if resource.nil?
           fail NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
         end
@@ -530,7 +562,7 @@ module JSONAPI
         if _model_hints[model_name]
           _model_hints[model_name]
         else
-          model_name.rpartition('/').last
+          model_name.gsub("#{self.root_path}/", '')
         end
       end
 
@@ -602,7 +634,7 @@ module JSONAPI
         else
           attribute_type = _model_class.column_types[field_name.to_s]
         end
-        { name: field_name, type: attribute_type}
+        {name: field_name, type: attribute_type}
       end
 
       def cast_to_attribute_type(value, type)
@@ -614,20 +646,20 @@ module JSONAPI
       end
 
       def default_attribute_options
-        { format: :default }
+        {format: :default}
       end
 
       def relationship(*attrs)
         options = attrs.extract_options!
         klass = case options[:to]
-                  when :one
-                    Relationship::ToOne
-                  when :many
-                    Relationship::ToMany
-                  else
-                    #:nocov:#
-                    fail ArgumentError.new('to: must be either :one or :many')
-                    #:nocov:#
+                when :one
+                  Relationship::ToOne
+                when :many
+                  Relationship::ToMany
+                else
+                  #:nocov:#
+                  fail ArgumentError.new('to: must be either :one or :many')
+                  #:nocov:#
                 end
         _add_relationship(klass, *attrs, options.except(:to))
       end
@@ -664,7 +696,7 @@ module JSONAPI
       end
 
       def filters(*attrs)
-        @_allowed_filters.merge!(attrs.inject({}) { |h, attr| h[attr] = {}; h })
+        @_allowed_filters.merge!(attrs.inject({}) {|h, attr| h[attr] = {}; h})
       end
 
       def filter(attr, *args)
@@ -677,7 +709,7 @@ module JSONAPI
 
       def sorts(*args)
         options = args.extract_options!
-        _allowed_sort.merge!(args.inject({}) { |h, sorting| h[sorting.to_sym] = options.dup; h })
+        _allowed_sort.merge!(args.inject({}) {|h, sorting| h[sorting.to_sym] = options.dup; h})
       end
 
       def primary_key(key)
@@ -835,11 +867,11 @@ module JSONAPI
       end
 
       def _updatable_attributes
-        _attributes.map { |key, options| key unless options[:readonly] }.compact
+        _attributes.map {|key, options| key unless options[:readonly]}.compact
       end
 
       def _updatable_relationships
-        @_relationships.map { |key, relationship| key unless relationship.readonly? }.compact
+        @_relationships.map {|key, relationship| key unless relationship.readonly?}.compact
       end
 
       def _relationship(type)
@@ -850,12 +882,12 @@ module JSONAPI
 
       def _model_name
         if _abstract
-           ''
+          ''
         else
           return @_model_name.to_s if defined?(@_model_name)
           class_name = self.name
           return '' if class_name.nil?
-          @_model_name = class_name.demodulize.sub(/Resource$/, '')
+          @_model_name = JSONAPI.configuration.root_names.inject(class_name) {|name, rn| name.sub(rn, '')}.sub(/Resource$/, '')
           @_model_name.to_s
         end
       end
@@ -873,7 +905,7 @@ module JSONAPI
       end
 
       def _default_primary_key
-        @_default_primary_key ||=_model_class.respond_to?(:primary_key) ? _model_class.primary_key : :id
+        @_default_primary_key ||= _model_class.respond_to?(:primary_key) ? _model_class.primary_key : :id
       end
 
       def _cache_field
@@ -889,7 +921,7 @@ module JSONAPI
       end
 
       def _allowed_filters
-        defined?(@_allowed_filters) ? @_allowed_filters : { id: {} }
+        defined?(@_allowed_filters) ? @_allowed_filters : {id: {}}
       end
 
       def _allowed_sort
@@ -917,7 +949,7 @@ module JSONAPI
           ObjectSpace.each_object do |klass|
             next unless Module === klass
             if klass < ActiveRecord::Base
-              klass.reflect_on_all_associations(:has_many).select{|r| r.options[:as] }.each do |reflection|
+              klass.reflect_on_all_associations(:has_many).select {|r| r.options[:as]}.each do |reflection|
                 (hash[reflection.options[:as]] ||= []) << klass.name.downcase
               end
             end
@@ -1040,8 +1072,8 @@ module JSONAPI
       #   ResourceBuilder methods
       def define_relationship_methods(relationship_name, relationship_klass, options)
         relationship = register_relationship(
-            relationship_name,
-            relationship_klass.new(relationship_name, options)
+          relationship_name,
+          relationship_klass.new(relationship_name, options)
         )
 
         define_foreign_key_setter(relationship)
