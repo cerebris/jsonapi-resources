@@ -38,7 +38,8 @@ module JSONAPI
                 :default_caching,
                 :default_resource_cache_field,
                 :resource_cache_digest_function,
-                :resource_cache_usage_report_function
+                :resource_cache_usage_report_function,
+                :version_roots
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -155,6 +156,14 @@ module JSONAPI
       # Optionally provide a callable which JSONAPI will call with information about cache
       # performance. Should accept three arguments: resource name, hits count, misses count.
       self.resource_cache_usage_report_function = nil
+
+      # Version Roots
+      # Define roots of resource versions, this allows for the usage of namespacing within a
+      # version (useful for preventing a kitchen sink situation)
+      #
+      # Defined by specifying the root module under which namespaces will not be treated as
+      # versions but instead as namespaces
+      self.roots = []
     end
 
     def cache_formatters=(bool)
@@ -235,6 +244,14 @@ module JSONAPI
       @default_allow_include_to_many = allow_include
     end
 
+    def root_names
+      root.map(&:to_s)
+    end
+
+    def root_paths
+      root.map(&:to_s)
+    end
+
     attr_writer :allow_sort, :allow_filter, :default_allow_include_to_one, :default_allow_include_to_many
 
     attr_writer :default_paginator
@@ -284,6 +301,8 @@ module JSONAPI
     attr_writer :resource_cache_digest_function
 
     attr_writer :resource_cache_usage_report_function
+
+    attr_writer :roots
   end
 
   class << self
