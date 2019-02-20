@@ -1147,6 +1147,23 @@ module Api
     class NumerosTelefoneController < JSONAPI::ResourceController
     end
   end
+
+  module V9
+    class AuthorsController < JSONAPI::ResourceController
+    end
+
+    class AuthorDetailsController < JSONAPI::ResourceController
+    end
+
+    class PostsController < JSONAPI::ResourceController
+    end
+
+    class CommentsController < JSONAPI::ResourceController
+    end
+
+    class SectionsController < JSONAPI::ResourceController
+    end
+  end
 end
 
 module Api
@@ -1591,7 +1608,7 @@ class CraterResource < JSONAPI::Resource
 
   filter :description, apply: -> (records, value, options) {
     fail "context not set" unless options[:context][:current_user] != nil && options[:context][:current_user] == $test_user
-    records.where(concat_table_field(options[:joins][''][:alias], :description) => value)
+    records.where(concat_table_field(options[:join_manager].source_join_details[:alias], :description) => value)
   }
 
   def self.verify_key(key, context = nil)
@@ -1629,13 +1646,13 @@ class PictureResource < JSONAPI::Resource
   has_one :file_properties, inverse_relationship: :fileable, :foreign_key_on => :related, polymorphic: true
 
   filter 'imageable.name', perform_joins: true, apply: -> (records, value, options) {
-    joins = options[:joins]
+    join_manager = options[:join_manager]
     relationship = _relationship(:imageable)
     or_parts = relationship.resource_types.collect do |type|
-      table_alias = joins["imageable##{type}"][:alias]
+      table_alias = join_manager.join_details_by_polymorphic_relationship(relationship, type)[:alias]
       "#{concat_table_field(table_alias, "name")} = '#{value.first}'"
     end
-    records.where(or_parts.join(' OR '))
+    records.where(Arel.sql(or_parts.join(' OR ')))
   }
 
   filter 'imageable#documents.name'
@@ -1857,7 +1874,9 @@ module Api
       attributes :name
 
       has_many :books, inverse_relationship: :authors, relation_name: -> (options) {
-        if options[:context][:current_user].try(:book_admin)
+        book_admin = options[:context][:book_admin] || options[:context][:current_user].try(:book_admin)
+
+        if book_admin
           :books
         else
           :not_banned_books
@@ -2013,8 +2032,9 @@ module Api
       relationship :author_detail, to: :one, foreign_key_on: :related
 
       filter :name, apply: lambda { |records, value, options|
-        table_alias = options[:joins][''][:alias]
-        records.where("#{concat_table_field(table_alias, "name")} LIKE \"%#{value[0]}%\"")
+        table_alias = options[:join_manager].source_join_details[:alias]
+        t = Arel::Table.new(:people, as: table_alias)
+        records.where(t[:name].matches("%#{value[0]}%"))
       }
 
       def fetchable_fields
@@ -2207,6 +2227,44 @@ module Api
   module V8
     class NumeroTelefoneResource < JSONAPI::Resource
       attribute :numero_telefone
+    end
+  end
+
+  module V9
+    class PersonResource < PersonResource; end
+    class PostResource < PostResource
+      has_many :comments, apply_join: -> (records, relationship, resource_type, join_type, options) {
+        case join_type
+        when :inner
+          records = records.joins(relationship.relation_name(options))
+        when :left
+          records = records.joins_left(relationship.relation_name(options))
+        end
+        records.where(comments: {approved: true})
+      }
+    end
+
+    class TagResource < TagResource; end
+    class SectionResource < SectionResource; end
+    class CommentResource < CommentResource
+      has_one :author, class_name: 'Person', apply_join: -> (records, relationship, resource_type, join_type, options) {
+        records = apply_join(records: records,
+                             relationship: relationship,
+                             resource_type: resource_type,
+                             join_type: join_type,
+                             options: options)
+
+        records.where(author: {special: true})
+      }
+    end
+
+    class AuthorResource < Api::V2::AuthorResource
+    end
+
+    class BookResource < Api::V2::BookResource
+    end
+
+    class BookCommentResource < Api::V2::BookCommentResource
     end
   end
 end
