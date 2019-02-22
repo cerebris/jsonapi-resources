@@ -1,22 +1,42 @@
 module JSONAPI
   class CachedResponseFragment
-    def self.fetch_cached_fragments(resource_klass, serializer_config_key, cache_ids, context)
-      context_json = resource_klass.attribute_caching_context(context).to_json
-      context_b64 = JSONAPI.configuration.resource_cache_digest_function.call(context_json)
-      context_key = "ATTR-CTX-#{context_b64.gsub("/", "_")}"
 
-      results = self.lookup(resource_klass, serializer_config_key, context, context_key, cache_ids)
+    Lookup = Struct.new(:resource_klass, :serializer_config_key, :context, :context_key, :cache_ids) do
 
-      if JSONAPI.configuration.resource_cache_usage_report_function
-        miss_ids = results.select{|_k,v| v.nil? }.keys
-        JSONAPI.configuration.resource_cache_usage_report_function.call(
-            resource_klass.name,
-            cache_ids.size - miss_ids.size,
-            miss_ids.size
-        )
+      def type
+        resource_klass._type
       end
 
-      results
+      def keys
+        cache_ids.map do |(id, cache_key)|
+          [type, id, cache_key, serializer_config_key, context_key]
+        end
+      end
+    end
+
+    Write = Struct.new(:resource_klass, :resource, :serializer, :serializer_config_key, :context, :context_key, :relationship_data) do
+      def to_key_value
+
+        (id, cache_key) = resource.cache_id
+
+        json = serializer.object_hash(resource, relationship_data)
+
+        cr = CachedResponseFragment.new(
+          resource_klass,
+          id,
+          json['type'],
+          context,
+          resource.fetchable_fields,
+          json['relationships'],
+          json['links'],
+          json['attributes'],
+          json['meta']
+        )
+
+        key = [resource_klass._type, id, cache_key, serializer_config_key, context_key]
+
+        [key, cr]
+      end
     end
 
     attr_reader :resource_klass, :id, :type, :context, :fetchable_fields, :relationships,
@@ -50,24 +70,44 @@ module JSONAPI
       }
     end
 
-    private
+    # @param [Lookup[]] lookups
+    # @return [Hash<Class<Resource>, Hash<ID, CachedResourceFragment>>]
+    def self.lookup(lookups, context)
+      type_to_klass = lookups.map {|l| [l.type, l.resource_klass]}.to_h
 
-    def self.lookup(resource_klass, serializer_config_key, context, context_key, cache_ids)
-      type = resource_klass._type
+      keys = lookups.map(&:keys).flatten(1)
 
-      keys = cache_ids.map do |(id, cache_key)|
-        [type, id, cache_key, serializer_config_key, context_key]
-      end
+      hits = JSONAPI.configuration.resource_cache.read_multi(*keys).reject {|_, v| v.nil?}
 
-      hits = JSONAPI.configuration.resource_cache.read_multi(*keys).reject{|_,v| v.nil? }
-      return keys.each_with_object({}) do |key, hash|
-        (_, id, _, _) = key
+      return keys.inject({}) do |hash, key|
+        (type, id, _, _) = key
+        resource_klass = type_to_klass[type]
+        hash[resource_klass] ||= {}
+
         if hits.has_key?(key)
-          hash[id] = self.from_cache_value(resource_klass, context, hits[key])
+          hash[resource_klass][id] = self.from_cache_value(resource_klass, context, hits[key])
         else
-          hash[id] = nil
+          hash[resource_klass][id] = nil
+        end
+
+        hash
+      end
+    end
+
+    # @param [Write[]] lookups
+    def self.write(writes)
+      key_values = writes.map(&:to_key_value)
+
+      to_write = key_values.map {|(k, v)| [k, v.to_cache_value]}.to_h
+
+      if JSONAPI.configuration.resource_cache.respond_to? :write_multi
+        JSONAPI.configuration.resource_cache.write_multi(to_write)
+      else
+        to_write.each do |key, value|
+          JSONAPI.configuration.resource_cache.write(key, value)
         end
       end
+
     end
 
     def self.from_cache_value(resource_klass, context, h)
@@ -83,28 +123,5 @@ module JSONAPI
         h.fetch(:meta, nil)
       )
     end
-
-    def self.write(resource_klass, resource, serializer, serializer_config_key, context, context_key, relationship_data )
-      (id, cache_key) = resource.cache_id
-
-      json = serializer.object_hash(resource, relationship_data)
-
-      cr = self.new(
-        resource_klass,
-        id,
-        json['type'],
-        context,
-        resource.fetchable_fields,
-        json['relationships'],
-        json['links'],
-        json['attributes'],
-        json['meta']
-      )
-
-      key = [resource_klass._type, id, cache_key, serializer_config_key, context_key]
-      JSONAPI.configuration.resource_cache.write(key, cr.to_cache_value)
-      return [id, cr]
-    end
-
   end
 end
