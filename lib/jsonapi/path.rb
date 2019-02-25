@@ -31,5 +31,13 @@ module JSONAPI
     def relationship_path_string
       relationship_segments.collect(&:to_s).join('.')
     end
+
+    def last_relationship
+      if @segments.last.is_a?(PathSegment::Relationship)
+        @segments.last
+      else
+        @segments[-2]
+      end
+    end
   end
 end

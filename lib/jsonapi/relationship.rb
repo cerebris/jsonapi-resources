@@ -32,6 +32,7 @@ module JSONAPI
     end
 
     alias_method :polymorphic?, :polymorphic
+    alias_method :parent_resource_klass, :parent_resource
 
     def primary_key
       # :nocov:

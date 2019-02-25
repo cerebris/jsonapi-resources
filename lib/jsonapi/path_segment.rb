@@ -22,19 +22,27 @@ module JSONAPI
     end
 
     class Relationship
-      attr_reader :relationship
+      attr_reader :relationship, :resource_klass
 
-      def initialize(relationship:, resource_klass:)
+      def initialize(relationship:, resource_klass: nil)
         @relationship = relationship
         @resource_klass = resource_klass
       end
 
+      def eql?(other)
+        relationship == other.relationship && resource_klass == other.resource_klass
+      end
+
+      def hash
+        [relationship, resource_klass].hash
+      end
+
       def to_s
-        @resource_klass ? "#{relationship.name}##{resource_klass._type}" : "#{relationship.name}"
+        @resource_klass ? "#{relationship.parent_resource_klass._type}.#{relationship.name}##{resource_klass._type}" : "#{resource_klass._type}.#{relationship.name}"
       end
 
       def resource_klass
-        @resource_klass || @relationship.resource_klass
+        @resource_klass || relationship.resource_klass
       end
 
       def path_specified_resource_klass?
@@ -50,13 +58,17 @@ module JSONAPI
         @field_name = field_name
       end
 
+      def eql?(other)
+        field_name == other.field_name && resource_klass == other.resource_klass
+      end
+
       def delegated_field_name
         resource_klass._attribute_delegated_name(field_name)
       end
 
       def to_s
         # :nocov:
-        field_name.to_s
+        "#{resource_klass._type}.#{field_name.to_s}"
         # :nocov:
       end
     end
