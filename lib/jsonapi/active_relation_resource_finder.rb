@@ -25,9 +25,8 @@ module JSONAPI
 
         paginator = options[:paginator]
 
-        records = find_records(records: records(options),
-                               sort_criteria: sort_criteria,
-                               filters: filters,
+        records = apply_request_settings_to_records(records: records(options),
+                               sort_criteria: sort_criteria,filters: filters,
                                join_manager: join_manager,
                                paginator: paginator,
                                options: options)
@@ -45,7 +44,7 @@ module JSONAPI
         join_manager = JoinManager.new(resource_klass: self,
                                     filters: filters)
 
-        records = find_records(records: records(options),
+        records = apply_request_settings_to_records(records: records(options),
                                filters: filters,
                                join_manager: join_manager,
                                options: options)
@@ -100,7 +99,7 @@ module JSONAPI
 
         paginator = options[:paginator]
 
-        records = find_records(records: records(options),
+        records = apply_request_settings_to_records(records: records(options),
                                filters: filters,
                                sort_criteria: sort_criteria,
                                paginator: paginator,
@@ -229,7 +228,7 @@ module JSONAPI
                                     source_relationship: relationship,
                                     filters: filters)
 
-        records = find_records(records: records(options),
+        records = apply_request_settings_to_records(records: records(options),
                                resource_klass: related_klass,
                                primary_keys: source_rid.id,
                                join_manager: join_manager,
@@ -306,13 +305,13 @@ module JSONAPI
       end
 
       def find_record_by_key(key, options = {})
-        record = find_records(records: records(options), primary_keys: key, options: options).first
+        record = apply_request_settings_to_records(records: records(options), primary_keys: key, options: options).first
         fail JSONAPI::Exceptions::RecordNotFound.new(key) if record.nil?
         record
       end
 
       def find_records_by_keys(keys, options = {})
-        find_records(records: records(options), primary_keys: keys, options: options)
+        apply_request_settings_to_records(records: records(options), primary_keys: keys, options: options)
       end
 
       def find_related_monomorphic_fragments(source_rids, relationship, options, connect_source_identity)
@@ -337,7 +336,7 @@ module JSONAPI
 
         paginator = options[:paginator] if source_rids.count == 1
 
-        records = find_records(records: records(options),
+        records = apply_request_settings_to_records(records: records(options),
                                resource_klass: resource_klass,
                                sort_criteria: sort_criteria,
                                primary_keys: source_ids,
@@ -464,7 +463,7 @@ module JSONAPI
 
         # Note: We will sort by the source table. Without using unions we can't sort on a polymorphic relationship
         # in any manner that makes sense
-        records = find_records(records: records(options),
+        records = apply_request_settings_to_records(records: records(options),
                                resource_klass: resource_klass,
                                sort_primary: true,
                                primary_keys: source_ids,
@@ -615,7 +614,7 @@ module JSONAPI
         related_fragments
       end
 
-      def find_records(records:,
+      def apply_request_settings_to_records(records:,
                        join_manager: JoinManager.new(resource_klass: self),
                        resource_klass: self,
                        filters: {},
