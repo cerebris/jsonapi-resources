@@ -123,6 +123,13 @@ module JSONAPI
         fail "details already set" if @join_details.has_key?(join_key)
         @join_details[join_key] = details
 
+        # Joins are being tracked as they are added to the built up relation. If the same table is added to a
+        # relation more than once subsequent versions will be assigned an alias. Depending on the order the joins
+        # are made the computed aliases may change. The order this library performs the joins was chosen
+        # to prevent this. However if the relation is reordered it should result in reusing on of the earlier
+        # aliases (in this case a plain table name). The following check will catch this an raise an exception.
+        # An exception is appropriate because not using the correct alias could leak data due to filters and
+        # applied permissions being performed on the wrong data.
         if check_for_duplicate_alias && @collected_aliases.include?(details[:alias])
           fail "alias '#{details[:alias]}' has already been added. Possible relation reordering"
         end
@@ -166,6 +173,8 @@ module JSONAPI
               end
             end
 
+            # We're adding the source alias with two keys. We only want the check for duplicate aliases once.
+            # See the note in `add_join_details`.
             check_for_duplicate_alias = !(relationship == source_relationship)
             add_join_details(PathSegment::Relationship.new(relationship: relationship, resource_klass: related_resource_klass), details, check_for_duplicate_alias)
           end
