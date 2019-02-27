@@ -429,8 +429,7 @@ module JSONAPI
     def load_included(resource_klass, source_resource_id_tree, include_related, options)
       source_rids = source_resource_id_tree.fragments.keys
 
-      include_related.try(:each_pair) do |key, value|
-        next unless value[:include]
+      include_related.try(:each_key) do |key|
         relationship = resource_klass._relationship(key)
         relationship_name = relationship.name.to_sym
 

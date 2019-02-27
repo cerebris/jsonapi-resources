@@ -4,14 +4,12 @@ module JSONAPI
     # For example ['posts.comments.tags']
     # will transform into =>
     # {
-    #   posts:{
-    #     include:true,
-    #     include_related:{
+    #   posts: {
+    #     include_related: {
     #       comments:{
-    #         include:true,
-    #         include_related:{
-    #           tags:{
-    #             include:true
+    #         include_related: {
+    #           tags: {
+    #             include_related: {}
     #           }
     #         }
     #       }
@@ -44,7 +42,7 @@ module JSONAPI
       path.segments.each do |segment|
         relationship_name = segment.relationship.name.to_sym
 
-        current[:include_related][relationship_name] ||= { include: true, include_related: {} }
+        current[:include_related][relationship_name] ||= { include_related: {} }
         current = current[:include_related][relationship_name]
       end
 
