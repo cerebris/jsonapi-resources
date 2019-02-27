@@ -10,8 +10,7 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
       {
         include_related: {
           posts: {
-            include: true,
-            include_related:{}
+            include_related: {}
           }
         }
       },
@@ -25,21 +24,43 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
       {
         include_related: {
           posts: {
-            include: true,
-            include_related:{}
+            include_related: {}
           },
           comments: {
-            include: true,
-            include_related:{}
+            include_related: {}
           },
           expense_entries: {
-            include: true,
-            include_related:{}
+            include_related: {}
           }
         }
       },
       directives)
   end
+
+  def test_multiple_level_multiple_includes
+    directives = JSONAPI::IncludeDirectives.new(PersonResource, ['posts', 'posts.comments', 'comments', 'expense_entries']).include_directives
+
+    assert_hash_equals(
+      {
+        include_related: {
+          posts: {
+            include_related: {
+              comments: {
+                include_related: {}
+              }
+            }
+          },
+          comments: {
+            include_related: {}
+          },
+          expense_entries: {
+            include_related: {}
+          }
+        }
+      },
+      directives)
+  end
+
 
   def test_two_levels_include_full_path
     directives = JSONAPI::IncludeDirectives.new(PersonResource, ['posts.comments']).include_directives
@@ -48,11 +69,9 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
       {
         include_related: {
           posts: {
-            include: true,
-            include_related:{
+            include_related: {
               comments: {
-                include: true,
-                include_related:{}
+                include_related: {}
               }
             }
           }
@@ -62,17 +81,15 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
   end
 
   def test_two_levels_include_full_path_redundant
-    directives = JSONAPI::IncludeDirectives.new(PersonResource, ['posts','posts.comments']).include_directives
+    directives = JSONAPI::IncludeDirectives.new(PersonResource, ['posts', 'posts.comments']).include_directives
 
     assert_hash_equals(
       {
         include_related: {
           posts: {
-            include: true,
-            include_related:{
+            include_related: {
               comments: {
-                include: true,
-                include_related:{}
+                include_related: {}
               }
             }
           }
@@ -88,14 +105,11 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
       {
         include_related: {
           posts: {
-            include: true,
-            include_related:{
+            include_related: {
               comments: {
-                include: true,
-                include_related:{
+                include_related: {
                   tags: {
-                    include: true,
-                    include_related:{}
+                    include_related: {}
                   }
                 }
               }
