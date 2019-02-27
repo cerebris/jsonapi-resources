@@ -149,7 +149,7 @@ module JSONAPI
         end
 
         fragments = {}
-        rows = records.distinct.pluck(*pluck_fields)
+        rows = records.pluck(*pluck_fields)
         rows.collect do |row|
           rid = JSONAPI::ResourceIdentity.new(resource_klass, pluck_fields.length == 1 ? row : row[0])
 
