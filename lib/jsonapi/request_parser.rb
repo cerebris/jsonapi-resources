@@ -69,14 +69,14 @@ module JSONAPI
       paginator = parse_pagination(resource_klass, params[:page])
 
       JSONAPI::Operation.new(
-          :find,
-          resource_klass,
-          context: context,
-          filters: filters,
-          include_directives: include_directives,
-          sort_criteria: sort_criteria,
-          paginator: paginator,
-          fields: fields
+        :find,
+        resource_klass,
+        context: context,
+        filters: filters,
+        include_directives: include_directives,
+        sort_criteria: sort_criteria,
+        paginator: paginator,
+        fields: fields
       )
     end
 
@@ -90,14 +90,14 @@ module JSONAPI
       relationship_type = params[:relationship].to_sym
 
       JSONAPI::Operation.new(
-          :show_related_resource,
-          resource_klass,
-          context: @context,
-          relationship_type: relationship_type,
-          source_klass: source_klass,
-          source_id: source_id,
-          fields: fields,
-          include_directives: include_directives
+        :show_related_resource,
+        resource_klass,
+        context: @context,
+        relationship_type: relationship_type,
+        source_klass: source_klass,
+        source_id: source_id,
+        fields: fields,
+        include_directives: include_directives
       )
     end
 
@@ -113,17 +113,17 @@ module JSONAPI
       relationship_type = params[:relationship]
 
       JSONAPI::Operation.new(
-          :show_related_resources,
-          resource_klass,
-          context: @context,
-          relationship_type: relationship_type,
-          source_klass: source_klass,
-          source_id: source_id,
-          filters: filters,
-          sort_criteria: sort_criteria,
-          paginator: paginator,
-          fields: fields,
-          include_directives: include_directives
+        :show_related_resources,
+        resource_klass,
+        context: @context,
+        relationship_type: relationship_type,
+        source_klass: source_klass,
+        source_id: source_id,
+        filters: filters,
+        sort_criteria: sort_criteria,
+        paginator: paginator,
+        fields: fields,
+        include_directives: include_directives
       )
     end
 
@@ -133,13 +133,13 @@ module JSONAPI
       id = params[:id]
 
       JSONAPI::Operation.new(
-          :show,
-          resource_klass,
-          context: @context,
-          id: id,
-          include_directives: include_directives,
-          fields: fields,
-          allowed_resources: params[:allowed_resources]
+        :show,
+        resource_klass,
+        context: @context,
+        id: id,
+        include_directives: include_directives,
+        fields: fields,
+        allowed_resources: params[:allowed_resources]
       )
     end
 
@@ -152,16 +152,16 @@ module JSONAPI
       paginator = parse_pagination(resource_klass, params[:page])
 
       JSONAPI::Operation.new(
-          :show_relationship,
-          resource_klass,
-          context: @context,
-          relationship_type: relationship_type,
-          parent_key: resource_klass.verify_key(parent_key),
-          filters: filters,
-          sort_criteria: sort_criteria,
-          paginator: paginator,
-          fields: fields,
-          include_directives: include_directives
+        :show_relationship,
+        resource_klass,
+        context: @context,
+        relationship_type: relationship_type,
+        parent_key: resource_klass.verify_key(parent_key),
+        filters: filters,
+        sort_criteria: sort_criteria,
+        paginator: paginator,
+        fields: fields,
+        include_directives: include_directives
       )
     end
 
@@ -180,13 +180,13 @@ module JSONAPI
       data = parse_params(resource_klass, data, resource_klass.creatable_fields(@context))
 
       JSONAPI::Operation.new(
-          :create_resource,
-          resource_klass,
-          context: @context,
-          data: data,
-          fields: fields,
-          include_directives: include_directives,
-          warnings: @warnings
+        :create_resource,
+        resource_klass,
+        context: @context,
+        data: data,
+        fields: fields,
+        include_directives: include_directives,
+        warnings: @warnings
       )
     end
 
@@ -220,23 +220,24 @@ module JSONAPI
       verify_type(data[:type], resource_klass)
 
       JSONAPI::Operation.new(
-          :replace_fields,
-          resource_klass,
-          context: @context,
-          resource_id: resource_id,
-          data: parse_params(resource_klass, data, resource_klass.updatable_fields(@context)),
-          fields: fields,
-          include_directives: include_directives,
-          warnings: @warnings
+        :replace_fields,
+        resource_klass,
+        context: @context,
+        resource_id: resource_id,
+        data: parse_params(resource_klass, data, resource_klass.updatable_fields(@context)),
+        fields: fields,
+        include_directives: include_directives,
+        warnings: @warnings
       )
     end
 
     def setup_destroy_action(params, resource_klass)
       JSONAPI::Operation.new(
-          :remove_resource,
-          resource_klass,
-          context: @context,
-          resource_id: resource_klass.verify_key(params.require(:id), @context))
+        :remove_resource,
+        resource_klass,
+        context: @context,
+        resource_id: resource_klass.verify_key(params.require(:id), @context)
+      )
     end
 
     def setup_destroy_relationship_action(params, resource_klass)
