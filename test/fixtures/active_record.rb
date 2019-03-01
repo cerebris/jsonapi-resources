@@ -1527,6 +1527,10 @@ module BreedResourceFinder
       resource_for(record, options[:context])
     end
 
+    def find_to_populate_by_keys(keys, options = {})
+      find_by_keys(keys, options)
+    end
+
     def find_by_keys(keys, options = {})
       records = find_breeds_by_keys(keys, options)
       resources_for(records, options[:context])
