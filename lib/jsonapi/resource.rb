@@ -464,6 +464,12 @@ module JSONAPI
         # :nocov:
       end
 
+      def find_to_populate_by_keys(_keys, _options = {})
+        # :nocov:
+        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
+        # :nocov:
+      end
+
       def find_fragments(_filters, _options = {})
         # :nocov:
         raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'

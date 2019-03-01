@@ -70,6 +70,16 @@ module JSONAPI
         resources_for(records, options[:context])
       end
 
+      # Returns an array of Resources identified by the `keys` array. The resources are not filtered as this
+      # will have been done in a prior step
+      #
+      # @param keys [Array<key>] Array of primary keys to find resources for
+      # @option options [Hash] :context The context of the request, set in the controller
+      def find_to_populate_by_keys(keys, options = {})
+        records = records_for_populate(options).where(_primary_key => keys)
+        resources_for(records, options[:context])
+      end
+
       # Finds Resource fragments using the `filters`. Pagination and sort options are used when provided.
       # Retrieving the ResourceIdentities and attributes does not instantiate a model instance.
       # Note: This is incompatible with Polymorphic resources (which are going to come from two separate tables)
@@ -242,9 +252,56 @@ module JSONAPI
         count_records(records)
       end
 
-      def records(_options = {})
+      # This resource finder (ActiveRecordResourceFinder) uses an `ActiveRecord::Relation` as the starting point for
+      # retrieving models. From this relation filters, sorts and joins are applied as needed.
+      # Depending on which phase of the request processing different `records` methods will be called, giving the user
+      # the opportunity to override them differently for performance and security reasons.
+
+      # begin `records`methods
+
+      # Base for the `records` methods that follow and is not directly used for accessing model data by this class.
+      # Overriding this method gives a single place to affect the `ActiveRecord::Relation` used for the resource.
+      #
+      # @option options [Hash] :context The context of the request, set in the controller
+      #
+      # @return [ActiveRecord::Relation]
+      def records_base(_options = {})
         _model_class.all
       end
+
+      # The `ActiveRecord::Relation` used for finding user requested models. This may be overridden to enforce
+      # permissions checks on the request.
+      #
+      # @option options [Hash] :context The context of the request, set in the controller
+      #
+      # @return [ActiveRecord::Relation]
+      def records(options = {})
+        records_base(options)
+      end
+
+      # The `ActiveRecord::Relation` used for populating the ResourceSet. Only resources that have been previously
+      # identified through the `records` method will be accessed. Thus it should not be necessary to reapply permissions
+      # checks. However if the model needs to include other models adding `includes` is appropriate
+      #
+      # @option options [Hash] :context The context of the request, set in the controller
+      #
+      # @return [ActiveRecord::Relation]
+      def records_for_populate(options = {})
+        records_base(options)
+      end
+
+      # The `ActiveRecord::Relation` used for the finding related resources. Only resources that have been previously
+      # identified through the `records` method will be accessed and used as the basis to find related resources. Thus
+      # it should not be necessary to reapply permissions checks.
+      #
+      # @option options [Hash] :context The context of the request, set in the controller
+      #
+      # @return [ActiveRecord::Relation]
+      def records_for_source_to_related(options = {})
+        records_base(options)
+      end
+
+      # end `records` methods
 
       def apply_join(records:, relationship:, resource_type:, join_type:, options:)
         if relationship.polymorphic? && relationship.belongs_to?
@@ -267,7 +324,7 @@ module JSONAPI
       end
 
       def relationship_records(relationship:, join_type: :inner, resource_type: nil, options: {})
-        records = relationship.parent_resource.records(options)
+        records = relationship.parent_resource.records_for_source_to_related(options)
         strategy = relationship.options[:apply_join]
 
         if strategy
@@ -336,7 +393,7 @@ module JSONAPI
 
         paginator = options[:paginator] if source_rids.count == 1
 
-        records = apply_request_settings_to_records(records: records(options),
+        records = apply_request_settings_to_records(records: records_for_source_to_related(options),
                                resource_klass: resource_klass,
                                sort_criteria: sort_criteria,
                                primary_keys: source_ids,
@@ -463,7 +520,7 @@ module JSONAPI
 
         # Note: We will sort by the source table. Without using unions we can't sort on a polymorphic relationship
         # in any manner that makes sense
-        records = apply_request_settings_to_records(records: records(options),
+        records = apply_request_settings_to_records(records: records_for_source_to_related(options),
                                resource_klass: resource_klass,
                                sort_primary: true,
                                primary_keys: source_ids,
