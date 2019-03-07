@@ -17,7 +17,7 @@ module JSONAPI
                 :default_paginator,
                 :default_page_size,
                 :maximum_page_size,
-                :resource_finder,
+                :default_resource_finder,
                 :default_processor_klass,
                 :use_text_errors,
                 :top_level_links_include_pagination,
@@ -109,7 +109,7 @@ module JSONAPI
       # The default ResourceFinder is the ActiveRelationResourceFinder which provides
       # access to ActiveRelation backed models. Custom ResourceFinders can be specified
       # in order to support other ORMs.
-      self.resource_finder = JSONAPI::ActiveRelationResourceFinder
+      self.default_resource_finder = JSONAPI::ActiveRelationResourceFinder
 
       # The default Operation Processor to use if one is not defined specifically
       # for a Resource.
@@ -225,8 +225,8 @@ module JSONAPI
       @default_processor_klass = default_processor_klass
     end
 
-    def resource_finder=(resource_finder)
-      @resource_finder = resource_finder
+    def default_resource_finder=(default_resource_finder)
+      @default_resource_finder = default_resource_finder
     end
 
     def allow_include=(allow_include)

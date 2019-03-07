@@ -423,7 +423,7 @@ module JSONAPI
 
         check_reserved_resource_name(subclass._type, subclass.name)
 
-        subclass.include JSONAPI.configuration.resource_finder if JSONAPI.configuration.resource_finder
+        subclass.include JSONAPI.configuration.default_resource_finder if JSONAPI.configuration.default_resource_finder
       end
 
       # A ResourceFinder is a mixin that adds functionality to find Resources and Resource Fragments
