@@ -421,74 +421,20 @@ module JSONAPI
           subclass.attribute :id, format: :id, readonly: true
         end
 
+        # Ensure that the parent's resource finder is included before inheriting from the parent is completed
+        if !_resource_finder_included && self != JSONAPI::Resource
+          include_resource_finder
+        end
+        subclass._resource_finder_included = _resource_finder_included
+
         check_reserved_resource_name(subclass._type, subclass.name)
-
-        subclass.include JSONAPI.configuration.default_resource_finder if JSONAPI.configuration.default_resource_finder
       end
 
-      # A ResourceFinder is a mixin that adds functionality to find Resources and Resource Fragments
-      # to the core Resource class.
-      #
-      # Resource fragments are a hash with the following format:
-      # {
-      #   identity: <required: a ResourceIdentity>,
-      #   cache: <optional: the resource's cache value>
-      #   attributes: <optional: attributes hash for attributes requested - currently unused>
-      #   related: {
-      #     <relationship_name>: <ResourceIdentity of a source resource in find_included_fragments>
-      #   }
-      # }
-      #
-      # begin ResourceFinder Abstract methods
-      def find(_filters, _options = {})
-        # :nocov:
-        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-        # :nocov:
+      # Set the resource finder for a resource, which will override the default_resource_finder
+      def resource_finder(resource_finder)
+        @resource_finder = resource_finder
+        include_resource_finder
       end
-
-      def count(_filters, _options = {})
-        # :nocov:
-        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-        # :nocov:
-      end
-
-      def find_by_keys(_keys, _options = {})
-        # :nocov:
-        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-        # :nocov:
-      end
-
-      def find_by_key(_key, _options = {})
-        # :nocov:
-        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-        # :nocov:
-      end
-
-      def find_fragments(_filters, _options = {})
-        # :nocov:
-        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-        # :nocov:
-      end
-
-      def find_included_fragments(_source_rids, _relationship_name, _options = {})
-        # :nocov:
-        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-        # :nocov:
-      end
-
-      def find_related_fragments(_source_rids, _relationship_name, _options = {})
-        # :nocov:
-        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-        # :nocov:
-      end
-
-      def count_related(_source_rid, _relationship_name, _options = {})
-        # :nocov:
-        raise 'Abstract ResourceFinder method called. Ensure that a ResourceFinder has been set.'
-        # :nocov:
-      end
-
-      #end ResourceFinder Abstract methods
 
       def rebuild_relationships(relationships)
         original_relationships = relationships.deep_dup
@@ -534,7 +480,7 @@ module JSONAPI
         end
       end
 
-      attr_accessor :_attributes, :_relationships, :_type, :_model_hints
+      attr_accessor :_attributes, :_relationships, :_type, :_model_hints, :_resource_finder_included
       attr_writer :_allowed_filters, :_paginator, :_allowed_sort
 
       def create(context)
@@ -1070,6 +1016,28 @@ module JSONAPI
       end
 
       private
+      def _resource_finder
+        @resource_finder ||= JSONAPI.configuration.default_resource_finder
+      end
+
+      def include_resource_finder
+        return if self == JSONAPI::Resource
+        if self._resource_finder_included
+          warn "#{self.name} is including a Resource Finder when one has already been included"
+        end
+        include _resource_finder
+        self._resource_finder_included = true
+      end
+
+      def method_missing(m, *args, &block)
+        if _resource_finder_included
+          super
+        else
+          # Handle the case where a resource finder has not been included yet. This should only happen once per class.
+          include_resource_finder
+          send(m, *args, &block)
+        end
+      end
 
       def check_reserved_resource_name(type, name)
         if [:ids, :types, :hrefs, :links].include?(type)

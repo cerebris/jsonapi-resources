@@ -1557,8 +1557,10 @@ module BreedResourceFinder
   end
 end
 
-JSONAPI.configuration.default_resource_finder = BreedResourceFinder
 class BreedResource < JSONAPI::Resource
+
+  resource_finder BreedResourceFinder
+
   attribute :name, format: :title
 
   # This is unneeded, just here for testing
@@ -1569,7 +1571,6 @@ class BreedResource < JSONAPI::Resource
     return :accepted
   end
 end
-JSONAPI.configuration.default_resource_finder = JSONAPI::ActiveRelationResourceFinder
 
 class PlanetResource < JSONAPI::Resource
   attribute :name
