@@ -2,10 +2,15 @@ require File.expand_path('../../../test_helper', __FILE__)
 
 class RequestTest < ActionDispatch::IntegrationTest
   def setup
+    DatabaseCleaner.start
     JSONAPI.configuration.json_key_format = :underscored_key
     JSONAPI.configuration.route_format = :underscored_route
     Api::V2::BookResource.paginator :offset
     $test_user = Person.find(1)
+  end
+
+  def teardown
+    DatabaseCleaner.clean
   end
 
   def after_teardown

@@ -1,4 +1,5 @@
 require 'simplecov'
+require 'database_cleaner'
 
 # To run tests with coverage:
 # COVERAGE=true bundle exec rake test
@@ -407,6 +408,8 @@ end
 ApiV2Engine::Engine.routes.draw do
   jsonapi_resources :people
 end
+
+DatabaseCleaner.strategy = :transaction
 
 # Ensure backward compatibility with Minitest 4
 Minitest::Test = MiniTest::Unit::TestCase unless defined?(Minitest::Test)
