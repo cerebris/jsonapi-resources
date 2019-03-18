@@ -1028,10 +1028,12 @@ class VehicleResource < JSONAPI::Resource
 end
 
 class CarResource < VehicleResource
+  model_name "Car"
   attributes :drive_layout
 end
 
 class BoatResource < VehicleResource
+  model_name "Boat"
   attributes :length_at_water_line
 end
 

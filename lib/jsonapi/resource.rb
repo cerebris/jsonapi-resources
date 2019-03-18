@@ -303,6 +303,26 @@ module JSONAPI
         _create_to_many_links(relationship_type, to_add, {})
 
         @reload_needed = true
+      elsif relationship.polymorphic?
+        relationship_key_values.each do |relationship_key_value|
+          relationship_resource_klass = self.class.resource_for(relationship_key_value[:type])
+          ids = relationship_key_value[:ids]
+
+          related_records = relationship_resource_klass
+            .records(options)
+            .where({relationship_resource_klass._primary_key => ids})
+
+          missed_ids = ids - related_records.pluck(relationship_resource_klass._primary_key)
+
+          if missed_ids.present?
+            fail JSONAPI::Exceptions::RecordNotFound.new(missed_ids)
+          end
+
+          relation_name = relationship.relation_name(context: @context)
+          @model.send("#{relation_name}") << related_records
+        end
+
+        @reload_needed = true
       else
         send("#{relationship.foreign_key}=", relationship_key_values)
         @save_needed = true
@@ -565,7 +585,14 @@ module JSONAPI
         _add_relationship(Relationship::ToMany, *attrs)
       end
 
+      # @model_class is inherited from superclass, and this causes some issues:
+      # ```
+      # CarResource._model_class #=> Vehicle # it should be Car
+      # ```
+      # so in order to invoke the right class from subclasses,
+      # we should call this method to override it.
       def model_name(model, options = {})
+        @model_class = nil
         @_model_name = model.to_sym
 
         model_hint(model: @_model_name, resource: self) unless options[:add_model_hint] == false
