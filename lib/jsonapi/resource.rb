@@ -305,9 +305,14 @@ module JSONAPI
         @reload_needed = true
       elsif relationship.polymorphic?
         relationship_resource_klass = self.class.resource_for(relationship_key_values[:type])
-        relationship_klass = relationship_resource_klass._model_class
-        related_records = relationship_klass.find(relationship_key_values[:ids])
+        relationship_klass = relationship_resource_klass.model_hint.classify.safe_constantize
         relation_name = relationship.relation_name(context: @context)
+
+        begin
+          related_records = relationship_klass.find(relationship_key_values[:ids])
+        rescue ActiveRecord::RecordNotFound
+          fail JSONAPI::Exceptions::RecordNotFound.new(relationship_key_values[:ids])
+        end
 
         @model.send("#{relation_name}=", related_records)
 
