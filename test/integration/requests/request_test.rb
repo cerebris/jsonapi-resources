@@ -227,7 +227,12 @@ class RequestTest < ActionDispatch::IntegrationTest
             'date_joined' => 'Thu, 01 Jan 2019 00:00:00 UTC +00:00',
           },
           'relationships' => {
-            'vehicles' => {'data' => [{'type' => 'car', 'id' => '1'}]},
+            'vehicles' => {
+              'data' => [
+                {'type' => 'car', 'id' => '1'},
+                {'type' => 'boat', 'id' => '2'}
+              ]
+            }
           }
         }
       }.to_json,
@@ -242,8 +247,9 @@ class RequestTest < ActionDispatch::IntegrationTest
     person = Person.find(body.dig("data", "id"))
 
     assert "Reo", person.name
-    assert 1, person.vehicles.count
-    assert 1, person.vehicles.first.id
+    assert 2, person.vehicles.count
+    assert Car, person.vehicles.first.class
+    assert Boat, person.vehicles.second.class
   end
 
   def test_post_polymorphic_invalid_with_wrong_type

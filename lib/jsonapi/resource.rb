@@ -303,6 +303,15 @@ module JSONAPI
         _create_to_many_links(relationship_type, to_add, {})
 
         @reload_needed = true
+      elsif relationship.polymorphic?
+        relationship_resource_klass = self.class.resource_for(relationship_key_values[:type])
+        relationship_klass = relationship_resource_klass._model_class
+        related_records = relationship_klass.find(relationship_key_values[:ids])
+        relation_name = relationship.relation_name(context: @context)
+
+        @model.send("#{relation_name}=", related_records)
+
+        @reload_needed = true
       else
         send("#{relationship.foreign_key}=", relationship_key_values)
         @save_needed = true

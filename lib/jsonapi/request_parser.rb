@@ -524,13 +524,27 @@ module JSONAPI
       if links_object.length == 0
         add_result.call([])
       else
-        defined_relationship_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(relationship.type).to_s)
         links_object.each_pair do |type, keys|
-          relationship_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(type).to_s)
-          if !relationship_resource.ancestors.include?(defined_relationship_resource)
-            fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
+          resource = self.resource_klass || Resource
+          type_name = unformat_key(type).to_s
+          relationship_resource_klass = resource.resource_for(relationship.class_name)
+          relationship_klass = relationship_resource_klass._model_class
+          linkage_object_resource_klass = resource.resource_for(type_name)
+          linkage_object_klass = linkage_object_resource_klass._model_class
+
+          unless linkage_object_klass == relationship_klass || linkage_object_klass.in?(relationship_klass.subclasses)
+            fail JSONAPI::Exceptions::TypeMismatch.new(type_name)
           end
-          add_result.call relationship_resource.verify_keys(keys, @context)
+
+          relationship_ids = relationship_resource_klass.verify_keys(keys, @context)
+
+          result = if relationship.polymorphic?
+            { type: type, ids: relationship_ids }
+          else
+            relationship_ids
+          end
+
+          add_result.call result
         end
       end
     end
