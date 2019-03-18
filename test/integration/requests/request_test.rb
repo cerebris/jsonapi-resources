@@ -216,7 +216,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_jsonapi_response 201
   end
 
-  def test_post_polymorphic
+  def test_post_polymorphic_with_has_many_relationship
     post '/people', params:
       {
         'data' => {
@@ -237,9 +237,16 @@ class RequestTest < ActionDispatch::IntegrationTest
       }
 
     assert_jsonapi_response 201
+
+    body = JSON.parse(response.body)
+    person = Person.find(body.dig("data", "id"))
+
+    assert "Reo", person.name
+    assert 1, person.vehicles.count
+    assert 1, person.vehicles.first.id
   end
 
-  def test_post_polymorphic_invalid
+  def test_post_polymorphic_invalid_with_wrong_type
     post '/people', params:
       {
         'data' => {
@@ -251,6 +258,34 @@ class RequestTest < ActionDispatch::IntegrationTest
           },
           'relationships' => {
             'vehicles' => {'data' => [{'type' => 'author', 'id' => '1'}]},
+          }
+        }
+      }.to_json,
+      headers: {
+        'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
+        'Accept' => JSONAPI::MEDIA_TYPE
+      }
+
+    assert_jsonapi_response 400, msg: "Submitting a thing as a vehicle should raise a type mismatch error"
+  end
+
+  def test_post_polymorphic_invalid_with_not_matched_type_and_id
+    post '/people', params:
+      {
+        'data' => {
+          'type' => 'people',
+          'attributes' => {
+            'name' => 'Reo',
+            'email' => 'reo@xyz.fake',
+            'date_joined' => 'Thu, 01 Jan 2019 00:00:00 UTC +00:00',
+          },
+          'relationships' => {
+            'vehicles' => {
+              'data' => [
+                {'type' => 'car', 'id' => '1'},
+                {'type' => 'car', 'id' => '2'} #vehicle 2 is actually a boat
+              ]
+            }
           }
         }
       }.to_json,
