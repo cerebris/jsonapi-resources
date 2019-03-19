@@ -246,10 +246,10 @@ class RequestTest < ActionDispatch::IntegrationTest
     body = JSON.parse(response.body)
     person = Person.find(body.dig("data", "id"))
 
-    assert "Reo", person.name
-    assert 2, person.vehicles.count
-    assert Car, person.vehicles.first.class
-    assert Boat, person.vehicles.second.class
+    assert_equal "Reo", person.name
+    assert_equal 2, person.vehicles.count
+    assert_equal Car, person.vehicles.first.class
+    assert_equal Boat, person.vehicles.second.class
   end
 
   def test_post_polymorphic_invalid_with_wrong_type
@@ -545,10 +545,10 @@ class RequestTest < ActionDispatch::IntegrationTest
     body = JSON.parse(response.body)
     person = Person.find(body.dig("data", "id"))
 
-    assert "Reo", person.name
-    assert 2, person.vehicles.count
-    assert Car, person.vehicles.first.class
-    assert Boat, person.vehicles.second.class
+    assert_equal "Reo", person.name
+    assert_equal 2, person.vehicles.count
+    assert_equal Car, person.vehicles.first.class
+    assert_equal Boat, person.vehicles.second.class
   end
 
   def test_patch_polymorphic_invalid_with_wrong_type

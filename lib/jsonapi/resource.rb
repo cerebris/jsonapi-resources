@@ -304,21 +304,23 @@ module JSONAPI
 
         @reload_needed = true
       elsif relationship.polymorphic?
-        relationship_resource_klass = self.class.resource_for(relationship_key_values[:type])
-        ids = relationship_key_values[:ids]
+        relationship_key_values.each do |relationship_key_value|
+          relationship_resource_klass = self.class.resource_for(relationship_key_value[:type])
+          ids = relationship_key_value[:ids]
 
-        related_records = relationship_resource_klass
-          .records
-          .where({relationship_resource_klass._primary_key => ids})
+          related_records = relationship_resource_klass
+            .records(options)
+            .where({relationship_resource_klass._primary_key => ids})
 
-        missed_ids = ids - related_records.map(&:id)
+          missed_ids = ids - related_records.pluck(relationship_resource_klass._primary_key)
 
-        if missed_ids.present?
-          fail JSONAPI::Exceptions::RecordNotFound.new(missed_ids)
+          if missed_ids.present?
+            fail JSONAPI::Exceptions::RecordNotFound.new(missed_ids)
+          end
+
+          relation_name = relationship.relation_name(context: @context)
+          @model.send("#{relation_name}") << related_records
         end
-
-        relation_name = relationship.relation_name(context: @context)
-        @model.send("#{relation_name}=", related_records)
 
         @reload_needed = true
       else
