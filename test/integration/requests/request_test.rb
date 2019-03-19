@@ -514,6 +514,96 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_match JSONAPI::MEDIA_TYPE, headers['Content-Type']
   end
 
+  def test_patch_polymorphic_with_has_many_relationship
+    patch '/people/1', params:
+      {
+        'data' => {
+          'id' => 1,
+          'type' => 'people',
+          'attributes' => {
+            'name' => 'Reo',
+            'email' => 'reo@xyz.fake',
+            'date_joined' => 'Thu, 01 Jan 2019 00:00:00 UTC +00:00',
+          },
+          'relationships' => {
+            'vehicles' => {
+              'data' => [
+                {'type' => 'car', 'id' => '1'},
+                {'type' => 'boat', 'id' => '2'}
+              ]
+            }
+          }
+        }
+      }.to_json,
+      headers: {
+        'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
+        'Accept' => JSONAPI::MEDIA_TYPE
+      }
+
+    assert_jsonapi_response 200
+
+    body = JSON.parse(response.body)
+    person = Person.find(body.dig("data", "id"))
+
+    assert "Reo", person.name
+    assert 2, person.vehicles.count
+    assert Car, person.vehicles.first.class
+    assert Boat, person.vehicles.second.class
+  end
+
+  def test_patch_polymorphic_invalid_with_wrong_type
+    patch '/people/1', params:
+      {
+        'data' => {
+          'id' => 1,
+          'type' => 'people',
+          'attributes' => {
+            'name' => 'Reo',
+            'email' => 'reo@xyz.fake',
+            'date_joined' => 'Thu, 01 Jan 2019 00:00:00 UTC +00:00',
+          },
+          'relationships' => {
+            'vehicles' => {'data' => [{'type' => 'author', 'id' => '1'}]},
+          }
+        }
+      }.to_json,
+      headers: {
+        'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
+        'Accept' => JSONAPI::MEDIA_TYPE
+      }
+
+    assert_jsonapi_response 400, msg: "Submitting a thing as a vehicle should raise a type mismatch error"
+  end
+
+  def test_patch_polymorphic_invalid_with_not_matched_type_and_id
+    patch '/people/1', params:
+      {
+        'data' => {
+          'id' => 1,
+          'type' => 'people',
+          'attributes' => {
+            'name' => 'Reo',
+            'email' => 'reo@xyz.fake',
+            'date_joined' => 'Thu, 01 Jan 2019 00:00:00 UTC +00:00',
+          },
+          'relationships' => {
+            'vehicles' => {
+              'data' => [
+                {'type' => 'car', 'id' => '1'},
+                {'type' => 'car', 'id' => '2'} #vehicle 2 is actually a boat
+              ]
+            }
+          }
+        }
+      }.to_json,
+      headers: {
+        'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
+        'Accept' => JSONAPI::MEDIA_TYPE
+      }
+
+    assert_jsonapi_response 404, msg: "Submitting a thing as a vehicle should raise a record not found"
+  end
+
   def test_post_correct_content_type
     post '/posts', params:
       {
