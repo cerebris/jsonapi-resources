@@ -530,8 +530,10 @@ module JSONAPI
           links_object.each_pair do |type, keys|
             resource = self.resource_klass || Resource
             type_name = unformat_key(type).to_s
+
             relationship_resource_klass = resource.resource_for(relationship.class_name)
             relationship_klass = relationship_resource_klass._model_class
+
             linkage_object_resource_klass = resource.resource_for(type_name)
             linkage_object_klass = linkage_object_resource_klass._model_class
 
@@ -545,14 +547,14 @@ module JSONAPI
 
           add_result.call polymorphic_results
         else
-          if links_object.length > 1 || !links_object.has_key?(unformat_key(relationship.type).to_s)
+          relationship_type = unformat_key(relationship.type).to_s
+
+          if links_object.length > 1 || !links_object.has_key?(relationship_type)
             fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
           end
 
-          links_object.each_pair do |type, keys|
-            relationship_resource = Resource.resource_for(@resource_klass.module_path + unformat_key(type).to_s)
-            add_result.call relationship_resource.verify_keys(keys, @context)
-          end
+          relationship_resource = Resource.resource_for(@resource_klass.module_path + relationship_type)
+          add_result.call relationship_resource.verify_keys(links_object[relationship_type], @context)
         end
       end
     end
