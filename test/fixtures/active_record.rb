@@ -1552,6 +1552,8 @@ module Api
           # Only book admins might filter for banned books
           if current_user && current_user.book_admin
             records.where('books.banned = ?', value[0] == 'true')
+          else
+            records
           end
         end
 
