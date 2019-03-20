@@ -15,3 +15,21 @@ Launch20:
   length_at_water_line: 15.5ft
   serial_number: 434253JJJSD
   person_id: 1001
+
+M5:
+  id: 3
+  type: Car
+  make: BMW
+  model: M5
+  drive_layout: Front Engine RWD
+  serial_number: 56256
+  person_id: 2
+
+M3:
+  id: 4
+  type: Car
+  make: BMW
+  model: M3
+  drive_layout: Front Engine RWD
+  serial_number: 894345
+  person_id: 2

@@ -555,6 +555,7 @@ module JSONAPI
       end
 
       links_object = parse_to_many_links_object(linkage)
+      resource_klass = Resource.resource_klass_for(params[:controller])
 
       # Since we do not yet support polymorphic to_many relationships we will raise an error if the type does not match the
       # relationship's type.
@@ -563,13 +564,36 @@ module JSONAPI
       if links_object.length == 0
         add_result.call([])
       else
-        if links_object.length > 1 || !links_object.has_key?(unformat_key(relationship.type).to_s)
-          fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type], error_object_overrides)
-        end
+        if relationship.polymorphic?
+          polymorphic_results = []
 
-        links_object.each_pair do |type, keys|
-          relationship_resource = Resource.resource_klass_for(resource_klass.module_path + unformat_key(type).to_s)
-          add_result.call relationship_resource.verify_keys(keys, @context)
+          links_object.each_pair do |type, keys|
+            type_name = unformat_key(type).to_s
+
+            relationship_resource_klass = resource_klass.resource_klass_for(relationship.class_name)
+            relationship_klass = relationship_resource_klass._model_class
+
+            linkage_object_resource_klass = resource_klass.resource_klass_for(type_name)
+            linkage_object_klass = linkage_object_resource_klass._model_class
+
+            unless linkage_object_klass == relationship_klass || linkage_object_klass.in?(relationship_klass.subclasses)
+              fail JSONAPI::Exceptions::TypeMismatch.new(type_name)
+            end
+
+            relationship_ids = relationship_resource_klass.verify_keys(keys, @context)
+             polymorphic_results << { type: type, ids: relationship_ids }
+          end
+
+          add_result.call polymorphic_results
+        else
+          relationship_type = unformat_key(relationship.type).to_s
+
+          if links_object.length > 1 || !links_object.has_key?(relationship_type)
+            fail JSONAPI::Exceptions::TypeMismatch.new(links_object[:type])
+          end
+
+          relationship_resource_klass = Resource.resource_klass_for(resource_klass.module_path + relationship_type)
+          add_result.call relationship_resource_klass.verify_keys(links_object[relationship_type], @context)
         end
       end
     end
