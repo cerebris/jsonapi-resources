@@ -128,6 +128,7 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_model
     assert_equal(PostResource._model_class, Post)
+    assert_equal(Api::V7::CustomerResource._model_class, Api::V7::Customer)
   end
 
   def test_module_path

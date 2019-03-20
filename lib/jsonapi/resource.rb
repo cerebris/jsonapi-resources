@@ -568,6 +568,9 @@ module JSONAPI
       def model_name(model, options = {})
         @_model_name = model.to_sym
 
+        # Reset _model_class cache
+        @model_class = nil
+
         model_hint(model: @_model_name, resource: self) unless options[:add_model_hint] == false
 
         rebuild_relationships(_relationships)
