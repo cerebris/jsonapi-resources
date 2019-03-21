@@ -265,7 +265,7 @@ module JSONAPI
             return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
           end
 
-          unless @include_directives.include_config(relationship.name.to_sym).present?
+          unless @include_directives&.include_config(relationship.name.to_sym).present?
             return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
           end
 
