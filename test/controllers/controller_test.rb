@@ -2638,7 +2638,7 @@ class Api::V5::PaintersControllerTest < ActionController::TestCase
 
   def test_show_with_filters_and_no_included_resources
     get :show, params: { id: 1, filter: { 'paintings.category' => 'oil' } }
-    assert_response 400
+    assert_response :bad_request
     assert_equal('Filter not allowed', json_response['errors'][0]['title'])
     assert_equal('category is not allowed.', json_response['errors'][0]['detail'])
   end
