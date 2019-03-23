@@ -130,6 +130,73 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
     )
   end
 
+  def test_sti_polymorphic_to_many_serialization_with_custom_polymorphic_records
+    person_resource = PersonResource.new(@person, nil)
+    serializer = JSONAPI::ResourceSerializer.new(
+      PersonResource,
+      include: %w(vehicles)
+    )
+
+    def person_resource.records_for_vehicles(opts = {})
+      @model.vehicles.none
+    end
+
+    serialized_data = serializer.serialize_to_hash(person_resource)
+
+    assert_hash_equals(
+      {
+        data: {
+          id: '1',
+          type: 'people',
+          links: {
+            self: '/people/1'
+          },
+          attributes: {
+            name: 'Joe Author',
+            email: 'joe@xyz.fake',
+            dateJoined: '2013-08-07 16:25:00 -0400'
+          },
+          relationships: {
+            comments: {
+              links: {
+                self: '/people/1/relationships/comments',
+                related: '/people/1/comments'
+              }
+            },
+            posts: {
+              links: {
+                self: '/people/1/relationships/posts',
+                related: '/people/1/posts'
+              }
+            },
+            vehicles: {
+              links: {
+                self: '/people/1/relationships/vehicles',
+                related: '/people/1/vehicles'
+              },
+              :data => []
+            },
+            preferences: {
+              links: {
+                self: '/people/1/relationships/preferences',
+                related: '/people/1/preferences'
+              }
+            },
+            hairCut: {
+              links: {
+                self: '/people/1/relationships/hairCut',
+                related: '/people/1/hairCut'
+              }
+            }
+          }
+        }
+      },
+      serialized_data
+    )
+  end
+
+
+
   def test_polymorphic_belongs_to_serialization
     serialized_data = JSONAPI::ResourceSerializer.new(
       PictureResource,

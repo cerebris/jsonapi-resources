@@ -394,12 +394,16 @@ module JSONAPI
 
     def to_many_linkage(source, relationship)
       linkage = []
+      include_config = include_directives.include_config(relationship.name.to_sym) if include_directives
+      include_filters = include_config[:include_filters] if include_config
+      options = { filters: include_filters || {} }
+
       linkage_types_and_values = if source.preloaded_fragments.has_key?(format_key(relationship.name))
         source.preloaded_fragments[format_key(relationship.name)].map do |_, resource|
           [relationship.type, resource.id]
         end
       elsif relationship.polymorphic?
-        assoc = source._model.public_send(relationship.name)
+        assoc = source.public_send("records_for_#{relationship.name}", options)
         # Avoid hitting the database again for values already pre-loaded
         if assoc.respond_to?(:loaded?) and assoc.loaded?
           assoc.map do |obj|
@@ -411,9 +415,6 @@ module JSONAPI
           end
         end
       else
-        include_config = include_directives.include_config(relationship.name.to_sym) if include_directives
-        include_filters = include_config[:include_filters] if include_config
-        options = { filters: include_filters || {} }
         source.public_send(relationship.name, options).map do |value|
           [relationship.type, value.id]
         end
