@@ -410,6 +410,7 @@ module JSONAPI
             [obj.type.underscore.pluralize, obj.id]
           end
         else
+          assoc = assoc.unscope(:includes) if assoc.is_a?(ActiveRecord::Relation)
           assoc.pluck(:type, :id).map do |type, id|
             [type.underscore.pluralize, id]
           end
