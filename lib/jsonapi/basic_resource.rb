@@ -2,7 +2,7 @@ require 'jsonapi/callbacks'
 require 'jsonapi/configuration'
 
 module JSONAPI
-  class Resource
+  class BasicResource
     include Callbacks
 
     attr_reader :context
