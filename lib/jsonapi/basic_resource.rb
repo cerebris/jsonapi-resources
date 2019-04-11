@@ -5,6 +5,10 @@ module JSONAPI
   class BasicResource
     include Callbacks
 
+    @abstract = true
+    @immutable = true
+    @root = true
+
     attr_reader :context
 
     define_jsonapi_resources_callbacks :create,
@@ -891,6 +895,16 @@ module JSONAPI
         @_polymorphic_resource_klasses ||= _polymorphic_types.collect do |type|
           resource_klass_for(type)
         end
+      end
+
+      def root_resource
+        @abstract = true
+        @immutable = true
+        @root = true
+      end
+
+      def root?
+        @root
       end
 
       def abstract(val = true)

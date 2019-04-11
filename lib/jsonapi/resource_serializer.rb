@@ -199,7 +199,7 @@ module JSONAPI
       @_supplying_attribute_fields.fetch resource_klass do
         attrs = Set.new(resource_klass._attributes.keys.map(&:to_sym))
         cur = resource_klass
-        while cur != JSONAPI::Resource
+        while !cur.root? # do not traverse beyond the first root resource
           if @fields.has_key?(cur._type)
             attrs &= @fields[cur._type]
             break
@@ -214,7 +214,7 @@ module JSONAPI
       @_supplying_relationship_fields.fetch resource_klass do
         relationships = Set.new(resource_klass._relationships.keys.map(&:to_sym))
         cur = resource_klass
-        while cur != JSONAPI::Resource
+        while !cur.root? # do not traverse beyond the first root resource
           if @fields.has_key?(cur._type)
             relationships &= @fields[cur._type]
             break

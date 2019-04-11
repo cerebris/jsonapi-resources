@@ -27,7 +27,7 @@ module JSONAPI
       @class_name = nil
       @inverse_relationship = nil
 
-      # Custom methods are reserved for use in resource finders. Not used in the default ActiveRelationResourceFinder
+      # Custom methods are reserved for future use
       @custom_methods = options.fetch(:custom_methods, {})
     end
 

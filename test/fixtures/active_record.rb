@@ -1503,12 +1503,10 @@ class EmployeeResource < JSONAPI::Resource
   has_many :expense_entries
 end
 
-module BreedResourceFinder
-  def self.included(base)
-    base.extend ClassMethods
-  end
+class PoroResource < JSONAPI::BasicResource
+  root_resource
 
-  module ClassMethods
+  class << self
     def find(filters, options = {})
       records = find_breeds(filters, options)
       resources_for(records, options[:context])
@@ -1563,9 +1561,7 @@ module BreedResourceFinder
   end
 end
 
-class BreedResource < JSONAPI::Resource
-
-  resource_finder BreedResourceFinder
+class BreedResource < PoroResource
 
   attribute :name, format: :title
 
