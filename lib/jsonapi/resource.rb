@@ -441,19 +441,7 @@ module JSONAPI
           subclass.attribute :id, format: :id, readonly: true
         end
 
-        # Ensure that the parent's resource finder is included before inheriting from the parent is completed
-        if !_resource_finder_included && self != JSONAPI::Resource
-          include_resource_finder
-        end
-        subclass._resource_finder_included = _resource_finder_included
-
         check_reserved_resource_name(subclass._type, subclass.name)
-      end
-
-      # Set the resource finder for a resource, which will override the default_resource_finder
-      def resource_finder(resource_finder)
-        @resource_finder = resource_finder
-        include_resource_finder
       end
 
       def rebuild_relationships(relationships)
@@ -500,7 +488,7 @@ module JSONAPI
         end
       end
 
-      attr_accessor :_attributes, :_relationships, :_type, :_model_hints, :_resource_finder_included
+      attr_accessor :_attributes, :_relationships, :_type, :_model_hints
       attr_writer :_allowed_filters, :_paginator, :_allowed_sort
 
       def create(context)
@@ -1043,28 +1031,6 @@ module JSONAPI
       end
 
       private
-      def _resource_finder
-        @resource_finder ||= JSONAPI.configuration.default_resource_finder
-      end
-
-      def include_resource_finder
-        return if self == JSONAPI::Resource
-        if self._resource_finder_included
-          warn "#{self.name} is including a Resource Finder when one has already been included"
-        end
-        include _resource_finder
-        self._resource_finder_included = true
-      end
-
-      def method_missing(m, *args, &block)
-        if _resource_finder_included
-          super
-        else
-          # Handle the case where a resource finder has not been included yet. This should only happen once per class.
-          include_resource_finder
-          send(m, *args, &block)
-        end
-      end
 
       def check_reserved_resource_name(type, name)
         if [:ids, :types, :hrefs, :links].include?(type)
