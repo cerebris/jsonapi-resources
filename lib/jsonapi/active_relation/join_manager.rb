@@ -1,5 +1,5 @@
 module JSONAPI
-  module ActiveRelationResourceFinder
+  module ActiveRelation
 
   # Stores relationship paths starting from the resource_klass, consolidating duplicate paths from
   # relationships, filters and sorts. When joins are made the table aliases are tracked in join_details

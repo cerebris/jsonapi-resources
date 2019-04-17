@@ -1,6 +1,5 @@
 require 'jsonapi/formatter'
 require 'jsonapi/processor'
-require 'jsonapi/active_relation_resource_finder'
 require 'concurrent'
 
 module JSONAPI
@@ -17,7 +16,6 @@ module JSONAPI
                 :default_paginator,
                 :default_page_size,
                 :maximum_page_size,
-                :default_resource_finder,
                 :default_processor_klass,
                 :use_text_errors,
                 :top_level_links_include_pagination,
@@ -104,12 +102,6 @@ module JSONAPI
       # NOTE: always_include_to_many_linkage_data is not currently implemented
       self.always_include_to_one_linkage_data = false
       self.always_include_to_many_linkage_data = false
-
-      # ResourceFinder Mixin
-      # The default ResourceFinder is the ActiveRelationResourceFinder which provides
-      # access to ActiveRelation backed models. Custom ResourceFinders can be specified
-      # in order to support other ORMs.
-      self.default_resource_finder = JSONAPI::ActiveRelationResourceFinder
 
       # The default Operation Processor to use if one is not defined specifically
       # for a Resource.
@@ -223,10 +215,6 @@ module JSONAPI
 
     def default_processor_klass=(default_processor_klass)
       @default_processor_klass = default_processor_klass
-    end
-
-    def default_resource_finder=(default_resource_finder)
-      @default_resource_finder = default_resource_finder
     end
 
     def allow_include=(allow_include)

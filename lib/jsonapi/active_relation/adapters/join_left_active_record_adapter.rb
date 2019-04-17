@@ -1,5 +1,5 @@
 module JSONAPI
-  module ActiveRelationResourceFinder
+  module ActiveRelation
     module Adapters
       module JoinLeftActiveRecordAdapter
 

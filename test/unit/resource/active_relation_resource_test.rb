@@ -7,7 +7,7 @@ class ARPostResource < JSONAPI::Resource
   has_many :tags, primary_key: :tags_import_id
 end
 
-class ActiveRelationResourceFinderTest < ActiveSupport::TestCase
+class ActiveRelationResourceTest < ActiveSupport::TestCase
   def setup
   end
 
