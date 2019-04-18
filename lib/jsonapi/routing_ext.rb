@@ -154,7 +154,8 @@ module ActionDispatch
 
           if methods.include?(:show)
             match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                  action: 'show_relationship', relationship: link_type.to_s, via: [:get]
+                  action: 'show_relationship', relationship: link_type.to_s, via: [:get],
+                  as: "relationships/#{link_type}"
           end
 
           if res.mutable?
@@ -182,7 +183,8 @@ module ActionDispatch
 
           if methods.include?(:show)
             match "relationships/#{formatted_relationship_name}", controller: options[:controller],
-                  action: 'show_relationship', relationship: link_type.to_s, via: [:get]
+                  action: 'show_relationship', relationship: link_type.to_s, via: [:get],
+                  as: "relationships/#{link_type}"
           end
 
           if res.mutable?
@@ -221,7 +223,8 @@ module ActionDispatch
 
           match formatted_relationship_name, controller: options[:controller],
                 relationship: relationship.name, source: resource_type_with_module_prefix(source._type),
-                action: 'show_related_resource', via: [:get]
+                action: 'show_related_resource', via: [:get],
+                as: relationship_name
         end
 
         def jsonapi_related_resources(*relationship)
@@ -238,7 +241,8 @@ module ActionDispatch
           match formatted_relationship_name,
                 controller: options[:controller],
                 relationship: relationship.name, source: resource_type_with_module_prefix(source._type),
-                action: 'index_related_resources', via: [:get]
+                action: 'index_related_resources', via: [:get],
+                as: relationship_name
         end
 
         protected
