@@ -26,6 +26,7 @@ module JSONAPI
       @allow_include = options[:allow_include]
       @class_name = nil
       @inverse_relationship = nil
+      @build_default_links = options[:build_default_links]
 
       # Custom methods are reserved for future use
       @custom_methods = options.fetch(:custom_methods, {})
@@ -97,6 +98,10 @@ module JSONAPI
 
     def readonly?
       @options[:readonly]
+    end
+
+    def build_default_links?
+      @build_default_links.nil? || @build_default_links
     end
 
     class ToOne < Relationship
