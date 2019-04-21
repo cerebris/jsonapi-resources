@@ -435,6 +435,7 @@ module JSONAPI
         subclass.abstract(false)
         subclass.immutable(false)
         subclass.caching(false)
+        subclass.build_default_links(_build_default_links)
         subclass._attributes = (_attributes || {}).dup
 
         subclass._model_hints = (_model_hints || {}).dup
@@ -1030,6 +1031,18 @@ module JSONAPI
 
       def mutable?
         !@immutable
+      end
+
+      def build_default_links(build)
+        @build_default_links = build
+      end
+
+      def _build_default_links
+        @_build_default_links
+      end
+
+      def build_default_links?
+        @_build_default_links.nil? || @_build_default_links == true
       end
 
       def caching(val = true)
