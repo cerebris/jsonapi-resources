@@ -1473,6 +1473,15 @@ module Api
       end
 
       filters :writer
+
+      def custom_links(options)
+        self_link = options[:serializer].link_builder.self_link(self)
+        self_link ||= ''
+        {
+          'self' => self_link + '?secret=true',
+          'raw' => self_link + "/raw"
+        }
+      end
     end
 
     class PersonResource < PersonResource; end
@@ -1839,28 +1848,55 @@ end
 module MyEngine
   module Api
     module V1
+      class PostResource < PostResource
+      end
+
       class PersonResource < JSONAPI::Resource
+        has_many :posts
       end
     end
   end
 
   module AdminApi
     module V1
+      class PostResource < PostResource
+      end
+
       class PersonResource < JSONAPI::Resource
+        has_many :posts
       end
     end
   end
 
   module DasherizedNamespace
     module V1
+      class PostResource < PostResource
+      end
+
       class PersonResource < JSONAPI::Resource
+        has_many :posts
+      end
+    end
+  end
+
+  module OptionalNamespace
+    module V1
+      class PostResource < PostResource
+      end
+
+      class PersonResource < JSONAPI::Resource
+        has_many :posts
       end
     end
   end
 end
 
 module ApiV2Engine
+  class PostResource < PostResource
+  end
+
   class PersonResource < JSONAPI::Resource
+    has_many :posts
   end
 end
 
