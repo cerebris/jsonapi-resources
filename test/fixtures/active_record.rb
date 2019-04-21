@@ -1728,86 +1728,6 @@ class AuthorDetailResource < JSONAPI::Resource
   attributes :author_stuff
 end
 
-class SimpleCustomLinkResource < JSONAPI::Resource
-  model_name 'Post'
-  attributes :title, :body, :subject
-
-  def subject
-    @model.title
-  end
-
-  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
-  has_one :section
-  has_many :comments, acts_as_set: false
-
-  filters :writer
-
-  def custom_links(options)
-    { raw: options[:serializer].link_builder.self_link(self) + "/raw" }
-  end
-end
-
-class CustomLinkWithRelativePathOptionResource < JSONAPI::Resource
-  model_name 'Post'
-  attributes :title, :body, :subject
-
-  def subject
-    @model.title
-  end
-
-  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
-  has_one :section
-  has_many :comments, acts_as_set: false
-
-  filters :writer
-
-  def custom_links(options)
-    { raw: options[:serializer].link_builder.self_link(self) + "/super/duper/path.xml" }
-  end
-end
-
-class CustomLinkWithIfCondition < JSONAPI::Resource
-  model_name 'Post'
-  attributes :title, :body, :subject
-
-  def subject
-    @model.title
-  end
-
-  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
-  has_one :section
-  has_many :comments, acts_as_set: false
-
-  filters :writer
-
-  def custom_links(options)
-    if title == "JR Solves your serialization woes!"
-      {conditional_custom_link: options[:serializer].link_builder.self_link(self) + "/conditional/link.json"}
-    end
-  end
-end
-
-class CustomLinkWithLambda < JSONAPI::Resource
-  model_name 'Post'
-  attributes :title, :body, :subject, :created_at
-
-  def subject
-    @model.title
-  end
-
-  has_one :writer, foreign_key: 'author_id', class_name: 'Writer'
-  has_one :section
-  has_many :comments, acts_as_set: false
-
-  filters :writer
-
-  def custom_links(options)
-    {
-      link_to_external_api: "http://external-api.com/posts/#{ created_at.year }/#{ created_at.month }/#{ created_at.day }-#{ subject.gsub(' ', '-') }"
-    }
-  end
-end
-
 module Api
   module V1
     class WriterResource < JSONAPI::Resource
@@ -1840,6 +1760,15 @@ module Api
       end
 
       filters :writer
+
+      def custom_links(options)
+        self_link = options[:serializer].link_builder.self_link(self)
+        self_link ||= ''
+        {
+          'self' => self_link + '?secret=true',
+          'raw' => self_link + "/raw"
+        }
+      end
     end
 
     class PersonResource < PersonResource; end
@@ -1865,6 +1794,14 @@ end
 module Api
   module V2
     class PreferencesResource < PreferencesResource; end
+    class SectionResource < SectionResource; end
+    class TagResource < TagResource; end
+    class CommentResource < CommentResource; end
+    class VehicleResource < VehicleResource; end
+    class CarResource < CarResource; end
+    class BoatResource < BoatResource; end
+    class HairCutResource < HairCutResource; end
+    class ExpenseEntryResource < ExpenseEntryResource; end
 
     class PersonResource < PersonResource
       has_many :book_comments
@@ -2296,35 +2233,55 @@ end
 module MyEngine
   module Api
     module V1
+      class PostResource < PostResource
+      end
+
       class PersonResource < JSONAPI::Resource
+        has_many :posts
       end
     end
   end
 
   module AdminApi
     module V1
+      class PostResource < PostResource
+      end
+
       class PersonResource < JSONAPI::Resource
+        has_many :posts
       end
     end
   end
 
   module DasherizedNamespace
     module V1
+      class PostResource < PostResource
+      end
+
       class PersonResource < JSONAPI::Resource
+        has_many :posts
       end
     end
   end
 
   module OptionalNamespace
     module V1
+      class PostResource < PostResource
+      end
+
       class PersonResource < JSONAPI::Resource
+        has_many :posts
       end
     end
   end
 end
 
 module ApiV2Engine
+  class PostResource < PostResource
+  end
+
   class PersonResource < JSONAPI::Resource
+    has_many :posts
   end
 end
 

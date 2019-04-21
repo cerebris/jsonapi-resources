@@ -285,8 +285,17 @@ TestApp.routes.draw do
   jsonapi_resources :doctors
   jsonapi_resources :patients
 
+  jsonapi_resources :access_cards
+  jsonapi_resources :response
+  jsonapi_resources :paragraph
+
+  jsonapi_resources :employees
+  jsonapi_resources :robots
+
   namespace :api do
     jsonapi_resources :boxes
+    jsonapi_resources :things
+    jsonapi_resources :users
 
     namespace :v1 do
       jsonapi_resources :people
@@ -303,6 +312,7 @@ TestApp.routes.draw do
       jsonapi_resources :craters
       jsonapi_resources :preferences
       jsonapi_resources :likes
+      jsonapi_resources :writers
     end
 
     JSONAPI.configuration.route_format = :underscored_route
@@ -316,6 +326,14 @@ TestApp.routes.draw do
       jsonapi_resources :authors
       jsonapi_resources :books
       jsonapi_resources :book_comments
+      #
+      jsonapi_resources :sections
+      jsonapi_resources :comments
+      jsonapi_resources :vehicles
+      jsonapi_resources :cars
+      jsonapi_resources :boats
+      jsonapi_resources :hair_cuts
+      jsonapi_resources :people
     end
 
     namespace :v3 do
@@ -368,6 +386,7 @@ TestApp.routes.draw do
       jsonapi_resources :customers
       jsonapi_resources :purchase_orders
       jsonapi_resources :line_items
+      jsonapi_resources :order_flags
     end
     JSONAPI.configuration.route_format = :underscored_route
 
