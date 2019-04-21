@@ -119,7 +119,7 @@ module JSONAPI
 
       def to_s
         # :nocov: useful for debugging
-        "#{parent_resource._type}.#{name} => (#{belongs_to? ? 'ToOne' : 'BelongsToOne'}) #{resource_klass._type}"
+        "#{parent_resource}.#{name}(#{belongs_to? ? 'ToOne' : 'BelongsToOne'})"
         # :nocov:
       end
 
@@ -169,7 +169,7 @@ module JSONAPI
 
       def to_s
         # :nocov: useful for debugging
-        "#{parent_resource._type}.#{name} => (ToMany) #{resource_klass._type}"
+        "#{parent_resource}.#{name}(ToMany)"
         # :nocov:
       end
 
