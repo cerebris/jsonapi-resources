@@ -5,6 +5,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     DatabaseCleaner.start
     JSONAPI.configuration.json_key_format = :underscored_key
     JSONAPI.configuration.route_format = :underscored_route
+    JSONAPI.configuration.warn_on_missing_routes = false
     Api::V2::BookResource.paginator :offset
     $test_user = Person.find(1001)
   end
@@ -15,6 +16,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def after_teardown
     JSONAPI.configuration.route_format = :underscored_route
+    JSONAPI.configuration.warn_on_missing_routes = true
   end
 
   def test_get
@@ -188,7 +190,6 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_get_camelized_route_and_links
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :camelized_key
-    JSONAPI.configuration.route_format = :camelized_route
     assert_cacheable_jsonapi_get '/api/v4/expenseEntries/1/relationships/isoCurrency'
     assert_hash_equals({'links' => {
                          'self' => 'http://www.example.com/api/v4/expenseEntries/1/relationships/isoCurrency',
