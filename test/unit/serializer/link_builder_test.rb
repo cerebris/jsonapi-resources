@@ -30,18 +30,18 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
   def test_engine_name
     assert_equal MyEngine::Engine,
-      JSONAPI::LinkBuilder.new(
-        primary_resource_klass: MyEngine::Api::V1::PersonResource
-    ).engine_name
+                 JSONAPI::LinkBuilder.new(
+                   primary_resource_klass: MyEngine::Api::V1::PersonResource
+                 ).engine
 
     assert_equal ApiV2Engine::Engine,
-      JSONAPI::LinkBuilder.new(
-        primary_resource_klass: ApiV2Engine::PersonResource
-    ).engine_name
+                 JSONAPI::LinkBuilder.new(
+                   primary_resource_klass: ApiV2Engine::PersonResource
+                 ).engine
 
     assert_nil JSONAPI::LinkBuilder.new(
-        primary_resource_klass: Api::V1::PersonResource
-    ).engine_name
+      primary_resource_klass: Api::V1::PersonResource
+    ).engine
   end
 
   def test_self_link_regular_app
@@ -156,11 +156,11 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
     builder       = JSONAPI::LinkBuilder.new(config)
     source        = Api::V1::PersonResource.new(@steve, nil)
-    relationship  = JSONAPI::Relationship::ToMany.new("posts", {})
+    relationship  = JSONAPI::Relationship::ToMany.new("posts", {parent_resource: Api::V1::PersonResource})
     expected_link = "#{ @base_url }/api/v1/people/#{ @steve.id }/relationships/posts"
 
     assert_equal expected_link,
-      builder.relationships_self_link(source, relationship)
+                 builder.relationships_self_link(source, relationship)
   end
 
   def test_relationships_self_link_for_engine
@@ -172,11 +172,11 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
     builder       = JSONAPI::LinkBuilder.new(config)
     source        = ApiV2Engine::PersonResource.new(@steve, nil)
-    relationship  = JSONAPI::Relationship::ToMany.new("posts", {})
+    relationship  = JSONAPI::Relationship::ToMany.new("posts", {parent_resource: ApiV2Engine::PersonResource})
     expected_link = "#{ @base_url }/api_v2/people/#{ @steve.id }/relationships/posts"
 
     assert_equal expected_link,
-      builder.relationships_self_link(source, relationship)
+                 builder.relationships_self_link(source, relationship)
   end
 
   def test_relationships_self_link_for_namespaced_engine
@@ -188,11 +188,11 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
     builder       = JSONAPI::LinkBuilder.new(config)
     source        = MyEngine::Api::V1::PersonResource.new(@steve, nil)
-    relationship  = JSONAPI::Relationship::ToMany.new("posts", {})
+    relationship  = JSONAPI::Relationship::ToMany.new("posts", {parent_resource: MyEngine::Api::V1::PersonResource})
     expected_link = "#{ @base_url }/boomshaka/api/v1/people/#{ @steve.id }/relationships/posts"
 
     assert_equal expected_link,
-      builder.relationships_self_link(source, relationship)
+                 builder.relationships_self_link(source, relationship)
   end
 
   def test_relationships_related_link_for_regular_app
@@ -204,11 +204,11 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
     builder       = JSONAPI::LinkBuilder.new(config)
     source        = Api::V1::PersonResource.new(@steve, nil)
-    relationship  = JSONAPI::Relationship::ToMany.new("posts", {})
+    relationship  = JSONAPI::Relationship::ToMany.new("posts", {parent_resource: Api::V1::PersonResource})
     expected_link = "#{ @base_url }/api/v1/people/#{ @steve.id }/posts"
 
     assert_equal expected_link,
-      builder.relationships_related_link(source, relationship)
+                 builder.relationships_related_link(source, relationship)
   end
 
   def test_relationships_related_link_for_engine
@@ -220,11 +220,11 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
     builder       = JSONAPI::LinkBuilder.new(config)
     source        = ApiV2Engine::PersonResource.new(@steve, nil)
-    relationship  = JSONAPI::Relationship::ToMany.new("posts", {})
+    relationship  = JSONAPI::Relationship::ToMany.new("posts", {parent_resource: ApiV2Engine::PersonResource})
     expected_link = "#{ @base_url }/api_v2/people/#{ @steve.id }/posts"
 
     assert_equal expected_link,
-      builder.relationships_related_link(source, relationship)
+                 builder.relationships_related_link(source, relationship)
   end
 
   def test_relationships_related_link_for_namespaced_engine
@@ -236,11 +236,11 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
     builder       = JSONAPI::LinkBuilder.new(config)
     source        = MyEngine::Api::V1::PersonResource.new(@steve, nil)
-    relationship  = JSONAPI::Relationship::ToMany.new("posts", {})
+    relationship  = JSONAPI::Relationship::ToMany.new("posts", {parent_resource: MyEngine::Api::V1::PersonResource})
     expected_link = "#{ @base_url }/boomshaka/api/v1/people/#{ @steve.id }/posts"
 
     assert_equal expected_link,
-      builder.relationships_related_link(source, relationship)
+                 builder.relationships_related_link(source, relationship)
   end
 
   def test_relationships_related_link_with_query_params
@@ -252,7 +252,7 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
     builder       = JSONAPI::LinkBuilder.new(config)
     source        = Api::V1::PersonResource.new(@steve, nil)
-    relationship  = JSONAPI::Relationship::ToMany.new("posts", {})
+    relationship  = JSONAPI::Relationship::ToMany.new("posts", {parent_resource: Api::V1::PersonResource})
     expected_link = "#{ @base_url }/api/v1/people/#{ @steve.id }/posts?page%5Blimit%5D=12&page%5Boffset%5D=0"
     query         = { page: { offset: 0, limit: 12 } }
 
@@ -290,9 +290,9 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
   def test_query_link_for_regular_app_with_dasherized_scope
     config = {
-        base_url: @base_url,
-        route_formatter: DasherizedRouteFormatter,
-        primary_resource_klass: DasherizedNamespace::V1::PersonResource
+      base_url: @base_url,
+      route_formatter: DasherizedRouteFormatter,
+      primary_resource_klass: DasherizedNamespace::V1::PersonResource
     }
 
     query         = { page: { offset: 0, limit: 12 } }
@@ -332,9 +332,9 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
 
   def test_query_link_for_engine_with_dasherized_scope
     config = {
-        base_url: @base_url,
-        route_formatter: DasherizedRouteFormatter,
-        primary_resource_klass: MyEngine::DasherizedNamespace::V1::PersonResource
+      base_url: @base_url,
+      route_formatter: DasherizedRouteFormatter,
+      primary_resource_klass: MyEngine::DasherizedNamespace::V1::PersonResource
     }
 
     query         = { page: { offset: 0, limit: 12 } }
