@@ -59,7 +59,7 @@ module JSONAPI
         end
       end
 
-      fail "To Many primary objects for show" if (primary_objects.count > 1)
+      fail "Too many primary objects for show" if (primary_objects.count > 1)
       primary_hash = { 'data' => primary_objects[0] }
 
       primary_hash['included'] = included_objects if included_objects.size > 0
@@ -100,17 +100,12 @@ module JSONAPI
         data = to_many_linkage(resource_ids)
       end
 
-      {
-          'links' => {
-              'self' => self_link(source, requested_relationship),
-              'related' => related_link(source, requested_relationship)
-          },
-          'data' => data
-      }
-    end
+      links_hash = { 'data': data }
 
-    def query_link(query_params)
-      link_builder.query_link(query_params)
+      links = default_relationship_links(source, requested_relationship)
+      links_hash['links'] = links unless links.blank?
+
+      links_hash
     end
 
     def format_key(key)
@@ -140,7 +135,6 @@ module JSONAPI
         supplying_attribute_fields: supplying_attribute_fields(resource_klass).sort,
         supplying_relationship_fields: supplying_relationship_fields(resource_klass).sort,
         link_builder_base_url: link_builder.base_url,
-        route_formatter_class: link_builder.route_formatter.uncached.class.name,
         key_formatter_class: key_formatter.uncached.class.name,
         always_include_to_one_linkage_data: always_include_to_one_linkage_data,
         always_include_to_many_linkage_data: always_include_to_many_linkage_data
@@ -249,7 +243,9 @@ module JSONAPI
 
     def links_hash(source)
       links = custom_links_hash(source)
-      links['self'] = link_builder.self_link(source) unless links.key?('self')
+      if !links.key?('self') && source.class.build_default_links?
+        links['self'] = link_builder.self_link(source)
+      end
       links.compact
     end
 
@@ -323,6 +319,15 @@ module JSONAPI
       link_builder.relationships_related_link(source, relationship)
     end
 
+    def default_relationship_links(source, relationship)
+      if relationship.build_default_links?
+        {
+          'self' => self_link(source, relationship),
+          'related' => related_link(source, relationship)
+        }.compact
+      end
+    end
+
     def to_many_linkage(rids)
       linkage = []
 
@@ -348,18 +353,19 @@ module JSONAPI
 
     def link_object_to_one(source, relationship, rid, include_data)
       link_object_hash = {}
-      link_object_hash['links'] = {}
-      link_object_hash['links']['self'] = self_link(source, relationship)
-      link_object_hash['links']['related'] = related_link(source, relationship)
+
+      links = default_relationship_links(source, relationship)
+
+      link_object_hash['links'] = links unless links.blank?
       link_object_hash['data'] = to_one_linkage(rid) if include_data
       link_object_hash
     end
 
     def link_object_to_many(source, relationship, rids, include_data)
       link_object_hash = {}
-      link_object_hash['links'] = {}
-      link_object_hash['links']['self'] = self_link(source, relationship)
-      link_object_hash['links']['related'] = related_link(source, relationship)
+
+      links = default_relationship_links(source, relationship)
+      link_object_hash['links'] = links unless links.blank?
       link_object_hash['data'] = to_many_linkage(rids) if include_data
       link_object_hash
     end
@@ -375,7 +381,6 @@ module JSONAPI
     def generate_link_builder(primary_resource_klass, options)
       LinkBuilder.new(
         base_url: options.fetch(:base_url, ''),
-        route_formatter: options.fetch(:route_formatter, JSONAPI.configuration.route_formatter),
         primary_resource_klass: primary_resource_klass,
       )
     end
