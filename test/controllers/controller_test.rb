@@ -590,7 +590,7 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['data'].is_a?(Hash)
     assert_equal 'JR is Great', json_response['data']['attributes']['title']
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
-    assert_equal json_response['data']['links']['self'], response.location
+    assert_equal "http://test.host/posts/#{json_response['data']['id']}", json_response['data']['links']['self']
   end
 
   def test_create_simple_id_not_allowed
@@ -693,7 +693,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "Param not allowed", json_response['meta']["warnings"][1]["title"]
     assert_equal "asdfg is not allowed.", json_response['meta']["warnings"][1]["detail"]
     assert_equal '105', json_response['meta']["warnings"][1]["code"]
-    assert_equal json_response['data']['links']['self'], response.location
+    assert_equal "http://test.host/posts/#{json_response['data']['id']}", json_response['data']['links']['self']
   ensure
     JSONAPI.configuration.raise_if_parameters_not_allowed = true
   end
@@ -873,7 +873,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
     assert_equal "subject is not allowed.", json_response['meta']["warnings"][0]["detail"]
     assert_equal '105', json_response['meta']["warnings"][0]["code"]
-    assert_equal json_response['data']['links']['self'], response.location
+    assert_equal "http://test.host/posts/#{json_response['data']['id']}", json_response['data']['links']['self']
   ensure
     JSONAPI.configuration.raise_if_parameters_not_allowed = true
   end
@@ -901,7 +901,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal '3', json_response['data']['relationships']['author']['data']['id']
     assert_equal 'JR is Great', json_response['data']['attributes']['title']
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
-    assert_equal json_response['data']['links']['self'], response.location
+    assert_equal "http://test.host/posts/#{json_response['data']['id']}", json_response['data']['links']['self']
   end
 
   def test_create_with_links_to_many_array
@@ -927,7 +927,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal '3', json_response['data']['relationships']['author']['data']['id']
     assert_equal 'JR is Great', json_response['data']['attributes']['title']
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
-    assert_equal json_response['data']['links']['self'], response.location
+    assert_equal "http://test.host/posts/#{json_response['data']['id']}", json_response['data']['links']['self']
   end
 
   def test_create_with_links_include_and_fields
@@ -954,7 +954,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal '3', json_response['data']['relationships']['author']['data']['id']
     assert_equal 'JR is Great!', json_response['data']['attributes']['title']
     assert_not_nil json_response['included'].size
-    assert_equal json_response['data']['links']['self'], response.location
+    assert_equal "http://test.host/posts/#{json_response['data']['id']}", json_response['data']['links']['self']
   end
 
   def test_update_with_links

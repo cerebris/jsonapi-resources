@@ -843,6 +843,9 @@ module Api
     class PeopleController < JSONAPI::ResourceController
     end
 
+    class CommentsController < JSONAPI::ResourceController
+    end
+
     class PostsController < JSONAPI::ResourceController
     end
 
@@ -1002,7 +1005,7 @@ class PersonResource < BaseResource
 
 end
 
-class PersonWithEvenAndOddPostsResource < JSONAPI::Resource
+class PersonWithEvenAndOddPostResource < JSONAPI::Resource
   model_name 'Person'
 
   has_many :even_posts, foreign_key: 'author_id', class_name: 'Post', relation_name: :even_posts
@@ -1508,8 +1511,14 @@ module Api
   module V2
     class PreferencesResource < PreferencesResource; end
     class PersonResource < PersonResource; end
+    class CommentResource < CommentResource; end
     class PostResource < PostResource; end
     class AuthorResource < AuthorResource; end
+    class VehicleResource < VehicleResource; end
+    class CarResource < CarResource; end
+    class BoatResource < BoatResource; end
+    class HairCutResource < HairCutResource; end
+    class TagResource < TagResource; end
 
     class BookResource < JSONAPI::Resource
       attribute "title"

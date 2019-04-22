@@ -253,6 +253,7 @@ TestApp.routes.draw do
   jsonapi_resources :documents
   jsonapi_resources :products
   jsonapi_resources :vehicles
+  jsonapi_resources :makes
   jsonapi_resources :cars
   jsonapi_resources :boats
   jsonapi_resources :flat_posts
@@ -265,6 +266,9 @@ TestApp.routes.draw do
   jsonapi_resources :doctors
   jsonapi_resources :patients
   jsonapi_resources :employees
+  jsonapi_resources :web_pages
+
+  jsonapi_resources :person_with_even_and_odd_posts
 
   namespace :api do
     jsonapi_resources :boxes
@@ -298,6 +302,8 @@ TestApp.routes.draw do
       jsonapi_resource :preferences, except: [:create, :destroy]
 
       jsonapi_resources :authors
+      jsonapi_resources :people
+      jsonapi_resources :comments
       jsonapi_resources :books
       jsonapi_resources :book_comments
     end
@@ -334,6 +340,7 @@ TestApp.routes.draw do
       jsonapi_resources :posts do
       end
       jsonapi_resources :painters
+      jsonapi_resources :paintings
       jsonapi_resources :collectors
       jsonapi_resources :authors
       jsonapi_resources :expense_entries
@@ -385,6 +392,10 @@ TestApp.routes.draw do
     namespace :v1 do
       jsonapi_resources :cats
     end
+  end
+
+  namespace :parent_api do
+    jsonapi_resources :posts
   end
 
   mount MyEngine::Engine => "/boomshaka", as: :my_engine
