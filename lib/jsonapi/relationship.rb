@@ -75,6 +75,12 @@ module JSONAPI
         @foreign_key_on = options.fetch(:foreign_key_on, :self)
       end
 
+      def to_s
+        # :nocov:
+        "#{parent_resource}.#{name}(#{belongs_to? ? 'ToOne' : 'BelongsToOne'})"
+        # :nocov:
+      end
+
       def belongs_to?
         foreign_key_on == :self
       end
@@ -93,6 +99,12 @@ module JSONAPI
         @foreign_key ||= "#{name.to_s.singularize}_ids".to_sym
         @reflect = options.fetch(:reflect, true) == true
         @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type.to_s.singularize.to_sym) if parent_resource
+      end
+
+      def to_s
+        # :nocov:
+        "#{parent_resource}.#{name}(ToMany)"
+        # :nocov:
       end
     end
   end
