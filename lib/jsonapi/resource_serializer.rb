@@ -150,7 +150,7 @@ module JSONAPI
         obj_hash['attributes'] = source.attributes_json if source.attributes_json
 
         relationships = cached_relationships_hash(source, include_directives)
-        obj_hash['relationships'] = relationships unless relationships.empty?
+        obj_hash['relationships'] = relationships unless relationships.blank?
 
         obj_hash['meta'] = source.meta_json if source.meta_json
       else
@@ -171,7 +171,7 @@ module JSONAPI
         obj_hash['attributes'] = attributes unless attributes.empty?
 
         relationships = relationships_hash(source, fetchable_fields, include_directives)
-        obj_hash['relationships'] = relationships unless relationships.nil? || relationships.empty?
+        obj_hash['relationships'] = relationships unless relationships.blank?
 
         meta = meta_hash(source)
         obj_hash['meta'] = meta unless meta.empty?
@@ -289,7 +289,8 @@ module JSONAPI
 
         options = { filters: ia && ia[:include_filters] || {} }
         if field_set.include?(name)
-          hash[format_key(name)] = link_object(source, relationship, include_linkage)
+          lo = link_object(source, relationship, include_linkage)
+          hash[format_key(name)] = lo unless lo.blank?
         end
 
         # If the object has been serialized once it will be in the related objects list,

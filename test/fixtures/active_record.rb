@@ -120,6 +120,7 @@ ActiveRecord::Schema.define do
   create_table :preferences, force: true do |t|
     t.integer :person_id
     t.boolean :advanced_mode, default: false
+    t.string  :nickname
     t.timestamps null: false
   end
 
@@ -850,6 +851,9 @@ module Api
     end
 
     class PreferencesController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
     end
 
     class BooksController < JSONAPI::ResourceController
@@ -952,6 +956,20 @@ module Api
 
   module V8
     class NumerosTelefoneController < JSONAPI::ResourceController
+    end
+  end
+
+  module V9
+    class PeopleController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
+    end
+
+    class PreferencesController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
     end
   end
 end
@@ -1284,6 +1302,12 @@ end
 class PreferencesResource < JSONAPI::Resource
   attribute :advanced_mode
 
+  singleton singleton_key: -> (context) {
+    key = context[:current_user].try(:preferences).try(:id)
+    raise JSONAPI::Exceptions::RecordNotFound.new(nil) if key.nil?
+    key
+  }
+
   has_one :author, :foreign_key_on => :related
 
   def self.find_records(filters, options = {})
@@ -1348,6 +1372,7 @@ class AuthorResource < JSONAPI::Resource
   attributes :name
 
   has_many :books, inverse_relationship: :authors
+  has_one :preference
 end
 
 class BookResource < JSONAPI::Resource
@@ -1519,6 +1544,7 @@ module Api
     class BoatResource < BoatResource; end
     class HairCutResource < HairCutResource; end
     class TagResource < TagResource; end
+    class SectionResource < SectionResource; end
 
     class BookResource < JSONAPI::Resource
       attribute "title"
@@ -1646,6 +1672,16 @@ end
 
 module Api
   module V5
+    class PostResource < JSONAPI::Resource
+      attribute :title
+      attribute :body
+
+      has_one :author, class_name: 'Person', build_default_links: false
+      has_one :section, build_default_links: false
+      has_many :tags, acts_as_set: true, inverse_relationship: :posts, eager_load_on_include: false, build_default_links: false
+      has_many :comments, acts_as_set: false, inverse_relationship: :post, build_default_links: false
+    end
+
     class AuthorResource < JSONAPI::Resource
       attributes :name, :email
       model_name 'Person'
@@ -1716,8 +1752,14 @@ module Api
       end
     end
 
-    class PersonResource < PersonResource; end
-    class PostResource < PostResource; end
+    class PersonResource < JSONAPI::Resource
+      attributes :name, :email
+      attribute :date_joined, format: :date_with_timezone
+
+      has_many :comments
+      has_many :posts
+    end
+
     class TagResource < TagResource; end
     class SectionResource < SectionResource; end
     class CommentResource < CommentResource; end
@@ -1838,6 +1880,26 @@ module Api
       attribute :numero_telefone
     end
   end
+
+  module V9
+    class PersonResource < JSONAPI::Resource
+      has_one :preferences
+      singleton false
+    end
+
+    class PreferencesResource < JSONAPI::Resource
+      singleton singleton_key: -> (context) {
+        key = context[:current_user].try(:preferences).try(:id)
+        raise JSONAPI::Exceptions::RecordNotFound.new(nil) if key.nil?
+        key
+      }
+
+      has_one :person, :foreign_key_on => :related
+
+      attribute :nickname
+    end
+  end
+
 end
 
 module AdminApi

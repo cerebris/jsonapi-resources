@@ -234,7 +234,7 @@ module JSONAPI
       end
 
       render_options[:location] = content[:data]["links"][:self] if (
-        response_doc.status == :created && content[:data].class != Array
+        response_doc.status == :created && content[:data].class != Array && content[:data]["links"]
       )
 
       # For whatever reason, `render` ignores :status and :content_type when :body is set.

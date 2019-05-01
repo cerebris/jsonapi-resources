@@ -20,6 +20,10 @@ module ActionDispatch
           @resource_type = resources.first
           res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
 
+          unless res.singleton?
+            warn "Singleton routes created for non singleton resource #{res}. Links may not be generated correctly."
+          end
+
           options = resources.extract_options!.dup
           options[:controller] ||= @resource_type
           options.merge!(res.routing_resource_options)
@@ -79,6 +83,10 @@ module ActionDispatch
         def jsonapi_resources(*resources, &_block)
           @resource_type = resources.first
           res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
+
+          if res.singleton?
+            warn "Singleton resource #{res} should use `jsonapi_resource` instead."
+          end
 
           options = resources.extract_options!.dup
           options[:controller] ||= @resource_type

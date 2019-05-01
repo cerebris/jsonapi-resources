@@ -1688,13 +1688,13 @@ class SerializerTest < ActionDispatch::IntegrationTest
             advanced_mode: false
           },
           links: {
-            self: '/preferences/1'
+            self: '/preferences'
           },
           relationships: {
             author: {
               links: {
-                self: '/preferences/1/relationships/author',
-                related: '/preferences/1/author'
+                self: '/preferences/relationships/author',
+                related: '/preferences/author'
               }
             }
           }
@@ -1778,6 +1778,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
             id: '1',
             attributes: {
               authorStuff: 'blah blah'
+            },
+            links: {
+              self: '/api/v5/author-details/1'
             }
           }
         ]
@@ -1838,6 +1841,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
             id: '1',
             attributes: {
               authorStuff: 'blah blah'
+            },
+            links: {
+              self: '/api/v5/author-details/1'
             }
           }
         ]

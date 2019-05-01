@@ -52,6 +52,7 @@ module JSONAPI
     end
 
     def setup_get_related_resource_action(params)
+      resolve_singleton_id(params)
       initialize_source(params)
       parse_fields(params[:fields])
       parse_include_directives(params[:include])
@@ -63,6 +64,7 @@ module JSONAPI
     end
 
     def setup_get_related_resources_action(params)
+      resolve_singleton_id(params)
       initialize_source(params)
       parse_fields(params[:fields])
       parse_include_directives(params[:include])
@@ -74,6 +76,7 @@ module JSONAPI
     end
 
     def setup_show_action(params)
+      resolve_singleton_id(params)
       parse_fields(params[:fields])
       parse_include_directives(params[:include])
       parse_filters(params[:filter])
@@ -83,6 +86,7 @@ module JSONAPI
     end
 
     def setup_show_relationship_action(params)
+      resolve_singleton_id(params)
       add_show_relationship_operation(params[:relationship], params.require(@resource_klass._as_parent_key))
     end
 
@@ -93,24 +97,29 @@ module JSONAPI
     end
 
     def setup_create_relationship_action(params)
+      resolve_singleton_id(params)
       parse_modify_relationship_action(params, :add)
     end
 
     def setup_update_relationship_action(params)
+      resolve_singleton_id(params)
       parse_modify_relationship_action(params, :update)
     end
 
     def setup_update_action(params)
+      resolve_singleton_id(params)
       parse_fields(params[:fields])
       parse_include_directives(params[:include])
       parse_replace_operation(params.require(:data), params[:id])
     end
 
     def setup_destroy_action(params)
+      resolve_singleton_id(params)
       parse_remove_operation(params)
     end
 
     def setup_destroy_relationship_action(params)
+      resolve_singleton_id(params)
       parse_modify_relationship_action(params, :remove)
     end
 
@@ -694,7 +703,8 @@ module JSONAPI
     end
 
     def parse_replace_operation(data, keys)
-      parse_single_replace_operation(data, [keys], id_key_presence_check_required: keys.present?)
+      parse_single_replace_operation(data, [keys],
+                                     id_key_presence_check_required: keys.present? && !@resource_klass.singleton?)
     rescue JSONAPI::Exceptions::Error => e
       @errors.concat(e.errors)
     end
@@ -722,6 +732,13 @@ module JSONAPI
         @operations.push JSONAPI::Operation.new(:remove_to_many_relationships, *operation_args)
       else
         @operations.push JSONAPI::Operation.new(:remove_to_one_relationship, *operation_base_args)
+      end
+    end
+
+    def resolve_singleton_id(params)
+      if @resource_klass.singleton? && params[:id].nil?
+        key = @resource_klass.singleton_key(context)
+        params[:id] = key
       end
     end
 

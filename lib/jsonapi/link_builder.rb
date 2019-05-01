@@ -36,8 +36,14 @@ module JSONAPI
     end
 
     def relationships_related_link(source, relationship, query_params = {})
-      url_helper_name = related_url_helper_name(relationship)
-      url = call_url_helper(url_helper_name, source.id)
+      if relationship.parent_resource.singleton?
+        url_helper_name = singleton_related_url_helper_name(relationship)
+        url = call_url_helper(url_helper_name)
+      else
+        url_helper_name = related_url_helper_name(relationship)
+        url = call_url_helper(url_helper_name, source.id)
+      end
+
       url = "#{ base_url }#{ url }"
       url = "#{ url }?#{ query_params.to_query }" if query_params.present?
       url
@@ -46,8 +52,14 @@ module JSONAPI
     end
 
     def relationships_self_link(source, relationship)
-      url_helper_name = relationship_self_url_helper_name(relationship)
-      url = call_url_helper(url_helper_name, source.id)
+      if relationship.parent_resource.singleton?
+        url_helper_name = singleton_relationship_self_url_helper_name(relationship)
+        url = call_url_helper(url_helper_name)
+      else
+        url_helper_name = relationship_self_url_helper_name(relationship)
+        url = call_url_helper(url_helper_name, source.id)
+      end
+
       url = "#{ base_url }#{ url }"
       url
     rescue NoMethodError
@@ -89,7 +101,11 @@ module JSONAPI
 
     def resource_path(source)
       url_helper_name = resource_url_helper_name_from_source(source)
-      call_url_helper(url_helper_name, source.id)
+      if source.class.singleton?
+        call_url_helper(url_helper_name)
+      else
+        call_url_helper(url_helper_name, source.id)
+      end
     end
 
     def primary_resources_path
@@ -138,10 +154,25 @@ module JSONAPI
       url_helper_name_from_parts(relationship_parts)
     end
 
+    def singleton_related_url_helper_name(relationship)
+      relationship_parts = []
+      relationship_parts << relationship.name
+      relationship_parts += resource_path_parts_from_class(relationship.parent_resource)
+      url_helper_name_from_parts(relationship_parts)
+    end
+
     def relationship_self_url_helper_name(relationship)
       relationship_parts = resource_path_parts_from_class(relationship.parent_resource)
       relationship_parts << "relationships"
       relationship_parts << relationship.name
+      url_helper_name_from_parts(relationship_parts)
+    end
+
+    def singleton_relationship_self_url_helper_name(relationship)
+      relationship_parts = []
+      relationship_parts << "relationships"
+      relationship_parts << relationship.name
+      relationship_parts += resource_path_parts_from_class(relationship.parent_resource)
       url_helper_name_from_parts(relationship_parts)
     end
 

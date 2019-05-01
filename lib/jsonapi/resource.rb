@@ -435,6 +435,7 @@ module JSONAPI
         subclass.abstract(false)
         subclass.immutable(false)
         subclass.caching(false)
+        subclass.singleton(singleton?, (_singleton_options.dup || {}))
         subclass.build_default_links(_build_default_links)
         subclass._attributes = (_attributes || {}).dup
 
@@ -605,6 +606,19 @@ module JSONAPI
         resource_type = ((resource.is_a?(Class)) && (resource < JSONAPI::Resource)) ? resource._type : resource.to_s
 
         _model_hints[model.to_s.gsub('::', '/').underscore] = resource_type.to_s
+      end
+
+      def singleton(*attrs)
+        @_singleton = (!!attrs[0] == attrs[0]) ? attrs[0] : true
+        @_singleton_options = attrs.extract_options!
+      end
+
+      def _singleton_options
+        @_singleton_options ||= {}
+      end
+
+      def singleton?
+        @_singleton ||= false
       end
 
       def filters(*attrs)
@@ -907,6 +921,24 @@ module JSONAPI
 
       def resource_key_type
         @_resource_key_type ||= JSONAPI.configuration.resource_key_type
+      end
+
+      # override to all resolution of masked ids to actual ids. Because singleton routes do not specify the id this
+      # will be needed to allow lookup of singleton resources. Alternately singleton resources can override
+      # `verify_key`
+      def singleton_key(context)
+        if @_singleton_options && @_singleton_options[:singleton_key]
+          strategy = @_singleton_options[:singleton_key]
+          case strategy
+            when Proc
+              key = strategy.call(context)
+            when Symbol, String
+              key = send(strategy, context)
+            else
+              raise "singleton_key must be a proc or function name"
+          end
+        end
+        key
       end
 
       def verify_key(key, context = nil)
