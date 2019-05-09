@@ -81,6 +81,7 @@ module JSONAPI
     end
 
     def setup_show_related_resource_action(params, resource_klass)
+      resolve_singleton_id(params, resource_klass)
       source_klass = Resource.resource_klass_for(params.require(:source))
       source_id = source_klass.verify_key(params.require(source_klass._as_parent_key), @context)
 
@@ -102,6 +103,7 @@ module JSONAPI
     end
 
     def setup_index_related_resources_action(params, resource_klass)
+      resolve_singleton_id(params, resource_klass)
       source_klass = Resource.resource_klass_for(params.require(:source))
       source_id = source_klass.verify_key(params.require(source_klass._as_parent_key), @context)
 
@@ -128,6 +130,7 @@ module JSONAPI
     end
 
     def setup_show_action(params, resource_klass)
+      resolve_singleton_id(params, resource_klass)
       fields = parse_fields(resource_klass, params[:fields])
       include_directives = parse_include_directives(resource_klass, params[:include])
       id = params[:id]
@@ -144,6 +147,7 @@ module JSONAPI
     end
 
     def setup_show_relationship_action(params, resource_klass)
+      resolve_singleton_id(params, resource_klass)
       relationship_type = params[:relationship]
       parent_key = params.require(resource_klass._as_parent_key)
       include_directives = parse_include_directives(resource_klass, params[:include])
@@ -191,6 +195,7 @@ module JSONAPI
     end
 
     def setup_create_relationship_action(params, resource_klass)
+      resolve_singleton_id(params, resource_klass)
       parse_modify_relationship_action(:add, params, resource_klass)
     end
 
@@ -199,6 +204,7 @@ module JSONAPI
     end
 
     def setup_update_action(params, resource_klass)
+      resolve_singleton_id(params, resource_klass)
       fields = parse_fields(resource_klass, params[:fields])
       include_directives = parse_include_directives(resource_klass, params[:include])
 
@@ -232,6 +238,7 @@ module JSONAPI
     end
 
     def setup_destroy_action(params, resource_klass)
+      resolve_singleton_id(params, resource_klass)
       JSONAPI::Operation.new(
           :remove_resource,
           resource_klass,
@@ -240,6 +247,7 @@ module JSONAPI
     end
 
     def setup_destroy_relationship_action(params, resource_klass)
+      resolve_singleton_id(params, resource_klass)
       parse_modify_relationship_action(:remove, params, resource_klass)
     end
 
@@ -711,6 +719,13 @@ module JSONAPI
         JSONAPI::Operation.new(:remove_to_many_relationships, *operation_args)
       else
         JSONAPI::Operation.new(:remove_to_one_relationship, *operation_base_args)
+      end
+    end
+
+    def resolve_singleton_id(params, resource_klass)
+      if resource_klass.singleton? && params[:id].nil?
+        key = resource_klass.singleton_key(context)
+        params[:id] = key
       end
     end
 

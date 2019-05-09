@@ -264,7 +264,7 @@ TestApp.routes.draw do
   jsonapi_resources :planet_types
   jsonapi_resources :moons
   jsonapi_resources :craters
-  jsonapi_resources :preferences
+  jsonapi_resource :preferences
   jsonapi_resources :facts
   jsonapi_resources :categories
   jsonapi_resources :pictures
@@ -310,16 +310,14 @@ TestApp.routes.draw do
       jsonapi_resources :planet_types
       jsonapi_resources :moons
       jsonapi_resources :craters
-      jsonapi_resources :preferences
+      jsonapi_resource :preferences
       jsonapi_resources :likes
       jsonapi_resources :writers
     end
 
     JSONAPI.configuration.route_format = :underscored_route
     namespace :v2 do
-      jsonapi_resources :posts do
-        jsonapi_link :author, except: :destroy
-      end
+      jsonapi_resources :posts
 
       jsonapi_resource :preferences, except: [:create, :destroy]
 
@@ -365,12 +363,20 @@ TestApp.routes.draw do
 
     JSONAPI.configuration.route_format = :dasherized_route
     namespace :v5 do
+      jsonapi_resources :people
+
       jsonapi_resources :posts do
       end
       jsonapi_resources :painters
+      jsonapi_resources :paintings
+      jsonapi_resources :collectors
       jsonapi_resources :authors
+      jsonapi_resources :author_details
       jsonapi_resources :expense_entries
       jsonapi_resources :iso_currencies
+      jsonapi_resources :tags
+      jsonapi_resources :comments
+
 
       jsonapi_resources :employees
 
@@ -401,6 +407,11 @@ TestApp.routes.draw do
 
     namespace :v8 do
       jsonapi_resources :numeros_telefone
+    end
+
+    namespace :v9 do
+      jsonapi_resources :people
+      jsonapi_resource :preferences
     end
   end
 

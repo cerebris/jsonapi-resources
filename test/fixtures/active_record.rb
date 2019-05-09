@@ -147,6 +147,7 @@ ActiveRecord::Schema.define do
   create_table :preferences, force: true do |t|
     t.integer :person_id
     t.boolean :advanced_mode, default: false
+    t.string  :nickname
     t.timestamps null: false
   end
 
@@ -1040,6 +1041,9 @@ module Api
     end
 
     class PreferencesController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
     end
 
     class BooksController < JSONAPI::ResourceController
@@ -1162,6 +1166,18 @@ module Api
     end
 
     class SectionsController < JSONAPI::ResourceController
+    end
+
+    class PeopleController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
+    end
+
+    class PreferencesController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
     end
   end
 end
@@ -1622,6 +1638,12 @@ end
 class PreferencesResource < JSONAPI::Resource
   attribute :advanced_mode
 
+  singleton singleton_key: -> (context) {
+    key = context[:current_user].try(:preferences).try(:id)
+    raise JSONAPI::Exceptions::RecordNotFound.new(nil) if key.nil?
+    key
+  }
+
   has_one :author, :foreign_key_on => :related, class_name: "Person"
 end
 
@@ -1712,6 +1734,7 @@ class AuthorResource < JSONAPI::Resource
 
   has_many :books, inverse_relationship: :authors
   has_many :pictures
+  # has_one :preferences
 end
 
 class BookResource < JSONAPI::Resource
@@ -1965,6 +1988,16 @@ end
 
 module Api
   module V5
+    class PostResource < JSONAPI::Resource
+      attribute :title
+      attribute :body
+
+      has_one :author, class_name: 'Person', build_default_links: false
+      has_one :section, build_default_links: false
+      has_many :tags, acts_as_set: true, inverse_relationship: :posts, eager_load_on_include: false, build_default_links: false
+      has_many :comments, acts_as_set: false, inverse_relationship: :post, build_default_links: false
+    end
+
     class AuthorResource < JSONAPI::Resource
       attributes :name, :email
       model_name 'Person'
@@ -2021,13 +2054,15 @@ module Api
     end
 
     class PersonResource < PersonResource; end
-    class PostResource < PostResource; end
+    class PreferencesResource < PreferencesResource; end
     class TagResource < TagResource; end
     class SectionResource < SectionResource; end
     class CommentResource < CommentResource; end
     class ExpenseEntryResource < ExpenseEntryResource; end
     class IsoCurrencyResource < IsoCurrencyResource; end
     class EmployeeResource < EmployeeResource; end
+    class VehicleResource < PersonResource; end
+    class HairCutResource < HairCutResource; end
   end
 end
 
@@ -2171,6 +2206,60 @@ module Api
   end
 
   module V9
+    class PersonResource < JSONAPI::Resource
+      has_one :preferences
+      singleton false
+    end
+
+    class PostResource < PostResource
+      has_many :comments, apply_join: -> (records, relationship, resource_type, join_type, options) {
+        case join_type
+          when :inner
+            records = records.joins(relationship.relation_name(options))
+          when :left
+            records = records.joins_left(relationship.relation_name(options))
+        end
+        records.where(comments: {approved: true})
+      }
+    end
+
+    class TagResource < TagResource; end
+    class SectionResource < SectionResource; end
+    class CommentResource < CommentResource
+      has_one :author, class_name: 'Person', apply_join: -> (records, relationship, resource_type, join_type, options) {
+        records = apply_join(records: records,
+                             relationship: relationship,
+                             resource_type: resource_type,
+                             join_type: join_type,
+                             options: options)
+
+        records.where(author: {special: true})
+      }
+    end
+
+    class AuthorResource < Api::V2::AuthorResource
+    end
+
+    class BookResource < Api::V2::BookResource
+    end
+
+    class BookCommentResource < Api::V2::BookCommentResource
+    end
+
+    class PreferencesResource < JSONAPI::Resource
+      singleton singleton_key: -> (context) {
+        key = context[:current_user].try(:preferences).try(:id)
+        raise JSONAPI::Exceptions::RecordNotFound.new(nil) if key.nil?
+        key
+      }
+
+      has_one :person, :foreign_key_on => :related
+
+      attribute :nickname
+    end
+  end
+
+  module V10
     class PersonResource < PersonResource; end
     class PostResource < PostResource
       has_many :comments, apply_join: -> (records, relationship, resource_type, join_type, options) {

@@ -2751,6 +2751,24 @@ class BooksControllerTest < ActionController::TestCase
   end
 end
 
+class Api::V5::PostsControllerTest < ActionController::TestCase
+  def test_show_post_no_relationship_routes_exludes_relationships
+    assert_cacheable_get :show, params: {id: '1'}
+    assert_response :success
+    assert_nil json_response['data']['relationships']
+  end
+
+  def test_show_post_no_relationship_route_include
+    get :show, params: {id: '1', include: 'author'}
+    assert_response :success
+    assert_equal '1001', json_response['data']['relationships']['author']['data']['id']
+    assert_nil json_response['data']['relationships']['tags']
+    assert_equal '1001', json_response['included'][0]['id']
+    assert_equal 'people', json_response['included'][0]['type']
+    assert_equal 'joe@xyz.fake', json_response['included'][0]['attributes']['email']
+  end
+end
+
 class Api::V5::AuthorsControllerTest < ActionController::TestCase
   def test_get_person_as_author
     assert_cacheable_get :index, params: {filter: {id: '1001'}}
@@ -2950,12 +2968,16 @@ end
 
 class Api::V2::PreferencesControllerTest < ActionController::TestCase
   def test_show_singleton_resource_without_id
+    $test_user = Person.find(1001)
+
     assert_cacheable_get :show
     assert_response :success
   end
 
   def test_update_singleton_resource_without_id
     set_content_type_header!
+    $test_user = Person.find(1001)
+
     patch :update, params: {
       data: {
         id: "1",

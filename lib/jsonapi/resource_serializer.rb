@@ -159,7 +159,7 @@ module JSONAPI
         obj_hash['attributes'] = source.attributes_json if source.attributes_json
 
         relationships = cached_relationships_hash(source, fetchable_fields, relationship_data)
-        obj_hash['relationships'] = relationships unless relationships.nil? || relationships.empty?
+        obj_hash['relationships'] = relationships unless relationships.blank?
 
         obj_hash['meta'] = source.meta_json if source.meta_json
       else
@@ -178,7 +178,7 @@ module JSONAPI
         obj_hash['attributes'] = attributes unless attributes.empty?
 
         relationships = relationships_hash(source, fetchable_fields, relationship_data)
-        obj_hash['relationships'] = relationships unless relationships.nil? || relationships.empty?
+        obj_hash['relationships'] = relationships unless relationships.blank?
 
         meta = meta_hash(source)
         obj_hash['meta'] = meta unless meta.empty?
@@ -270,7 +270,8 @@ module JSONAPI
             end
           end
 
-          hash[format_key(name)] = link_object(source, relationship, rids, include_data)
+          lo = link_object(source, relationship, rids, include_data)
+          hash[format_key(name)] = lo unless lo.blank?
         end
       end
     end

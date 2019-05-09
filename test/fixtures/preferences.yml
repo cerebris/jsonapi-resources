@@ -1,6 +1,7 @@
 a:
   id: 1
   advanced_mode: false
+  nickname: Joe Schmoe
 
 b:
   id: 2
@@ -12,3 +13,8 @@ c:
 d:
   id: 4
   advanced_mode: false
+
+wilma:
+  id: 55
+  advanced_mode: true
+  nickname: Wilma

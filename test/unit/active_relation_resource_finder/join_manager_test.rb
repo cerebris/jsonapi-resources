@@ -74,9 +74,9 @@ class JoinTreeTest < ActiveSupport::TestCase
 
 
   def test_add_joins_source_relationship_with_custom_apply
-    join_manager = JSONAPI::ActiveRelation::JoinManager.new(resource_klass: Api::V9::PostResource,
-                                                                          source_relationship: Api::V9::PostResource._relationship(:comments))
-    records = Api::V9::PostResource.records({})
+    join_manager = JSONAPI::ActiveRelation::JoinManager.new(resource_klass: Api::V10::PostResource,
+                                                                          source_relationship: Api::V10::PostResource._relationship(:comments))
+    records = Api::V10::PostResource.records({})
     records = join_manager.join(records, {})
 
     if Rails::VERSION::MAJOR >= 5 && Rails::VERSION::MINOR >= 2
@@ -95,8 +95,8 @@ class JoinTreeTest < ActiveSupport::TestCase
         'author' => ['1']
     }
 
-    join_manager = JSONAPI::ActiveRelation::JoinManager.new(resource_klass: Api::V9::PostResource, filters: filters)
-    records = Api::V9::PostResource.records({})
+    join_manager = JSONAPI::ActiveRelation::JoinManager.new(resource_klass: Api::V10::PostResource, filters: filters)
+    records = Api::V10::PostResource.records({})
     records = join_manager.join(records, {})
 
     if Rails::VERSION::MAJOR >= 5 && Rails::VERSION::MINOR >= 2
@@ -106,10 +106,10 @@ class JoinTreeTest < ActiveSupport::TestCase
     end
 
     assert_hash_equals({alias: 'posts', join_type: :root}, join_manager.source_join_details)
-    assert_hash_equals({alias: 'comments', join_type: :left}, join_manager.join_details_by_relationship(Api::V9::PostResource._relationship(:comments)))
-    assert_hash_equals({alias: 'authors_comments', join_type: :left}, join_manager.join_details_by_relationship(Api::V9::CommentResource._relationship(:author)))
-    assert_hash_equals({alias: 'tags', join_type: :left}, join_manager.join_details_by_relationship(Api::V9::CommentResource._relationship(:tags)))
-    assert_hash_equals({alias: 'people', join_type: :left}, join_manager.join_details_by_relationship(Api::V9::PostResource._relationship(:author)))
+    assert_hash_equals({alias: 'comments', join_type: :left}, join_manager.join_details_by_relationship(Api::V10::PostResource._relationship(:comments)))
+    assert_hash_equals({alias: 'authors_comments', join_type: :left}, join_manager.join_details_by_relationship(Api::V10::CommentResource._relationship(:author)))
+    assert_hash_equals({alias: 'tags', join_type: :left}, join_manager.join_details_by_relationship(Api::V10::CommentResource._relationship(:tags)))
+    assert_hash_equals({alias: 'people', join_type: :left}, join_manager.join_details_by_relationship(Api::V10::PostResource._relationship(:author)))
 
     # Now test with different order for the filters
     filters = {
@@ -118,8 +118,8 @@ class JoinTreeTest < ActiveSupport::TestCase
         'comments.tags' => ['1']
     }
 
-    join_manager = JSONAPI::ActiveRelation::JoinManager.new(resource_klass: Api::V9::PostResource, filters: filters)
-    records = Api::V9::PostResource.records({})
+    join_manager = JSONAPI::ActiveRelation::JoinManager.new(resource_klass: Api::V10::PostResource, filters: filters)
+    records = Api::V10::PostResource.records({})
     records = join_manager.join(records, {})
 
     # Note sql is in different order, but aliases should still be right
@@ -129,10 +129,10 @@ class JoinTreeTest < ActiveSupport::TestCase
       assert_equal 'SELECT "posts".* FROM "posts" LEFT OUTER JOIN "people" ON "people"."id" = "posts"."author_id" LEFT OUTER JOIN "comments" ON "comments"."post_id" = "posts"."id" LEFT OUTER JOIN "people" "authors_comments" ON "authors_comments"."id" = "comments"."author_id" LEFT OUTER JOIN "comments_tags" ON "comments_tags"."comment_id" = "comments"."id" LEFT OUTER JOIN "tags" ON "tags"."id" = "comments_tags"."tag_id" WHERE "comments"."approved" = \'t\' AND "author"."special" = \'t\'', records.to_sql
     end
     assert_hash_equals({alias: 'posts', join_type: :root}, join_manager.source_join_details)
-    assert_hash_equals({alias: 'comments', join_type: :left}, join_manager.join_details_by_relationship(Api::V9::PostResource._relationship(:comments)))
-    assert_hash_equals({alias: 'authors_comments', join_type: :left}, join_manager.join_details_by_relationship(Api::V9::CommentResource._relationship(:author)))
-    assert_hash_equals({alias: 'tags', join_type: :left}, join_manager.join_details_by_relationship(Api::V9::CommentResource._relationship(:tags)))
-    assert_hash_equals({alias: 'people', join_type: :left}, join_manager.join_details_by_relationship(Api::V9::PostResource._relationship(:author)))
+    assert_hash_equals({alias: 'comments', join_type: :left}, join_manager.join_details_by_relationship(Api::V10::PostResource._relationship(:comments)))
+    assert_hash_equals({alias: 'authors_comments', join_type: :left}, join_manager.join_details_by_relationship(Api::V10::CommentResource._relationship(:author)))
+    assert_hash_equals({alias: 'tags', join_type: :left}, join_manager.join_details_by_relationship(Api::V10::CommentResource._relationship(:tags)))
+    assert_hash_equals({alias: 'people', join_type: :left}, join_manager.join_details_by_relationship(Api::V10::PostResource._relationship(:author)))
 
     # Easier to read SQL to show joins are the same, but in different order
     # Pass 1
@@ -159,8 +159,8 @@ class JoinTreeTest < ActiveSupport::TestCase
         'author.foo' => ['1']
     }
 
-    join_manager = JSONAPI::ActiveRelation::JoinManager.new(resource_klass: Api::V9::PostResource, filters: filters)
-    records = Api::V9::PostResource.records({})
+    join_manager = JSONAPI::ActiveRelation::JoinManager.new(resource_klass: Api::V10::PostResource, filters: filters)
+    records = Api::V10::PostResource.records({})
     records = join_manager.join(records, {})
 
     if Rails::VERSION::MAJOR >= 5 && Rails::VERSION::MINOR >= 2
@@ -170,18 +170,18 @@ class JoinTreeTest < ActiveSupport::TestCase
     end
 
     assert_hash_equals({alias: 'posts', join_type: :root}, join_manager.source_join_details)
-    assert_hash_equals({alias: 'comments', join_type: :left}, join_manager.join_details_by_relationship(Api::V9::PostResource._relationship(:comments)))
-    assert_hash_equals({alias: 'authors_comments', join_type: :left}, join_manager.join_details_by_relationship(Api::V9::CommentResource._relationship(:author)))
-    assert_hash_equals({alias: 'tags', join_type: :left}, join_manager.join_details_by_relationship(Api::V9::CommentResource._relationship(:tags)))
-    assert_hash_equals({alias: 'people', join_type: :left}, join_manager.join_details_by_relationship(Api::V9::PostResource._relationship(:author)))
+    assert_hash_equals({alias: 'comments', join_type: :left}, join_manager.join_details_by_relationship(Api::V10::PostResource._relationship(:comments)))
+    assert_hash_equals({alias: 'authors_comments', join_type: :left}, join_manager.join_details_by_relationship(Api::V10::CommentResource._relationship(:author)))
+    assert_hash_equals({alias: 'tags', join_type: :left}, join_manager.join_details_by_relationship(Api::V10::CommentResource._relationship(:tags)))
+    assert_hash_equals({alias: 'people', join_type: :left}, join_manager.join_details_by_relationship(Api::V10::PostResource._relationship(:author)))
   end
 
   def test_add_joins_with_sub_relationship
     relationships = %w(author author.comments tags)
 
-    join_manager = JSONAPI::ActiveRelation::JoinManager.new(resource_klass: Api::V9::PostResource, relationships: relationships,
-                                                                          source_relationship: Api::V9::PostResource._relationship(:comments))
-    records = Api::V9::PostResource.records({})
+    join_manager = JSONAPI::ActiveRelation::JoinManager.new(resource_klass: Api::V10::PostResource, relationships: relationships,
+                                                                          source_relationship: Api::V10::PostResource._relationship(:comments))
+    records = Api::V10::PostResource.records({})
     records = join_manager.join(records, {})
 
     if Rails::VERSION::MAJOR >= 5 && Rails::VERSION::MINOR >= 2
@@ -191,10 +191,10 @@ class JoinTreeTest < ActiveSupport::TestCase
     end
 
     assert_hash_equals({alias: 'comments', join_type: :inner}, join_manager.source_join_details)
-    assert_hash_equals({alias: 'comments', join_type: :inner}, join_manager.join_details_by_relationship(Api::V9::PostResource._relationship(:comments)))
-    assert_hash_equals({alias: 'people', join_type: :left}, join_manager.join_details_by_relationship(Api::V9::CommentResource._relationship(:author)))
-    assert_hash_equals({alias: 'tags', join_type: :left}, join_manager.join_details_by_relationship(Api::V9::CommentResource._relationship(:tags)))
-    assert_hash_equals({alias: 'comments_people', join_type: :left}, join_manager.join_details_by_relationship(Api::V9::PersonResource._relationship(:comments)))
+    assert_hash_equals({alias: 'comments', join_type: :inner}, join_manager.join_details_by_relationship(Api::V10::PostResource._relationship(:comments)))
+    assert_hash_equals({alias: 'people', join_type: :left}, join_manager.join_details_by_relationship(Api::V10::CommentResource._relationship(:author)))
+    assert_hash_equals({alias: 'tags', join_type: :left}, join_manager.join_details_by_relationship(Api::V10::CommentResource._relationship(:tags)))
+    assert_hash_equals({alias: 'comments_people', join_type: :left}, join_manager.join_details_by_relationship(Api::V10::PersonResource._relationship(:comments)))
   end
 
   def test_add_joins_with_sub_relationship_and_filters
