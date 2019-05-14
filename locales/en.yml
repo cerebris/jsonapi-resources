@@ -15,7 +15,7 @@ en:
         detail: "All requests must use the '%{needed_media_type}' Accept without media type parameters. This request specified '%{media_type}'."
       unsupported_media_type:
         title: 'Unsupported media type'
-        detail: "All requests that create or update must use the '%{needed_media_type}' Content-Type. This request specified '%{media_type}.'"
+        detail: "All requests that create or update must use the '%{needed_media_type}' Content-Type. This request specified '%{media_type}'."
       to_many_set_replacement_forbidden:
         title: 'Complete replacement forbidden'
         detail: 'Complete replacement forbidden for this relationship'
