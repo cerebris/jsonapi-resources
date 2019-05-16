@@ -26,7 +26,7 @@ module JSONAPI
       @allow_include = options[:allow_include]
       @class_name = nil
       @inverse_relationship = nil
-      @build_default_links = options[:build_default_links]
+      @exclude_links = options[:exclude_links].try(:collect) { |link| link.to_sym }
 
       # Custom methods are reserved for future use
       @custom_methods = options.fetch(:custom_methods, {})
@@ -100,8 +100,12 @@ module JSONAPI
       @options[:readonly]
     end
 
-    def build_default_links?
-      @build_default_links.nil? || @build_default_links
+    def _exclude_links
+      @exclude_links ||= []
+    end
+
+    def exclude_link?(link)
+      _exclude_links.include?(link.to_sym)
     end
 
     class ToOne < Relationship

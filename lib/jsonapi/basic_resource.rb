@@ -423,7 +423,7 @@ module JSONAPI
         subclass.immutable(false)
         subclass.caching(_caching)
         subclass.singleton(singleton?, (_singleton_options.dup || {}))
-        subclass.build_default_links(_build_default_links)
+        subclass.exclude_links(_exclude_links)
         subclass.paginator(_paginator)
         subclass._attributes = (_attributes || {}).dup
         subclass.polymorphic(false)
@@ -960,16 +960,18 @@ module JSONAPI
         !@immutable
       end
 
-      def build_default_links(build)
-        @build_default_links = build
+      def exclude_links(exclude)
+        @_exclude_links = exclude.collect do |link|
+          link.to_sym
+        end
       end
 
-      def _build_default_links
-        @_build_default_links
+      def _exclude_links
+        @_exclude_links ||= []
       end
 
-      def build_default_links?
-        @_build_default_links.nil? || @_build_default_links == true
+      def exclude_link?(link)
+        _exclude_links.include?(link.to_sym)
       end
 
       def caching(val = true)

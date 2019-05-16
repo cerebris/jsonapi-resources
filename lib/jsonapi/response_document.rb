@@ -118,11 +118,11 @@ module JSONAPI
         result.pagination_params.each_pair do |link_name, params|
           if result.is_a?(JSONAPI::RelatedResourcesSetOperationResult)
             relationship = result.source_resource.class._relationships[result._type.to_sym]
-            if relationship.build_default_links?
+            unless relationship.exclude_link?(link_name)
               link = serializer.link_builder.relationships_related_link(result.source_resource, relationship, query_params(params))
             end
           else
-            if serializer.link_builder.primary_resource_klass.build_default_links?
+            unless serializer.link_builder.primary_resource_klass.exclude_link?(link_name)
               link = serializer.link_builder.query_link(query_params(params))
             end
           end
