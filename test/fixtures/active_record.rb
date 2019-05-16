@@ -1676,10 +1676,10 @@ module Api
       attribute :title
       attribute :body
 
-      has_one :author, class_name: 'Person', build_default_links: false
-      has_one :section, build_default_links: false
-      has_many :tags, acts_as_set: true, inverse_relationship: :posts, eager_load_on_include: false, build_default_links: false
-      has_many :comments, acts_as_set: false, inverse_relationship: :post, build_default_links: false
+      has_one :author, class_name: 'Person', exclude_links: [:self, "related"]
+      has_one :section, exclude_links: [:self, :related]
+      has_many :tags, acts_as_set: true, inverse_relationship: :posts, eager_load_on_include: false, exclude_links: [:self, :related]
+      has_many :comments, acts_as_set: false, inverse_relationship: :post, exclude_links: ["self", :related]
     end
 
     class AuthorResource < JSONAPI::Resource

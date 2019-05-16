@@ -249,7 +249,7 @@ module JSONAPI
 
     def links_hash(source)
       links = custom_links_hash(source)
-      if !links.key?('self') && source.class.build_default_links?
+      if !links.key?('self') && !source.class.exclude_link?(:self)
         links['self'] = link_builder.self_link(source)
       end
       links.compact
@@ -383,12 +383,10 @@ module JSONAPI
     end
 
     def default_relationship_links(source, relationship)
-      if relationship.build_default_links?
-        {
-          'self' => self_link(source, relationship),
-          'related' => related_link(source, relationship)
-        }.compact
-      end
+      links = {}
+      links['self'] = self_link(source, relationship) unless relationship.exclude_link?(:self)
+      links['related'] = related_link(source, relationship) unless relationship.exclude_link?(:related)
+      links.compact
     end
 
     def to_one_linkage(source, relationship)

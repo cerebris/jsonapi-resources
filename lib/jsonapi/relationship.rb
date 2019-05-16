@@ -14,7 +14,7 @@ module JSONAPI
       @polymorphic = options.fetch(:polymorphic, false) == true
       @always_include_linkage_data = options.fetch(:always_include_linkage_data, false) == true
       @eager_load_on_include = options.fetch(:eager_load_on_include, true) == true
-      @build_default_links = options[:build_default_links]
+      @exclude_links = options[:exclude_links].try(:collect) { |link| link.to_sym }
     end
 
     alias_method :polymorphic?, :polymorphic
@@ -61,8 +61,12 @@ module JSONAPI
       false
     end
 
-    def build_default_links?
-      @build_default_links.nil? || @build_default_links
+    def _exclude_links
+      @exclude_links ||= []
+    end
+
+    def exclude_link?(link)
+      _exclude_links.include?(link.to_sym)
     end
 
     class ToOne < Relationship
