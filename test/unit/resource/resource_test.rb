@@ -58,6 +58,9 @@ class FelineResource < JSONAPI::Resource
   has_one :father, class_name: 'Cat'
 end
 
+class TestSingletonResource < JSONAPI::Resource
+end
+
 module MyModule
   class MyNamespacedResource < JSONAPI::Resource
     model_name "Person"
@@ -559,5 +562,30 @@ class ResourceTest < ActiveSupport::TestCase
     assert(PostResource.sortable_field?(:title))
     assert(PostResource.sortable_field?(:body))
     refute(PostResource.sortable_field?(:color))
+  end
+
+  def test_singleton_options
+    TestSingletonResource.singleton true
+    assert TestSingletonResource.singleton?
+    assert TestSingletonResource._singleton_options.blank?
+
+    TestSingletonResource.singleton false
+    refute TestSingletonResource.singleton?
+    assert TestSingletonResource._singleton_options.blank?
+
+    TestSingletonResource.singleton true, a: :b
+    assert TestSingletonResource.singleton?
+    refute TestSingletonResource._singleton_options.blank?
+    assert_equal :b, TestSingletonResource._singleton_options[:a]
+
+    TestSingletonResource.singleton false, c: :d
+    refute TestSingletonResource.singleton?
+    refute TestSingletonResource._singleton_options.blank?
+    assert_equal :d, TestSingletonResource._singleton_options[:c]
+
+    TestSingletonResource.singleton e: :f
+    assert TestSingletonResource.singleton?
+    refute TestSingletonResource._singleton_options.blank?
+    assert_equal :f, TestSingletonResource._singleton_options[:e]
   end
 end
