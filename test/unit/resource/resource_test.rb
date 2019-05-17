@@ -678,4 +678,58 @@ LEFT JOIN people AS author_sorting ON author_sorting.id = posts.author_id", resu
     refute TestSingletonResource._singleton_options.blank?
     assert_equal :f, TestSingletonResource._singleton_options[:e]
   end
+
+  def test_exclude_links_on_resource
+    Api::V5::PostResource.exclude_links :none
+    assert_equal [], Api::V5::PostResource._exclude_links
+    refute Api::V5::PostResource.exclude_link?(:self)
+    refute Api::V5::PostResource.exclude_link?("self")
+
+    Api::V5::PostResource.exclude_links :default
+    assert_equal [:self], Api::V5::PostResource._exclude_links
+    assert Api::V5::PostResource.exclude_link?(:self)
+    assert Api::V5::PostResource.exclude_link?("self")
+
+    Api::V5::PostResource.exclude_links "none"
+    assert_equal [], Api::V5::PostResource._exclude_links
+    refute Api::V5::PostResource.exclude_link?(:self)
+    refute Api::V5::PostResource.exclude_link?("self")
+
+    Api::V5::PostResource.exclude_links "default"
+    assert_equal [:self], Api::V5::PostResource._exclude_links
+    assert Api::V5::PostResource.exclude_link?(:self)
+    assert Api::V5::PostResource.exclude_link?("self")
+
+    Api::V5::PostResource.exclude_links :none
+    assert_equal [], Api::V5::PostResource._exclude_links
+    refute Api::V5::PostResource.exclude_link?(:self)
+    refute Api::V5::PostResource.exclude_link?("self")
+
+    Api::V5::PostResource.exclude_links [:self]
+    assert_equal [:self], Api::V5::PostResource._exclude_links
+    assert Api::V5::PostResource.exclude_link?(:self)
+    assert Api::V5::PostResource.exclude_link?("self")
+
+    Api::V5::PostResource.exclude_links :none
+    assert_equal [], Api::V5::PostResource._exclude_links
+    refute Api::V5::PostResource.exclude_link?(:self)
+    refute Api::V5::PostResource.exclude_link?("self")
+
+    Api::V5::PostResource.exclude_links ["self"]
+    assert_equal [:self], Api::V5::PostResource._exclude_links
+    assert Api::V5::PostResource.exclude_link?(:self)
+    assert Api::V5::PostResource.exclude_link?("self")
+
+    Api::V5::PostResource.exclude_links []
+    assert_equal [], Api::V5::PostResource._exclude_links
+    refute Api::V5::PostResource.exclude_link?(:self)
+    refute Api::V5::PostResource.exclude_link?("self")
+
+    assert_raises do
+      Api::V5::PostResource.exclude_links :self
+    end
+
+  ensure
+    Api::V5::PostResource.exclude_links :none
+  end
 end

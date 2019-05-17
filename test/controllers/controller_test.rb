@@ -2600,6 +2600,33 @@ class Api::V5::PostsControllerTest < ActionController::TestCase
     assert_nil json_response['data']['relationships']
   end
 
+  def test_exclude_resource_links
+    assert_cacheable_get :show, params: {id: '1'}
+    assert_response :success
+    assert_nil json_response['data']['relationships']
+    assert_equal 1, json_response['data']['links'].length
+
+    Api::V5::PostResource.exclude_links :default
+    assert_cacheable_get :show, params: {id: '1'}
+    assert_response :success
+    assert_nil json_response['data']['relationships']
+    assert_nil json_response['data']['links']
+
+    Api::V5::PostResource.exclude_links [:self]
+    assert_cacheable_get :show, params: {id: '1'}
+    assert_response :success
+    assert_nil json_response['data']['relationships']
+    assert_nil json_response['data']['links']
+
+    Api::V5::PostResource.exclude_links :none
+    assert_cacheable_get :show, params: {id: '1'}
+    assert_response :success
+    assert_nil json_response['data']['relationships']
+    assert_equal 1, json_response['data']['links'].length
+  ensure
+    Api::V5::PostResource.exclude_links :none
+  end
+
   def test_show_post_no_relationship_route_include
     get :show, params: {id: '1', include: 'author'}
     assert_response :success

@@ -14,7 +14,8 @@ module JSONAPI
       @polymorphic = options.fetch(:polymorphic, false) == true
       @always_include_linkage_data = options.fetch(:always_include_linkage_data, false) == true
       @eager_load_on_include = options.fetch(:eager_load_on_include, true) == true
-      @exclude_links = options[:exclude_links].try(:collect) { |link| link.to_sym }
+
+      exclude_links(options.fetch(:exclude_links, :none))
     end
 
     alias_method :polymorphic?, :polymorphic
@@ -61,8 +62,21 @@ module JSONAPI
       false
     end
 
+    def exclude_links(exclude)
+      case exclude
+        when :default, "default"
+          @_exclude_links = [:self, :related]
+        when :none, "none"
+          @_exclude_links = []
+        when Array
+          @_exclude_links = exclude.collect {|link| link.to_sym}
+        else
+          fail "Invalid exclude_links"
+      end
+    end
+
     def _exclude_links
-      @exclude_links ||= []
+      @_exclude_links ||= []
     end
 
     def exclude_link?(link)
