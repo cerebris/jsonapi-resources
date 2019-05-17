@@ -93,19 +93,19 @@ module JSONAPI
       return serialize_resource_set_to_hash_plural(resource_set)
     end
 
-    def serialize_to_links_hash(source, requested_relationship, resource_ids)
+    def serialize_to_relationship_hash(source, requested_relationship, resource_ids)
       if requested_relationship.is_a?(JSONAPI::Relationship::ToOne)
         data = to_one_linkage(resource_ids[0])
       else
         data = to_many_linkage(resource_ids)
       end
 
-      links_hash = { 'data': data }
+      rel_hash = { 'data': data }
 
       links = default_relationship_links(source, requested_relationship)
-      links_hash['links'] = links unless links.blank?
+      rel_hash['links'] = links unless links.blank?
 
-      links_hash
+      rel_hash
     end
 
     def format_key(key)
@@ -270,8 +270,8 @@ module JSONAPI
             end
           end
 
-          lo = link_object(source, relationship, rids, include_data)
-          hash[format_key(name)] = lo unless lo.blank?
+          ro = relationship_object(source, relationship, rids, include_data)
+          hash[format_key(name)] = ro unless ro.blank?
         end
       end
     end
@@ -350,7 +350,7 @@ module JSONAPI
       }
     end
 
-    def link_object_to_one(source, relationship, rid, include_data)
+    def relationship_object_to_one(source, relationship, rid, include_data)
       link_object_hash = {}
 
       links = default_relationship_links(source, relationship)
@@ -360,7 +360,7 @@ module JSONAPI
       link_object_hash
     end
 
-    def link_object_to_many(source, relationship, rids, include_data)
+    def relationship_object_to_many(source, relationship, rids, include_data)
       link_object_hash = {}
 
       links = default_relationship_links(source, relationship)
@@ -369,11 +369,11 @@ module JSONAPI
       link_object_hash
     end
 
-    def link_object(source, relationship, rid, include_data)
+    def relationship_object(source, relationship, rid, include_data)
       if relationship.is_a?(JSONAPI::Relationship::ToOne)
-        link_object_to_one(source, relationship, rid, include_data)
+        relationship_object_to_one(source, relationship, rid, include_data)
       elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
-        link_object_to_many(source, relationship, rid, include_data)
+        relationship_object_to_many(source, relationship, rid, include_data)
       end
     end
 

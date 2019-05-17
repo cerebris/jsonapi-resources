@@ -130,11 +130,11 @@ module JSONAPI
                                                        find_options,
                                                        nil)
 
-      return JSONAPI::LinksObjectOperationResult.new(:ok,
-                                                     parent_resource,
-                                                     resource_klass._relationship(relationship_type),
-                                                     resource_id_tree.fragments.keys,
-                                                     result_options)
+      return JSONAPI::RelationshipOperationResult.new(:ok,
+                                                      parent_resource,
+                                                      resource_klass._relationship(relationship_type),
+                                                      resource_id_tree.fragments.keys,
+                                                      result_options)
     end
 
     def show_related_resource
