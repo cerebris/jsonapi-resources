@@ -114,9 +114,9 @@ module JSONAPI
             @serializer.serialize_to_hash(result.resource)
           when JSONAPI::ResourcesOperationResult
             @serializer.serialize_to_hash(result.resources)
-          when JSONAPI::LinksObjectOperationResult
-            @serializer.serialize_to_links_hash(result.parent_resource,
-                                               result.relationship)
+          when JSONAPI::RelationshipOperationResult
+            @serializer.serialize_to_relationship_hash(result.parent_resource,
+                                                       result.relationship)
           when JSONAPI::OperationResult
             {}
           end

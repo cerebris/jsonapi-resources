@@ -90,19 +90,19 @@ module JSONAPI
       primary_hash
     end
 
-    def serialize_to_links_hash(source, requested_relationship)
+    def serialize_to_relationship_hash(source, requested_relationship)
       if requested_relationship.is_a?(JSONAPI::Relationship::ToOne)
         data = to_one_linkage(source, requested_relationship)
       else
         data = to_many_linkage(source, requested_relationship)
       end
 
-      links_hash = { 'data': data }
+      rel_hash = { 'data': data }
 
       links = default_relationship_links(source, requested_relationship)
-      links_hash['links'] = links unless links.blank?
+      rel_hash['links'] = links unless links.blank?
 
-      links_hash
+      rel_hash
     end
 
     def query_link(query_params)
@@ -289,8 +289,8 @@ module JSONAPI
 
         options = { filters: ia && ia[:include_filters] || {} }
         if field_set.include?(name)
-          lo = link_object(source, relationship, include_linkage)
-          hash[format_key(name)] = lo unless lo.blank?
+          ro = relationship_object(source, relationship, include_linkage)
+          hash[format_key(name)] = ro unless ro.blank?
         end
 
         # If the object has been serialized once it will be in the related objects list,
@@ -436,32 +436,32 @@ module JSONAPI
       linkage
     end
 
-    def link_object_to_one(source, relationship, include_linkage)
+    def relationship_object_to_one(source, relationship, include_linkage)
       include_linkage = include_linkage | @always_include_to_one_linkage_data | relationship.always_include_linkage_data
-      link_object_hash = {}
+      relationship_object_hash = {}
 
       links = default_relationship_links(source, relationship)
 
-      link_object_hash['links'] = links unless links.blank?
-      link_object_hash[:data] = to_one_linkage(source, relationship) if include_linkage
-      link_object_hash
+      relationship_object_hash['links'] = links unless links.blank?
+      relationship_object_hash[:data] = to_one_linkage(source, relationship) if include_linkage
+      relationship_object_hash
     end
 
-    def link_object_to_many(source, relationship, include_linkage)
+    def relationship_object_to_many(source, relationship, include_linkage)
       include_linkage = include_linkage | relationship.always_include_linkage_data
-      link_object_hash = {}
+      relationship_object_hash = {}
 
       links = default_relationship_links(source, relationship)
-      link_object_hash['links'] = links unless links.blank?
-      link_object_hash[:data] = to_many_linkage(source, relationship) if include_linkage
-      link_object_hash
+      relationship_object_hash['links'] = links unless links.blank?
+      relationship_object_hash[:data] = to_many_linkage(source, relationship) if include_linkage
+      relationship_object_hash
     end
 
-    def link_object(source, relationship, include_linkage = false)
+    def relationship_object(source, relationship, include_linkage = false)
       if relationship.is_a?(JSONAPI::Relationship::ToOne)
-        link_object_to_one(source, relationship, include_linkage)
+        relationship_object_to_one(source, relationship, include_linkage)
       elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
-        link_object_to_many(source, relationship, include_linkage)
+        relationship_object_to_many(source, relationship, include_linkage)
       end
     end
 

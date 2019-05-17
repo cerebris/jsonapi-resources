@@ -136,9 +136,9 @@ module JSONAPI
 
       parent_resource = resource_klass.find_by_key(parent_key, context: context)
 
-      return JSONAPI::LinksObjectOperationResult.new(:ok,
-                                                     parent_resource,
-                                                     resource_klass._relationship(relationship_type))
+      return JSONAPI::RelationshipOperationResult.new(:ok,
+                                                      parent_resource,
+                                                      resource_klass._relationship(relationship_type))
     end
 
     def show_related_resource
