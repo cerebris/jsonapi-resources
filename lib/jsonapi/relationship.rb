@@ -137,7 +137,7 @@ module JSONAPI
 
       def to_s
         # :nocov: useful for debugging
-        "#{parent_resource}.#{name}(#{belongs_to? ? 'ToOne' : 'BelongsToOne'})"
+        "#{parent_resource}.#{name}(#{belongs_to? ? 'BelongsToOne' : 'ToOne'})"
         # :nocov:
       end
 
