@@ -961,8 +961,15 @@ module JSONAPI
       end
 
       def exclude_links(exclude)
-        @_exclude_links = exclude.collect do |link|
-          link.to_sym
+        case exclude
+          when :default, "default"
+            @_exclude_links = [:self]
+          when :none, "none"
+            @_exclude_links = []
+          when Array
+            @_exclude_links = exclude.collect {|link| link.to_sym}
+          else
+            fail "Invalid exclude_links"
         end
       end
 

@@ -26,7 +26,8 @@ module JSONAPI
       @allow_include = options[:allow_include]
       @class_name = nil
       @inverse_relationship = nil
-      @exclude_links = options[:exclude_links].try(:collect) { |link| link.to_sym }
+
+      exclude_links(options.fetch(:exclude_links, :none))
 
       # Custom methods are reserved for future use
       @custom_methods = options.fetch(:custom_methods, {})
@@ -100,8 +101,21 @@ module JSONAPI
       @options[:readonly]
     end
 
+    def exclude_links(exclude)
+      case exclude
+        when :default, "default"
+          @_exclude_links = [:self, :related]
+        when :none, "none"
+          @_exclude_links = []
+        when Array
+          @_exclude_links = exclude.collect {|link| link.to_sym}
+        else
+          fail "Invalid exclude_links"
+      end
+    end
+
     def _exclude_links
-      @exclude_links ||= []
+      @_exclude_links ||= []
     end
 
     def exclude_link?(link)

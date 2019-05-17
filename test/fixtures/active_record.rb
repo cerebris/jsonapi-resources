@@ -1994,7 +1994,7 @@ module Api
 
       has_one :author, class_name: 'Person', exclude_links: [:self, "related"]
       has_one :section, exclude_links: [:self, :related]
-      has_many :tags, acts_as_set: true, inverse_relationship: :posts, eager_load_on_include: false, exclude_links: [:self, :related]
+      has_many :tags, acts_as_set: true, inverse_relationship: :posts, eager_load_on_include: false, exclude_links: :default
       has_many :comments, acts_as_set: false, inverse_relationship: :post, exclude_links: ["self", :related]
     end
 
