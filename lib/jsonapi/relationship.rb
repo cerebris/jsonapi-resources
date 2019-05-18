@@ -14,6 +14,8 @@ module JSONAPI
       @polymorphic = options.fetch(:polymorphic, false) == true
       @always_include_linkage_data = options.fetch(:always_include_linkage_data, false) == true
       @eager_load_on_include = options.fetch(:eager_load_on_include, true) == true
+
+      exclude_links(options.fetch(:exclude_links, :none))
     end
 
     alias_method :polymorphic?, :polymorphic
@@ -60,6 +62,27 @@ module JSONAPI
       false
     end
 
+    def exclude_links(exclude)
+      case exclude
+        when :default, "default"
+          @_exclude_links = [:self, :related]
+        when :none, "none"
+          @_exclude_links = []
+        when Array
+          @_exclude_links = exclude.collect {|link| link.to_sym}
+        else
+          fail "Invalid exclude_links"
+      end
+    end
+
+    def _exclude_links
+      @_exclude_links ||= []
+    end
+
+    def exclude_link?(link)
+      _exclude_links.include?(link.to_sym)
+    end
+
     class ToOne < Relationship
       attr_reader :foreign_key_on
 
@@ -68,6 +91,12 @@ module JSONAPI
         @class_name = options.fetch(:class_name, name.to_s.camelize)
         @foreign_key ||= "#{name}_id".to_sym
         @foreign_key_on = options.fetch(:foreign_key_on, :self)
+      end
+
+      def to_s
+        # :nocov:
+        "#{parent_resource}.#{name}(#{belongs_to? ? 'BelongsToOne' : 'ToOne'})"
+        # :nocov:
       end
 
       def belongs_to?
@@ -88,6 +117,12 @@ module JSONAPI
         @foreign_key ||= "#{name.to_s.singularize}_ids".to_sym
         @reflect = options.fetch(:reflect, true) == true
         @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type.to_s.singularize.to_sym) if parent_resource
+      end
+
+      def to_s
+        # :nocov:
+        "#{parent_resource}.#{name}(ToMany)"
+        # :nocov:
       end
     end
   end

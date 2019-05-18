@@ -53,7 +53,7 @@ module JSONAPI
     end
   end
 
-  class LinksObjectOperationResult < OperationResult
+  class RelationshipOperationResult < OperationResult
     attr_accessor :parent_resource, :relationship
 
     def initialize(code, parent_resource, relationship, options = {})

@@ -90,20 +90,19 @@ module JSONAPI
       primary_hash
     end
 
-    def serialize_to_links_hash(source, requested_relationship)
+    def serialize_to_relationship_hash(source, requested_relationship)
       if requested_relationship.is_a?(JSONAPI::Relationship::ToOne)
         data = to_one_linkage(source, requested_relationship)
       else
         data = to_many_linkage(source, requested_relationship)
       end
 
-      {
-        links: {
-          self: self_link(source, requested_relationship),
-          related: related_link(source, requested_relationship)
-        },
-        data: data
-      }
+      rel_hash = { 'data': data }
+
+      links = default_relationship_links(source, requested_relationship)
+      rel_hash['links'] = links unless links.blank?
+
+      rel_hash
     end
 
     def query_link(query_params)
@@ -133,7 +132,6 @@ module JSONAPI
         supplying_attribute_fields: supplying_attribute_fields(resource_klass).sort,
         supplying_relationship_fields: supplying_relationship_fields(resource_klass).sort,
         link_builder_base_url: link_builder.base_url,
-        route_formatter_class: link_builder.route_formatter.uncached.class.name,
         key_formatter_class: key_formatter.uncached.class.name,
         always_include_to_one_linkage_data: always_include_to_one_linkage_data,
         always_include_to_many_linkage_data: always_include_to_many_linkage_data
@@ -152,7 +150,7 @@ module JSONAPI
         obj_hash['attributes'] = source.attributes_json if source.attributes_json
 
         relationships = cached_relationships_hash(source, include_directives)
-        obj_hash['relationships'] = relationships unless relationships.empty?
+        obj_hash['relationships'] = relationships unless relationships.blank?
 
         obj_hash['meta'] = source.meta_json if source.meta_json
       else
@@ -173,7 +171,7 @@ module JSONAPI
         obj_hash['attributes'] = attributes unless attributes.empty?
 
         relationships = relationships_hash(source, fetchable_fields, include_directives)
-        obj_hash['relationships'] = relationships unless relationships.nil? || relationships.empty?
+        obj_hash['relationships'] = relationships unless relationships.blank?
 
         meta = meta_hash(source)
         obj_hash['meta'] = meta unless meta.empty?
@@ -251,7 +249,9 @@ module JSONAPI
 
     def links_hash(source)
       links = custom_links_hash(source)
-      links[:self] = link_builder.self_link(source) unless links.key?(:self)
+      if !links.key?('self') && !source.class.exclude_link?(:self)
+        links['self'] = link_builder.self_link(source)
+      end
       links.compact
     end
 
@@ -289,7 +289,8 @@ module JSONAPI
 
         options = { filters: ia && ia[:include_filters] || {} }
         if field_set.include?(name)
-          hash[format_key(name)] = link_object(source, relationship, include_linkage)
+          ro = relationship_object(source, relationship, include_linkage)
+          hash[format_key(name)] = ro unless ro.blank?
         end
 
         # If the object has been serialized once it will be in the related objects list,
@@ -381,6 +382,13 @@ module JSONAPI
       link_builder.relationships_related_link(source, relationship)
     end
 
+    def default_relationship_links(source, relationship)
+      links = {}
+      links['self'] = self_link(source, relationship) unless relationship.exclude_link?(:self)
+      links['related'] = related_link(source, relationship) unless relationship.exclude_link?(:related)
+      links.compact
+    end
+
     def to_one_linkage(source, relationship)
       linkage_id = foreign_key_value(source, relationship)
       linkage_type = format_key(relationship.type_for_source(source))
@@ -428,31 +436,32 @@ module JSONAPI
       linkage
     end
 
-    def link_object_to_one(source, relationship, include_linkage)
+    def relationship_object_to_one(source, relationship, include_linkage)
       include_linkage = include_linkage | @always_include_to_one_linkage_data | relationship.always_include_linkage_data
-      link_object_hash = {}
-      link_object_hash[:links] = {}
-      link_object_hash[:links][:self] = self_link(source, relationship)
-      link_object_hash[:links][:related] = related_link(source, relationship)
-      link_object_hash[:data] = to_one_linkage(source, relationship) if include_linkage
-      link_object_hash
+      relationship_object_hash = {}
+
+      links = default_relationship_links(source, relationship)
+
+      relationship_object_hash['links'] = links unless links.blank?
+      relationship_object_hash[:data] = to_one_linkage(source, relationship) if include_linkage
+      relationship_object_hash
     end
 
-    def link_object_to_many(source, relationship, include_linkage)
+    def relationship_object_to_many(source, relationship, include_linkage)
       include_linkage = include_linkage | relationship.always_include_linkage_data
-      link_object_hash = {}
-      link_object_hash[:links] = {}
-      link_object_hash[:links][:self] = self_link(source, relationship)
-      link_object_hash[:links][:related] = related_link(source, relationship)
-      link_object_hash[:data] = to_many_linkage(source, relationship) if include_linkage
-      link_object_hash
+      relationship_object_hash = {}
+
+      links = default_relationship_links(source, relationship)
+      relationship_object_hash['links'] = links unless links.blank?
+      relationship_object_hash[:data] = to_many_linkage(source, relationship) if include_linkage
+      relationship_object_hash
     end
 
-    def link_object(source, relationship, include_linkage = false)
+    def relationship_object(source, relationship, include_linkage = false)
       if relationship.is_a?(JSONAPI::Relationship::ToOne)
-        link_object_to_one(source, relationship, include_linkage)
+        relationship_object_to_one(source, relationship, include_linkage)
       elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
-        link_object_to_many(source, relationship, include_linkage)
+        relationship_object_to_many(source, relationship, include_linkage)
       end
     end
 
@@ -528,7 +537,6 @@ module JSONAPI
     def generate_link_builder(primary_resource_klass, options)
       LinkBuilder.new(
         base_url: options.fetch(:base_url, ''),
-        route_formatter: options.fetch(:route_formatter, JSONAPI.configuration.route_formatter),
         primary_resource_klass: primary_resource_klass,
       )
     end

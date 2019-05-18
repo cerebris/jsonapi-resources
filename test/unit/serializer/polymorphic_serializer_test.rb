@@ -75,8 +75,8 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
             },
             hairCut: {
               links: {
-                self: '/people/1/relationships/hairCut',
-                related: '/people/1/hairCut'
+                self: '/people/1/relationships/hair_cut',
+                related: '/people/1/hair_cut'
               }
             }
           }
@@ -184,8 +184,8 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
             },
             hairCut: {
               links: {
-                self: '/people/1/relationships/hairCut',
-                related: '/people/1/hairCut'
+                self: '/people/1/relationships/hair_cut',
+                related: '/people/1/hair_cut'
               }
             }
           }

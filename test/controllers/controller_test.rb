@@ -590,7 +590,7 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['data'].is_a?(Hash)
     assert_equal 'JR is Great', json_response['data']['attributes']['title']
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
-    assert_equal json_response['data']['links']['self'], response.location
+    assert_equal "http://test.host/posts/#{json_response['data']['id']}", json_response['data']['links']['self']
   end
 
   def test_create_simple_id_not_allowed
@@ -693,7 +693,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "Param not allowed", json_response['meta']["warnings"][1]["title"]
     assert_equal "asdfg is not allowed.", json_response['meta']["warnings"][1]["detail"]
     assert_equal '105', json_response['meta']["warnings"][1]["code"]
-    assert_equal json_response['data']['links']['self'], response.location
+    assert_equal "http://test.host/posts/#{json_response['data']['id']}", json_response['data']['links']['self']
   ensure
     JSONAPI.configuration.raise_if_parameters_not_allowed = true
   end
@@ -873,7 +873,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "Param not allowed", json_response['meta']["warnings"][0]["title"]
     assert_equal "subject is not allowed.", json_response['meta']["warnings"][0]["detail"]
     assert_equal '105', json_response['meta']["warnings"][0]["code"]
-    assert_equal json_response['data']['links']['self'], response.location
+    assert_equal "http://test.host/posts/#{json_response['data']['id']}", json_response['data']['links']['self']
   ensure
     JSONAPI.configuration.raise_if_parameters_not_allowed = true
   end
@@ -901,7 +901,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal '3', json_response['data']['relationships']['author']['data']['id']
     assert_equal 'JR is Great', json_response['data']['attributes']['title']
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
-    assert_equal json_response['data']['links']['self'], response.location
+    assert_equal "http://test.host/posts/#{json_response['data']['id']}", json_response['data']['links']['self']
   end
 
   def test_create_with_links_to_many_array
@@ -927,7 +927,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal '3', json_response['data']['relationships']['author']['data']['id']
     assert_equal 'JR is Great', json_response['data']['attributes']['title']
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
-    assert_equal json_response['data']['links']['self'], response.location
+    assert_equal "http://test.host/posts/#{json_response['data']['id']}", json_response['data']['links']['self']
   end
 
   def test_create_with_links_include_and_fields
@@ -954,7 +954,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal '3', json_response['data']['relationships']['author']['data']['id']
     assert_equal 'JR is Great!', json_response['data']['attributes']['title']
     assert_not_nil json_response['included'].size
-    assert_equal json_response['data']['links']['self'], response.location
+    assert_equal "http://test.host/posts/#{json_response['data']['id']}", json_response['data']['links']['self']
   end
 
   def test_update_with_links
@@ -2593,6 +2593,51 @@ class BooksControllerTest < ActionController::TestCase
   end
 end
 
+class Api::V5::PostsControllerTest < ActionController::TestCase
+  def test_show_post_no_relationship_routes_exludes_relationships
+    assert_cacheable_get :show, params: {id: '1'}
+    assert_response :success
+    assert_nil json_response['data']['relationships']
+  end
+
+  def test_exclude_resource_links
+    assert_cacheable_get :show, params: {id: '1'}
+    assert_response :success
+    assert_nil json_response['data']['relationships']
+    assert_equal 1, json_response['data']['links'].length
+
+    Api::V5::PostResource.exclude_links :default
+    assert_cacheable_get :show, params: {id: '1'}
+    assert_response :success
+    assert_nil json_response['data']['relationships']
+    assert_nil json_response['data']['links']
+
+    Api::V5::PostResource.exclude_links [:self]
+    assert_cacheable_get :show, params: {id: '1'}
+    assert_response :success
+    assert_nil json_response['data']['relationships']
+    assert_nil json_response['data']['links']
+
+    Api::V5::PostResource.exclude_links :none
+    assert_cacheable_get :show, params: {id: '1'}
+    assert_response :success
+    assert_nil json_response['data']['relationships']
+    assert_equal 1, json_response['data']['links'].length
+  ensure
+    Api::V5::PostResource.exclude_links :none
+  end
+
+  def test_show_post_no_relationship_route_include
+    get :show, params: {id: '1', include: 'author'}
+    assert_response :success
+    assert_equal '1', json_response['data']['relationships']['author']['data']['id']
+    assert_nil json_response['data']['relationships']['tags']
+    assert_equal '1', json_response['included'][0]['id']
+    assert_equal 'people', json_response['included'][0]['type']
+    assert_equal 'joe@xyz.fake', json_response['included'][0]['attributes']['email']
+  end
+end
+
 class Api::V5::PaintersControllerTest < ActionController::TestCase
   def test_index_with_included_resources_with_filters
     # There are two painters, but by filtering the included relationship, the
@@ -2918,12 +2963,15 @@ end
 
 class Api::V2::PreferencesControllerTest < ActionController::TestCase
   def test_show_singleton_resource_without_id
+    $test_user = Person.find(1)
+
     assert_cacheable_get :show
     assert_response :success
   end
 
   def test_update_singleton_resource_without_id
     set_content_type_header!
+    $test_user = Person.find(1)
     patch :update, params: {
       data: {
         id: "1",
