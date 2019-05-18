@@ -5,6 +5,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     DatabaseCleaner.start
     JSONAPI.configuration.json_key_format = :underscored_key
     JSONAPI.configuration.route_format = :underscored_route
+    JSONAPI.configuration.warn_on_missing_routes = false
     Api::V2::BookResource.paginator :offset
     $test_user = Person.find(1001)
   end
@@ -15,6 +16,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
   def after_teardown
     JSONAPI.configuration.route_format = :underscored_route
+    JSONAPI.configuration.warn_on_missing_routes = true
   end
 
   def test_get
@@ -188,7 +190,6 @@ class RequestTest < ActionDispatch::IntegrationTest
   def test_get_camelized_route_and_links
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.json_key_format = :camelized_key
-    JSONAPI.configuration.route_format = :camelized_route
     assert_cacheable_jsonapi_get '/api/v4/expenseEntries/1/relationships/isoCurrency'
     assert_hash_equals({'links' => {
                          'self' => 'http://www.example.com/api/v4/expenseEntries/1/relationships/isoCurrency',
@@ -1488,5 +1489,363 @@ class RequestTest < ActionDispatch::IntegrationTest
     refute_nil included
     assert_equal 'access_cards', included.first['type']
     assert_equal access_card.token, included.first['id']
+  end
+
+
+  def test_get_resource_include_singleton_relationship
+    $original_test_user = $test_user
+    $test_user = Person.find(1005)
+
+    assert_cacheable_jsonapi_get '/api/v9/people/1005?include=preferences'
+    assert_jsonapi_response 200
+    assert_hash_equals json_response,
+                       {
+                         "data" => {
+                           "id" => "1005",
+                           "type" => "people",
+                           "links" => {
+                             "self" => "http://www.example.com/api/v9/people/1005"
+                           },
+                           "relationships" => {
+                             "preferences" => {
+                               "links" => {
+                                 "self" => "http://www.example.com/api/v9/people/1005/relationships/preferences",
+                                 "related" => "http://www.example.com/api/v9/people/1005/preferences"
+                               },
+                               "data" => {
+                                 "type" => "preferences",
+                                 "id" => "55"
+                               }
+                             }
+                           }
+                         },
+                         "included" => [
+                           {
+                             "id" => "55",
+                             "type" => "preferences",
+                             "attributes" => {
+                               "nickname" => "Wilma"
+                             },
+                             'relationships' => {
+                               'person' => {
+                                 "links" => {
+                                   "self" => "http://www.example.com/api/v9/preferences/relationships/person",
+                                   "related" => "http://www.example.com/api/v9/preferences/person"
+                                 }
+                               }
+                             },
+                             "links" => {
+                               "self" => "http://www.example.com/api/v9/preferences"
+                             }
+                           }
+                         ]
+                       }
+  ensure
+    $test_user = $original_test_user
+  end
+
+  def test_caching_included_singleton
+    original_config = JSONAPI.configuration.dup
+
+    Api::V9::PreferencesResource.caching(true)
+    Api::V9::PersonResource.caching(true)
+
+    JSONAPI.configuration.resource_cache = ActiveSupport::Cache::MemoryStore.new
+
+    $original_test_user = $test_user
+    $test_user = Person.find(1005)
+
+    get "/api/v9/people/#{$test_user.id}?include=preferences"
+    assert_jsonapi_response 200
+    assert_hash_equals json_response,
+                       {
+                         "data" => {
+                           "id" => "1005",
+                           "type" => "people",
+                           "links" => {
+                             "self" => "http://www.example.com/api/v9/people/1005"
+                           },
+                           "relationships" => {
+                             "preferences" => {
+                               "links" => {
+                                 "self" => "http://www.example.com/api/v9/people/1005/relationships/preferences",
+                                 "related" => "http://www.example.com/api/v9/people/1005/preferences"
+                               },
+                               "data" => {
+                                 "type" => "preferences",
+                                 "id" => "55"
+                               }
+                             }
+                           }
+                         },
+                         "included" => [
+                           {
+                             "id" => "55",
+                             "type" => "preferences",
+                             "attributes" => {
+                               "nickname" => "Wilma"
+                             },
+                             'relationships' => {
+                               'person' => {
+                                 "links" => {
+                                   "self" => "http://www.example.com/api/v9/preferences/relationships/person",
+                                   "related" => "http://www.example.com/api/v9/preferences/person"
+                                 }
+                               }
+                             },
+                             "links" => {
+                               "self" => "http://www.example.com/api/v9/preferences"
+                             }
+                           }
+                         ]
+                       }
+
+    $test_user = Person.find(1001)
+    assert_equal 2, JSONAPI.configuration.resource_cache.instance_variable_get(:@key_access).length
+
+    get "/api/v9/people/#{$test_user.id}?include=preferences"
+    assert_jsonapi_response 200
+    assert_hash_equals json_response,
+                       {
+                         "data" => {
+                           "id" => "1001",
+                           "type" => "people",
+                           "links" => {
+                             "self" => "http://www.example.com/api/v9/people/1001"
+                           },
+                           "relationships" => {
+                             "preferences" => {
+                               "links" => {
+                                 "self" => "http://www.example.com/api/v9/people/1001/relationships/preferences",
+                                 "related" => "http://www.example.com/api/v9/people/1001/preferences"
+                               },
+                               "data" => {
+                                 "type" => "preferences",
+                                 "id" => "1"
+                               }
+                             }
+                           }
+                         },
+                         "included" => [
+                           {
+                             "id" => "1",
+                             "type" => "preferences",
+                             "attributes" => {
+                               "nickname" => "Joe Schmoe"
+                             },
+                             'relationships' => {
+                               'person' => {
+                                 "links" => {
+                                   "self" => "http://www.example.com/api/v9/preferences/relationships/person",
+                                   "related" => "http://www.example.com/api/v9/preferences/person"
+                                 }
+                               }
+                             },
+                             "links" => {
+                               "self" => "http://www.example.com/api/v9/preferences"
+                             }
+                           }
+                         ]
+                       }
+
+    assert_equal 4, JSONAPI.configuration.resource_cache.instance_variable_get(:@key_access).length
+
+  ensure
+    JSONAPI.configuration = original_config
+    $test_user = $original_test_user
+
+    Api::V9::PreferencesResource.caching(false)
+    Api::V9::PersonResource.caching(false)
+  end
+
+  def test_caching_singleton_primary
+    original_config = JSONAPI.configuration.dup
+
+    Api::V9::PreferencesResource.caching(true)
+    Api::V9::PersonResource.caching(true)
+
+    JSONAPI.configuration.resource_cache = ActiveSupport::Cache::MemoryStore.new
+
+    $original_test_user = $test_user
+    $test_user = Person.find(1005)
+
+    get "/api/v9/preferences"
+    assert_jsonapi_response 200
+    assert_hash_equals json_response,
+                       {
+                         "data" => {
+                           "id" => "55",
+                           "type" => "preferences",
+                           "attributes" => {
+                             "nickname" => "Wilma"
+                           },
+                           'relationships' => {
+                             'person' => {
+                               "links" => {
+                                 "self" => "http://www.example.com/api/v9/preferences/relationships/person",
+                                 "related" => "http://www.example.com/api/v9/preferences/person"
+                               }
+                             }
+                           },
+                           "links" => {
+                             "self" => "http://www.example.com/api/v9/preferences"
+                           }
+                         }
+                       }
+
+    assert_equal 1, JSONAPI.configuration.resource_cache.instance_variable_get(:@key_access).length
+
+    $test_user = Person.find(1001)
+
+    get "/api/v9/preferences"
+    assert_jsonapi_response 200
+    assert_hash_equals json_response,
+                       {
+                         "data" => {
+                           "id" => "1",
+                           "type" => "preferences",
+                           "attributes" => {
+                             "nickname" => "Joe Schmoe"
+                           },
+                           'relationships' => {
+                             'person' => {
+                               "links" => {
+                                 "self" => "http://www.example.com/api/v9/preferences/relationships/person",
+                                 "related" => "http://www.example.com/api/v9/preferences/person"
+                               }
+                             }
+                           },
+                           "links" => {
+                             "self" => "http://www.example.com/api/v9/preferences"
+                           }
+                         }
+                       }
+
+    assert_equal 2, JSONAPI.configuration.resource_cache.instance_variable_get(:@key_access).length
+
+  ensure
+    JSONAPI.configuration = original_config
+    $test_user = $original_test_user
+
+    Api::V9::PreferencesResource.caching(false)
+    Api::V9::PersonResource.caching(false)
+  end
+
+  def test_patch_singleton
+    original_config = JSONAPI.configuration.dup
+
+    Api::V9::PreferencesResource.caching(true)
+    Api::V9::PersonResource.caching(true)
+
+    JSONAPI.configuration.resource_cache = ActiveSupport::Cache::MemoryStore.new
+
+    $original_test_user = $test_user
+    $test_user = Person.find(1001)
+
+    patch '/api/v9/preferences', params:
+      {
+        'data' => {
+          'type' => 'preferences',
+          'id' => '1',
+          'attributes' => {
+            'nickname' => 'Joey'
+          },
+          'relationships' => {
+            'person' => {
+              "links" => {
+                "self" => "http://www.example.com/api/v9/preferences/relationships/person",
+                "related" => "http://www.example.com/api/v9/preferences/person"
+              }
+            }
+          }
+        }
+      }.to_json,
+          headers: {
+            'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
+            'Accept' => JSONAPI::MEDIA_TYPE
+          }
+
+    assert_equal 200, status
+    prefs = Preferences.find(1)
+    assert_equal 'Joey', prefs.nickname
+
+  ensure
+    JSONAPI.configuration = original_config
+    $test_user = $original_test_user
+
+    Api::V9::PreferencesResource.caching(false)
+    Api::V9::PersonResource.caching(false)
+  end
+
+  def test_create_singleton
+    original_config = JSONAPI.configuration.dup
+
+    Api::V9::PreferencesResource.caching(true)
+    Api::V9::PersonResource.caching(true)
+
+    JSONAPI.configuration.resource_cache = ActiveSupport::Cache::MemoryStore.new
+
+    $original_test_user = $test_user
+    $test_user = Person.find(1004)
+
+    assert_nil $test_user.preferences
+
+    post '/api/v9/preferences', params:
+      {
+        'data' => {
+          'type' => 'preferences',
+          'attributes' => {
+            'nickname' => 'Frank'
+          },
+          'relationships' => {
+            'person' => {'data' => {'type' => 'people', 'id' => '1004'}}
+          }
+        }
+      }.to_json,
+         headers: {
+           'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
+           'Accept' => JSONAPI::MEDIA_TYPE
+         }
+
+    assert_equal 201, status
+    assert_equal 'Frank', json_response['data']['attributes']['nickname']
+
+  ensure
+    JSONAPI.configuration = original_config
+    $test_user = $original_test_user
+
+    Api::V9::PreferencesResource.caching(false)
+    Api::V9::PersonResource.caching(false)
+  end
+
+  def test_destroy_singleton
+    original_config = JSONAPI.configuration.dup
+
+    $original_test_user = $test_user
+    $test_user = Person.find(1005)
+
+    init_pref_count = Preferences.count
+    delete '/api/v9/preferences', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_equal 204, status
+    assert_equal init_pref_count - 1, Preferences.count
+    assert_nil headers['Content-Type']
+  ensure
+    JSONAPI.configuration = original_config
+    $test_user = $original_test_user
+  end
+
+  def test_destroy_singleton_not_found
+    original_config = JSONAPI.configuration.dup
+
+    $original_test_user = $test_user
+    $test_user = Person.find(1003)
+
+    init_pref_count = Preferences.count
+    delete '/api/v9/preferences', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
+    assert_equal 404, status
+    assert_equal init_pref_count, Preferences.count
+  ensure
+    JSONAPI.configuration = original_config
+    $test_user = $original_test_user
   end
 end

@@ -30,6 +30,7 @@ e:
   email: lib@xyz.fake
   date_joined: <%= DateTime.parse('2013-11-30 4:20:00 UTC +00:00') %>
   book_admin: true
+  preferences_id: 55
 
 x:
   id: 1000

@@ -2,32 +2,33 @@ module JSONAPI
   class LinkBuilder
     attr_reader :base_url,
                 :primary_resource_klass,
-                :route_formatter,
-                :engine_name
+                :engine,
+                :routes
 
     def initialize(config = {})
       @base_url               = config[:base_url]
       @primary_resource_klass = config[:primary_resource_klass]
-      @route_formatter        = config[:route_formatter]
-      @engine_name            = build_engine_name
+      @engine                 = build_engine
 
-      # Warning: These make LinkBuilder non-thread-safe. That's not a problem with the
-      # request-specific way it's currently used, though.
-      @resources_path_cache   = JSONAPI::NaiveCache.new do |source_klass|
-        formatted_module_path_from_class(source_klass) + format_route(source_klass._type.to_s)
+      if engine?
+        @routes = @engine.routes
+      else
+        @routes = Rails.application.routes
       end
+
+      # ToDo: Use NaiveCache for values. For this we need to not return nils and create composite keys which work
+      # as efficient cache lookups. This could be an array of the [source.identifier, relationship] since the
+      # ResourceIdentity will compare equality correctly
     end
 
     def engine?
-      !!@engine_name
+      !!@engine
     end
 
     def primary_resources_url
-      if engine?
-        engine_primary_resources_url
-      else
-        regular_primary_resources_url
-      end
+      @primary_resources_url_cached ||= "#{ base_url }#{ primary_resources_path }"
+    rescue NoMethodError
+      warn "primary_resources_url for #{@primary_resource_klass} could not be generated" if JSONAPI.configuration.warn_on_missing_routes
     end
 
     def query_link(query_params)
@@ -35,26 +36,45 @@ module JSONAPI
     end
 
     def relationships_related_link(source, relationship, query_params = {})
-      url = "#{ self_link(source) }/#{ route_for_relationship(relationship) }"
+      if relationship.parent_resource.singleton?
+        url_helper_name = singleton_related_url_helper_name(relationship)
+        url = call_url_helper(url_helper_name)
+      else
+        url_helper_name = related_url_helper_name(relationship)
+        url = call_url_helper(url_helper_name, source.id)
+      end
+
+      url = "#{ base_url }#{ url }"
       url = "#{ url }?#{ query_params.to_query }" if query_params.present?
       url
+    rescue NoMethodError
+      warn "related_link for #{relationship} could not be generated" if JSONAPI.configuration.warn_on_missing_routes
     end
 
     def relationships_self_link(source, relationship)
-      "#{ self_link(source) }/relationships/#{ route_for_relationship(relationship) }"
+      if relationship.parent_resource.singleton?
+        url_helper_name = singleton_relationship_self_url_helper_name(relationship)
+        url = call_url_helper(url_helper_name)
+      else
+        url_helper_name = relationship_self_url_helper_name(relationship)
+        url = call_url_helper(url_helper_name, source.id)
+      end
+
+      url = "#{ base_url }#{ url }"
+      url
+    rescue NoMethodError
+      warn "self_link for #{relationship} could not be generated" if JSONAPI.configuration.warn_on_missing_routes
     end
 
     def self_link(source)
-      if engine?
-        engine_resource_url(source)
-      else
-        regular_resource_url(source)
-      end
+      "#{ base_url }#{ resource_path(source) }"
+    rescue NoMethodError
+      warn "self_link for #{source.class} could not be generated" if JSONAPI.configuration.warn_on_missing_routes
     end
 
     private
 
-    def build_engine_name
+    def build_engine
       scopes = module_scopes_from_class(primary_resource_klass)
 
       begin
@@ -68,93 +88,96 @@ module JSONAPI
       end
     end
 
-    def engine_path_from_resource_class(klass)
-      path_name = engine_resources_path_name_from_class(klass)
-      engine_name.routes.url_helpers.public_send(path_name)
+    def call_url_helper(method, *args)
+      routes.url_helpers.public_send(method, args)
+    rescue NoMethodError => e
+      raise e
     end
 
-    def engine_primary_resources_path
-      engine_path_from_resource_class(primary_resource_klass)
+    def path_from_resource_class(klass)
+      url_helper_name = resources_url_helper_name_from_class(klass)
+      call_url_helper(url_helper_name)
     end
 
-    def engine_primary_resources_url
-      "#{ base_url }#{ engine_primary_resources_path }"
+    def resource_path(source)
+      url_helper_name = resource_url_helper_name_from_source(source)
+      if source.class.singleton?
+        call_url_helper(url_helper_name)
+      else
+        call_url_helper(url_helper_name, source.id)
+      end
     end
 
-    def engine_resource_path(source)
-      resource_path_name = engine_resource_path_name_from_source(source)
-      engine_name.routes.url_helpers.public_send(resource_path_name, source.id)
+    def primary_resources_path
+      path_from_resource_class(primary_resource_klass)
     end
 
-    def engine_resource_path_name_from_source(source)
-      scopes         = module_scopes_from_class(source.class)[1..-1]
-      base_path_name = scopes.map { |scope| scope.underscore }.join("_")
-      end_path_name  = source.class._type.to_s.singularize
-      [base_path_name, end_path_name, "path"].reject(&:blank?).join("_")
+    def url_helper_name_from_parts(parts)
+      (parts << "path").reject(&:blank?).join("_")
     end
 
-    def engine_resource_url(source)
-      "#{ base_url }#{ engine_resource_path(source) }"
-    end
+    def resources_path_parts_from_class(klass)
+      if engine?
+        scopes = module_scopes_from_class(klass)[1..-1]
+      else
+        scopes = module_scopes_from_class(klass)
+      end
 
-    def engine_resources_path_name_from_class(klass)
-      scopes         = module_scopes_from_class(klass)[1..-1]
       base_path_name = scopes.map { |scope| scope.underscore }.join("_")
       end_path_name  = klass._type.to_s
-
-      if base_path_name.blank?
-        "#{ end_path_name }_path"
-      else
-        "#{ base_path_name }_#{ end_path_name }_path"
-      end
+      [base_path_name, end_path_name]
     end
 
-    def format_route(route)
-      route_formatter.format(route)
+    def resources_url_helper_name_from_class(klass)
+      url_helper_name_from_parts(resources_path_parts_from_class(klass))
     end
 
-    def formatted_module_path_from_class(klass)
-      scopes = module_scopes_from_class(klass)
-
-      unless scopes.empty?
-        "/#{ scopes.map{ |scope| format_route(scope.to_s.underscore) }.compact.join('/') }/"
+    def resource_path_parts_from_class(klass)
+      if engine?
+        scopes = module_scopes_from_class(klass)[1..-1]
       else
-        "/"
+        scopes = module_scopes_from_class(klass)
       end
+
+      base_path_name = scopes.map { |scope| scope.underscore }.join("_")
+      end_path_name  = klass._type.to_s.singularize
+      [base_path_name, end_path_name]
+    end
+
+    def resource_url_helper_name_from_source(source)
+       url_helper_name_from_parts(resource_path_parts_from_class(source.class))
+    end
+
+    def related_url_helper_name(relationship)
+      relationship_parts = resource_path_parts_from_class(relationship.parent_resource)
+      relationship_parts << relationship.name
+      url_helper_name_from_parts(relationship_parts)
+    end
+
+    def singleton_related_url_helper_name(relationship)
+      relationship_parts = []
+      relationship_parts << relationship.name
+      relationship_parts += resource_path_parts_from_class(relationship.parent_resource)
+      url_helper_name_from_parts(relationship_parts)
+    end
+
+    def relationship_self_url_helper_name(relationship)
+      relationship_parts = resource_path_parts_from_class(relationship.parent_resource)
+      relationship_parts << "relationships"
+      relationship_parts << relationship.name
+      url_helper_name_from_parts(relationship_parts)
+    end
+
+    def singleton_relationship_self_url_helper_name(relationship)
+      relationship_parts = []
+      relationship_parts << "relationships"
+      relationship_parts << relationship.name
+      relationship_parts += resource_path_parts_from_class(relationship.parent_resource)
+      url_helper_name_from_parts(relationship_parts)
     end
 
     def module_scopes_from_class(klass)
       klass.name.to_s.split("::")[0...-1]
-    end
-
-    def regular_resources_path(source_klass)
-      @resources_path_cache.get(source_klass)
-    end
-
-    def regular_primary_resources_path
-      regular_resources_path(primary_resource_klass)
-    end
-
-    def regular_primary_resources_url
-      "#{ base_url }#{ regular_primary_resources_path }"
-    end
-
-    def regular_resource_path(source)
-      if source.is_a?(JSONAPI::CachedResponseFragment)
-        # :nocov:
-        "#{regular_resources_path(source.resource_klass)}/#{source.id}"
-        # :nocov:
-      else
-        "#{regular_resources_path(source.class)}/#{source.id}"
-      end
-    end
-
-    def regular_resource_url(source)
-      "#{ base_url }#{ regular_resource_path(source) }"
-    end
-
-    def route_for_relationship(relationship)
-      format_route(relationship.name)
     end
   end
 end

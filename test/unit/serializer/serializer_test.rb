@@ -100,7 +100,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
     )
   end
 
-  def test_serializer_namespaced_resource
+  def test_serializer_namespaced_resource_with_custom_resource_links
     post_1_identity = JSONAPI::ResourceIdentity.new(Api::V1::PostResource, 1)
     id_tree = JSONAPI::PrimaryResourceIdTree.new
 
@@ -122,7 +122,8 @@ class SerializerTest < ActionDispatch::IntegrationTest
           type: 'posts',
           id: '1',
           links: {
-            self: 'http://example.com/api/v1/posts/1'
+            self: 'http://example.com/api/v1/posts/1?secret=true',
+            raw: 'http://example.com/api/v1/posts/1/raw'
           },
           attributes: {
             title: 'New post',
@@ -302,8 +303,8 @@ class SerializerTest < ActionDispatch::IntegrationTest
              },
              hairCut: {
                links: {
-                 self: '/people/1001/relationships/hairCut',
-                 related: '/people/1001/hairCut'
+                 self: '/people/1001/relationships/hair_cut',
+                 related: '/people/1001/hair_cut'
                }
              },
              vehicles: {
@@ -314,8 +315,8 @@ class SerializerTest < ActionDispatch::IntegrationTest
              },
              expenseEntries: {
                links: {
-                 self: '/people/1001/relationships/expenseEntries',
-                 related: '/people/1001/expenseEntries'
+                 self: '/people/1001/relationships/expense_entries',
+                 related: '/people/1001/expense_entries'
                }
              }
             }
@@ -433,8 +434,8 @@ class SerializerTest < ActionDispatch::IntegrationTest
                         },
                         hair_cut: {
                             links: {
-                                self: '/people/1001/relationships/hairCut',
-                                related: '/people/1001/hairCut'
+                                self: '/people/1001/relationships/hair_cut',
+                                related: '/people/1001/hair_cut'
                             }
                         },
                         vehicles: {
@@ -445,8 +446,8 @@ class SerializerTest < ActionDispatch::IntegrationTest
                         },
                         expense_entries: {
                             links: {
-                                self: '/people/1001/relationships/expenseEntries',
-                                related: '/people/1001/expenseEntries'
+                                self: '/people/1001/relationships/expense_entries',
+                                related: '/people/1001/expense_entries'
                             }
                         }
                     }

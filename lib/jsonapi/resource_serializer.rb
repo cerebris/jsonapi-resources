@@ -59,7 +59,7 @@ module JSONAPI
         end
       end
 
-      fail "To Many primary objects for show" if (primary_objects.count > 1)
+      fail "Too many primary objects for show" if (primary_objects.count > 1)
       primary_hash = { 'data' => primary_objects[0] }
 
       primary_hash['included'] = included_objects if included_objects.size > 0
@@ -93,24 +93,19 @@ module JSONAPI
       return serialize_resource_set_to_hash_plural(resource_set)
     end
 
-    def serialize_to_links_hash(source, requested_relationship, resource_ids)
+    def serialize_to_relationship_hash(source, requested_relationship, resource_ids)
       if requested_relationship.is_a?(JSONAPI::Relationship::ToOne)
         data = to_one_linkage(resource_ids[0])
       else
         data = to_many_linkage(resource_ids)
       end
 
-      {
-          'links' => {
-              'self' => self_link(source, requested_relationship),
-              'related' => related_link(source, requested_relationship)
-          },
-          'data' => data
-      }
-    end
+      rel_hash = { 'data': data }
 
-    def query_link(query_params)
-      link_builder.query_link(query_params)
+      links = default_relationship_links(source, requested_relationship)
+      rel_hash['links'] = links unless links.blank?
+
+      rel_hash
     end
 
     def format_key(key)
@@ -140,7 +135,6 @@ module JSONAPI
         supplying_attribute_fields: supplying_attribute_fields(resource_klass).sort,
         supplying_relationship_fields: supplying_relationship_fields(resource_klass).sort,
         link_builder_base_url: link_builder.base_url,
-        route_formatter_class: link_builder.route_formatter.uncached.class.name,
         key_formatter_class: key_formatter.uncached.class.name,
         always_include_to_one_linkage_data: always_include_to_one_linkage_data,
         always_include_to_many_linkage_data: always_include_to_many_linkage_data
@@ -165,7 +159,7 @@ module JSONAPI
         obj_hash['attributes'] = source.attributes_json if source.attributes_json
 
         relationships = cached_relationships_hash(source, fetchable_fields, relationship_data)
-        obj_hash['relationships'] = relationships unless relationships.nil? || relationships.empty?
+        obj_hash['relationships'] = relationships unless relationships.blank?
 
         obj_hash['meta'] = source.meta_json if source.meta_json
       else
@@ -184,7 +178,7 @@ module JSONAPI
         obj_hash['attributes'] = attributes unless attributes.empty?
 
         relationships = relationships_hash(source, fetchable_fields, relationship_data)
-        obj_hash['relationships'] = relationships unless relationships.nil? || relationships.empty?
+        obj_hash['relationships'] = relationships unless relationships.blank?
 
         meta = meta_hash(source)
         obj_hash['meta'] = meta unless meta.empty?
@@ -249,7 +243,9 @@ module JSONAPI
 
     def links_hash(source)
       links = custom_links_hash(source)
-      links['self'] = link_builder.self_link(source) unless links.key?('self')
+      if !links.key?('self') && !source.class.exclude_link?(:self)
+        links['self'] = link_builder.self_link(source)
+      end
       links.compact
     end
 
@@ -274,7 +270,8 @@ module JSONAPI
             end
           end
 
-          hash[format_key(name)] = link_object(source, relationship, rids, include_data)
+          ro = relationship_object(source, relationship, rids, include_data)
+          hash[format_key(name)] = ro unless ro.blank?
         end
       end
     end
@@ -323,6 +320,13 @@ module JSONAPI
       link_builder.relationships_related_link(source, relationship)
     end
 
+    def default_relationship_links(source, relationship)
+      links = {}
+      links['self'] = self_link(source, relationship) unless relationship.exclude_link?(:self)
+      links['related'] = related_link(source, relationship) unless relationship.exclude_link?(:related)
+      links.compact
+    end
+
     def to_many_linkage(rids)
       linkage = []
 
@@ -346,36 +350,36 @@ module JSONAPI
       }
     end
 
-    def link_object_to_one(source, relationship, rid, include_data)
+    def relationship_object_to_one(source, relationship, rid, include_data)
       link_object_hash = {}
-      link_object_hash['links'] = {}
-      link_object_hash['links']['self'] = self_link(source, relationship)
-      link_object_hash['links']['related'] = related_link(source, relationship)
+
+      links = default_relationship_links(source, relationship)
+
+      link_object_hash['links'] = links unless links.blank?
       link_object_hash['data'] = to_one_linkage(rid) if include_data
       link_object_hash
     end
 
-    def link_object_to_many(source, relationship, rids, include_data)
+    def relationship_object_to_many(source, relationship, rids, include_data)
       link_object_hash = {}
-      link_object_hash['links'] = {}
-      link_object_hash['links']['self'] = self_link(source, relationship)
-      link_object_hash['links']['related'] = related_link(source, relationship)
+
+      links = default_relationship_links(source, relationship)
+      link_object_hash['links'] = links unless links.blank?
       link_object_hash['data'] = to_many_linkage(rids) if include_data
       link_object_hash
     end
 
-    def link_object(source, relationship, rid, include_data)
+    def relationship_object(source, relationship, rid, include_data)
       if relationship.is_a?(JSONAPI::Relationship::ToOne)
-        link_object_to_one(source, relationship, rid, include_data)
+        relationship_object_to_one(source, relationship, rid, include_data)
       elsif relationship.is_a?(JSONAPI::Relationship::ToMany)
-        link_object_to_many(source, relationship, rid, include_data)
+        relationship_object_to_many(source, relationship, rid, include_data)
       end
     end
 
     def generate_link_builder(primary_resource_klass, options)
       LinkBuilder.new(
         base_url: options.fetch(:base_url, ''),
-        route_formatter: options.fetch(:route_formatter, JSONAPI.configuration.route_formatter),
         primary_resource_klass: primary_resource_klass,
       )
     end
