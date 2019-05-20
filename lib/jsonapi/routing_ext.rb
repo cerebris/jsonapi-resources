@@ -235,7 +235,7 @@ module ActionDispatch
           match formatted_relationship_name, controller: options[:controller],
                 relationship: relationship.name, source: resource_type_with_module_prefix(source._type),
                 action: 'get_related_resource', via: [:get],
-                as: relationship_name
+                as: "related/#{relationship_name}"
         end
 
         def jsonapi_related_resources(*relationship)
@@ -253,7 +253,7 @@ module ActionDispatch
                 controller: options[:controller],
                 relationship: relationship.name, source: resource_type_with_module_prefix(source._type),
                 action: 'get_related_resources', via: [:get],
-                as: relationship_name
+                as: "related/#{relationship_name}"
         end
 
         protected
