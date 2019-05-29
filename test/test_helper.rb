@@ -268,6 +268,9 @@ TestApp.routes.draw do
   jsonapi_resources :employees
   jsonapi_resources :web_pages
 
+  jsonapi_resources :lists
+  jsonapi_resources :list_items
+
   jsonapi_resources :person_with_even_and_odd_posts
 
   namespace :api do

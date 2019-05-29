@@ -150,12 +150,14 @@ module JSONAPI
 
     def related_url_helper_name(relationship)
       relationship_parts = resource_path_parts_from_class(relationship.parent_resource)
+      relationship_parts << "related"
       relationship_parts << relationship.name
       url_helper_name_from_parts(relationship_parts)
     end
 
     def singleton_related_url_helper_name(relationship)
       relationship_parts = []
+      relationship_parts << "related"
       relationship_parts << relationship.name
       relationship_parts += resource_path_parts_from_class(relationship.parent_resource)
       url_helper_name_from_parts(relationship_parts)
