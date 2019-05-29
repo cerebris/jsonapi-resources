@@ -205,6 +205,20 @@ class RoutesTest < ActionDispatch::IntegrationTest
                    {controller: 'api/v5/authors', action: 'create_relationship', author_id: '1', relationship: 'posts'})
   end
 
+  def test_routing_list_items_index
+    assert_routing({path: '/list_items', method: :get},
+                   {controller: 'list_items', action: 'index'})
+  end
+
+  def test_routing_list_related_items
+    assert_routing({path: '/lists/1/items', method: :get},
+                   {controller: 'list_items', action: 'index_related_resources', relationship: 'items', list_id: '1', source: 'lists'})
+  end
+
+  def test_list_items_route_helper_name
+    assert_equal(list_items_path, '/list_items')
+  end
+
   #primary_key
   def test_routing_primary_key_jsonapi_resources
     assert_routing({path: '/iso_currencies/USD', method: :get},

@@ -372,6 +372,14 @@ ActiveRecord::Schema.define do
     t.belongs_to :painting
   end
 
+  create_table :lists, force: true do |t|
+    t.string :name
+  end
+
+  create_table :list_items, force: true do |t|
+    t.belongs_to :list
+  end
+
   # special cases
   create_table :storages, force: true do |t|
     t.string :token, null: false
@@ -870,6 +878,14 @@ class Collector < ActiveRecord::Base
   belongs_to :painting
 end
 
+class List < ActiveRecord::Base
+  has_many :items, class_name: 'ListItem', inverse_of: :list
+end
+
+class ListItem < ActiveRecord::Base
+  belongs_to :list, inverse_of: :items
+end
+
 ### CONTROLLERS
 class SessionsController < ActionController::Base
   include JSONAPI::ActsAsResourceController
@@ -1200,6 +1216,12 @@ class DoctorsController < JSONAPI::ResourceController
 end
 
 class RespondentController < JSONAPI::ResourceController
+end
+
+class ListsController < JSONAPI::ResourceController
+end
+
+class ListItemsController < JSONAPI::ResourceController
 end
 
 class StoragesController < BaseController
@@ -2529,6 +2551,14 @@ end
 
 class RespondentResource < JSONAPI::Resource
   abstract
+end
+
+class ListResource < JSONAPI::Resource
+  has_many :items, class_name: 'ListItem'
+end
+
+class ListItemResource < JSONAPI::Resource
+  has_one :list
 end
 
 class StorageResource < JSONAPI::Resource
