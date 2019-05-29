@@ -292,6 +292,9 @@ TestApp.routes.draw do
   jsonapi_resources :employees
   jsonapi_resources :robots
 
+  jsonapi_resources :lists
+  jsonapi_resources :list_items
+
   namespace :api do
     jsonapi_resources :boxes
     jsonapi_resources :things
