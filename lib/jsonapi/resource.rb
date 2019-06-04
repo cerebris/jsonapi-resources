@@ -680,7 +680,7 @@ module JSONAPI
         include_directives = options[:include_directives]
         if include_directives
           model_includes = resolve_relationship_names_to_relations(self, include_directives.model_includes, options)
-          records = records.includes(model_includes)
+          records = records.includes(model_includes) if model_includes.present?
         end
 
         records
