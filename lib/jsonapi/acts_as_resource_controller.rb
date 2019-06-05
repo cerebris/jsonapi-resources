@@ -125,7 +125,8 @@ module JSONAPI
         base_url: base_url,
         key_formatter: key_formatter,
         route_formatter: route_formatter,
-        serialization_options: serialization_options
+        serialization_options: serialization_options,
+        controller: self
       )
       @resource_serializer
     end

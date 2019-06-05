@@ -20,6 +20,8 @@ module ActionDispatch
           @resource_type = resources.first
           res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
 
+          res._routed = true
+
           unless res.singleton?
             warn "Singleton routes created for non singleton resource #{res}. Links may not be generated correctly."
           end
@@ -83,6 +85,8 @@ module ActionDispatch
         def jsonapi_resources(*resources, &_block)
           @resource_type = resources.first
           res = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(@resource_type))
+
+          res._routed = true
 
           if res.singleton?
             warn "Singleton resource #{res} should use `jsonapi_resource` instead."
@@ -223,6 +227,8 @@ module ActionDispatch
           relationship_name = relationship.first
           relationship = source._relationships[relationship_name]
 
+          relationship._routed = true
+
           formatted_relationship_name = format_route(relationship.name)
 
           if relationship.polymorphic?
@@ -244,6 +250,8 @@ module ActionDispatch
 
           relationship_name = relationship.first
           relationship = source._relationships[relationship_name]
+
+          relationship._routed = true
 
           formatted_relationship_name = format_route(relationship.name)
           related_resource = JSONAPI::Resource.resource_for(resource_type_with_module_prefix(relationship.class_name.underscore))

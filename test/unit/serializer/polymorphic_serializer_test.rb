@@ -26,10 +26,11 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
   end
 
   def test_sti_polymorphic_to_many_serialization
-    serialized_data = JSONAPI::ResourceSerializer.new(
-      PersonResource,
-      include: %w(vehicles)
-    ).serialize_to_hash(PersonResource.new(@person, nil))
+    serializer = JSONAPI::ResourceSerializer.new(PersonResource,
+                                                      include: %w(vehicles),
+                                                      url_helpers: TestApp.routes.url_helpers)
+
+    serialized_data = serializer.serialize_to_hash(PersonResource.new(@person, nil))
 
     assert_hash_equals(
       {
@@ -75,8 +76,8 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
             },
             hairCut: {
               links: {
-                self: '/people/1/relationships/hair_cut',
-                related: '/people/1/hair_cut'
+                self: '/people/1/relationships/hairCut',
+                related: '/people/1/hairCut'
               }
             }
           }
@@ -132,10 +133,9 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
 
   def test_sti_polymorphic_to_many_serialization_with_custom_polymorphic_records
     person_resource = PersonResource.new(@person, nil)
-    serializer = JSONAPI::ResourceSerializer.new(
-      PersonResource,
-      include: %w(vehicles)
-    )
+    serializer = JSONAPI::ResourceSerializer.new(PersonResource,
+                                                 include: %w(vehicles),
+                                                 url_helpers: TestApp.routes.url_helpers)
 
     def person_resource.records_for_vehicles(opts = {})
       @model.vehicles.none
@@ -184,8 +184,8 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
             },
             hairCut: {
               links: {
-                self: '/people/1/relationships/hair_cut',
-                related: '/people/1/hair_cut'
+                self: '/people/1/relationships/hairCut',
+                related: '/people/1/hairCut'
               }
             }
           }
@@ -198,10 +198,11 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
 
 
   def test_polymorphic_belongs_to_serialization
-    serialized_data = JSONAPI::ResourceSerializer.new(
-      PictureResource,
-      include: %w(imageable)
-    ).serialize_to_hash(@pictures.map { |p| PictureResource.new p, nil })
+    serializer = JSONAPI::ResourceSerializer.new(PictureResource,
+                                                 include: %w(imageable),
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized_data = serializer.serialize_to_hash(@pictures.map {|p| PictureResource.new p, nil})
 
     assert_hash_equals(
       {
@@ -319,10 +320,12 @@ class PolymorphismTest < ActionDispatch::IntegrationTest
   end
 
   def test_polymorphic_has_one_serialization
-    serialized_data = JSONAPI::ResourceSerializer.new(
+    serializer = JSONAPI::ResourceSerializer.new(
       QuestionResource,
-      include: %w(respondent)
-    ).serialize_to_hash(@questions.map { |p| QuestionResource.new p, nil })
+      include: %w(respondent),
+      url_helpers: TestApp.routes.url_helpers)
+
+    serialized_data = serializer.serialize_to_hash(@questions.map { |p| QuestionResource.new p, nil })
 
     assert_hash_equals(
       {

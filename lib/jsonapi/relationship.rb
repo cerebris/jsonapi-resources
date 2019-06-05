@@ -4,6 +4,8 @@ module JSONAPI
                 :class_name, :polymorphic, :always_include_linkage_data,
                 :parent_resource, :eager_load_on_include
 
+    attr_accessor :_routed, :_warned_missing_route
+
     def initialize(name, options = {})
       @name = name.to_s
       @options = options
@@ -14,6 +16,9 @@ module JSONAPI
       @polymorphic = options.fetch(:polymorphic, false) == true
       @always_include_linkage_data = options.fetch(:always_include_linkage_data, false) == true
       @eager_load_on_include = options.fetch(:eager_load_on_include, true) == true
+
+      @_routed = false
+      @_warned_missing_route = false
 
       exclude_links(options.fetch(:exclude_links, :none))
     end
