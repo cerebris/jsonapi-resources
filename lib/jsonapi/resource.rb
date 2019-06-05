@@ -1069,6 +1069,18 @@ module JSONAPI
       end
 
       def exclude_links(exclude)
+        _resolve_exclude_links(exclude)
+      end
+
+      def _exclude_links
+        @_exclude_links ||= _resolve_exclude_links(JSONAPI.configuration.default_exclude_links)
+      end
+
+      def exclude_link?(link)
+        _exclude_links.include?(link.to_sym)
+      end
+
+      def _resolve_exclude_links(exclude)
         case exclude
           when :default, "default"
             @_exclude_links = [:self]
@@ -1079,14 +1091,6 @@ module JSONAPI
           else
             fail "Invalid exclude_links"
         end
-      end
-
-      def _exclude_links
-        @_exclude_links ||= []
-      end
-
-      def exclude_link?(link)
-        _exclude_links.include?(link.to_sym)
       end
 
       def caching(val = true)
