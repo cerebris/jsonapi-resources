@@ -33,7 +33,8 @@ module JSONAPI
                 :resource_cache,
                 :default_resource_cache_field,
                 :resource_cache_digest_function,
-                :resource_cache_usage_report_function
+                :resource_cache_usage_report_function,
+                :exclude_links
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -134,6 +135,12 @@ module JSONAPI
       # Optionally provide a callable which JSONAPI will call with information about cache
       # performance. Should accept three arguments: resource name, hits count, misses count.
       self.resource_cache_usage_report_function = nil
+
+      # Global configuration for links exclusion
+      # Controls whether to generate links like `self`, `related` with all the resources
+      # and relationships. Accepts either `:default`, `:none`, or array containing the
+      # specific default links to exclude, which may be `:self` and `:related`.
+      self.exclude_links = :none
     end
 
     def cache_formatters=(bool)
@@ -249,6 +256,8 @@ module JSONAPI
     attr_writer :resource_cache_digest_function
 
     attr_writer :resource_cache_usage_report_function
+
+    attr_writer :exclude_links
   end
 
   class << self

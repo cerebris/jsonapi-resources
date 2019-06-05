@@ -15,7 +15,7 @@ module JSONAPI
       @always_include_linkage_data = options.fetch(:always_include_linkage_data, false) == true
       @eager_load_on_include = options.fetch(:eager_load_on_include, true) == true
 
-      exclude_links(options.fetch(:exclude_links, :none))
+      exclude_links(options.fetch(:exclude_links, JSONAPI.configuration.exclude_links))
     end
 
     alias_method :polymorphic?, :polymorphic
