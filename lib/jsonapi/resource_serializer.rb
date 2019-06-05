@@ -539,6 +539,7 @@ module JSONAPI
       LinkBuilder.new(
         base_url: options.fetch(:base_url, ''),
         primary_resource_klass: primary_resource_klass,
+        url_helpers: options[:url_helpers] || options[:controller]
       )
     end
   end

@@ -21,10 +21,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
   def test_serializer
 
-    serialized = JSONAPI::ResourceSerializer.new(
-      PostResource,
-      base_url: 'http://example.com').serialize_to_hash(PostResource.new(@post, nil)
-    )
+    serializer = JSONAPI::ResourceSerializer.new(PostResource,
+                                                 base_url: 'http://example.com',
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(PostResource.new(@post, nil))
 
     assert_hash_equals(
       {
@@ -72,15 +73,22 @@ class SerializerTest < ActionDispatch::IntegrationTest
   end
 
   def test_serializer_nil_handling
+    serializer = JSONAPI::ResourceSerializer.new(PostResource,
+                                                 url_helpers: TestApp.routes.url_helpers)
+
     assert_hash_equals(
       {
         data: nil
       },
-      JSONAPI::ResourceSerializer.new(PostResource).serialize_to_hash(nil)
+      serializer.serialize_to_hash(nil)
     )
   end
 
   def test_serializer_namespaced_resource
+    serializer = JSONAPI::ResourceSerializer.new(Api::V1::PostResource,
+                                                 base_url: 'http://example.com',
+                                                 url_helpers: TestApp.routes.url_helpers)
+
     assert_hash_equals(
       {
         data: {
@@ -117,13 +125,14 @@ class SerializerTest < ActionDispatch::IntegrationTest
           }
         }
       },
-      JSONAPI::ResourceSerializer.new(Api::V1::PostResource,
-                                      base_url: 'http://example.com').serialize_to_hash(
-        Api::V1::PostResource.new(@post, nil))
+      serializer.serialize_to_hash(Api::V1::PostResource.new(@post, nil))
     )
   end
 
   def test_serializer_limited_fieldset
+    serializer = JSONAPI::ResourceSerializer.new(PostResource,
+                                                fields: {posts: [:id, :title, :author]},
+                                                url_helpers: TestApp.routes.url_helpers)
 
     assert_hash_equals(
       {
@@ -146,16 +155,16 @@ class SerializerTest < ActionDispatch::IntegrationTest
           }
         }
       },
-      JSONAPI::ResourceSerializer.new(PostResource,
-                                      fields: {posts: [:id, :title, :author]}).serialize_to_hash(PostResource.new(@post, nil))
+      serializer.serialize_to_hash(PostResource.new(@post, nil))
     )
   end
 
   def test_serializer_include
-    serialized = JSONAPI::ResourceSerializer.new(
-      PostResource,
-      include: ['author']
-    ).serialize_to_hash(PostResource.new(@post, nil))
+    serializer = JSONAPI::ResourceSerializer.new(PostResource,
+                                                 include: ['author'],
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(PostResource.new(@post, nil))
 
     assert_hash_equals(
       {
@@ -256,11 +265,13 @@ class SerializerTest < ActionDispatch::IntegrationTest
     painter = Painter.find(1)
     include_directives = JSONAPI::IncludeDirectives.new(Api::V5::PainterResource, ['paintings'])
     include_directives.merge_filter('paintings', category: ['oil'])
-    serialized = JSONAPI::ResourceSerializer.new(
-      Api::V5::PainterResource,
-      include_directives: include_directives,
-      fields: {painters: [:id], paintings: [:id]}
-    ).serialize_to_hash(Api::V5::PainterResource.new(painter, nil))
+
+    serializer = JSONAPI::ResourceSerializer.new(Api::V5::PainterResource,
+                                                 include_directives: include_directives,
+                                                 fields: {painters: [:id], paintings: [:id]},
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(Api::V5::PainterResource.new(painter, nil))
 
     assert_hash_equals(
       {
@@ -293,11 +304,12 @@ class SerializerTest < ActionDispatch::IntegrationTest
   end
 
   def test_serializer_key_format
-    serialized = JSONAPI::ResourceSerializer.new(
-      PostResource,
-      include: ['author'],
-      key_formatter: UnderscoredKeyFormatter
-    ).serialize_to_hash(PostResource.new(@post, nil))
+    serializer = JSONAPI::ResourceSerializer.new(PostResource,
+                                                 include: ['author'],
+                                                 key_formatter: UnderscoredKeyFormatter,
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(PostResource.new(@post, nil))
 
     assert_hash_equals(
       {
@@ -395,6 +407,12 @@ class SerializerTest < ActionDispatch::IntegrationTest
   end
 
   def test_serializer_include_sub_objects
+
+    serializer = JSONAPI::ResourceSerializer.new(PostResource,
+                                                 include: ['comments', 'comments.tags'],
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(PostResource.new(@post, nil))
 
     assert_hash_equals(
       {
@@ -565,8 +583,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
             }
           ]
       },
-      JSONAPI::ResourceSerializer.new(PostResource,
-                                      include: ['comments', 'comments.tags']).serialize_to_hash(PostResource.new(@post, nil))
+      serialized
     )
   end
 
@@ -574,11 +591,13 @@ class SerializerTest < ActionDispatch::IntegrationTest
     post1, post2, post3 = Post.find(1), Post.find(2), Post.find(3)
     post1.parent_post = post3
     ordered_posts = [post1, post2, post3]
-    serialized_data = JSONAPI::ResourceSerializer.new(
-      ParentApi::PostResource,
-      include: ['parent_post'],
-      base_url: 'http://example.com').serialize_to_hash(ordered_posts.map {|p| ParentApi::PostResource.new(p, nil)}
-    )[:data]
+
+    serializer = JSONAPI::ResourceSerializer.new(ParentApi::PostResource,
+                                                 include: ['parent_post'],
+                                                 base_url: 'http://example.com',
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized_data = serializer.serialize_to_hash(ordered_posts.map {|p| ParentApi::PostResource.new(p, nil)})[:data]
 
     assert_equal(3, serialized_data.length)
     assert_equal("1", serialized_data[0]["id"])
@@ -588,10 +607,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
 
   def test_serializer_different_foreign_key
-    serialized = JSONAPI::ResourceSerializer.new(
-      PersonResource,
-      include: ['comments']
-    ).serialize_to_hash(PersonResource.new(@fred, nil))
+    serializer = JSONAPI::ResourceSerializer.new(PersonResource,
+                                                 include: ['comments'],
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(PersonResource.new(@fred, nil))
 
     assert_hash_equals(
       {
@@ -718,6 +738,12 @@ class SerializerTest < ActionDispatch::IntegrationTest
     end
 
     JSONAPI.configuration.always_include_to_one_linkage_data = true
+
+    serializer = JSONAPI::ResourceSerializer.new(PostResource,
+                                                 include: ['comments', 'comments.tags'],
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(posts)
 
     assert_hash_equals(
       {
@@ -1019,8 +1045,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
           }
         ]
       },
-      JSONAPI::ResourceSerializer.new(PostResource,
-                                      include: ['comments', 'comments.tags']).serialize_to_hash(posts)
+      serialized
     )
   ensure
     JSONAPI.configuration.always_include_to_one_linkage_data = false
@@ -1032,6 +1057,12 @@ class SerializerTest < ActionDispatch::IntegrationTest
     Post.find(1, 2).each do |post|
       posts.push PostResource.new(post, nil)
     end
+
+    serializer = JSONAPI::ResourceSerializer.new(PostResource,
+                                    include: ['comments', 'comments.tags'],
+                                    url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(posts)
 
     assert_hash_equals(
       {
@@ -1296,8 +1327,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
           }
         ]
       },
-      JSONAPI::ResourceSerializer.new(PostResource,
-                                      include: ['comments', 'comments.tags']).serialize_to_hash(posts)
+      serialized
     )
   end
 
@@ -1307,6 +1337,18 @@ class SerializerTest < ActionDispatch::IntegrationTest
     Post.find(1, 2).each do |post|
       posts.push PostResource.new(post, nil)
     end
+
+    serializer = JSONAPI::ResourceSerializer.new(PostResource,
+                                                 include: ['comments', 'author', 'comments.tags', 'author.posts'],
+                                                 fields: {
+                                                   people: [:id, :email, :comments],
+                                                   posts: [:id, :title],
+                                                   tags: [:name],
+                                                   comments: [:id, :body, :post]
+                                                 },
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(posts)
 
     assert_hash_equals(
       {
@@ -1457,18 +1499,18 @@ class SerializerTest < ActionDispatch::IntegrationTest
           }
         ]
       },
-      JSONAPI::ResourceSerializer.new(PostResource,
-                                      include: ['comments', 'author', 'comments.tags', 'author.posts'],
-                                      fields: {
-                                        people: [:id, :email, :comments],
-                                        posts: [:id, :title],
-                                        tags: [:name],
-                                        comments: [:id, :body, :post]
-                                      }).serialize_to_hash(posts)
+      serialized
     )
   end
 
   def test_serializer_camelized_with_value_formatters
+    serializer = JSONAPI::ResourceSerializer.new(ExpenseEntryResource,
+                                                 include: ['iso_currency', 'employee'],
+                                                 fields: {people: [:id, :name, :email, :date_joined]},
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(ExpenseEntryResource.new(@expense_entry, nil))
+
     assert_hash_equals(
       {
         data: {
@@ -1531,16 +1573,15 @@ class SerializerTest < ActionDispatch::IntegrationTest
           }
         ]
       },
-      JSONAPI::ResourceSerializer.new(ExpenseEntryResource,
-                                      include: ['iso_currency', 'employee'],
-                                      fields: {people: [:id, :name, :email, :date_joined]}).serialize_to_hash(
-        ExpenseEntryResource.new(@expense_entry, nil))
+      serialized
     )
   end
 
   def test_serializer_empty_links_null_and_array
-    planet_hash = JSONAPI::ResourceSerializer.new(PlanetResource).serialize_to_hash(
-      PlanetResource.new(Planet.find(8), nil))
+    serializer = JSONAPI::ResourceSerializer.new(PlanetResource,
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(PlanetResource.new(Planet.find(8), nil))
 
     assert_hash_equals(
       {
@@ -1575,7 +1616,9 @@ class SerializerTest < ActionDispatch::IntegrationTest
             }
           }
         }
-      }, planet_hash)
+      },
+      serialized
+    )
   end
 
   def test_serializer_include_with_empty_links_null_and_array
@@ -1584,93 +1627,98 @@ class SerializerTest < ActionDispatch::IntegrationTest
       planets.push PlanetResource.new(planet, nil)
     end
 
-    planet_hash = JSONAPI::ResourceSerializer.new(PlanetResource,
-                                                  include: ['planet_type'],
-                                                  fields: { planet_types: [:id, :name] }).serialize_to_hash(planets)
+    serializer = JSONAPI::ResourceSerializer.new(PlanetResource,
+                                                 include: ['planet_type'],
+                                                 fields: {planet_types: [:id, :name]},
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(planets)
 
     assert_hash_equals(
       {
         data: [{
-          type: 'planets',
-          id: '7',
-          attributes: {
-            name: 'Beta X',
-            description: 'Newly discovered Planet Z'
-          },
-          links: {
-            self: '/planets/7'
-          },
-          relationships: {
-            planetType: {
-              links: {
-                self: '/planets/7/relationships/planet_type',
-                related: '/planets/7/planet_type'
-              },
-              data: {
-                type: 'planetTypes',
-                id: '5'
-              }
+                 type: 'planets',
+                 id: '7',
+                 attributes: {
+                   name: 'Beta X',
+                   description: 'Newly discovered Planet Z'
+                 },
+                 links: {
+                   self: '/planets/7'
+                 },
+                 relationships: {
+                   planetType: {
+                     links: {
+                       self: '/planets/7/relationships/planet_type',
+                       related: '/planets/7/planet_type'
+                     },
+                     data: {
+                       type: 'planetTypes',
+                       id: '5'
+                     }
+                   },
+                   tags: {
+                     links: {
+                       self: '/planets/7/relationships/tags',
+                       related: '/planets/7/tags'
+                     }
+                   },
+                   moons: {
+                     links: {
+                       self: '/planets/7/relationships/moons',
+                       related: '/planets/7/moons'
+                     }
+                   }
+                 }
+               },
+               {
+                 type: 'planets',
+                 id: '8',
+                 attributes: {
+                   name: 'Beta W',
+                   description: 'Newly discovered Planet W'
+                 },
+                 links: {
+                   self: '/planets/8'
+                 },
+                 relationships: {
+                   planetType: {
+                     links: {
+                       self: '/planets/8/relationships/planet_type',
+                       related: '/planets/8/planet_type'
+                     },
+                     data: nil
+                   },
+                   tags: {
+                     links: {
+                       self: '/planets/8/relationships/tags',
+                       related: '/planets/8/tags'
+                     }
+                   },
+                   moons: {
+                     links: {
+                       self: '/planets/8/relationships/moons',
+                       related: '/planets/8/moons'
+                     }
+                   }
+                 }
+               }
+        ],
+        included: [
+          {
+            type: 'planetTypes',
+            id: '5',
+            attributes: {
+              name: 'unknown'
             },
-            tags: {
-              links: {
-                self: '/planets/7/relationships/tags',
-                related: '/planets/7/tags'
-              }
-            },
-            moons: {
-              links: {
-                self: '/planets/7/relationships/moons',
-                related: '/planets/7/moons'
-              }
+            links: {
+              self: '/planet_types/5'
             }
           }
-        },
-        {
-          type: 'planets',
-          id: '8',
-          attributes: {
-            name: 'Beta W',
-            description: 'Newly discovered Planet W'
-          },
-          links: {
-            self: '/planets/8'
-          },
-          relationships: {
-            planetType: {
-              links: {
-                self: '/planets/8/relationships/planet_type',
-                related: '/planets/8/planet_type'
-              },
-              data: nil
-            },
-            tags: {
-              links: {
-                self: '/planets/8/relationships/tags',
-                related: '/planets/8/tags'
-              }
-            },
-            moons: {
-              links: {
-                self: '/planets/8/relationships/moons',
-                related: '/planets/8/moons'
-              }
-            }
-          }
-        }
-      ],
-      included: [
-        {
-          type: 'planetTypes',
-          id: '5',
-          attributes: {
-            name: 'unknown'
-          },
-          links: {
-            self: '/planet_types/5'
-          }
-        }
-      ]
-    }, planet_hash)
+        ]
+      },
+      serialized
+    )
   end
 
   def test_serializer_booleans
@@ -1678,6 +1726,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.json_key_format = :underscored_key
 
     preferences = PreferencesResource.new(Preferences.find(1), nil)
+
+    serializer = JSONAPI::ResourceSerializer.new(PreferencesResource,
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(preferences)
 
     assert_hash_equals(
       {
@@ -1700,7 +1753,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
           }
         }
       },
-      JSONAPI::ResourceSerializer.new(PreferencesResource).serialize_to_hash(preferences)
+      serialized
     )
   ensure
     JSONAPI.configuration = original_config
@@ -1711,6 +1764,11 @@ class SerializerTest < ActionDispatch::IntegrationTest
     JSONAPI.configuration.json_key_format = :underscored_key
 
     facts = FactResource.new(Fact.find(1), nil)
+
+    serializer = JSONAPI::ResourceSerializer.new(FactResource,
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(facts)
 
     assert_hash_equals(
       {
@@ -1733,17 +1791,18 @@ class SerializerTest < ActionDispatch::IntegrationTest
           }
         }
       },
-      JSONAPI::ResourceSerializer.new(FactResource).serialize_to_hash(facts)
+      serialized
     )
   ensure
     JSONAPI.configuration = original_config
   end
 
   def test_serializer_to_one
-    serialized = JSONAPI::ResourceSerializer.new(
-      Api::V5::AuthorResource,
-      include: ['author_detail']
-    ).serialize_to_hash(Api::V5::AuthorResource.new(Person.find(1), nil))
+    serializer = JSONAPI::ResourceSerializer.new(Api::V5::AuthorResource,
+                                                 include: ['author_detail'],
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(Api::V5::AuthorResource.new(Person.find(1), nil))
 
     assert_hash_equals(
       {
@@ -1799,10 +1858,12 @@ class SerializerTest < ActionDispatch::IntegrationTest
       end
     end
 
-    serialized = JSONAPI::ResourceSerializer.new(
-      Api::V5::AuthorResource,
-      include: ['author_detail']
-    ).serialize_to_hash(Api::V5::AuthorResource.new(Person.find(1), nil))
+    serializer = JSONAPI::ResourceSerializer.new(Api::V5::AuthorResource,
+                                                 include: ['author_detail'],
+                                                 url_helpers: TestApp.routes.url_helpers
+    )
+
+    serialized = serializer.serialize_to_hash(Api::V5::AuthorResource.new(Person.find(1), nil))
 
     assert_hash_equals(
       {
@@ -1862,9 +1923,10 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
   def test_serialize_model_attr
     @make = Make.first
-    serialized = JSONAPI::ResourceSerializer.new(
-      MakeResource,
-    ).serialize_to_hash(MakeResource.new(@make, nil))
+    serializer = JSONAPI::ResourceSerializer.new(MakeResource,
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(MakeResource.new(@make, nil))
 
     assert_hash_equals(
       {
@@ -1876,9 +1938,10 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
   def test_confusingly_named_attrs
     @wp = WebPage.first
-    serialized = JSONAPI::ResourceSerializer.new(
-      WebPageResource,
-    ).serialize_to_hash(WebPageResource.new(@wp, nil))
+    serializer = JSONAPI::ResourceSerializer.new(WebPageResource,
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(WebPageResource.new(@wp, nil))
 
     assert_hash_equals(
       {
@@ -1898,328 +1961,12 @@ class SerializerTest < ActionDispatch::IntegrationTest
     )
   end
 
-  # def test_questionable_has_one
-  #   # has_one
-  #   out, err = capture_io do
-  #     eval <<-CODE
-  #         class ::Questionable < ActiveRecord::Base
-  #           has_one :link
-  #           has_one :href
-  #         end
-  #         class ::QuestionableResource < JSONAPI::Resource
-  #           model_name '::Questionable'
-  #           has_one :link
-  #           has_one :href
-  #         end
-  #         cn = ::Questionable.new id: 1
-  #         puts JSONAPI::ResourceSerializer.new(
-  #           ::QuestionableResource,
-  #         ).serialize_to_hash(::QuestionableResource.new(cn, nil))
-  #     CODE
-  #   end
-  #   assert err.blank?
-  #   assert_equal(
-  #     {
-  #       :data=>{
-  #         "id"=>"1",
-  #         "type"=>"questionables",
-  #         "links"=>{
-  #           :self=>"/questionables/1"
-  #         },
-  #         "relationships"=>{
-  #           "link"=>{
-  #             :links=>{
-  #               :self=>"/questionables/1/relationships/link",
-  #               :related=>"/questionables/1/link"
-  #             }
-  #           },
-  #           "href"=>{
-  #             :links=>{
-  #               :self=>"/questionables/1/relationships/href",
-  #               :related=>"/questionables/1/href"
-  #             }
-  #           }
-  #         }
-  #       }
-  #     }.to_s,
-  #     out.strip
-  #   )
-  # end
-  #
-  # def test_questionable_has_many
-  #   # has_one
-  #   out, err = capture_io do
-  #     eval <<-CODE
-  #         class ::Questionable2 < ActiveRecord::Base
-  #           self.table_name = 'questionables'
-  #           has_many :links
-  #           has_many :hrefs
-  #         end
-  #         class ::Questionable2Resource < JSONAPI::Resource
-  #           model_name '::Questionable2'
-  #           has_many :links
-  #           has_many :hrefs
-  #         end
-  #         cn = ::Questionable2.new id: 1
-  #         puts JSONAPI::ResourceSerializer.new(
-  #           ::Questionable2Resource,
-  #         ).serialize_to_hash(::Questionable2Resource.new(cn, nil))
-  #     CODE
-  #   end
-  #   assert err.blank?
-  #   assert_equal(
-  #     {
-  #       :data=>{
-  #         "id"=>"1",
-  #         "type"=>"questionable2s",
-  #         "links"=>{
-  #           :self=>"/questionable2s/1"
-  #         },
-  #         "relationships"=>{
-  #           "links"=>{
-  #             :links=>{
-  #               :self=>"/questionable2s/1/relationships/links",
-  #               :related=>"/questionable2s/1/links"
-  #             }
-  #           },
-  #           "hrefs"=>{
-  #             :links=>{
-  #               :self=>"/questionable2s/1/relationships/hrefs",
-  #               :related=>"/questionable2s/1/hrefs"
-  #             }
-  #           }
-  #         }
-  #       }
-  #     }.to_s,
-  #     out.strip
-  #   )
-  # end
-
-  # def test_simple_custom_links
-  #   serialized_custom_link_resource = JSONAPI::ResourceSerializer.new(SimpleCustomLinkResource, base_url: 'http://example.com').serialize_to_hash(SimpleCustomLinkResource.new(Post.first, {}))
-  #
-  #   custom_link_spec = {
-  #       data: {
-  #         type: 'simpleCustomLinks',
-  #         id: '1',
-  #         attributes: {
-  #           title: "New post",
-  #           body: "A body!!!",
-  #           subject: "New post"
-  #         },
-  #       links: {
-  #         self: "http://example.com/simpleCustomLinks/1",
-  #         raw: "http://example.com/simpleCustomLinks/1/raw"
-  #       },
-  #       relationships: {
-  #         writer: {
-  #           links: {
-  #             self: "http://example.com/simpleCustomLinks/1/relationships/writer",
-  #             related: "http://example.com/simpleCustomLinks/1/writer"
-  #           }
-  #         },
-  #         section: {
-  #           links: {
-  #             self: "http://example.com/simpleCustomLinks/1/relationships/section",
-  #             related: "http://example.com/simpleCustomLinks/1/section"
-  #           }
-  #         },
-  #         comments: {
-  #           links: {
-  #             self: "http://example.com/simpleCustomLinks/1/relationships/comments",
-  #             related: "http://example.com/simpleCustomLinks/1/comments"
-  #           }
-  #         }
-  #       }
-  #     }
-  #   }
-  #
-  #   assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
-  # end
-
-  # def test_custom_links_with_custom_relative_paths
-  #   serialized_custom_link_resource = JSONAPI::ResourceSerializer
-  #     .new(CustomLinkWithRelativePathOptionResource, base_url: 'http://example.com')
-  #     .serialize_to_hash(CustomLinkWithRelativePathOptionResource.new(Post.first, {}))
-  #
-  #   custom_link_spec = {
-  #       data: {
-  #         type: 'customLinkWithRelativePathOptions',
-  #         id: '1',
-  #         attributes: {
-  #           title: "New post",
-  #           body: "A body!!!",
-  #           subject: "New post"
-  #         },
-  #       links: {
-  #         self: "http://example.com/customLinkWithRelativePathOptions/1",
-  #         raw: "http://example.com/customLinkWithRelativePathOptions/1/super/duper/path.xml"
-  #       },
-  #       relationships: {
-  #         writer: {
-  #           links: {
-  #             self: "http://example.com/customLinkWithRelativePathOptions/1/relationships/writer",
-  #             related: "http://example.com/customLinkWithRelativePathOptions/1/writer"
-  #           }
-  #         },
-  #         section: {
-  #           links: {
-  #             self: "http://example.com/customLinkWithRelativePathOptions/1/relationships/section",
-  #             related: "http://example.com/customLinkWithRelativePathOptions/1/section"
-  #           }
-  #         },
-  #         comments: {
-  #           links: {
-  #             self: "http://example.com/customLinkWithRelativePathOptions/1/relationships/comments",
-  #             related: "http://example.com/customLinkWithRelativePathOptions/1/comments"
-  #           }
-  #         }
-  #       }
-  #     }
-  #   }
-  #
-  #   assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
-  # end
-  #
-  # def test_custom_links_with_if_condition_equals_false
-  #   serialized_custom_link_resource = JSONAPI::ResourceSerializer
-  #     .new(CustomLinkWithIfCondition, base_url: 'http://example.com')
-  #     .serialize_to_hash(CustomLinkWithIfCondition.new(Post.first, {}))
-  #
-  #   custom_link_spec = {
-  #       data: {
-  #         type: 'customLinkWithIfConditions',
-  #         id: '1',
-  #         attributes: {
-  #           title: "New post",
-  #           body: "A body!!!",
-  #           subject: "New post"
-  #         },
-  #       links: {
-  #         self: "http://example.com/customLinkWithIfConditions/1",
-  #       },
-  #       relationships: {
-  #         writer: {
-  #           links: {
-  #             self: "http://example.com/customLinkWithIfConditions/1/relationships/writer",
-  #             related: "http://example.com/customLinkWithIfConditions/1/writer"
-  #           }
-  #         },
-  #         section: {
-  #           links: {
-  #             self: "http://example.com/customLinkWithIfConditions/1/relationships/section",
-  #             related: "http://example.com/customLinkWithIfConditions/1/section"
-  #           }
-  #         },
-  #         comments: {
-  #           links: {
-  #             self: "http://example.com/customLinkWithIfConditions/1/relationships/comments",
-  #             related: "http://example.com/customLinkWithIfConditions/1/comments"
-  #           }
-  #         }
-  #       }
-  #     }
-  #   }
-  #
-  #   assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
-  # end
-  #
-  # def test_custom_links_with_if_condition_equals_true
-  #   serialized_custom_link_resource = JSONAPI::ResourceSerializer
-  #     .new(CustomLinkWithIfCondition, base_url: 'http://example.com')
-  #     .serialize_to_hash(CustomLinkWithIfCondition.new(Post.find_by(title: "JR Solves your serialization woes!"), {}))
-  #
-  #   custom_link_spec = {
-  #       data: {
-  #         type: 'customLinkWithIfConditions',
-  #         id: '2',
-  #         attributes: {
-  #           title: "JR Solves your serialization woes!",
-  #           body: "Use JR",
-  #           subject: "JR Solves your serialization woes!"
-  #         },
-  #       links: {
-  #         self: "http://example.com/customLinkWithIfConditions/2",
-  #         conditional_custom_link: "http://example.com/customLinkWithIfConditions/2/conditional/link.json"
-  #       },
-  #       relationships: {
-  #         writer: {
-  #           links: {
-  #             self: "http://example.com/customLinkWithIfConditions/2/relationships/writer",
-  #             related: "http://example.com/customLinkWithIfConditions/2/writer"
-  #           }
-  #         },
-  #         section: {
-  #           links: {
-  #             self: "http://example.com/customLinkWithIfConditions/2/relationships/section",
-  #             related: "http://example.com/customLinkWithIfConditions/2/section"
-  #           }
-  #         },
-  #         comments: {
-  #           links: {
-  #             self: "http://example.com/customLinkWithIfConditions/2/relationships/comments",
-  #             related: "http://example.com/customLinkWithIfConditions/2/comments"
-  #           }
-  #         }
-  #       }
-  #     }
-  #   }
-  #
-  #   assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
-  # end
-  #
-  #
-  # def test_custom_links_with_lambda
-  #   # custom link is based on created_at timestamp of Post
-  #   post_created_at = Post.first.created_at
-  #   serialized_custom_link_resource = JSONAPI::ResourceSerializer
-  #     .new(CustomLinkWithLambda, base_url: 'http://example.com')
-  #     .serialize_to_hash(CustomLinkWithLambda.new(Post.first, {}))
-  #
-  #   custom_link_spec = {
-  #       data: {
-  #         type: 'customLinkWithLambdas',
-  #         id: '1',
-  #         attributes: {
-  #           title: "New post",
-  #           body: "A body!!!",
-  #           subject: "New post",
-  #           createdAt: post_created_at.as_json
-  #         },
-  #       links: {
-  #         self: "http://example.com/customLinkWithLambdas/1",
-  #         link_to_external_api: "http://external-api.com/posts/#{post_created_at.year}/#{post_created_at.month}/#{post_created_at.day}-New-post"
-  #       },
-  #       relationships: {
-  #         writer: {
-  #           links: {
-  #             self: "http://example.com/customLinkWithLambdas/1/relationships/writer",
-  #             related: "http://example.com/customLinkWithLambdas/1/writer"
-  #           }
-  #         },
-  #         section: {
-  #           links: {
-  #             self: "http://example.com/customLinkWithLambdas/1/relationships/section",
-  #             related: "http://example.com/customLinkWithLambdas/1/section"
-  #           }
-  #         },
-  #         comments: {
-  #           links: {
-  #             self: "http://example.com/customLinkWithLambdas/1/relationships/comments",
-  #             related: "http://example.com/customLinkWithLambdas/1/comments"
-  #           }
-  #         }
-  #       }
-  #     }
-  #   }
-  #
-  #   assert_hash_equals(custom_link_spec, serialized_custom_link_resource)
-  # end
-
   def test_includes_two_relationships_with_same_foreign_key
-    serialized_resource = JSONAPI::ResourceSerializer
-      .new(PersonWithEvenAndOddPostResource, include: ['even_posts','odd_posts'])
-      .serialize_to_hash(PersonWithEvenAndOddPostResource.new(Person.find(1), nil))
+    serializer = JSONAPI::ResourceSerializer.new(PersonWithEvenAndOddPostResource,
+                                                 include: ['even_posts', 'odd_posts'],
+                                                 url_helpers: TestApp.routes.url_helpers)
+
+    serialized = serializer.serialize_to_hash(PersonWithEvenAndOddPostResource.new(Person.find(1), nil))
 
     assert_hash_equals(
       {
@@ -2377,62 +2124,58 @@ class SerializerTest < ActionDispatch::IntegrationTest
           }
         ]
       },
-      serialized_resource
+      serialized
     )
   end
 
   def test_config_keys_stable
     (serializer_a, serializer_b) = 2.times.map do
-      JSONAPI::ResourceSerializer.new(
-        PostResource,
-        include: ['comments', 'author', 'comments.tags', 'author.posts'],
-        fields: {
-          people: [:email, :comments],
-          posts: [:title],
-          tags: [:name],
-          comments: [:body, :post]
-        }
-      )
+      JSONAPI::ResourceSerializer.new(PostResource,
+                                      include: ['comments', 'author', 'comments.tags', 'author.posts'],
+                                      fields: {
+                                        people: [:email, :comments],
+                                        posts: [:title],
+                                        tags: [:name],
+                                        comments: [:body, :post]
+                                      },
+                                      url_helpers: TestApp.routes.url_helpers)
     end
 
     assert_equal serializer_a.config_key(PostResource), serializer_b.config_key(PostResource)
   end
 
   def test_config_keys_vary_with_relevant_config_changes
-    serializer_a = JSONAPI::ResourceSerializer.new(
-      PostResource,
-      fields: { posts: [:title] }
-    )
-    serializer_b = JSONAPI::ResourceSerializer.new(
-      PostResource,
-      fields: { posts: [:title, :body] }
-    )
+    serializer_a = JSONAPI::ResourceSerializer.new(PostResource,
+                                                   fields: {posts: [:title]},
+                                                   url_helpers: TestApp.routes.url_helpers)
+
+    serializer_b = JSONAPI::ResourceSerializer.new(PostResource,
+                                                   fields: {posts: [:title, :body]},
+                                                   url_helpers: TestApp.routes.url_helpers)
 
     assert_not_equal serializer_a.config_key(PostResource), serializer_b.config_key(PostResource)
   end
 
   def test_config_keys_stable_with_irrelevant_config_changes
-    serializer_a = JSONAPI::ResourceSerializer.new(
-      PostResource,
-      fields: { posts: [:title, :body], people: [:name, :email] }
-    )
-    serializer_b = JSONAPI::ResourceSerializer.new(
-      PostResource,
-      fields: { posts: [:title, :body], people: [:name] }
-    )
+    serializer_a = JSONAPI::ResourceSerializer.new(PostResource,
+                                                   fields: {posts: [:title, :body], people: [:name, :email]},
+                                                   url_helpers: TestApp.routes.url_helpers)
+
+    serializer_b = JSONAPI::ResourceSerializer.new(PostResource,
+                                                   fields: {posts: [:title, :body], people: [:name]},
+                                                   url_helpers: TestApp.routes.url_helpers)
 
     assert_equal serializer_a.config_key(PostResource), serializer_b.config_key(PostResource)
   end
 
   def test_config_keys_stable_with_different_primary_resource
-    serializer_a = JSONAPI::ResourceSerializer.new(
-      PostResource,
-      fields: { posts: [:title, :body], people: [:name, :email] }
-    )
-    serializer_b = JSONAPI::ResourceSerializer.new(
-      PersonResource,
-      fields: { posts: [:title, :body], people: [:name, :email] }
-    )
+    serializer_a = JSONAPI::ResourceSerializer.new(PostResource,
+                                                   fields: {posts: [:title, :body], people: [:name, :email]},
+                                                   url_helpers: TestApp.routes.url_helpers)
+
+    serializer_b = JSONAPI::ResourceSerializer.new(PersonResource,
+                                                   fields: {posts: [:title, :body], people: [:name, :email]},
+                                                   url_helpers: TestApp.routes.url_helpers)
 
     assert_equal serializer_a.config_key(PostResource), serializer_b.config_key(PostResource)
   end

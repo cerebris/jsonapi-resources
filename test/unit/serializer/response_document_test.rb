@@ -9,12 +9,13 @@ class ResponseDocumentTest < ActionDispatch::IntegrationTest
   end
 
   def create_response_document(operation_results, resource_klass)
-    JSONAPI::ResponseDocument.new(
-      operation_results,
-      JSONAPI::ResourceSerializer.new(resource_klass),
-      {
-        primary_resource_klass: resource_klass
-      }
+    serializer = JSONAPI::ResourceSerializer.new(resource_klass, url_helpers: TestApp.routes.url_helpers)
+
+    JSONAPI::ResponseDocument.new(operation_results,
+                                  serializer,
+                                  {
+                                    primary_resource_klass: resource_klass
+                                  }
     )
   end
 
