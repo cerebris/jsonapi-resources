@@ -3,18 +3,17 @@ module JSONAPI
     attr_reader :base_url,
                 :primary_resource_klass,
                 :engine,
-                :routes
+                :url_helpers
 
     def initialize(config = {})
       @base_url               = config[:base_url]
       @primary_resource_klass = config[:primary_resource_klass]
       @engine                 = build_engine
 
-      if engine?
-        @routes = @engine.routes
-      else
-        @routes = Rails.application.routes
-      end
+      # url_helpers may be either a controller which has the route helper methods, or the application router's
+      # url helpers module, `Rails.application.routes.url_helpers`. Because the method no longer behaves as a
+      # singleton, and it's expensive to generate the module, the controller is preferred.
+      @url_helpers            = config[:url_helpers]
 
       # ToDo: Use NaiveCache for values. For this we need to not return nils and create composite keys which work
       # as efficient cache lookups. This could be an array of the [source.identifier, relationship] since the
@@ -89,7 +88,9 @@ module JSONAPI
     end
 
     def call_url_helper(method, *args)
-      routes.url_helpers.public_send(method, args)
+      fail NoMethodError.new(method) if url_helpers.nil?
+
+      url_helpers.send(method, args)
     rescue NoMethodError => e
       raise e
     end
@@ -145,7 +146,7 @@ module JSONAPI
     end
 
     def resource_url_helper_name_from_source(source)
-       url_helper_name_from_parts(resource_path_parts_from_class(source.class))
+      url_helper_name_from_parts(resource_path_parts_from_class(source.class))
     end
 
     def related_url_helper_name(relationship)

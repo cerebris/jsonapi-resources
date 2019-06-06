@@ -901,6 +901,7 @@ class SessionsController < ActionController::Base
 end
 
 class AuthorsController < JSONAPI::ResourceControllerMetal
+  include Rails.application.routes.url_helpers
 end
 
 class PeopleController < JSONAPI::ResourceController

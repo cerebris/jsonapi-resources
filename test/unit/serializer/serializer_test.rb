@@ -30,7 +30,8 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     serializer = JSONAPI::ResourceSerializer.new(
         PostResource,
-        base_url: 'http://example.com')
+        base_url: 'http://example.com',
+        url_helpers: TestApp.routes.url_helpers)
 
     resource_set.populate!(serializer, {}, {})
     serialized = serializer.serialize_resource_set_to_hash_single(resource_set)
@@ -87,7 +88,8 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     serializer = JSONAPI::ResourceSerializer.new(
         Api::V1::PostResource,
-        base_url: 'http://example.com')
+        base_url: 'http://example.com',
+        url_helpers: TestApp.routes.url_helpers)
 
     resource_set.populate!(serializer, {}, {})
     serialized = serializer.serialize_resource_set_to_hash_single(resource_set)
@@ -111,7 +113,8 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     serializer = JSONAPI::ResourceSerializer.new(
         Api::V1::PostResource,
-        base_url: 'http://example.com')
+        base_url: 'http://example.com',
+        url_helpers: TestApp.routes.url_helpers)
 
     resource_set.populate!(serializer, {}, {})
     serialized = serializer.serialize_resource_set_to_hash_single(resource_set)
@@ -167,7 +170,8 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     serializer = JSONAPI::ResourceSerializer.new(
         PostResource,
-        fields: {posts: [:id, :title, :author]})
+        fields: {posts: [:id, :title, :author]},
+        url_helpers: TestApp.routes.url_helpers)
 
     resource_set.populate!(serializer, {}, {})
     serialized = serializer.serialize_resource_set_to_hash_single(resource_set)
@@ -215,7 +219,8 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     resource_set = JSONAPI::ResourceSet.new(id_tree)
 
-    serializer = JSONAPI::ResourceSerializer.new(PostResource)
+    serializer = JSONAPI::ResourceSerializer.new(PostResource,
+                                                 url_helpers: TestApp.routes.url_helpers)
 
     resource_set.populate!(serializer, {}, {})
     serialized = serializer.serialize_resource_set_to_hash_single(resource_set)
@@ -346,7 +351,8 @@ class SerializerTest < ActionDispatch::IntegrationTest
     resource_set = JSONAPI::ResourceSet.new(id_tree)
 
     serializer = JSONAPI::ResourceSerializer.new(PostResource,
-                                                 key_formatter: UnderscoredKeyFormatter,)
+                                                 key_formatter: UnderscoredKeyFormatter,
+                                                 url_helpers: TestApp.routes.url_helpers)
 
     resource_set.populate!(serializer, {}, {})
     serialized = serializer.serialize_resource_set_to_hash_single(resource_set)
@@ -476,7 +482,8 @@ class SerializerTest < ActionDispatch::IntegrationTest
     id_tree.add_resource_fragment(fragment, directives[:include_related])
     resource_set = JSONAPI::ResourceSet.new(id_tree)
 
-    serializer = JSONAPI::ResourceSerializer.new(PostResource)
+    serializer = JSONAPI::ResourceSerializer.new(PostResource,
+                                                 url_helpers: TestApp.routes.url_helpers)
 
     resource_set.populate!(serializer, {}, {})
     serialized = serializer.serialize_resource_set_to_hash_single(resource_set)
