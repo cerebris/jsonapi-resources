@@ -901,6 +901,7 @@ class SessionsController < ActionController::Base
 end
 
 class AuthorsController < JSONAPI::ResourceControllerMetal
+  include Rails.application.routes.url_helpers
 end
 
 class PeopleController < JSONAPI::ResourceController
@@ -1991,7 +1992,9 @@ module Api
     class PostResource < PostResource; end
     class PersonResource < PersonResource; end
     class ExpenseEntryResource < ExpenseEntryResource; end
-    class IsoCurrencyResource < IsoCurrencyResource; end
+    class IsoCurrencyResource < IsoCurrencyResource
+      has_many :expense_entries, exclude_links: :default
+    end
 
     class AuthorResource < Api::V2::AuthorResource; end
 
@@ -2389,6 +2392,7 @@ end
 
 module ApiV2Engine
   class PostResource < PostResource
+    has_one :person
   end
 
   class PersonResource < JSONAPI::Resource

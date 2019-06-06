@@ -12,7 +12,9 @@ class DefaultProcessorTest < ActionDispatch::IntegrationTest
     PostResource.caching true
     PersonResource.caching true
 
-    $serializer = JSONAPI::ResourceSerializer.new(PostResource, base_url: 'http://example.com')
+    $serializer = JSONAPI::ResourceSerializer.new(PostResource,
+                                                  base_url: 'http://example.com',
+                                                  url_helpers: TestApp.routes.url_helpers)
 
     # no includes
     filters = { id: [10, 12] }
