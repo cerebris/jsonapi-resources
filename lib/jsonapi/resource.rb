@@ -372,7 +372,7 @@ module JSONAPI
 
         @reload_needed = true
       else
-        @model.public_send(relationship.relation_name(context: @context)).destroy(key)
+        @model.public_send(relationship.relation_name(context: @context)).delete(key)
       end
 
       :completed
