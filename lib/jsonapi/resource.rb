@@ -1070,7 +1070,7 @@ module JSONAPI
       end
 
       def _exclude_links
-        @_exclude_links ||= _resolve_exclude_links(JSONAPI.configuration.exclude_links)
+        @_exclude_links ||= _resolve_exclude_links(JSONAPI.configuration.default_exclude_links)
       end
 
       def exclude_link?(link)
