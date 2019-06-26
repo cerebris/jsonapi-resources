@@ -457,6 +457,9 @@ module JSONAPI
         end
 
         check_reserved_resource_name(subclass._type, subclass.name)
+
+        subclass._routed = false
+        subclass._warned_missing_route = false
       end
 
       def rebuild_relationships(relationships)
@@ -502,7 +505,7 @@ module JSONAPI
         end
       end
 
-      attr_accessor :_attributes, :_relationships, :_type, :_model_hints
+      attr_accessor :_attributes, :_relationships, :_type, :_model_hints, :_routed, :_warned_missing_route
       attr_writer :_allowed_filters, :_paginator
 
       def create(context)

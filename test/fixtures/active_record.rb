@@ -1681,7 +1681,9 @@ module Api
     class PostResource < PostResource; end
     class PersonResource < PersonResource; end
     class ExpenseEntryResource < ExpenseEntryResource; end
-    class IsoCurrencyResource < IsoCurrencyResource; end
+    class IsoCurrencyResource < IsoCurrencyResource
+      has_many :expense_entries, exclude_links: :default
+    end
 
     class BookResource < Api::V2::BookResource
       paginator :paged
@@ -1987,6 +1989,7 @@ end
 
 module ApiV2Engine
   class PostResource < PostResource
+    has_one :person
   end
 
   class PersonResource < JSONAPI::Resource
