@@ -7,6 +7,8 @@ module JSONAPI
 
     attr_writer :allow_include
 
+    attr_accessor :_routed, :_warned_missing_route
+
     def initialize(name, options = {})
       @name = name.to_s
       @options = options
@@ -26,6 +28,9 @@ module JSONAPI
       @allow_include = options[:allow_include]
       @class_name = nil
       @inverse_relationship = nil
+
+      @_routed = false
+      @_warned_missing_route = false
 
       exclude_links(options.fetch(:exclude_links, :none))
 

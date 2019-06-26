@@ -102,7 +102,8 @@ module JSONAPI
                   base_url: base_url,
                   key_formatter: key_formatter,
                   route_formatter: route_formatter,
-                  serialization_options: serialization_options
+                  serialization_options: serialization_options,
+                  controller: self
               )
               op.options[:cache_serializer_output] = !JSONAPI.configuration.resource_cache.nil?
 
