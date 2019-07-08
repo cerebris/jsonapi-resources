@@ -32,7 +32,7 @@ module JSONAPI
       @_routed = false
       @_warned_missing_route = false
 
-      exclude_links(options.fetch(:exclude_links, :none))
+      exclude_links(options.fetch(:exclude_links, JSONAPI.configuration.default_exclude_links))
 
       # Custom methods are reserved for future use
       @custom_methods = options.fetch(:custom_methods, {})
