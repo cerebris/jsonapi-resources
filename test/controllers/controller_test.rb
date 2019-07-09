@@ -1293,6 +1293,25 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal ruby.id, post_object.section_id
   end
 
+  def test_remove_relationship_to_many_belongs_to
+    set_content_type_header!
+    c = Comment.find(3)
+    p = Post.find(2)
+    total_comment_count = Comment.count
+    post_comment_count = p.comments.count
+
+    put :destroy_relationship, params: {post_id: "#{p.id}", relationship: 'comments', data: [{type: 'comments', id: "#{c.id}"}]}
+
+    assert_response :no_content
+    p = Post.find(2)
+    c = Comment.find(3)
+
+    assert_equal post_comment_count - 1, p.comments.length
+    assert_equal total_comment_count, Comment.count
+
+    assert_nil c.post_id
+  end
+
   def test_update_relationship_to_many_join_table_single
     set_content_type_header!
     put :update_relationship, params: {post_id: 3, relationship: 'tags', data: []}
