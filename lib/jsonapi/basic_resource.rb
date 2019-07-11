@@ -422,11 +422,13 @@ module JSONAPI
         subclass.abstract(false)
         subclass.immutable(false)
         subclass.caching(_caching)
+        subclass.cache_field(_cache_field) if @_cache_field
         subclass.singleton(singleton?, (_singleton_options.dup || {}))
         subclass.exclude_links(_exclude_links)
-        subclass.paginator(_paginator)
+        subclass.paginator(@_paginator)
         subclass._attributes = (_attributes || {}).dup
         subclass.polymorphic(false)
+        subclass.key_type(@_resource_key_type)
 
         subclass._model_hints = (_model_hints || {}).dup
 
@@ -755,7 +757,7 @@ module JSONAPI
       end
 
       def resource_key_type
-        @_resource_key_type ||= JSONAPI.configuration.resource_key_type
+        @_resource_key_type || JSONAPI.configuration.resource_key_type
       end
 
       # override to all resolution of masked ids to actual ids. Because singleton routes do not specify the id this
@@ -878,7 +880,7 @@ module JSONAPI
       end
 
       def _cache_field
-        @_cache_field ||= JSONAPI.configuration.default_resource_cache_field
+        @_cache_field || JSONAPI.configuration.default_resource_cache_field
       end
 
       def _table_name
@@ -898,7 +900,7 @@ module JSONAPI
       end
 
       def _paginator
-        @_paginator ||= JSONAPI.configuration.default_paginator
+        @_paginator || JSONAPI.configuration.default_paginator
       end
 
       def paginator(paginator)
