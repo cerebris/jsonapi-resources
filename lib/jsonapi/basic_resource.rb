@@ -453,6 +453,8 @@ module JSONAPI
 
         subclass._routed = false
         subclass._warned_missing_route = false
+
+        subclass._clear_cached_attribute_options
       end
 
       def rebuild_relationships(relationships)
@@ -527,6 +529,8 @@ module JSONAPI
       end
 
       def attribute(attribute_name, options = {})
+        _clear_cached_attribute_options
+
         attr = attribute_name.to_sym
 
         check_reserved_attribute_name(attr)
@@ -826,7 +830,7 @@ module JSONAPI
 
       # quasi private class methods
       def _attribute_options(attr)
-        default_attribute_options.merge(@_attributes[attr])
+        @_cached_attribute_options[attr] ||= default_attribute_options.merge(@_attributes[attr])
       end
 
       def _attribute_delegated_name(attr)
@@ -1105,6 +1109,10 @@ module JSONAPI
 
       def register_relationship(name, relationship_object)
         @_relationships[name] = relationship_object
+      end
+
+      def _clear_cached_attribute_options
+        @_cached_attribute_options = {}
       end
 
       private
