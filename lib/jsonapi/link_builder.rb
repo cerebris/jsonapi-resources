@@ -127,12 +127,11 @@ module JSONAPI
     end
 
     def resource_path(source)
-      url = "#{resources_path(source.class)}"
-
-      unless source.class.singleton?
-        url = "#{url}/#{source.id}"
+      if source.class.singleton?
+        resources_path(source.class)
+      else
+        "#{resources_path(source.class)}/#{source.id}"
       end
-      url
     end
 
     def resource_url(source)
