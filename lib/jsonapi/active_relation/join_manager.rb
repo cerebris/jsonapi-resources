@@ -154,13 +154,13 @@ module JSONAPI
               next
             end
 
-           records, join_node = self.class.get_join_arel_node(records, options) {|records, options|
-              records  = related_resource_klass.join_relationship(
-                  records: records,
-                  resource_type: related_resource_klass._type,
-                  join_type: join_type,
-                  relationship: relationship,
-                  options: options)
+            records, join_node = self.class.get_join_arel_node(records, options) {|records, options|
+              related_resource_klass.join_relationship(
+                records: records,
+                resource_type: related_resource_klass._type,
+                join_type: join_type,
+                relationship: relationship,
+                options: options)
             }
 
             details = {alias: self.class.alias_from_arel_node(join_node), join_type: join_type}
