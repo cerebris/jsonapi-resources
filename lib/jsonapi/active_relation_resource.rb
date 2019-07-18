@@ -155,7 +155,7 @@ module JSONAPI
 
         fragments = {}
         rows = records.pluck(*pluck_fields)
-        rows.collect do |row|
+        rows.each do |row|
           rid = JSONAPI::ResourceIdentity.new(resource_klass, pluck_fields.length == 1 ? row : row[0])
 
           fragments[rid] ||= JSONAPI::ResourceFragment.new(rid)
