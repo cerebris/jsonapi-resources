@@ -123,16 +123,16 @@ module JSONAPI
     end
 
     def resources_path(source_klass)
-      formatted_module_path_from_class(source_klass) + format_route(source_klass._type.to_s)
+      @_resources_path ||= {}
+      @_resources_path[source_klass] ||= formatted_module_path_from_class(source_klass) + format_route(source_klass._type.to_s)
     end
 
     def resource_path(source)
-      url = "#{resources_path(source.class)}"
-
-      unless source.class.singleton?
-        url = "#{url}/#{source.id}"
+      if source.class.singleton?
+        resources_path(source.class)
+      else
+        "#{resources_path(source.class)}/#{source.id}"
       end
-      url
     end
 
     def resource_url(source)

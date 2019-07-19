@@ -230,7 +230,7 @@ module JSONAPI
     end
 
     def custom_generation_options
-      {
+      @_custom_generation_options ||= {
         serializer: self,
         serialization_options: @serialization_options
       }
