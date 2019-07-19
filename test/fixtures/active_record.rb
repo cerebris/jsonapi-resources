@@ -1989,7 +1989,15 @@ end
 
 module Api
   module V4
-    class PostResource < PostResource; end
+    class PostResource < PostResource
+      class << self
+        def records(options = {})
+          # Sets up a performance issue for testing
+          super(options).joins(:comments)
+        end
+      end
+    end
+
     class PersonResource < PersonResource; end
     class ExpenseEntryResource < ExpenseEntryResource; end
     class IsoCurrencyResource < IsoCurrencyResource

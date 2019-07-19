@@ -3625,6 +3625,29 @@ class Api::V2::BookCommentsControllerTest < ActionController::TestCase
   end
 end
 
+class Api::V4::PostsControllerTest < ActionController::TestCase
+  def test_warn_on_joined_to_many
+    original_config = JSONAPI.configuration.dup
+
+    JSONAPI.configuration.warn_on_performance_issues = true
+    _out, err = capture_subprocess_io do
+      get :index, params: {fields: {posts: 'id,title'}}
+      assert_response :success
+    end
+    assert_equal(err, "Performance issue detected: `Api::V4::PostResource.records` returned non-normalized results in `Api::V4::PostResource.find_fragments`.\n")
+
+    JSONAPI.configuration.warn_on_performance_issues = false
+    _out, err = capture_subprocess_io do
+      get :index, params: {fields: {posts: 'id,title'}}
+      assert_response :success
+    end
+    assert_empty err
+
+  ensure
+    JSONAPI.configuration = original_config
+  end
+end
+
 class Api::V4::BooksControllerTest < ActionController::TestCase
   def setup
     JSONAPI.configuration.json_key_format = :camelized_key
