@@ -181,6 +181,10 @@ module JSONAPI
           end
         end
 
+        if JSONAPI.configuration.warn_on_performance_issues && (rows.length > fragments.length)
+          warn "Performance issue detected: `#{self.name.to_s}.records` returned non-normalized results in `#{self.name.to_s}.find_fragments`."
+        end
+
         fragments
       end
 

@@ -10,6 +10,7 @@ module JSONAPI
                 :raise_if_parameters_not_allowed,
                 :warn_on_route_setup_issues,
                 :warn_on_missing_routes,
+                :warn_on_performance_issues,
                 :default_allow_include_to_one,
                 :default_allow_include_to_many,
                 :allow_sort,
@@ -60,6 +61,7 @@ module JSONAPI
 
       self.warn_on_route_setup_issues = true
       self.warn_on_missing_routes = true
+      self.warn_on_performance_issues = true
 
       # :none, :offset, :paged, or a custom paginator name
       self.default_paginator = :none
@@ -271,6 +273,8 @@ module JSONAPI
     attr_writer :warn_on_route_setup_issues
 
     attr_writer :warn_on_missing_routes
+
+    attr_writer :warn_on_performance_issues
 
     attr_writer :use_relationship_reflection
 
