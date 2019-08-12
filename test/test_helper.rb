@@ -1,5 +1,5 @@
-require 'simplecov'
 require 'database_cleaner'
+require 'simplecov'
 
 # To run tests with coverage:
 # COVERAGE=true bundle exec rake test
@@ -23,7 +23,8 @@ end
 
 ENV["ORM"] = "active_record"
 
-require_relative "support/orm/#{ENV["ORM"]}/initialize"
+require_relative "support/#{ENV["ORM"]}/initialize"
+require_relative "support/inflections"
 require 'rails/test_help'
 require 'minitest/mock'
 require 'jsonapi-resources'
@@ -55,6 +56,8 @@ class TestApp < Rails::Application
 
   #Raise errors on unsupported parameters
   config.action_controller.action_on_unpermitted_parameters = :raise
+
+  config.paths["config/database"] = "support/database/config.yml"
 
   config.active_support.test_order = :random
 
@@ -219,7 +222,15 @@ end
 
 TestApp.initialize!
 
-require_relative "support/orm/#{ENV["ORM"]}/models"
+require_relative "support/#{ENV["ORM"]}/app_config"
+
+# We used to have the schema in the ActiveRecord schema creation format, but then we would need
+# to reimplement the schema bulider in other ORMs that we are testing. We could always require ActiveRecord
+# for the purposes of schema creation, but then we would have to try to remove ActiveRecord from the global
+# namespace to really have no side-effects when running the specs. The goal of running the specs with other
+# orms is to not have ActiveRecord required in at all.
+require_relative "support/#{ENV["ORM"]}/import_schema"
+require_relative "support/#{ENV["ORM"]}/models"
 require_relative "support/controllers_resources_processors"
 
 module Pets
@@ -722,4 +733,4 @@ class OptionalRouteFormatter < JSONAPI::RouteFormatter
   end
 end
 
-require_relative "support/orm/#{ENV["ORM"]}/setup"
+require_relative "support/#{ENV["ORM"]}/setup"

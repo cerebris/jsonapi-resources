@@ -1,6 +1,5 @@
 require 'sequel'
 require 'jsonapi-resources'
-require_relative 'schema'
 
 config = Rails.configuration.database_configuration["test"]
 config["adapter"] = "sqlite" if config["adapter"]=="sqlite3"

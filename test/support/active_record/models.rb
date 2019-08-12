@@ -1,13 +1,44 @@
-require_relative 'schema'
+class Session < ActiveRecord::Base
+  self.primary_key = "id"
+  has_many :responses
+end
 
-ActiveSupport::Inflector.inflections(:en) do |inflect|
-  inflect.uncountable 'preferences'
-  inflect.irregular 'numero_telefone', 'numeros_telefone'
+class Response < ActiveRecord::Base
+  belongs_to :session
+  has_one :paragraph, :class_name => "ResponseText::Paragraph"
+
+  def response_type
+    case self.type
+    when "Response::SingleTextbox"
+          "single_textbox"
+    else
+          "question"
+    end
+  end
+  def response_type=type
+    self.type = case type
+    when "single_textbox"
+          "Response::SingleTextbox"
+    else
+      "Response"
+    end
+  end
+end
+
+class Response::SingleTextbox < Response
+  has_one :paragraph, :class_name => "ResponseText::Paragraph", :foreign_key => :response_id
+end
+
+class ResponseText < ActiveRecord::Base
+end
+
+class ResponseText::Paragraph < ResponseText
 end
 
 class Person < ActiveRecord::Base
   has_many :posts, foreign_key: 'author_id'
   has_many :comments, foreign_key: 'author_id'
+  has_many :book_comments, foreign_key: 'author_id'
   has_many :expense_entries, foreign_key: 'employee_id', dependent: :restrict_with_exception
   has_many :vehicles
   belongs_to :preferences
@@ -15,9 +46,14 @@ class Person < ActiveRecord::Base
   has_one :author_detail
 
   has_and_belongs_to_many :books, join_table: :book_authors
+  has_and_belongs_to_many :not_banned_books, -> { merge(Book.not_banned) },
+                          class_name: 'Book',
+                          join_table: :book_authors
 
   has_many :even_posts, -> { where('posts.id % 2 = 0') }, class_name: 'Post', foreign_key: 'author_id'
   has_many :odd_posts, -> { where('posts.id % 2 = 1') }, class_name: 'Post', foreign_key: 'author_id'
+
+  has_many :pictures, foreign_key: 'author_id'
 
   ### Validations
   validates :name, presence: true
@@ -36,7 +72,7 @@ class Post < ActiveRecord::Base
   has_many :special_post_tags, source: :tag
   has_many :special_tags, through: :special_post_tags, source: :tag
   belongs_to :section
-  has_one :parent_post, class_name: 'Post', foreign_key: 'parent_post_id'
+  belongs_to :parent_post, class_name: 'Post', foreign_key: 'parent_post_id'
 
   validates :author, presence: true
   validates :title, length: { maximum: 35 }
@@ -44,8 +80,19 @@ class Post < ActiveRecord::Base
   before_destroy :destroy_callback
 
   def destroy_callback
-    if title == "can't destroy me"
-      errors.add(:title, "can't destroy me")
+    case title
+    when "can't destroy me", "can't destroy me either"
+      errors.add(:base, "can't destroy me")
+
+      # :nocov:
+      if Rails::VERSION::MAJOR >= 5
+        throw(:abort)
+      else
+        return false
+      end
+      # :nocov:
+    when "locked title"
+      errors.add(:title, "is locked")
 
       # :nocov:
       if Rails::VERSION::MAJOR >= 5
@@ -78,6 +125,8 @@ end
 class Tag < ActiveRecord::Base
   has_and_belongs_to_many :posts, join_table: :posts_tags
   has_and_belongs_to_many :planets, join_table: :planets_tags
+
+  has_and_belongs_to_many :comments, join_table: :comments_tags
 end
 
 class Section < ActiveRecord::Base
@@ -102,7 +151,7 @@ end
 
 class IsoCurrency < ActiveRecord::Base
   self.primary_key = :code
-  # has_many :expense_entries, foreign_key: 'currency_code'
+  has_many :expense_entries, foreign_key: 'currency_code'
 end
 
 class ExpenseEntry < ActiveRecord::Base
@@ -161,6 +210,7 @@ class Like < ActiveRecord::Base
 end
 
 class Breed
+  include ActiveModel::Model
 
   def initialize(id = nil, name = nil)
     if id.nil?
@@ -179,19 +229,7 @@ class Breed
     $breed_data.remove(@id)
   end
 
-  def valid?(context = nil)
-    @errors.clear
-    if name.is_a?(String) && name.length > 0
-      return true
-    else
-      @errors.add(:name, "can't be blank")
-      return false
-    end
-  end
-
-  def errors
-    @errors
-  end
+  validates :name, presence: true
 end
 
 class Book < ActiveRecord::Base
@@ -199,6 +237,10 @@ class Book < ActiveRecord::Base
   has_many :approved_book_comments, -> { where(approved: true) }, class_name: "BookComment"
 
   has_and_belongs_to_many :authors, join_table: :book_authors, class_name: "Person"
+
+  scope :not_banned, -> {
+    where(banned: false)
+  }
 end
 
 class BookComment < ActiveRecord::Base
@@ -206,7 +248,7 @@ class BookComment < ActiveRecord::Base
   belongs_to :book
 
   def self.for_user(current_user)
-    records = self
+    records = self.all
     # Hide the unapproved comments from people who are not book admins
     unless current_user && current_user.book_admin
       records = records.where(approved: true)
@@ -266,7 +308,13 @@ class Category < ActiveRecord::Base
 end
 
 class Picture < ActiveRecord::Base
+  belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
+
   belongs_to :imageable, polymorphic: true
+  belongs_to :document, -> { where( pictures: { imageable_type: 'Document' } ).eager_load( :pictures ) }, foreign_key: 'imageable_id'
+  belongs_to :product, -> { where( pictures: { imageable_type: 'Product' } ).eager_load( :pictures ) }, foreign_key: 'imageable_id'
+
+  has_one :file_properties, as: 'fileable'
 end
 
 class Vehicle < ActiveRecord::Base
@@ -281,13 +329,19 @@ end
 
 class Document < ActiveRecord::Base
   has_many :pictures, as: :imageable
-end
-
-class Document::Topic < Document
+  belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
+  has_one :file_properties, as: 'fileable'
 end
 
 class Product < ActiveRecord::Base
-  has_one :picture, as: :imageable
+  has_many :pictures, as: :imageable
+  belongs_to :designer, class_name: 'Person', foreign_key: 'designer_id'
+  has_one :file_properties, as: 'fileable'
+end
+
+class FileProperties < ActiveRecord::Base
+  belongs_to :fileable, polymorphic: true
+  belongs_to :tag
 end
 
 class Make < ActiveRecord::Base
@@ -313,8 +367,8 @@ class Thing < ActiveRecord::Base
 end
 
 class RelatedThing < ActiveRecord::Base
-  belongs_to :from, class_name: Thing, foreign_key: :from_id
-  belongs_to :to, class_name: Thing, foreign_key: :to_id
+  belongs_to :from, class_name: "Thing", foreign_key: :from_id
+  belongs_to :to, class_name: "Thing", foreign_key: :to_id
 end
 
 class Question < ActiveRecord::Base
@@ -344,6 +398,58 @@ module Api
     class Customer < Customer
     end
   end
+end
+
+class Storage < ActiveRecord::Base
+  has_one :keeper, class_name: 'Keeper', as: :keepable
+end
+
+class Keeper < ActiveRecord::Base
+  belongs_to :keepable, polymorphic: true
+end
+
+class AccessCard < ActiveRecord::Base
+  has_many :workers
+end
+
+class Worker < ActiveRecord::Base
+  belongs_to :access_card
+end
+
+class Agency < ActiveRecord::Base
+end
+
+class Indicator < ActiveRecord::Base
+  belongs_to :agency
+  has_many :widgets, primary_key: :import_id, foreign_key: :indicator_import_id
+end
+
+class Widget < ActiveRecord::Base
+  belongs_to :indicator, primary_key: :import_id, foreign_key: :indicator_import_id
+end
+
+class Robot < ActiveRecord::Base
+end
+
+class Painter < ActiveRecord::Base
+  has_many :paintings
+end
+
+class Painting < ActiveRecord::Base
+  belongs_to :painter
+  has_many :collectors
+end
+
+class Collector < ActiveRecord::Base
+  belongs_to :painting
+end
+
+class List < ActiveRecord::Base
+  has_many :items, class_name: 'ListItem', inverse_of: :list
+end
+
+class ListItem < ActiveRecord::Base
+  belongs_to :list, inverse_of: :items
 end
 
 ### PORO Data - don't do this in a production app

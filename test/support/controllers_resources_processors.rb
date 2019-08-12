@@ -1,57 +1,5 @@
 # Controllers, Resources, and Processors for specs.
 
-class Storage < ActiveRecord::Base
-  has_one :keeper, class_name: 'Keeper', as: :keepable
-end
-
-class Keeper < ActiveRecord::Base
-  belongs_to :keepable, polymorphic: true
-end
-
-class AccessCard < ActiveRecord::Base
-  has_many :workers
-end
-
-class Worker < ActiveRecord::Base
-  belongs_to :access_card
-end
-
-class Agency < ActiveRecord::Base
-end
-
-class Indicator < ActiveRecord::Base
-  belongs_to :agency
-  has_many :widgets, primary_key: :import_id, foreign_key: :indicator_import_id
-end
-
-class Widget < ActiveRecord::Base
-  belongs_to :indicator, primary_key: :import_id, foreign_key: :indicator_import_id
-end
-
-class Robot < ActiveRecord::Base
-end
-
-class Painter < ActiveRecord::Base
-  has_many :paintings
-end
-
-class Painting < ActiveRecord::Base
-  belongs_to :painter
-  has_many :collectors
-end
-
-class Collector < ActiveRecord::Base
-  belongs_to :painting
-end
-
-class List < ActiveRecord::Base
-  has_many :items, class_name: 'ListItem', inverse_of: :list
-end
-
-class ListItem < ActiveRecord::Base
-  belongs_to :list, inverse_of: :items
-end
-
 ### CONTROLLERS
 class SessionsController < ActionController::Base
   include JSONAPI::ActsAsResourceController

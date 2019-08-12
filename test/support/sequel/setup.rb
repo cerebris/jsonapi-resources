@@ -1,6 +1,3 @@
-
-JSONAPI.configuration.default_record_accessor_klass = JSONAPI::ActiveRecordRecordAccessor
-
 TestApp.class_eval do
   config.active_record.schema_format = :none
 
