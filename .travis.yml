@@ -5,7 +5,7 @@ env:
   - "RAILS_VERSION=5.0.7.1"
   - "RAILS_VERSION=5.1.6.1"
   - "RAILS_VERSION=5.2.2"
-#  - "RAILS_VERSION=6.0.0.beta1"
+  - "RAILS_VERSION=6.0.0"
 #  - "RAILS_VERSION=master"
 rvm:
   - 2.3.8
@@ -15,7 +15,10 @@ rvm:
 matrix:
   allow_failures:
     - env: "RAILS_VERSION=master"
-    - env: "RAILS_VERSION=6.0.0.beta1"
   exclude:
     - rvm: 2.6.1
       env: "RAILS_VERSION=4.2.11"
+    - rmv: 2.3.8
+      env: "RAILS_VERSION=6.0.0"
+    - rmv: 2.4.5
+      env: "RAILS_VERSION=6.0.0"
