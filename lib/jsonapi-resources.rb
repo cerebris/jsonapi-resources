@@ -7,7 +7,6 @@ require 'jsonapi/resource'
 require 'jsonapi/cached_response_fragment'
 require 'jsonapi/response_document'
 require 'jsonapi/acts_as_resource_controller'
-require 'jsonapi/resource_controller'
 require 'jsonapi/resource_controller_metal'
 require 'jsonapi/resources/version'
 require 'jsonapi/configuration'
@@ -35,3 +34,11 @@ require 'jsonapi/resource_id_tree'
 require 'jsonapi/resource_set'
 require 'jsonapi/path'
 require 'jsonapi/path_segment'
+
+if ActiveSupport.respond_to?(:on_load)
+  ActiveSupport.on_load(:action_controller_base) do
+    require 'jsonapi/resource_controller'
+  end
+else
+  require 'jsonapi/resource_controller'
+end
