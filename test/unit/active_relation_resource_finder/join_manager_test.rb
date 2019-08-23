@@ -79,7 +79,7 @@ class JoinTreeTest < ActiveSupport::TestCase
     records = Api::V10::PostResource.records({})
     records = join_manager.join(records, {})
 
-    if Rails::VERSION::MAJOR >= 5 && Rails::VERSION::MINOR >= 2
+    if Rails::VERSION::MAJOR >= 6 || (Rails::VERSION::MAJOR >= 5 && ActiveRecord::VERSION::MINOR >= 2)
       assert_equal 'SELECT "posts".* FROM "posts" INNER JOIN "comments" ON "comments"."post_id" = "posts"."id" WHERE "comments"."approved" = 1', records.to_sql
     else
       assert_equal 'SELECT "posts".* FROM "posts" INNER JOIN "comments" ON "comments"."post_id" = "posts"."id" WHERE "comments"."approved" = \'t\'', records.to_sql
@@ -99,7 +99,7 @@ class JoinTreeTest < ActiveSupport::TestCase
     records = Api::V10::PostResource.records({})
     records = join_manager.join(records, {})
 
-    if Rails::VERSION::MAJOR >= 5 && Rails::VERSION::MINOR >= 2
+    if Rails::VERSION::MAJOR >= 6 || (Rails::VERSION::MAJOR >= 5 && ActiveRecord::VERSION::MINOR >= 2)
       assert_equal 'SELECT "posts".* FROM "posts" LEFT OUTER JOIN "comments" ON "comments"."post_id" = "posts"."id" LEFT OUTER JOIN "people" ON "people"."id" = "posts"."author_id" LEFT OUTER JOIN "people" "authors_comments" ON "authors_comments"."id" = "comments"."author_id" LEFT OUTER JOIN "comments_tags" ON "comments_tags"."comment_id" = "comments"."id" LEFT OUTER JOIN "tags" ON "tags"."id" = "comments_tags"."tag_id" WHERE "comments"."approved" = 1 AND "author"."special" = 1', records.to_sql
     else
       assert_equal 'SELECT "posts".* FROM "posts" LEFT OUTER JOIN "comments" ON "comments"."post_id" = "posts"."id" LEFT OUTER JOIN "people" ON "people"."id" = "posts"."author_id" LEFT OUTER JOIN "people" "authors_comments" ON "authors_comments"."id" = "comments"."author_id" LEFT OUTER JOIN "comments_tags" ON "comments_tags"."comment_id" = "comments"."id" LEFT OUTER JOIN "tags" ON "tags"."id" = "comments_tags"."tag_id" WHERE "comments"."approved" = \'t\' AND "author"."special" = \'t\'', records.to_sql
@@ -123,7 +123,7 @@ class JoinTreeTest < ActiveSupport::TestCase
     records = join_manager.join(records, {})
 
     # Note sql is in different order, but aliases should still be right
-    if Rails::VERSION::MAJOR >= 5 && Rails::VERSION::MINOR >= 2
+    if Rails::VERSION::MAJOR >= 6 || (Rails::VERSION::MAJOR >= 5 && ActiveRecord::VERSION::MINOR >= 2)
       assert_equal 'SELECT "posts".* FROM "posts" LEFT OUTER JOIN "people" ON "people"."id" = "posts"."author_id" LEFT OUTER JOIN "comments" ON "comments"."post_id" = "posts"."id" LEFT OUTER JOIN "people" "authors_comments" ON "authors_comments"."id" = "comments"."author_id" LEFT OUTER JOIN "comments_tags" ON "comments_tags"."comment_id" = "comments"."id" LEFT OUTER JOIN "tags" ON "tags"."id" = "comments_tags"."tag_id" WHERE "comments"."approved" = 1 AND "author"."special" = 1', records.to_sql
     else
       assert_equal 'SELECT "posts".* FROM "posts" LEFT OUTER JOIN "people" ON "people"."id" = "posts"."author_id" LEFT OUTER JOIN "comments" ON "comments"."post_id" = "posts"."id" LEFT OUTER JOIN "people" "authors_comments" ON "authors_comments"."id" = "comments"."author_id" LEFT OUTER JOIN "comments_tags" ON "comments_tags"."comment_id" = "comments"."id" LEFT OUTER JOIN "tags" ON "tags"."id" = "comments_tags"."tag_id" WHERE "comments"."approved" = \'t\' AND "author"."special" = \'t\'', records.to_sql
@@ -163,7 +163,7 @@ class JoinTreeTest < ActiveSupport::TestCase
     records = Api::V10::PostResource.records({})
     records = join_manager.join(records, {})
 
-    if Rails::VERSION::MAJOR >= 5 && Rails::VERSION::MINOR >= 2
+    if Rails::VERSION::MAJOR >= 6 || (Rails::VERSION::MAJOR >= 5 && ActiveRecord::VERSION::MINOR >= 2)
       assert_equal 'SELECT "posts".* FROM "posts" LEFT OUTER JOIN "comments" ON "comments"."post_id" = "posts"."id" LEFT OUTER JOIN "people" ON "people"."id" = "posts"."author_id" LEFT OUTER JOIN "people" "authors_comments" ON "authors_comments"."id" = "comments"."author_id" LEFT OUTER JOIN "comments_tags" ON "comments_tags"."comment_id" = "comments"."id" LEFT OUTER JOIN "tags" ON "tags"."id" = "comments_tags"."tag_id" WHERE "comments"."approved" = 1 AND "author"."special" = 1', records.to_sql
     else
       assert_equal 'SELECT "posts".* FROM "posts" LEFT OUTER JOIN "comments" ON "comments"."post_id" = "posts"."id" LEFT OUTER JOIN "people" ON "people"."id" = "posts"."author_id" LEFT OUTER JOIN "people" "authors_comments" ON "authors_comments"."id" = "comments"."author_id" LEFT OUTER JOIN "comments_tags" ON "comments_tags"."comment_id" = "comments"."id" LEFT OUTER JOIN "tags" ON "tags"."id" = "comments_tags"."tag_id" WHERE "comments"."approved" = \'t\' AND "author"."special" = \'t\'', records.to_sql
@@ -184,7 +184,7 @@ class JoinTreeTest < ActiveSupport::TestCase
     records = Api::V10::PostResource.records({})
     records = join_manager.join(records, {})
 
-    if Rails::VERSION::MAJOR >= 5 && Rails::VERSION::MINOR >= 2
+    if Rails::VERSION::MAJOR >= 6 || (Rails::VERSION::MAJOR >= 5 && ActiveRecord::VERSION::MINOR >= 2)
       assert_equal 'SELECT "posts".* FROM "posts" INNER JOIN "comments" ON "comments"."post_id" = "posts"."id" LEFT OUTER JOIN "people" ON "people"."id" = "comments"."author_id" LEFT OUTER JOIN "comments_tags" ON "comments_tags"."comment_id" = "comments"."id" LEFT OUTER JOIN "tags" ON "tags"."id" = "comments_tags"."tag_id" LEFT OUTER JOIN "comments" "comments_people" ON "comments_people"."author_id" = "people"."id" WHERE "comments"."approved" = 1 AND "author"."special" = 1', records.to_sql
     else
       assert_equal 'SELECT "posts".* FROM "posts" INNER JOIN "comments" ON "comments"."post_id" = "posts"."id" LEFT OUTER JOIN "people" ON "people"."id" = "comments"."author_id" LEFT OUTER JOIN "comments_tags" ON "comments_tags"."comment_id" = "comments"."id" LEFT OUTER JOIN "tags" ON "tags"."id" = "comments_tags"."tag_id" LEFT OUTER JOIN "comments" "comments_people" ON "comments_people"."author_id" = "people"."id" WHERE "comments"."approved" = \'t\' AND "author"."special" = \'t\'', records.to_sql
