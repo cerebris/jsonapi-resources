@@ -152,7 +152,7 @@ module JSONAPI
     end
 
     def base_url
-      @base_url ||= request.protocol + request.host_with_port
+      @base_url ||= "#{request.protocol}#{request.host_with_port}#{Rails.application.config.relative_url_root}"
     end
 
     def resource_klass_name
