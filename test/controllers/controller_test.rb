@@ -10,6 +10,12 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration.always_include_to_one_linkage_data = false
   end
 
+  def test_links_include_relative_root
+    Rails.application.config.relative_url_root = '/subdir'
+    assert_cacheable_get :index
+    assert json_response['data'][0]['links']['self'].include?('/subdir')
+  end
+
   def test_index
     assert_cacheable_get :index
     assert_response :success
