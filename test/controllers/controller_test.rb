@@ -14,6 +14,7 @@ class PostsControllerTest < ActionController::TestCase
     Rails.application.config.relative_url_root = '/subdir'
     assert_cacheable_get :index
     assert json_response['data'][0]['links']['self'].include?('/subdir')
+    Rails.application.config.relative_url_root = nil
   end
 
   def test_index
