@@ -131,7 +131,7 @@ module JSONAPI
     def config_description(resource_klass)
       {
         class_name: self.class.name,
-        seriserialization_options: serialization_options.sort.map(&:as_json),
+        serialization_options: serialization_options.sort.map(&:as_json),
         supplying_attribute_fields: supplying_attribute_fields(resource_klass).sort,
         supplying_relationship_fields: supplying_relationship_fields(resource_klass).sort,
         link_builder_base_url: link_builder.base_url,
