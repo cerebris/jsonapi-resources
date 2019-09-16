@@ -7,7 +7,7 @@ require 'jsonapi/resource'
 require 'jsonapi/cached_response_fragment'
 require 'jsonapi/response_document'
 require 'jsonapi/acts_as_resource_controller'
-if ActiveSupport.respond_to?(:on_load)
+if Rails::VERSION::MAJOR >= 6
   ActiveSupport.on_load(:action_controller_base) do
     require 'jsonapi/resource_controller'
   end
