@@ -21,6 +21,8 @@ if ENV['COVERAGE']
   end
 end
 
+ENV['DATABASE_URL'] ||= "sqlite3:test_db"
+
 require 'active_record/railtie'
 require 'rails/test_help'
 require 'minitest/mock'
@@ -67,6 +69,9 @@ class TestApp < Rails::Application
     end
   end
 end
+
+DatabaseCleaner.allow_remote_database_url = true
+DatabaseCleaner.strategy = :transaction
 
 module MyEngine
   class Engine < ::Rails::Engine
@@ -476,8 +481,6 @@ end
 ApiV2Engine::Engine.routes.draw do
   jsonapi_resources :people
 end
-
-DatabaseCleaner.strategy = :transaction
 
 # Ensure backward compatibility with Minitest 4
 Minitest::Test = MiniTest::Unit::TestCase unless defined?(Minitest::Test)

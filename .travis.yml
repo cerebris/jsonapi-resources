@@ -1,26 +1,31 @@
 language: ruby
 sudo: false
+services:
+  - postgresql
 env:
-  - "RAILS_VERSION=4.2.11"
-  - "RAILS_VERSION=5.0.7.2"
-  - "RAILS_VERSION=5.1.7"
-  - "RAILS_VERSION=5.2.3"
-  - "RAILS_VERSION=6.0.0"
-#  - "RAILS_VERSION=master"
+  - RAILS_VERSION=6.0.0 DATABASE_URL=postgres://postgres@localhost/jr_test
+  - RAILS_VERSION=6.0.0
+  - RAILS_VERSION=5.2.3 DATABASE_URL=postgres://postgres@localhost/jr_test
+  - RAILS_VERSION=5.2.3
+  - RAILS_VERSION=5.1.7
+  - RAILS_VERSION=5.0.7.2
+  - RAILS_VERSION=4.2.11
 rvm:
-  - 2.3.8
-  - 2.4.7
-  - 2.5.6
-  - 2.6.4
+  - 2.4.9
+  - 2.5.7
+  - 2.6.5
 matrix:
-  allow_failures:
-    - env: "RAILS_VERSION=master"
   exclude:
-    - rvm: 2.6.4
+    - rvm: 2.6.5
       env: "RAILS_VERSION=4.2.11"
-    - rvm: 2.3.8
+    - rvm: 2.4.9
       env: "RAILS_VERSION=6.0.0"
-    - rvm: 2.4.7
-      env: "RAILS_VERSION=6.0.0"
+    - rvm: 2.4.9
+      env: "RAILS_VERSION=6.0.0 DATABASE_URL=postgres://postgres@localhost/jr_test"
+    - rvm: 2.4.9
+      env: "RAILS_VERSION=5.2.3 DATABASE_URL=postgres://postgres@localhost/jr_test"
 before_install:
   - gem install bundler --version 1.17.3
+before_script:
+  - sh -c "if [ '$DATABASE_URL' = 'postgres://postgres@localhost/jr_test' ]; then psql -c 'DROP DATABASE IF EXISTS jr_test;' -U postgres; fi"
+  - sh -c "if [ '$DATABASE_URL' = 'postgres://postgres@localhost/jr_test' ]; then psql -c 'CREATE DATABASE jr_test;' -U postgres; fi"
