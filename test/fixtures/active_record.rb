@@ -1650,7 +1650,7 @@ class CraterResource < JSONAPI::Resource
 
   filter :description, apply: -> (records, value, options) {
     fail "context not set" unless options[:context][:current_user] != nil && options[:context][:current_user] == $test_user
-    records.where(concat_table_field(options[:join_manager].source_join_details[:alias], :description) => value)
+    records.where(concat_table_field(options.dig(:_relation_helper_options, :join_manager).source_join_details[:alias], :description) => value)
   }
 
   def self.verify_key(key, context = nil)
@@ -1694,7 +1694,7 @@ class PictureResource < JSONAPI::Resource
   has_one :file_properties, inverse_relationship: :fileable, :foreign_key_on => :related, polymorphic: true
 
   filter 'imageable.name', perform_joins: true, apply: -> (records, value, options) {
-    join_manager = options[:join_manager]
+    join_manager = options.dig(:_relation_helper_options, :join_manager)
     relationship = _relationship(:imageable)
     or_parts = relationship.resource_types.collect do |type|
       table_alias = join_manager.join_details_by_polymorphic_relationship(relationship, type)[:alias]
@@ -2038,7 +2038,7 @@ module Api
       relationship :author_detail, to: :one, foreign_key_on: :related
 
       filter :name, apply: lambda { |records, value, options|
-        table_alias = options[:join_manager].source_join_details[:alias]
+        table_alias = options.dig(:_relation_helper_options, :join_manager).source_join_details[:alias]
         t = Arel::Table.new(:people, as: table_alias)
         records.where(t[:name].matches("%#{value[0]}%"))
       }
