@@ -1,5 +1,5 @@
-require 'simplecov'
 require 'database_cleaner'
+require 'simplecov'
 
 # To run tests with coverage:
 # COVERAGE=true bundle exec rake test
@@ -21,7 +21,10 @@ if ENV['COVERAGE']
   end
 end
 
-require 'active_record/railtie'
+ENV["ORM"] = "active_record"
+
+require_relative "support/#{ENV["ORM"]}/initialize"
+require_relative "support/inflections"
 require 'rails/test_help'
 require 'minitest/mock'
 require 'jsonapi-resources'
@@ -43,7 +46,7 @@ end
 
 ActiveSupport::Deprecation.silenced = true
 
-puts "Testing With RAILS VERSION #{Rails.version}"
+puts "Testing With RAILS VERSION #{Rails.version} and #{ENV["ORM"]} ORM"
 
 class TestApp < Rails::Application
   config.eager_load = false
@@ -54,18 +57,11 @@ class TestApp < Rails::Application
   #Raise errors on unsupported parameters
   config.action_controller.action_on_unpermitted_parameters = :raise
 
-  ActiveRecord::Schema.verbose = false
-  config.active_record.schema_format = :none
+  config.paths["config/database"] = "support/database/config.yml"
+
   config.active_support.test_order = :random
 
-  if Rails::VERSION::MAJOR >= 5
-    config.active_support.halt_callback_chains_on_return_false = false
-    config.active_record.time_zone_aware_types = [:time, :datetime]
-    config.active_record.belongs_to_required_by_default = false
-    if Rails::VERSION::MINOR >= 2
-      config.active_record.sqlite3.represent_boolean_as_integer = true
-    end
-  end
+  ActiveSupport::Deprecation.silenced = true
 end
 
 module MyEngine
@@ -200,7 +196,7 @@ def assert_query_count(expected, msg = nil, &block)
   callback = lambda {|_, _, _, _, payload|
     @queries.push payload[:sql]
   }
-  ActiveSupport::Notifications.subscribed(callback, 'sql.active_record', &block)
+  ActiveSupport::Notifications.subscribed(callback, "sql.#{ENV["ORM"]}", &block)
 
   show_queries unless expected == @queries.size
   assert expected == @queries.size, "Expected #{expected} queries, ran #{@queries.size} queries"
@@ -226,7 +222,16 @@ end
 
 TestApp.initialize!
 
-require File.expand_path('../fixtures/active_record', __FILE__)
+require_relative "support/#{ENV["ORM"]}/app_config"
+
+# We used to have the schema in the ActiveRecord schema creation format, but then we would need
+# to reimplement the schema bulider in other ORMs that we are testing. We could always require ActiveRecord
+# for the purposes of schema creation, but then we would have to try to remove ActiveRecord from the global
+# namespace to really have no side-effects when running the specs. The goal of running the specs with other
+# orms is to not have ActiveRecord required in at all.
+require_relative "support/#{ENV["ORM"]}/import_schema"
+require_relative "support/#{ENV["ORM"]}/models"
+require_relative "support/controllers_resources_processors"
 
 module Pets
   module V1
@@ -487,27 +492,19 @@ class Minitest::Test
   include Helpers::ValueMatchers
   include Helpers::FunctionalHelpers
   include Helpers::ConfigurationHelpers
-  include ActiveRecord::TestFixtures
 
   def run_in_transaction?
     true
   end
-
-  self.fixture_path = "#{Rails.root}/fixtures"
-  fixtures :all
 end
 
 class ActiveSupport::TestCase
-  self.fixture_path = "#{Rails.root}/fixtures"
-  fixtures :all
   setup do
     @routes = TestApp.routes
   end
 end
 
 class ActionDispatch::IntegrationTest
-  self.fixture_path = "#{Rails.root}/fixtures"
-  fixtures :all
 
   def assert_jsonapi_response(expected_status, msg = nil)
     assert_equal JSONAPI::MEDIA_TYPE, response.content_type
@@ -562,7 +559,7 @@ class ActionController::TestCase
 
     normal_queries = []
     normal_query_callback = lambda {|_, _, _, _, payload| normal_queries.push payload[:sql] }
-    ActiveSupport::Notifications.subscribed(normal_query_callback, 'sql.active_record') do
+    ActiveSupport::Notifications.subscribed(normal_query_callback, "sql.#{ENV["ORM"]}") do
       get action, *args
     end
     non_caching_response = json_response_sans_all_backtraces
@@ -595,7 +592,7 @@ class ActionController::TestCase
             cache_queries.push payload[:sql]
           }
           cache_activity[phase] = with_resource_caching(cache, cached_resources) do
-            ActiveSupport::Notifications.subscribed(cache_query_callback, 'sql.active_record') do
+            ActiveSupport::Notifications.subscribed(cache_query_callback, "sql.#{ENV["ORM"]}") do
               @controller = nil
               setup_controller_request_and_response
               @request.headers.merge!(orig_request_headers.dup)
@@ -735,3 +732,5 @@ class OptionalRouteFormatter < JSONAPI::RouteFormatter
     end
   end
 end
+
+require_relative "support/#{ENV["ORM"]}/setup"
