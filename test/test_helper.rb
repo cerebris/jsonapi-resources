@@ -470,7 +470,8 @@ class ActionDispatch::IntegrationTest
   fixtures :all
 
   def assert_jsonapi_response(expected_status, msg = nil)
-    assert_equal JSONAPI::MEDIA_TYPE, response.content_type
+    media_type = Rails::VERSION::MAJOR >= 6 ? response.media_type : response.content_type
+    assert_equal JSONAPI::MEDIA_TYPE, media_type
     if status != expected_status && status >= 400
       pp json_response rescue nil
     end
