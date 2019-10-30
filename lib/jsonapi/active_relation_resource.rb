@@ -153,6 +153,11 @@ module JSONAPI
           pluck_fields << Arel.sql("#{concat_table_field(resource_table_alias, model_field[:name])} AS #{resource_table_alias}_#{model_field[:name]}")
         end
 
+        sort_fields = options.dig(:_relation_helper_options, :sort_fields)
+        sort_fields.try(:each) do |field|
+          pluck_fields << Arel.sql(field)
+        end
+
         fragments = {}
         rows = records.pluck(*pluck_fields)
         rows.each do |row|
@@ -445,6 +450,11 @@ module JSONAPI
           pluck_fields << Arel.sql("#{concat_table_field(resource_table_alias, model_field[:name])} AS #{resource_table_alias}_#{model_field[:name]}")
         end
 
+        sort_fields = options.dig(:_relation_helper_options, :sort_fields)
+        sort_fields.try(:each) do |field|
+          pluck_fields << Arel.sql(field)
+        end
+
         fragments = {}
         rows = records.distinct.pluck(*pluck_fields)
         rows.each do |row|
@@ -680,24 +690,23 @@ module JSONAPI
                                             paginator: nil,
                                             options: {})
 
-        opts = options.dup
-        records = resource_klass.apply_joins(records, join_manager, opts)
+        options[:_relation_helper_options] = { join_manager: join_manager, sort_fields: [] }
+
+        records = resource_klass.apply_joins(records, join_manager, options)
 
         if primary_keys
           records = records.where(_primary_key => primary_keys)
         end
 
-        opts[:join_manager] = join_manager
-
         unless filters.empty?
-          records = resource_klass.filter_records(records, filters, opts)
+          records = resource_klass.filter_records(records, filters, options)
         end
 
         if sort_primary
           records = records.order(_primary_key => :asc)
         else
           order_options = resource_klass.construct_order_options(sort_criteria)
-          records = resource_klass.sort_records(records, order_options, opts)
+          records = resource_klass.sort_records(records, order_options, options)
         end
 
         if paginator
@@ -731,12 +740,16 @@ module JSONAPI
 
         strategy = _allowed_sort.fetch(field.to_sym, {})[:apply]
 
+        options[:_relation_helper_options] ||= {}
+        options[:_relation_helper_options][:sort_fields] ||= []
+
         if strategy
           records = call_method_or_proc(strategy, records, direction, context)
         else
-          join_manager = options[:join_manager]
-
-          records = records.order(Arel.sql("#{get_aliased_field(field, join_manager)} #{direction}"))
+          join_manager = options.dig(:_relation_helper_options, :join_manager)
+          sort_field = join_manager ? get_aliased_field(field, join_manager) : field
+          options[:_relation_helper_options][:sort_fields].push("#{sort_field}")
+          records = records.order(Arel.sql("#{sort_field} #{direction}"))
         end
         records
       end
@@ -825,8 +838,9 @@ module JSONAPI
         if strategy
           records = call_method_or_proc(strategy, records, value, options)
         else
-          join_manager = options[:join_manager]
-          records = records.where(Arel.sql(get_aliased_field(filter, join_manager)) => value)
+          join_manager = options.dig(:_relation_helper_options, :join_manager)
+          field = join_manager ? get_aliased_field(filter, join_manager) : filter
+          records = records.where(Arel.sql(field) => value)
         end
 
         records

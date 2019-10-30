@@ -6,6 +6,7 @@ end
 
 class PostsControllerTest < ActionController::TestCase
   def setup
+    super
     JSONAPI.configuration.raise_if_parameters_not_allowed = true
     JSONAPI.configuration.always_include_to_one_linkage_data = false
   end
@@ -445,7 +446,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_cacheable_get :index, params: {sort: 'title'}
 
     assert_response :success
-    assert_equal "A First Post", json_response['data'][0]['attributes']['title']
+    assert_equal "A 1ST Post", json_response['data'][0]['attributes']['title']
   end
 
   def test_sorting_desc
@@ -459,7 +460,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_cacheable_get :index, params: {sort: 'title,body'}
 
     assert_response :success
-    assert_equal '14', json_response['data'][0]['id']
+    assert_equal '15', json_response['data'][0]['id']
   end
 
   def create_alphabetically_first_user_and_post
@@ -473,8 +474,15 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :success
     assert json_response['data'].length > 10, 'there are enough records to show sort'
-    assert_equal '17', json_response['data'][0]['id'], 'nil is at the top'
-    assert_equal post.id.to_s, json_response['data'][1]['id'], 'alphabetically first user is second'
+
+    # Postgres sorts nulls last, whereas sqlite and mysql sort nulls first
+    if ENV['DATABASE_URL'].starts_with?('postgres')
+      assert_equal '17', json_response['data'][-1]['id'], 'nil is at the start'
+      assert_equal post.id.to_s, json_response['data'][0]['id'], 'alphabetically first user is not first'
+    else
+      assert_equal '17', json_response['data'][0]['id'], 'nil is at the end'
+      assert_equal post.id.to_s, json_response['data'][1]['id'], 'alphabetically first user is second'
+    end
   end
 
   def test_desc_sorting_by_relationship_field
@@ -483,8 +491,15 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :success
     assert json_response['data'].length > 10, 'there are enough records to show sort'
-    assert_equal '17', json_response['data'][-1]['id'], 'nil is at the bottom'
-    assert_equal post.id.to_s, json_response['data'][-2]['id'], 'alphabetically first user is second last'
+
+    # Postgres sorts nulls last, whereas sqlite and mysql sort nulls first
+    if ENV['DATABASE_URL'].starts_with?('postgres')
+      assert_equal '17', json_response['data'][0]['id'], 'nil is at the start'
+      assert_equal post.id.to_s, json_response['data'][-1]['id']
+    else
+      assert_equal '17', json_response['data'][-1]['id'], 'nil is at the end'
+      assert_equal post.id.to_s, json_response['data'][-2]['id'], 'alphabetically first user is second last'
+    end
   end
 
   def test_sorting_by_relationship_field_include
@@ -493,8 +508,14 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :success
     assert json_response['data'].length > 10, 'there are enough records to show sort'
-    assert_equal '17', json_response['data'][0]['id'], 'nil is at the top'
-    assert_equal post.id.to_s, json_response['data'][1]['id'], 'alphabetically first user is second'
+
+    if ENV['DATABASE_URL'].starts_with?('postgres')
+      assert_equal '17', json_response['data'][-1]['id'], 'nil is at the top'
+      assert_equal post.id.to_s, json_response['data'][0]['id']
+    else
+      assert_equal '17', json_response['data'][0]['id'], 'nil is at the top'
+      assert_equal post.id.to_s, json_response['data'][1]['id'], 'alphabetically first user is second'
+    end
   end
 
   def test_invalid_sort_param
@@ -3107,7 +3128,7 @@ class FactsControllerTest < ActionController::TestCase
     assert json_response['data'].is_a?(Hash)
     assert_equal 'Jane Author', json_response['data']['attributes']['spouseName']
     assert_equal 'First man to run across Antartica.', json_response['data']['attributes']['bio']
-    assert_equal 23.89/45.6, json_response['data']['attributes']['qualityRating']
+    assert_equal (23.89/45.6).round(5), json_response['data']['attributes']['qualityRating'].round(5)
     assert_equal '47000.56', json_response['data']['attributes']['salary']
     assert_equal '2013-08-07T20:25:00.000Z', json_response['data']['attributes']['dateTimeJoined']
     assert_equal '1965-06-30', json_response['data']['attributes']['birthday']
@@ -4707,7 +4728,12 @@ class RobotsControllerTest < ActionController::TestCase
     Robot.create! name: 'jane', version: 1
     assert_cacheable_get :index, params: {sort: 'name'}
     assert_response :success
-    assert_equal 'John', json_response['data'].first['attributes']['name']
+
+    if ENV['DATABASE_URL'].starts_with?('postgres')
+      assert_equal 'jane', json_response['data'].first['attributes']['name']
+    else
+      assert_equal 'John', json_response['data'].first['attributes']['name']
+    end
   end
 
   def test_fetch_robots_with_sort_by_lower_name

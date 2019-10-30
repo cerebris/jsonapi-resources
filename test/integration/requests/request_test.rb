@@ -1438,13 +1438,16 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_sort_included_attribute
+    # Postgres sorts nulls last, whereas sqlite and mysql sort nulls first
+    pg = ENV['DATABASE_URL'].starts_with?('postgres')
+
     get '/api/v6/authors?sort=author_detail.author_stuff', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
     assert_jsonapi_response 200
-    assert_equal '1000', json_response['data'][0]['id']
+    assert_equal pg ? '1001' : '1000', json_response['data'][0]['id']
 
     get '/api/v6/authors?sort=-author_detail.author_stuff', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
     assert_jsonapi_response 200
-    assert_equal '1002', json_response['data'][0]['id']
+    assert_equal pg ? '1000' : '1002', json_response['data'][0]['id']
   end
 
   def test_include_parameter_quoted
