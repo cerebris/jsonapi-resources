@@ -196,9 +196,8 @@ module JSONAPI
       resource_set.populate!(serializer, context, find_options)
 
       opts = result_options
-      if ((JSONAPI.configuration.top_level_meta_include_record_count) ||
-          (paginator && paginator.class.requires_record_count) ||
-          (JSONAPI.configuration.top_level_meta_include_page_count))
+      if (JSONAPI.configuration.top_level_meta_include_record_count ||
+          (paginator && paginator.class.requires_record_count))
 
         opts[:record_count] = source_resource.class.count_related(
             source_resource.identity,
