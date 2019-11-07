@@ -189,7 +189,7 @@ module JSONAPI
       end
     end
 
-  def media_types_for(header)
+    def media_types_for(header)
       (request.headers[header] || '')
         .scan(MEDIA_TYPE_MATCHER)
         .to_a
