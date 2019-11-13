@@ -25,6 +25,11 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_cacheable_jsonapi_get '/api/v2/books?include=book_comments,book_comments.author'
   end
 
+  def test_get_not_found
+    get "/people/2000"
+    assert_jsonapi_response 404
+  end
+
   def test_post_sessions
     session_id = SecureRandom.uuid
 

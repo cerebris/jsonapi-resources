@@ -101,6 +101,7 @@ module JSONAPI
                                        include_directives,
                                        find_options)
 
+      fail JSONAPI::Exceptions::RecordNotFound.new(id) if resource_set.resource_klasses.empty?
       resource_set.populate!(serializer, context, find_options)
 
       return JSONAPI::ResourceSetOperationResult.new(:ok, resource_set, result_options)
