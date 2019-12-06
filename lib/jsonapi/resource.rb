@@ -1351,7 +1351,8 @@ module JSONAPI
               rel_id = row[index+1]
               assoc_rels = res.preloaded_fragments[rel_name]
               if index == path.length - 1
-                assoc_rels[rel_id] = target_resources[klass.name].fetch(rel_id)
+                association_res = target_resources[klass.name].fetch(rel_id, nil)
+                assoc_rels[rel_id] = association_res if association_res
               else
                 res = assoc_rels[rel_id]
               end
