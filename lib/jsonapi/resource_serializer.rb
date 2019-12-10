@@ -287,7 +287,6 @@ module JSONAPI
         include_linkage = ia && ia[:include]
         include_linked_children = ia && !ia[:include_related].empty?
 
-        options = { filters: ia && ia[:include_filters] || {} }
         if field_set.include?(name)
           ro = relationship_object(source, relationship, include_linkage)
           hash[format_key(name)] = ro unless ro.blank?
@@ -300,6 +299,7 @@ module JSONAPI
           resources = if source.preloaded_fragments.has_key?(format_key(name))
             source.preloaded_fragments[format_key(name)].values
           else
+            options = { filters: ia && ia[:include_filters] || {} }
             [source.public_send(name, options)].flatten(1).compact
           end
           resources.each do |resource|

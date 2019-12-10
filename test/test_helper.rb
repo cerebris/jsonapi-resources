@@ -24,6 +24,7 @@ require 'rails/test_help'
 require 'minitest/mock'
 require 'jsonapi-resources'
 require 'pry'
+require 'memory_profiler'
 
 require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/assertions', __FILE__)
@@ -639,6 +640,9 @@ class IntegrationBenchmark < ActionDispatch::IntegrationTest
       end
     end
     puts
+    if ENV["MEMORY_PROFILER"]
+      MemoryProfiler.report(allow_files: 'lib/jsonapi') { super(klass, method_name, reporter) }.pretty_print
+    end
   end
 end
 

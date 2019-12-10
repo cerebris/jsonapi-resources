@@ -5,6 +5,9 @@ module JSONAPI
   class Resource
     include Callbacks
 
+    DEFAULT_ATTRIBUTE_OPTIONS = { format: :default }.freeze
+    MODULE_PATH_REGEXP = /::[^:]+\Z/.freeze
+
     attr_reader :context
 
     define_jsonapi_resources_callbacks :create,
@@ -555,7 +558,7 @@ module JSONAPI
       end
 
       def default_attribute_options
-        { format: :default }
+        DEFAULT_ATTRIBUTE_OPTIONS
       end
 
       def relationship(*attrs)
@@ -1133,7 +1136,7 @@ module JSONAPI
         if name == 'JSONAPI::Resource'
           ''
         else
-          name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').underscore : ''
+          name =~ MODULE_PATH_REGEXP ? ($`.freeze.gsub('::', '/') + '/').underscore : ''
         end
       end
 
