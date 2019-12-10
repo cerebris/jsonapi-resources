@@ -47,7 +47,6 @@ module JSONAPI
             )
           )
         else
-          missed_resource_ids[resource_klass] ||= {}
           missed_resource_ids[resource_klass] = @resource_klasses[resource_klass].keys
         end
       end
