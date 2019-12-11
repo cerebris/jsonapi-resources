@@ -1546,23 +1546,91 @@ class PoroResource < JSONAPI::BasicResource
   root_resource
 
   class << self
+    def find_records(filters, options)
+      fail NotImplementedError, <<~EOF
+        Should be something like
+        def find_records(filters, options)
+          breeds = []
+          id_filter = filters[:id]
+          id_filter = [id_filter] unless id_filter.nil? || id_filter.is_a?(Array)
+          $breed_data.breeds.values.each do |breed|
+            breeds.push(breed) unless id_filter && !id_filter.include?(breed.id)
+          end
+          breeds
+        end
+      EOF
+    end
+
+    def find_record_by_key(key, options = {})
+      fail NotImplementedError, <<~EOF
+        Should be something like
+        def find_record_by_key(key, options = {})
+          $breed_data.breeds[key.to_i]
+        end
+      EOF
+    end
+
+    def find_records_by_keys(keys, options = {})
+      fail NotImplementedError, <<~EOF
+        Should be something like
+        def find_records_by_keys(keys, options = {})
+          breeds = []
+          keys.each do |key|
+            breeds.push($breed_data.breeds[key.to_i])
+          end
+          breeds
+        end
+      EOF
+    end
+
+    # Finds Resources using the `filters`. Pagination and sort options are used when provided
+    #
+    # @param filters [Hash] the filters hash
+    # @option options [Hash] :context The context of the request, set in the controller
+    # @option options [Hash] :sort_criteria The `sort criteria`
+    # @option options [Hash] :include_directives The `include_directives`
+    #
+    # @return [Array<Resource>] the Resource instances matching the filters, sorting and pagination rules.
     def find(filters, options = {})
-      records = find_breeds(filters, options)
+      records = find_records(filters, options)
       resources_for(records, options[:context])
     end
 
     # Records
     def find_fragments(filters, options = {})
       fragments = {}
-      find_breeds(filters, options).each do |breed|
-        rid = JSONAPI::ResourceIdentity.new(BreedResource, breed.id)
+      find_records(filters, options).each do |record|
+        rid = JSONAPI::ResourceIdentity.new(resource_klass, record.id)
         fragments[rid] = JSONAPI::ResourceFragment.new(rid)
       end
       fragments
     end
 
+    def resource_klass
+      self
+    end
+
+    # Counts Resources found using the `filters`
+    #
+    # @param filters [Hash] the filters hash
+    # @option options [Hash] :context The context of the request, set in the controller
+    #
+    # @return [Integer] the count
+    def count(filters, options = {})
+      fail NotImplementedError, <<~EOF
+        Should be something like
+        def count(filters, options)
+          0
+        end
+      EOF
+    end
+
+    # Returns the single Resource identified by `key`
+    #
+    # @param key the primary key of the resource to find
+    # @option options [Hash] :context The context of the request, set in the controller
     def find_by_key(key, options = {})
-      record = find_breed_by_key(key, options)
+      record = find_record_by_key(key, options)
       resource_for(record, options[:context])
     end
 
@@ -1570,32 +1638,13 @@ class PoroResource < JSONAPI::BasicResource
       find_by_keys(keys, options)
     end
 
-    def find_by_keys(keys, options = {})
-      records = find_breeds_by_keys(keys, options)
-      resources_for(records, options[:context])
-    end
-
+    # Returns an array of Resources identified by the `keys` array
     #
-    def find_breeds(filters, options = {})
-      breeds = []
-      id_filter = filters[:id]
-      id_filter = [id_filter] unless id_filter.nil? || id_filter.is_a?(Array)
-      $breed_data.breeds.values.each do |breed|
-        breeds.push(breed) unless id_filter && !id_filter.include?(breed.id)
-      end
-      breeds
-    end
-
-    def find_breed_by_key(key, options = {})
-      $breed_data.breeds[key.to_i]
-    end
-
-    def find_breeds_by_keys(keys, options = {})
-      breeds = []
-      keys.each do |key|
-        breeds.push($breed_data.breeds[key.to_i])
-      end
-      breeds
+    # @param keys [Array<key>] Array of primary keys to find resources for
+    # @option options [Hash] :context The context of the request, set in the controller
+    def find_by_keys(keys, options = {})
+      records = find_records_by_keys(keys, options)
+      resources_for(records, options[:context])
     end
   end
 end
@@ -1606,6 +1655,30 @@ class BreedResource < PoroResource
 
   # This is unneeded, just here for testing
   routing_options param: :id
+
+  class << self
+    def find_records(filters, options = {})
+      breeds = []
+      id_filter = filters[:id]
+      id_filter = [id_filter] unless id_filter.nil? || id_filter.is_a?(Array)
+      $breed_data.breeds.values.each do |breed|
+        breeds.push(breed) unless id_filter && !id_filter.include?(breed.id)
+      end
+      breeds
+    end
+
+    def find_record_by_key(key, options = {})
+      $breed_data.breeds[key.to_i]
+    end
+
+    def find_records_by_keys(keys, options = {})
+      breeds = []
+      keys.each do |key|
+        breeds.push($breed_data.breeds[key.to_i])
+      end
+      breeds
+    end
+  end
 
   def _save
     super
