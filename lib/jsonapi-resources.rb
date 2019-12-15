@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'jsonapi/acts_as_resource_controller'
+require 'jsonapi/basic_resource'
 if Rails::VERSION::MAJOR >= 6
   ActiveSupport.on_load(:action_controller_base) do
     require 'jsonapi/resource_controller'
