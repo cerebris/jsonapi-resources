@@ -105,16 +105,19 @@ module JSONAPI
     end
 
     def formatted_module_path_from_class(klass)
-      scopes = if @engine
-                 module_scopes_from_class(klass)[1..-1]
-               else
-                 module_scopes_from_class(klass)
-               end
+      @_module_path_cache ||= {}
+      @_module_path_cache[klass] ||= begin
+        scopes = if @engine
+                   module_scopes_from_class(klass)[1..-1]
+                 else
+                   module_scopes_from_class(klass)
+                 end
 
-      unless scopes.empty?
-        "/#{ scopes.map {|scope| format_route(scope.to_s.underscore)}.compact.join('/') }/"
-      else
-        "/"
+        unless scopes.empty?
+          "/#{ scopes.map {|scope| format_route(scope.to_s.underscore)}.compact.join('/') }/"
+        else
+          "/"
+        end
       end
     end
 

@@ -24,6 +24,7 @@ require 'rails/test_help'
 require 'minitest/mock'
 require 'jsonapi-resources'
 require 'pry'
+require 'memory_profiler'
 
 require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/assertions', __FILE__)
@@ -470,7 +471,8 @@ class ActionDispatch::IntegrationTest
   fixtures :all
 
   def assert_jsonapi_response(expected_status, msg = nil)
-    assert_equal JSONAPI::MEDIA_TYPE, response.content_type
+    media_type = Rails::VERSION::MAJOR >= 6 ? response.media_type : response.content_type
+    assert_equal JSONAPI::MEDIA_TYPE, media_type
     if status != expected_status && status >= 400
       pp json_response rescue nil
     end
@@ -638,6 +640,9 @@ class IntegrationBenchmark < ActionDispatch::IntegrationTest
       end
     end
     puts
+    if ENV["MEMORY_PROFILER"]
+      MemoryProfiler.report(allow_files: 'lib/jsonapi') { super(klass, method_name, reporter) }.pretty_print
+    end
   end
 end
 

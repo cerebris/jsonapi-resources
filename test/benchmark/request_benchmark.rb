@@ -7,7 +7,7 @@ class RequestBenchmark < IntegrationBenchmark
   end
 
   def bench_large_index_request_uncached
-    10.times do
+    100.times do
       assert_jsonapi_get '/api/v2/books?include=bookComments,bookComments.author'
     end
   end
@@ -15,7 +15,7 @@ class RequestBenchmark < IntegrationBenchmark
   def bench_large_index_request_caching
     cache = ActiveSupport::Cache::MemoryStore.new
     with_resource_caching(cache) do
-      10.times do
+      100.times do
         assert_jsonapi_get '/api/v2/books?include=bookComments,bookComments.author'
       end
     end
