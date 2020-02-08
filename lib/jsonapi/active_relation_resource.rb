@@ -338,6 +338,11 @@ module JSONAPI
             records = records.joins_left(relation_name)
           end
         end
+
+        if relationship.merge_resource_records
+          records = records.merge(self.records(options))
+        end
+
         records
       end
 
