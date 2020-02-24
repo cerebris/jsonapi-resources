@@ -6,15 +6,7 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
   def test_one_level_one_include
     directives = JSONAPI::IncludeDirectives.new(PersonResource, ['posts']).include_directives
 
-    assert_hash_equals(
-      {
-        include_related: {
-          posts: {
-            include_related: {}
-          }
-        }
-      },
-      directives)
+    assert_hash_equals({ posts: {} }, directives)
   end
 
   def test_one_level_multiple_includes
@@ -22,17 +14,9 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
 
     assert_hash_equals(
       {
-        include_related: {
-          posts: {
-            include_related: {}
-          },
-          comments: {
-            include_related: {}
-          },
-          expense_entries: {
-            include_related: {}
-          }
-        }
+        posts: {},
+        comments: {},
+        expense_entries: {}
       },
       directives)
   end
@@ -42,21 +26,11 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
 
     assert_hash_equals(
       {
-        include_related: {
-          posts: {
-            include_related: {
-              comments: {
-                include_related: {}
-              }
-            }
-          },
-          comments: {
-            include_related: {}
-          },
-          expense_entries: {
-            include_related: {}
-          }
-        }
+        posts: {
+          comments: {}
+        },
+        comments: {},
+        expense_entries: {}
       },
       directives)
   end
@@ -67,14 +41,8 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
 
     assert_hash_equals(
       {
-        include_related: {
-          posts: {
-            include_related: {
-              comments: {
-                include_related: {}
-              }
-            }
-          }
+        posts: {
+          comments: {}
         }
       },
       directives)
@@ -85,14 +53,8 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
 
     assert_hash_equals(
       {
-        include_related: {
-          posts: {
-            include_related: {
-              comments: {
-                include_related: {}
-              }
-            }
-          }
+        posts: {
+          comments: {}
         }
       },
       directives)
@@ -103,17 +65,9 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
 
     assert_hash_equals(
       {
-        include_related: {
-          posts: {
-            include_related: {
-              comments: {
-                include_related: {
-                  tags: {
-                    include_related: {}
-                  }
-                }
-              }
-            }
+        posts: {
+          comments: {
+            tags: {}
           }
         }
       },

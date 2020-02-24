@@ -367,7 +367,7 @@ module JSONAPI
     end
 
     def find_resource_set(resource_klass, include_directives, options)
-      include_related = include_directives.include_directives[:include_related] if include_directives
+      include_related = include_directives.include_directives if include_directives
 
       resource_id_tree = find_resource_id_tree(resource_klass, options, include_related)
 
@@ -375,7 +375,7 @@ module JSONAPI
     end
 
     def find_related_resource_set(resource, relationship_name, include_directives, options)
-      include_related = include_directives.include_directives[:include_related] if include_directives
+      include_related = include_directives.include_directives if include_directives
 
       resource_id_tree = find_resource_id_tree_from_resource_relationship(resource, relationship_name, options, include_related)
 
@@ -443,12 +443,12 @@ module JSONAPI
         )
 
         related_resource_id_tree = source_resource_id_tree.fetch_related_resource_id_tree(relationship)
-        related_resource_id_tree.add_resource_fragments(related_fragments, include_related[key][include_related])
+        related_resource_id_tree.add_resource_fragments(related_fragments, include_related[key])
 
         # Now recursively get the related resources for the currently found resources
         load_included(relationship.resource_klass,
                       related_resource_id_tree,
-                      include_related[relationship_name][:include_related],
+                      include_related[relationship_name],
                       options)
       end
     end

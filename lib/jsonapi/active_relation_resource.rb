@@ -92,7 +92,7 @@ module JSONAPI
       def find_fragments(filters, options = {})
         include_directives = options[:include_directives] ? options[:include_directives].include_directives : {}
         resource_klass = self
-        linkage_relationships = to_one_relationships_for_linkage(include_directives[:include_related])
+        linkage_relationships = to_one_relationships_for_linkage(include_directives)
 
         sort_criteria = options.fetch(:sort_criteria) { [] }
 
@@ -381,7 +381,7 @@ module JSONAPI
 
         include_directives = options[:include_directives] ? options[:include_directives].include_directives : {}
         resource_klass = relationship.resource_klass
-        linkage_relationships = resource_klass.to_one_relationships_for_linkage(include_directives[:include_related])
+        linkage_relationships = resource_klass.to_one_relationships_for_linkage(include_directives)
 
         sort_criteria = []
         options[:sort_criteria].try(:each) do |sort|
@@ -514,7 +514,7 @@ module JSONAPI
 
         resource_types.each do |resource_type|
           related_resource_klass = resource_klass_for(resource_type)
-          relationships = related_resource_klass.to_one_relationships_for_linkage(include_directives[:include_related])
+          relationships = related_resource_klass.to_one_relationships_for_linkage(include_directives)
           relationships.each do |r|
             linkage_relationships << "##{resource_type}.#{r}"
           end

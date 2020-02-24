@@ -5,21 +5,15 @@ module JSONAPI
     # will transform into =>
     # {
     #   posts: {
-    #     include_related: {
-    #       comments:{
-    #         include_related: {
-    #           tags: {
-    #             include_related: {}
-    #           }
-    #         }
-    #       }
+    #     comments: {
+    #       tags: {}
     #     }
     #   }
     # }
 
     def initialize(resource_klass, includes_array)
       @resource_klass = resource_klass
-      @include_directives_hash = { include_related: {} }
+      @include_directives_hash = {}
       includes_array.each do |include|
         parse_include(include)
       end
@@ -42,8 +36,8 @@ module JSONAPI
       path.segments.each do |segment|
         relationship_name = segment.relationship.name.to_sym
 
-        current[:include_related][relationship_name] ||= { include_related: {} }
-        current = current[:include_related][relationship_name]
+        current[relationship_name] ||= {}
+        current = current[relationship_name]
       end
 
     rescue JSONAPI::Exceptions::InvalidRelationship => _e
