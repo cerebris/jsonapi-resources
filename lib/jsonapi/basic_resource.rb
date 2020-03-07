@@ -1019,7 +1019,7 @@ module JSONAPI
 
       # Generate a hashcode from the value to be used as part of the cache lookup
       def hash_cache_field(value)
-        value.hash
+        Digest::MD5.hexdigest(value.to_s)
       end
 
       def _model_class
