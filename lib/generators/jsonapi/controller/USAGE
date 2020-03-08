@@ -1,0 +1,11 @@
+Description:
+    Controller Generator for JSONAPI Resources
+
+Examples:
+    rails generate jsonapi:controller Post
+
+    This will:
+        create: app/controllers/posts_controller.rb
+        add: a route to routes.rb
+
+    Note: If the resource is namespaced the namespace will be duplicated for each route

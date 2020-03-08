@@ -1,0 +1,8 @@
+Description:
+    Processor Generator for JSONAPI Resources
+
+Examples:
+    rails generate jsonapi:processor Post
+
+    This will:
+        create: app/processors/post_processor.rb
