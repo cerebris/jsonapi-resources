@@ -112,7 +112,7 @@ module JSONAPI
                                options: options)
 
         # This alias is going to be resolve down to the model's table name and will not actually be an alias
-        resource_table_alias = resource_klass._table_name
+        resource_table_alias = resource_klass._table_name_for_alias
 
         pluck_fields = [Arel.sql("#{concat_table_field(resource_table_alias, resource_klass._primary_key)} AS #{resource_table_alias}_#{resource_klass._primary_key}")]
 
@@ -543,9 +543,9 @@ module JSONAPI
         related_type = concat_table_field(_table_name, relationship.polymorphic_type)
 
         pluck_fields = [
-            Arel.sql("#{primary_key} AS #{_table_name}_#{_primary_key}"),
-            Arel.sql("#{related_key} AS #{_table_name}_#{relationship.foreign_key}"),
-            Arel.sql("#{related_type} AS #{_table_name}_#{relationship.polymorphic_type}")
+            Arel.sql("#{primary_key} AS #{_table_name_for_alias}_#{_primary_key}"),
+            Arel.sql("#{related_key} AS #{_table_name_for_alias}_#{relationship.foreign_key}"),
+            Arel.sql("#{related_type} AS #{_table_name_for_alias}_#{relationship.polymorphic_type}")
         ]
 
         # Get the additional fields from each relation. There's a limitation that the fields must exist in each relation
@@ -826,7 +826,7 @@ module JSONAPI
           join_details = join_manager.join_details[path.last_relationship]
           table_alias = join_details[:alias]
         else
-          table_alias = self._table_name
+          table_alias = self._table_name_for_alias
         end
 
         concat_table_field(table_alias, field_segment.delegated_field_name)

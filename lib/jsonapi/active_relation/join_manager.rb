@@ -149,7 +149,7 @@ module JSONAPI
 
             if relationship == :root
               unless source_relationship
-                add_join_details('', {alias: resource_klass._table_name, join_type: :root})
+                add_join_details('', {alias: resource_klass._table_name_for_alias, join_type: :root})
               end
               next
             end

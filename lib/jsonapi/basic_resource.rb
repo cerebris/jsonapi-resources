@@ -893,6 +893,10 @@ module JSONAPI
         @_table_name ||= _model_class.respond_to?(:table_name) ? _model_class.table_name : _model_name.tableize
       end
 
+      def _table_name_for_alias
+        @_table_name ||= _table_name.tr('.', '_')
+      end
+
       def _as_parent_key
         @_as_parent_key ||= "#{_type.to_s.singularize}_id"
       end
