@@ -19,7 +19,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
   spec.required_ruby_version = '>= 2.3'
 
-  spec.add_development_dependency 'bundler', '~> 1.17.3'
+  spec.add_development_dependency 'bundler', '>= 1.17'
   spec.add_development_dependency 'rake'
   spec.add_development_dependency 'minitest', '~> 5.10', '!= 5.10.2'
   spec.add_development_dependency 'minitest-spec-rails'
