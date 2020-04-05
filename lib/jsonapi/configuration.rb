@@ -18,7 +18,7 @@ module JSONAPI
                 :default_paginator,
                 :default_page_size,
                 :maximum_page_size,
-                :default_processor_klass,
+                :default_processor_klass_name,
                 :use_text_errors,
                 :top_level_links_include_pagination,
                 :top_level_meta_include_record_count,
@@ -110,7 +110,7 @@ module JSONAPI
 
       # The default Operation Processor to use if one is not defined specifically
       # for a Resource.
-      self.default_processor_klass = JSONAPI::Processor
+      self.default_processor_klass_name = 'JSONAPI::Processor'
 
       # Allows transactions for creating and updating records
       # Set this to false if your backend does not support transactions (e.g. Mongodb)
@@ -225,7 +225,17 @@ module JSONAPI
     end
 
     def default_processor_klass=(default_processor_klass)
+      ActiveSupport::Deprecation.warn('`default_processor_klass` has been replaced by `default_processor_klass_name`.')
       @default_processor_klass = default_processor_klass
+    end
+
+    def default_processor_klass
+      @default_processor_klass ||= default_processor_klass_name.safe_constantize
+    end
+
+    def default_processor_klass_name=(default_processor_klass_name)
+      @default_processor_klass = nil
+      @default_processor_klass_name = default_processor_klass_name
     end
 
     def allow_include=(allow_include)
