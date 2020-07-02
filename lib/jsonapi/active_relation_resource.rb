@@ -2,6 +2,10 @@ module JSONAPI
   class ActiveRelationResource < BasicResource
     root_resource
 
+    def find_related_ids(relationship, options = {})
+      self.class.find_related_fragments([identity], relationship.name, options).keys.collect { |rid| rid.id }
+    end
+
     class << self
       # Finds Resources using the `filters`. Pagination and sort options are used when provided
       #
@@ -73,6 +77,78 @@ module JSONAPI
       def find_to_populate_by_keys(keys, options = {})
         records = records_for_populate(options).where(_primary_key => keys)
         resources_for(records, options[:context])
+      end
+
+      def find_resource_id_tree(options, include_related)
+        options[:cache] = caching?
+
+        fragments = find_fragments(options[:filters], options)
+
+        # primary_resource_id_tree = JSONAPI::ResourceIdTree.create_from_include_directives(options[:include_directives])
+        primary_resource_id_tree = PrimaryResourceIdTree.new
+        primary_resource_id_tree.add_resource_fragments(fragments, include_related)
+
+        load_included(self, primary_resource_id_tree, include_related, options.except(:filters, :sort_criteria))
+
+        primary_resource_id_tree
+      end
+
+      def find_related_resource_id_tree(parent_resource, relationship_name, find_options, include_related)
+        options = find_options.except(:include_directives)
+        options[:cache] = caching?
+
+        fragments = find_included_fragments([parent_resource.identity], relationship_name, options)
+
+        # primary_resource_id_tree = JSONAPI::ResourceIdTree.create_from_include_directives(find_options[:include_directives])
+        primary_resource_id_tree = PrimaryResourceIdTree.new
+        primary_resource_id_tree.add_resource_fragments(fragments, include_related)
+
+        load_included(self, primary_resource_id_tree, include_related, options.except(:filters, :sort_criteria))
+
+        primary_resource_id_tree
+      end
+
+      def find_resource_id_tree_from_relationship(resource, relationship_name, find_options, include_related)
+        relationship = resource.class._relationship(relationship_name)
+
+        options = find_options.except(:include_directives)
+        options[:cache] = relationship.resource_klass.caching?
+
+        fragments = resource.class.find_related_fragments([resource.identity], relationship_name, options)
+
+        # primary_resource_id_tree = JSONAPI::ResourceIdTree.create_from_include_directives(find_options[:include_directives])
+        primary_resource_id_tree = PrimaryResourceIdTree.new
+        primary_resource_id_tree.add_resource_fragments(fragments, include_related)
+
+        load_included(self, primary_resource_id_tree, include_related, options.except(:filters, :sort_criteria))
+
+        primary_resource_id_tree
+      end
+
+      def load_included(resource_klass, source_resource_id_tree, include_related, options)
+        source_rids = source_resource_id_tree.fragments.keys
+
+        include_related.try(:each_key) do |key|
+          relationship = resource_klass._relationship(key)
+          relationship_name = relationship.name.to_sym
+
+          find_related_resource_options = options.dup
+          find_related_resource_options[:sort_criteria] = relationship.resource_klass.default_sort
+          find_related_resource_options[:cache] = resource_klass.caching?
+
+          related_fragments = resource_klass.find_included_fragments(
+            source_rids, relationship_name, find_related_resource_options
+          )
+
+          related_resource_id_tree = source_resource_id_tree.fetch_related_resource_id_tree(relationship)
+          related_resource_id_tree.add_resource_fragments(related_fragments, include_related[key][include_related])
+
+          # Now recursively get the related resources for the currently found resources
+          load_included(relationship.resource_klass,
+                        related_resource_id_tree,
+                        include_related[relationship_name][:include_related],
+                        options)
+        end
       end
 
       # Finds Resource fragments using the `filters`. Pagination and sort options are used when provided.
@@ -231,7 +307,7 @@ module JSONAPI
       # @option options [Hash] :context The context of the request, set in the controller
       #
       # @return [Integer] the count
-      def count_related(source_rid, relationship_name, options = {})
+      def count_related(source_resource, relationship_name, options = {})
         relationship = _relationship(relationship_name)
         related_klass = relationship.resource_klass
 
@@ -244,7 +320,7 @@ module JSONAPI
 
         records = apply_request_settings_to_records(records: records(options),
                                resource_klass: related_klass,
-                               primary_keys: source_rid.id,
+                               primary_keys: source_resource.id,
                                join_manager: join_manager,
                                filters: filters,
                                options: options)

@@ -17,6 +17,27 @@ module JSONAPI
       @related_resource_id_trees[relationship_name] ||= RelatedResourceIdTree.new(relationship, self)
     end
 
+    # class << self
+    #   def create_from_include_directives(include_directives)
+    #     tree = PrimaryResourceIdTree.new
+    #     add_include_related_tree(tree, include_directives.resource_klass, include_directives.include_directives_hash[:include_related])
+    #     tree
+    #   end
+    #
+    #   private
+    #
+    #   def add_include_related_tree(tree, resource_klass, include_related)
+    #     include_related.each do |relationship_name, related|
+    #       relationship = resource_klass._relationship(relationship_name)
+    #
+    #       source_resource_id_tree = tree.is_a?(PrimaryResourceIdTree) ? tree : tree.source_resource_id_tree
+    #       related_tree = RelatedResourceIdTree.new(relationship, source_resource_id_tree)
+    #       tree.related_resource_id_trees[relationship_name] = related_tree
+    #       add_include_related_tree(related_tree, relationship.resource_klass, related[:include_related])
+    #     end
+    #   end
+    # end
+
     private
 
     def init_included_relationships(fragment, include_related)
@@ -106,7 +127,16 @@ module JSONAPI
         @source_resource_id_tree.fragments[rid].add_related_identity(parent_relationship.name, fragment.identity)
       end
 
-      @fragments[fragment.identity] = fragment
+      if @fragments[fragment.identity]
+        @fragments[fragment.identity].related_from.merge(fragment.related_from)
+        fragment.related.each_pair do |relationship_name, rids|
+          if rids
+            @fragments[fragment.identity].merge_related_identities(relationship_name, rids)
+          end
+        end
+      else
+        @fragments[fragment.identity] = fragment
+      end
     end
   end
 end

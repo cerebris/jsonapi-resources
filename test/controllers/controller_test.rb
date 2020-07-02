@@ -24,6 +24,12 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['data'].is_a?(Array)
   end
 
+  def test_index_includes
+    assert_cacheable_get :index, params: { include: 'author,comments' }
+    assert_response :success
+    assert json_response['data'].is_a?(Array)
+  end
+
   def test_accept_header_missing
     @request.headers['Accept'] = nil
 
@@ -4750,5 +4756,25 @@ class RobotsControllerTest < ActionController::TestCase
     assert_cacheable_get :index, params: {sort: 'version'}
     assert_response 400
     assert_equal 'version is not a valid sort criteria for robots', json_response['errors'].first['detail']
+  end
+end
+
+class Api::V11::PostsControllerTest < ActionController::TestCase
+  def setup
+    super
+    JSONAPI.configuration.raise_if_parameters_not_allowed = true
+    JSONAPI.configuration.always_include_to_one_linkage_data = false
+  end
+
+  def test_index_legacy
+    assert_cacheable_get :index
+    assert_response :success
+    assert json_response['data'].is_a?(Array)
+  end
+
+  def test_index_legacy_includes
+    assert_cacheable_get :index, params: { include: 'author,comments' }
+    assert_response :success
+    assert json_response['data'].is_a?(Array)
   end
 end

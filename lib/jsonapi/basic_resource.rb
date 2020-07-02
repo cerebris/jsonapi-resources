@@ -44,8 +44,12 @@ module JSONAPI
       JSONAPI::ResourceIdentity.new(self.class, id)
     end
 
+    def cache_field_value
+      _model.public_send(self.class._cache_field)
+    end
+
     def cache_id
-      [id, self.class.hash_cache_field(_model.public_send(self.class._cache_field))]
+      [id, self.class.hash_cache_field(cache_field_value)]
     end
 
     def is_new?
@@ -285,9 +289,7 @@ module JSONAPI
       reflect = reflect_relationship?(relationship, options)
 
       if reflect
-        existing_rids = self.class.find_related_fragments([identity], relationship_type, options)
-
-        existing = existing_rids.keys.collect { |rid| rid.id }
+        existing = find_related_ids(relationship, options)
 
         to_delete = existing - (relationship_key_values & existing)
         to_delete.each do |key|
@@ -415,6 +417,10 @@ module JSONAPI
       end if field_data[:to_many]
 
       :completed
+    end
+
+    def find_related_ids(relationship, options = {})
+      send(relationship.foreign_key)
     end
 
     class << self
@@ -709,7 +715,7 @@ module JSONAPI
       end
 
       def resource_for(model_record, context)
-        resource_klass = self.resource_klass_for_model(model_record)
+        resource_klass = resource_klass_for_model(model_record)
         resource_klass.new(model_record, context)
       end
 
@@ -1083,7 +1089,7 @@ module JSONAPI
         end
       end
 
-      #   ResourceBuilder methods
+      # ResourceBuilder methods
       def define_relationship_methods(relationship_name, relationship_klass, options)
         relationship = register_relationship(
             relationship_name,

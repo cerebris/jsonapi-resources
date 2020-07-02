@@ -421,6 +421,13 @@ TestApp.routes.draw do
       jsonapi_resources :people
       jsonapi_resource :preferences
     end
+
+    namespace :v11 do
+      jsonapi_resources :people
+      jsonapi_resources :posts
+      jsonapi_resources :sections
+      jsonapi_resources :comments
+    end
   end
 
   namespace :admin_api do

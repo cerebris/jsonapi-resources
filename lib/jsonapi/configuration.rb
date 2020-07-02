@@ -43,9 +43,13 @@ module JSONAPI
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
+      #
+      # TODO: camelized_key
       self.json_key_format = :dasherized_key
 
       #:underscored_route, :camelized_route, :dasherized_route, or custom
+      #
+      # TODO: camelized_route
       self.route_format = :dasherized_route
 
       #:integer, :uuid, :string, or custom (provide a proc)

@@ -21,9 +21,9 @@ module JSONAPI
       # @type [Lookup[]]
       lookups = []
 
-
       # Step One collect all of the lookups for the cache, or keys that don't require cache access
       @resource_klasses.each_key do |resource_klass|
+        missed_resource_ids[resource_klass] ||= []
 
         serializer_config_key = serializer.config_key(resource_klass).gsub("/", "_")
         context_json = resource_klass.attribute_caching_context(context).to_json
@@ -47,7 +47,13 @@ module JSONAPI
             )
           )
         else
-          missed_resource_ids[resource_klass] = @resource_klasses[resource_klass].keys
+          @resource_klasses[resource_klass].keys.each do |k|
+            if @resource_klasses[resource_klass][k][:resource].nil?
+              missed_resource_ids[resource_klass] << k
+            else
+              register_resource(resource_klass, @resource_klasses[resource_klass][k][:resource])
+            end
+          end
         end
       end
 
@@ -60,7 +66,6 @@ module JSONAPI
         found_resources = {}
       end
 
-
       # Step Three collect the results and collect hit/miss stats
       stats = {}
       found_resources.each do |resource_klass, resources|
@@ -72,7 +77,6 @@ module JSONAPI
             stats[resource_klass][:misses] += 1
 
             # Collect misses
-            missed_resource_ids[resource_klass] ||= []
             missed_resource_ids[resource_klass].push(id)
           else
             stats[resource_klass][:hits] ||= 0
@@ -96,7 +100,6 @@ module JSONAPI
           relationship_data = @resource_klasses[resource_klass][resource.id][:relationships]
 
           if resource_klass.caching?
-
             serializer_config_key = serializer.config_key(resource_klass).gsub("/", "_")
             context_json = resource_klass.attribute_caching_context(context).to_json
             context_b64 = JSONAPI.configuration.resource_cache_digest_function.call(context_json)
@@ -158,6 +161,7 @@ module JSONAPI
 
         flattened_tree[resource_klass][id] ||= {primary: fragment.primary, relationships: {}}
         flattened_tree[resource_klass][id][:cache_id] ||= fragment.cache
+        flattened_tree[resource_klass][id][:resource] ||= fragment.resource
 
         fragment.related.try(:each_pair) do |relationship_name, related_rids|
           flattened_tree[resource_klass][id][:relationships][relationship_name] ||= Set.new

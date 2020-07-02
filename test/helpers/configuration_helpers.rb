@@ -29,7 +29,7 @@ module Helpers
       with_jsonapi_config(new_config_options) do
         if classes == :all or (classes.is_a?(Hash) && classes.keys == [:except])
           resource_classes = ObjectSpace.each_object(Class).select do |klass|
-            if klass < JSONAPI::Resource
+            if klass < JSONAPI::BasicResource
               # Not using Resource#_model_class to avoid tripping the warning early, which could
               # cause ResourceTest#test_nil_model_class to fail.
               model_class = klass._model_name.to_s.safe_constantize

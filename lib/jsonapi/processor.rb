@@ -125,11 +125,12 @@ module JSONAPI
           include_directives: include_directives
       }
 
-      resource_id_tree = find_related_resource_id_tree(resource_klass,
-                                                       JSONAPI::ResourceIdentity.new(resource_klass, parent_key),
-                                                       relationship_type,
-                                                       find_options,
-                                                       nil)
+      resource_id_tree = resource_klass.find_related_resource_id_tree(
+        parent_resource,
+        relationship_type,
+        find_options,
+        nil
+      )
 
       return JSONAPI::RelationshipOperationResult.new(:ok,
                                                       parent_resource,
@@ -202,7 +203,7 @@ module JSONAPI
           (JSONAPI.configuration.top_level_meta_include_page_count))
 
         opts[:record_count] = source_resource.class.count_related(
-            source_resource.identity,
+            source_resource,
             relationship_type,
             find_options)
       end
@@ -369,7 +370,7 @@ module JSONAPI
     def find_resource_set(resource_klass, include_directives, options)
       include_related = include_directives.include_directives[:include_related] if include_directives
 
-      resource_id_tree = find_resource_id_tree(resource_klass, options, include_related)
+      resource_id_tree = resource_klass.find_resource_id_tree(options, include_related)
 
       JSONAPI::ResourceSet.new(resource_id_tree)
     end
@@ -377,80 +378,9 @@ module JSONAPI
     def find_related_resource_set(resource, relationship_name, include_directives, options)
       include_related = include_directives.include_directives[:include_related] if include_directives
 
-      resource_id_tree = find_resource_id_tree_from_resource_relationship(resource, relationship_name, options, include_related)
+      resource_id_tree = resource_klass.find_resource_id_tree_from_relationship(resource, relationship_name, options, include_related)
 
       JSONAPI::ResourceSet.new(resource_id_tree)
-    end
-
-    private
-    def find_related_resource_id_tree(resource_klass, source_id, relationship_name, find_options, include_related)
-      options = find_options.except(:include_directives)
-      options[:cache] = resource_klass.caching?
-
-      fragments = resource_klass.find_included_fragments([source_id], relationship_name, options)
-
-      primary_resource_id_tree = PrimaryResourceIdTree.new
-      primary_resource_id_tree.add_resource_fragments(fragments, include_related)
-
-      load_included(resource_klass, primary_resource_id_tree, include_related, options.except(:filters, :sort_criteria))
-
-      primary_resource_id_tree
-    end
-
-    def find_resource_id_tree(resource_klass, find_options, include_related)
-      options = find_options
-      options[:cache] = resource_klass.caching?
-
-      fragments = resource_klass.find_fragments(find_options[:filters], options)
-
-      primary_resource_id_tree = PrimaryResourceIdTree.new
-      primary_resource_id_tree.add_resource_fragments(fragments, include_related)
-
-      load_included(resource_klass, primary_resource_id_tree, include_related, options.except(:filters, :sort_criteria))
-
-      primary_resource_id_tree
-    end
-
-    def find_resource_id_tree_from_resource_relationship(resource, relationship_name, find_options, include_related)
-      relationship = resource.class._relationship(relationship_name)
-
-      options = find_options.except(:include_directives)
-      options[:cache] = relationship.resource_klass.caching?
-
-      fragments = resource.class.find_related_fragments([resource.identity], relationship_name, options)
-
-      primary_resource_id_tree = PrimaryResourceIdTree.new
-      primary_resource_id_tree.add_resource_fragments(fragments, include_related)
-
-      load_included(resource_klass, primary_resource_id_tree, include_related, options.except(:filters, :sort_criteria))
-
-      primary_resource_id_tree
-    end
-
-    def load_included(resource_klass, source_resource_id_tree, include_related, options)
-      source_rids = source_resource_id_tree.fragments.keys
-
-      include_related.try(:each_key) do |key|
-        relationship = resource_klass._relationship(key)
-        relationship_name = relationship.name.to_sym
-
-        find_related_resource_options = options.dup
-        find_related_resource_options[:sort_criteria] = relationship.resource_klass.default_sort
-        find_related_resource_options[:cache] = resource_klass.caching?
-
-        related_fragments = resource_klass.find_included_fragments(
-          source_rids, relationship_name, find_related_resource_options
-        )
-
-        related_resource_id_tree = source_resource_id_tree.fetch_related_resource_id_tree(relationship)
-        related_resource_id_tree.add_resource_fragments(related_fragments, include_related[key][include_related])
-
-        # Now recursively get the related resources for the currently found resources
-        load_included(relationship.resource_klass,
-                      related_resource_id_tree,
-                      include_related[relationship_name][:include_related],
-                      options)
-      end
     end
   end
 end

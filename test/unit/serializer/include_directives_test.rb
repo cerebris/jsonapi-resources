@@ -10,7 +10,9 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
       {
         include_related: {
           posts: {
-            include_related: {}
+            include: true,
+            include_related:{},
+            include_in_join: true
           }
         }
       },
@@ -24,13 +26,19 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
       {
         include_related: {
           posts: {
-            include_related: {}
+            include: true,
+            include_related:{},
+            include_in_join: true
           },
           comments: {
-            include_related: {}
+            include: true,
+            include_related:{},
+            include_in_join: true
           },
           expense_entries: {
-            include_related: {}
+            include: true,
+            include_related:{},
+            include_in_join: true
           }
         }
       },
@@ -44,17 +52,25 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
       {
         include_related: {
           posts: {
+            include: true,
             include_related: {
               comments: {
-                include_related: {}
+                include: true,
+                include_related: {},
+                include_in_join: true
               }
-            }
+            },
+            include_in_join: true
           },
           comments: {
-            include_related: {}
+            include: true,
+            include_related: {},
+            include_in_join: true
           },
           expense_entries: {
-            include_related: {}
+            include: true,
+            include_related: {},
+            include_in_join: true
           }
         }
       },
@@ -69,11 +85,15 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
       {
         include_related: {
           posts: {
+            include: true,
             include_related: {
               comments: {
-                include_related: {}
+                include: true,
+                include_related: {},
+                include_in_join: true
               }
-            }
+            },
+            include_in_join: true
           }
         }
       },
@@ -87,11 +107,15 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
       {
         include_related: {
           posts: {
-            include_related: {
+            include: true,
+            include_related:{
               comments: {
-                include_related: {}
+                include: true,
+                include_related:{},
+                include_in_join: true
               }
-            }
+            },
+            include_in_join: true
           }
         }
       },
@@ -105,21 +129,36 @@ class IncludeDirectivesTest < ActiveSupport::TestCase
       {
         include_related: {
           posts: {
-            include_related: {
+            include: true,
+            include_related:{
               comments: {
-                include_related: {
+                include: true,
+                include_related:{
                   tags: {
-                    include_related: {}
+                    include: true,
+                    include_related:{},
+                    include_in_join: true
                   }
-                }
+                },
+                include_in_join: true
               }
-            }
+            },
+            include_in_join: true
           }
         }
       },
       directives)
   end
 
+  # def test_three_levels_include_full_tree
+  #   directives = JSONAPI::IncludeDirectives.new(PersonResource, ['posts.comments.tags'])
+  #
+  #   tree = JSONAPI::ResourceIdTree.create_from_include_directives(directives)
+  #
+  #   # TODO: real test
+  #   assert tree
+  # end
+  #
   # def test_three_levels_include_full_model_includes
   #   directives = JSONAPI::IncludeDirectives.new(PersonResource, ['posts.comments.tags'])
   #   assert_array_equals([{:posts=>[{:comments=>[:tags]}]}], directives.model_includes)

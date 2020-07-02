@@ -1197,6 +1197,23 @@ module Api
       end
     end
   end
+
+  module V11
+    class PostsController < JSONAPI::ResourceController
+    end
+
+    class CommentsController < JSONAPI::ResourceController
+    end
+
+    class SectionsController < JSONAPI::ResourceController
+    end
+
+    class PeopleController < JSONAPI::ResourceController
+      def context
+        {current_user: $test_user}
+      end
+    end
+  end
 end
 
 module Api
@@ -1597,13 +1614,16 @@ class PoroResource < JSONAPI::BasicResource
     end
 
     # Records
-    def find_fragments(filters, options = {})
+    def find_resource_id_tree(options, include_related)
       fragments = {}
-      find_records(filters, options).each do |record|
+      find_records(options[:filters], options).each do |record|
         rid = JSONAPI::ResourceIdentity.new(resource_klass, record.id)
         fragments[rid] = JSONAPI::ResourceFragment.new(rid)
       end
-      fragments
+
+      primary_resource_id_tree = JSONAPI::PrimaryResourceIdTree.new
+      primary_resource_id_tree.add_resource_fragments(fragments, include_related)
+      primary_resource_id_tree
     end
 
     def resource_klass
@@ -2400,6 +2420,37 @@ module Api
     end
 
     class BookCommentResource < Api::V2::BookCommentResource
+    end
+  end
+
+  module V11
+    class PersonResource < JSONAPI::LegacyResource
+      has_many :comments, inverse_relationship: :author
+      has_many :posts, inverse_relationship: :author
+
+      attributes :name, :email
+      attribute :date_joined, format: :date_with_timezone
+    end
+
+    class PostResource < JSONAPI::LegacyResource
+      has_many :comments
+      has_one :section
+      has_one :author, class_name: 'Person'
+
+      attributes :title
+    end
+
+    class SectionResource < JSONAPI::LegacyResource
+      attributes :name
+      has_many :posts
+    end
+
+    class CommentResource < JSONAPI::LegacyResource
+      attributes :body
+      has_one :post
+      has_one :author, class_name: 'Person'
+
+      filters :body
     end
   end
 end
