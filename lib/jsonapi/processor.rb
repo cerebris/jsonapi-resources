@@ -392,7 +392,7 @@ module JSONAPI
       primary_resource_id_tree = PrimaryResourceIdTree.new
       primary_resource_id_tree.add_resource_fragments(fragments, include_related)
 
-      load_included(resource_klass, primary_resource_id_tree, include_related, options.except(:filters, :sort_criteria))
+      load_included(resource_klass, primary_resource_id_tree, include_related, options)
 
       primary_resource_id_tree
     end
@@ -406,7 +406,7 @@ module JSONAPI
       primary_resource_id_tree = PrimaryResourceIdTree.new
       primary_resource_id_tree.add_resource_fragments(fragments, include_related)
 
-      load_included(resource_klass, primary_resource_id_tree, include_related, options.except(:filters, :sort_criteria))
+      load_included(resource_klass, primary_resource_id_tree, include_related, options)
 
       primary_resource_id_tree
     end
@@ -422,7 +422,7 @@ module JSONAPI
       primary_resource_id_tree = PrimaryResourceIdTree.new
       primary_resource_id_tree.add_resource_fragments(fragments, include_related)
 
-      load_included(resource_klass, primary_resource_id_tree, include_related, options.except(:filters, :sort_criteria))
+      load_included(resource_klass, primary_resource_id_tree, include_related, options)
 
       primary_resource_id_tree
     end
@@ -434,7 +434,7 @@ module JSONAPI
         relationship = resource_klass._relationship(key)
         relationship_name = relationship.name.to_sym
 
-        find_related_resource_options = options.dup
+        find_related_resource_options = options.except(:filters, :sort_criteria, :paginator)
         find_related_resource_options[:sort_criteria] = relationship.resource_klass.default_sort
         find_related_resource_options[:cache] = resource_klass.caching?
 

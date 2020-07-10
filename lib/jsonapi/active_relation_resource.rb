@@ -395,7 +395,7 @@ module JSONAPI
                                                        sort_criteria: sort_criteria,
                                                        filters: filters)
 
-        paginator = options[:paginator] if source_rids.count == 1
+        paginator = options[:paginator]
 
         records = apply_request_settings_to_records(records: records_for_source_to_related(options),
                                resource_klass: resource_klass,
@@ -525,7 +525,7 @@ module JSONAPI
                                                        relationships: linkage_relationships,
                                                        filters: filters)
 
-        paginator = options[:paginator] if source_rids.count == 1
+        paginator = options[:paginator]
 
         # Note: We will sort by the source table. Without using unions we can't sort on a polymorphic relationship
         # in any manner that makes sense
