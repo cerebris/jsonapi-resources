@@ -13,7 +13,7 @@ module JSONAPI
                                               :transaction
     end
 
-    attr_reader :response_document
+    attr_reader :response_document, :jsonapi_request
 
     def index
       process_request
@@ -76,48 +76,54 @@ module JSONAPI
     end
 
     def process_request
-      @response_document = create_response_document
-
-      unless verify_content_type_header && verify_accept_header
-        render_response_document
-        return
-      end
-
-      request_parser = JSONAPI::RequestParser.new(
-          params,
-          context: context,
-          key_formatter: key_formatter,
-          server_error_callbacks: (self.class.server_error_callbacks || []))
-
-      transactional = request_parser.transactional?
-
       begin
-        process_operations(transactional) do
-          run_callbacks :process_operations do
-            request_parser.each(response_document) do |op|
-              op.options[:serializer] = resource_serializer_klass.new(
-                  op.resource_klass,
-                  include_directives: op.options[:include_directives],
-                  fields: op.options[:fields],
-                  base_url: base_url,
-                  key_formatter: key_formatter,
-                  route_formatter: route_formatter,
-                  serialization_options: serialization_options,
-                  controller: self
-              )
-              op.options[:cache_serializer_output] = !JSONAPI.configuration.resource_cache.nil?
-
-              process_operation(op)
-            end
-          end
-          if response_document.has_errors?
-            raise ActiveRecord::Rollback
-          end
-        end
+        setup_response_document
+        verify_content_type_header
+        verify_accept_header
+        parse_request
+        execute_request
       rescue => e
         handle_exceptions(e)
       end
       render_response_document
+    end
+
+    def setup_response_document
+      @response_document = create_response_document
+    end
+
+    def parse_request
+      @jsonapi_request = JSONAPI::Request.new(
+        params,
+        context: context,
+        key_formatter: key_formatter,
+        server_error_callbacks: (self.class.server_error_callbacks || []))
+      fail JSONAPI::Exceptions::Errors.new(@jsonapi_request.errors) if @jsonapi_request.errors.any?
+    end
+
+    def execute_request
+      process_operations(jsonapi_request.transactional?) do
+        run_callbacks :process_operations do
+          jsonapi_request.operations.each do |op|
+            op.options[:serializer] = resource_serializer_klass.new(
+              op.resource_klass,
+              include_directives: op.options[:include_directives],
+              fields: op.options[:fields],
+              base_url: base_url,
+              key_formatter: key_formatter,
+              route_formatter: route_formatter,
+              serialization_options: serialization_options,
+              controller: self
+            )
+            op.options[:cache_serializer_output] = !JSONAPI.configuration.resource_cache.nil?
+
+            process_operation(op)
+          end
+        end
+        if response_document.has_errors?
+          raise ActiveRecord::Rollback
+        end
+      end
     end
 
     def process_operations(transactional)
@@ -165,20 +171,12 @@ module JSONAPI
           fail JSONAPI::Exceptions::UnsupportedMediaTypeError.new(request.content_type)
         end
       end
-      true
-    rescue => e
-      handle_exceptions(e)
-      false
     end
 
     def verify_accept_header
       unless valid_accept_media_type?
         fail JSONAPI::Exceptions::NotAcceptableError.new(request.accept)
       end
-      true
-    rescue => e
-      handle_exceptions(e)
-      false
     end
 
     def valid_accept_media_type?
