@@ -55,8 +55,14 @@ module JSONAPI
 
     def type_for_source(source)
       if polymorphic?
-        resource = source.public_send(name)
-        resource.class._type if resource
+        # try polymorphic type column before asking it from the resource record
+        if source._model.respond_to?(polymorphic_type)
+          model_type = source._model.send(polymorphic_type)
+          source.class.resource_for(model_type)._type if model_type
+        else
+          resource = source.public_send(name)
+          resource.class._type if resource
+        end
       else
         type
       end
