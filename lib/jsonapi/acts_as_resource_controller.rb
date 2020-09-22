@@ -273,7 +273,7 @@ module JSONAPI
         when ActionController::ParameterMissing
           errors = JSONAPI::Exceptions::ParameterMissing.new(e.param).errors
         else
-          if JSONAPI.configuration.exception_class_whitelisted?(e)
+          if JSONAPI.configuration.exception_class_allowed?(e)
             raise e
           else
             if self.class.server_error_callbacks
@@ -308,7 +308,7 @@ module JSONAPI
     # caught that is not a JSONAPI::Exceptions::Error
     # Useful for additional logging or notification configuration that
     # would normally depend on rails catching and rendering an exception.
-    # Ignores whitelist exceptions from config
+    # Ignores allowlist exceptions from config
 
     module ClassMethods
 
