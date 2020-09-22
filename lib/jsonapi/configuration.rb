@@ -28,8 +28,8 @@ module JSONAPI
                 :allow_transactions,
                 :include_backtraces_in_errors,
                 :include_application_backtraces_in_errors,
-                :exception_class_whitelist,
-                :whitelist_all_exceptions,
+                :exception_class_allowlist,
+                :allow_all_exceptions,
                 :always_include_to_one_linkage_data,
                 :always_include_to_many_linkage_data,
                 :cache_formatters,
@@ -95,12 +95,12 @@ module JSONAPI
       # raise a Pundit::NotAuthorizedError at some point during operations
       # processing. If you want to use Rails' `rescue_from` macro to
       # catch this error and render a 403 status code, you should add
-      # the `Pundit::NotAuthorizedError` to the `exception_class_whitelist`.
-      self.exception_class_whitelist = []
+      # the `Pundit::NotAuthorizedError` to the `exception_class_allowlist`.
+      self.exception_class_allowlist = []
 
-      # If enabled, will override configuration option `exception_class_whitelist`
-      # and whitelist all exceptions.
-      self.whitelist_all_exceptions = false
+      # If enabled, will override configuration option `exception_class_allowlist`
+      # and allow all exceptions.
+      self.allow_all_exceptions = false
 
       # Resource Linkage
       # Controls the serialization of resource linkage for non compound documents
@@ -219,9 +219,9 @@ module JSONAPI
       return formatter
     end
 
-    def exception_class_whitelisted?(e)
-      @whitelist_all_exceptions ||
-        @exception_class_whitelist.flatten.any? { |k| e.class.ancestors.map(&:to_s).include?(k.to_s) }
+    def exception_class_allowed?(e)
+      @allow_all_exceptions ||
+        @exception_class_allowlist.flatten.any? { |k| e.class.ancestors.map(&:to_s).include?(k.to_s) }
     end
 
     def default_processor_klass=(default_processor_klass)
@@ -242,6 +242,16 @@ module JSONAPI
       ActiveSupport::Deprecation.warn('`allow_include` has been replaced by `default_allow_include_to_one` and `default_allow_include_to_many` options.')
       @default_allow_include_to_one = allow_include
       @default_allow_include_to_many = allow_include
+    end
+
+    def whitelist_all_exceptions=(allow_all_exceptions)
+      ActiveSupport::Deprecation.warn('`whitelist_all_exceptions` has been replaced by `allow_all_exceptions`')
+      @allow_all_exceptions = allow_all_exceptions
+    end
+
+    def exception_class_whitelist=(exception_class_allowlist)
+      ActiveSupport::Deprecation.warn('`exception_class_whitelist` has been replaced by `exception_class_allowlist`')
+      @exception_class_allowlist = exception_class_allowlist
     end
 
     attr_writer :allow_sort, :allow_filter, :default_allow_include_to_one, :default_allow_include_to_many
@@ -270,9 +280,9 @@ module JSONAPI
 
     attr_writer :include_application_backtraces_in_errors
 
-    attr_writer :exception_class_whitelist
+    attr_writer :exception_class_allowlist
 
-    attr_writer :whitelist_all_exceptions
+    attr_writer :allow_all_exceptions
 
     attr_writer :always_include_to_one_linkage_data
 

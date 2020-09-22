@@ -81,26 +81,40 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "All requests must use the '#{JSONAPI::MEDIA_TYPE}' Accept without media type parameters. This request specified '#{@request.headers['Accept']}'.", json_response['errors'][0]['detail']
   end
 
-  def test_exception_class_whitelist
-    original_whitelist = JSONAPI.configuration.exception_class_whitelist.dup
+  def test_exception_class_allowlist
+    original_allowlist = JSONAPI.configuration.exception_class_allowlist.dup
     $PostProcessorRaisesErrors = true
     # test that the operations dispatcher rescues the error when it
-    # has not been added to the exception_class_whitelist
+    # has not been added to the exception_class_allowlist
     assert_cacheable_get :index
     assert_response 500
 
     # test that the operations dispatcher does not rescue the error when it
-    # has been added to the exception_class_whitelist
-    JSONAPI.configuration.exception_class_whitelist << PostsController::SpecialError
+    # has been added to the exception_class_allowlist
+    JSONAPI.configuration.exception_class_allowlist << PostsController::SpecialError
     assert_cacheable_get :index
     assert_response 403
   ensure
     $PostProcessorRaisesErrors = false
-    JSONAPI.configuration.exception_class_whitelist = original_whitelist
+    JSONAPI.configuration.exception_class_allowlist = original_allowlist
+  end
+
+  def test_allow_all_exceptions
+    original_config = JSONAPI.configuration.allow_all_exceptions
+    $PostProcessorRaisesErrors = true
+    assert_cacheable_get :index
+    assert_response 500
+
+    JSONAPI.configuration.allow_all_exceptions = true
+    assert_cacheable_get :index
+    assert_response 403
+  ensure
+    $PostProcessorRaisesErrors = false
+    JSONAPI.configuration.allow_all_exceptions = original_config
   end
 
   def test_whitelist_all_exceptions
-    original_config = JSONAPI.configuration.whitelist_all_exceptions
+    original_config = JSONAPI.configuration.allow_all_exceptions
     $PostProcessorRaisesErrors = true
     assert_cacheable_get :index
     assert_response 500
@@ -114,18 +128,18 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_exception_added_to_request_env
-    original_config = JSONAPI.configuration.whitelist_all_exceptions
+    original_config = JSONAPI.configuration.allow_all_exceptions
     $PostProcessorRaisesErrors = true
     refute @request.env['action_dispatch.exception']
     assert_cacheable_get :index
     assert @request.env['action_dispatch.exception']
 
-    JSONAPI.configuration.whitelist_all_exceptions = true
+    JSONAPI.configuration.allow_all_exceptions = true
     assert_cacheable_get :index
     assert @request.env['action_dispatch.exception']
   ensure
     $PostProcessorRaisesErrors = false
-    JSONAPI.configuration.whitelist_all_exceptions = original_config
+    JSONAPI.configuration.allow_all_exceptions = original_config
   end
 
   def test_exception_includes_backtrace_when_enabled
@@ -168,7 +182,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_on_server_error_block_callback_with_exception
     original_config = JSONAPI.configuration.dup
-    JSONAPI.configuration.exception_class_whitelist = []
+    JSONAPI.configuration.exception_class_allowlist = []
     $PostProcessorRaisesErrors = true
 
     @controller.class.instance_variable_set(:@callback_message, "none")
@@ -189,7 +203,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_on_server_error_method_callback_with_exception
     original_config = JSONAPI.configuration.dup
-    JSONAPI.configuration.exception_class_whitelist = []
+    JSONAPI.configuration.exception_class_allowlist = []
     $PostProcessorRaisesErrors = true
 
     #ignores methods that don't exist
@@ -208,7 +222,7 @@ class PostsControllerTest < ActionController::TestCase
 
   def test_on_server_error_method_callback_with_exception_on_serialize
     original_config = JSONAPI.configuration.dup
-    JSONAPI.configuration.exception_class_whitelist = []
+    JSONAPI.configuration.exception_class_allowlist = []
     $PostSerializerRaisesErrors = true
 
     #ignores methods that don't exist
@@ -4000,6 +4014,16 @@ class Api::V7::CategoriesControllerTest < ActionController::TestCase
     assert_match /Internal Server Error/, json_response['errors'][0]['detail']
   end
 
+  def test_not_allowed_error_in_controller
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.exception_class_allowlist = []
+    get :show, params: {id: '1'}
+    assert_response 500
+    assert_match /Internal Server Error/, json_response['errors'][0]['detail']
+  ensure
+    JSONAPI.configuration = original_config
+  end
+
   def test_not_whitelisted_error_in_controller
     original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.exception_class_whitelist = []
@@ -4008,6 +4032,18 @@ class Api::V7::CategoriesControllerTest < ActionController::TestCase
     assert_match /Internal Server Error/, json_response['errors'][0]['detail']
   ensure
     JSONAPI.configuration = original_config
+  end
+
+  def test_allowed_error_in_controller
+    original_config = JSONAPI.configuration.dup
+    $PostProcessorRaisesErrors = true
+    JSONAPI.configuration.exception_class_allowlist = [PostsController::SubSpecialError]
+    assert_raises PostsController::SubSpecialError do
+      assert_cacheable_get :show, params: {id: '1'}
+    end
+  ensure
+    JSONAPI.configuration = original_config
+    $PostProcessorRaisesErrors = false
   end
 
   def test_whitelisted_error_in_controller
