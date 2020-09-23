@@ -17,7 +17,7 @@ module JSONAPI
     end
 
     def has_errors?
-      @error_results.length > 0 || @global_errors.length > 0
+      @error_results.length.positive? || @global_errors.length.positive?
     end
 
     def add_result(result, operation)

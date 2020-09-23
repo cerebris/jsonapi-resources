@@ -263,7 +263,11 @@ class JoinTreeTest < ActiveSupport::TestCase
     records = PictureResource.records({})
     records = join_manager.join(records, {})
 
-    assert_equal 'SELECT "pictures".* FROM "pictures" LEFT OUTER JOIN "documents" ON "documents"."id" = "pictures"."imageable_id" AND "pictures"."imageable_type" = \'Document\' LEFT OUTER JOIN "products" ON "products"."id" = "pictures"."imageable_id" AND "pictures"."imageable_type" = \'Product\' LEFT OUTER JOIN "file_properties" ON "file_properties"."fileable_id" = "pictures"."id" AND "file_properties"."fileable_type" = \'Picture\'', records.to_sql
+    #TODO: Fix this with a better test
+    sql_v1 = 'SELECT "pictures".* FROM "pictures" LEFT OUTER JOIN "documents" ON "documents"."id" = "pictures"."imageable_id" AND "pictures"."imageable_type" = \'Document\' LEFT OUTER JOIN "products" ON "products"."id" = "pictures"."imageable_id" AND "pictures"."imageable_type" = \'Product\' LEFT OUTER JOIN "file_properties" ON "file_properties"."fileable_id" = "pictures"."id" AND "file_properties"."fileable_type" = \'Picture\''
+    sql_v2 = 'SELECT "pictures".* FROM "pictures" LEFT OUTER JOIN "documents" ON "documents"."id" = "pictures"."imageable_id" AND "pictures"."imageable_type" = \'Document\' LEFT OUTER JOIN "products" ON "products"."id" = "pictures"."imageable_id" AND "pictures"."imageable_type" = \'Product\' LEFT OUTER JOIN "file_properties" ON "file_properties"."fileable_type" = \'Picture\' AND "file_properties"."fileable_id" = "pictures"."id"'
+    assert records.to_sql == sql_v1 || records.to_sql == sql_v2, 'did not generate an expected sql statement'
+
     assert_hash_equals({alias: 'pictures', join_type: :root}, join_manager.source_join_details)
     assert_hash_equals({alias: 'products', join_type: :left}, join_manager.join_details_by_polymorphic_relationship(PictureResource._relationship(:imageable), 'products'))
     assert_hash_equals({alias: 'documents', join_type: :left}, join_manager.join_details_by_polymorphic_relationship(PictureResource._relationship(:imageable), 'documents'))
