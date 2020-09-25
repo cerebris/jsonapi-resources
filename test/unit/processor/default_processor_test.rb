@@ -45,7 +45,7 @@ class DefaultProcessorTest < ActionDispatch::IntegrationTest
     }
     p = JSONAPI::Processor.new(PostResource, :find, params)
 
-    $id_tree_has_one_includes = p.send(:find_resource_id_tree, PostResource, find_options, directives[:include_related])
+    $id_tree_has_one_includes = p.send(:find_resource_id_tree, PostResource, find_options, directives)
     $resource_set_has_one_includes = JSONAPI::ResourceSet.new($id_tree_has_one_includes)
     $populated_resource_set_has_one_includes = JSONAPI::ResourceSet.new($id_tree_has_one_includes).populate!($serializer, nil,{})
   end

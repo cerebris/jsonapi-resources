@@ -25,7 +25,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     directives = JSONAPI::IncludeDirectives.new(PersonResource, ['']).include_directives
 
-    id_tree.add_resource_fragment(JSONAPI::ResourceFragment.new(post_1_identity), directives[:include_related])
+    id_tree.add_resource_fragment(JSONAPI::ResourceFragment.new(post_1_identity), directives)
     resource_set = JSONAPI::ResourceSet.new(id_tree)
 
     serializer = JSONAPI::ResourceSerializer.new(
@@ -108,7 +108,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     directives = JSONAPI::IncludeDirectives.new(PersonResource, ['']).include_directives
 
-    id_tree.add_resource_fragment(JSONAPI::ResourceFragment.new(post_1_identity), directives[:include_related])
+    id_tree.add_resource_fragment(JSONAPI::ResourceFragment.new(post_1_identity), directives)
     resource_set = JSONAPI::ResourceSet.new(id_tree)
 
     serializer = JSONAPI::ResourceSerializer.new(
@@ -165,7 +165,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     directives = JSONAPI::IncludeDirectives.new(PersonResource, []).include_directives
 
-    id_tree.add_resource_fragment(JSONAPI::ResourceFragment.new(post_1_identity), directives[:include_related])
+    id_tree.add_resource_fragment(JSONAPI::ResourceFragment.new(post_1_identity), directives)
     resource_set = JSONAPI::ResourceSet.new(id_tree)
 
     serializer = JSONAPI::ResourceSerializer.new(
@@ -208,14 +208,14 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     directives = JSONAPI::IncludeDirectives.new(PostResource, ['author']).include_directives
 
-    id_tree.add_resource_fragment(JSONAPI::ResourceFragment.new(post_1_identity), directives[:include_related])
+    id_tree.add_resource_fragment(JSONAPI::ResourceFragment.new(post_1_identity), directives)
 
     rel_id_tree = id_tree.fetch_related_resource_id_tree(PostResource._relationships[:author])
 
     author_fragment = JSONAPI::ResourceFragment.new(person_1001_identity)
     author_fragment.add_related_from(post_1_identity)
     author_fragment.add_related_identity(:posts, post_1_identity)
-    rel_id_tree.add_resource_fragment(author_fragment, directives[:include_related][:author][:include_related])
+    rel_id_tree.add_resource_fragment(author_fragment, directives[:author])
 
     resource_set = JSONAPI::ResourceSet.new(id_tree)
 
@@ -339,14 +339,14 @@ class SerializerTest < ActionDispatch::IntegrationTest
 
     directives = JSONAPI::IncludeDirectives.new(PostResource, ['author']).include_directives
 
-    id_tree.add_resource_fragment(JSONAPI::ResourceFragment.new(post_1_identity), directives[:include_related])
+    id_tree.add_resource_fragment(JSONAPI::ResourceFragment.new(post_1_identity), directives)
 
     rel_id_tree = id_tree.fetch_related_resource_id_tree(PostResource._relationships[:author])
 
     author_fragment = JSONAPI::ResourceFragment.new(person_1001_identity)
     author_fragment.add_related_from(post_1_identity)
     author_fragment.add_related_identity(:posts, post_1_identity)
-    rel_id_tree.add_resource_fragment(author_fragment, directives[:include_related][:author][:include_related])
+    rel_id_tree.add_resource_fragment(author_fragment, directives[:author])
 
     resource_set = JSONAPI::ResourceSet.new(id_tree)
 
@@ -479,7 +479,7 @@ class SerializerTest < ActionDispatch::IntegrationTest
     fragment.initialize_related(:section)
     fragment.initialize_related(:tags)
 
-    id_tree.add_resource_fragment(fragment, directives[:include_related])
+    id_tree.add_resource_fragment(fragment, directives)
     resource_set = JSONAPI::ResourceSet.new(id_tree)
 
     serializer = JSONAPI::ResourceSerializer.new(PostResource,
