@@ -6,7 +6,6 @@ env:
   - "RAILS_VERSION=5.1.7"
   - "RAILS_VERSION=5.2.3"
   - "RAILS_VERSION=6.0.0"
-#  - "RAILS_VERSION=master"
 rvm:
   - 2.3.8
   - 2.4.7

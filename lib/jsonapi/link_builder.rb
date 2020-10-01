@@ -29,7 +29,7 @@ module JSONAPI
     def primary_resources_url
       if @primary_resource_klass._routed
         primary_resources_path = resources_path(primary_resource_klass)
-        @primary_resources_url_cached ||= "#{ base_url }#{ engine_mount_point }#{ primary_resources_path }"
+        @primary_resources_url_cached ||= "#{ base_url }#{ serialized_engine_mount_point }#{ primary_resources_path }"
       else
         if JSONAPI.configuration.warn_on_missing_routes && !@primary_resource_klass._warned_missing_route
           warn "primary_resources_url for #{@primary_resource_klass} could not be generated"
@@ -139,7 +139,11 @@ module JSONAPI
     end
 
     def resource_url(source)
-      "#{ base_url }#{ engine_mount_point }#{ resource_path(source) }"
+      "#{ base_url }#{ serialized_engine_mount_point }#{ resource_path(source) }"
+    end
+
+    def serialized_engine_mount_point
+      engine_mount_point == "/" ? "" : engine_mount_point
     end
 
     def route_for_relationship(relationship)
