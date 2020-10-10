@@ -13,7 +13,7 @@ backed by ActiveRecord models or by custom objects.
 
 ## Documentation
 
-Full documentation can be found at [http://jsonapi-resources.com](http://jsonapi-resources.com), including the [v0.10 alpha Guide](http://jsonapi-resources.com/v0.10/guide/) specific to this version. 
+Full documentation can be found at [http://jsonapi-resources.com](http://jsonapi-resources.com), including the [v0.10 alpha Guide](http://jsonapi-resources.com/v0.10/guide/) specific to this version.
 
 ## Demo App
 
@@ -28,19 +28,19 @@ which *should* be compatible with JSON:API compliant server implementations such
 
 Add JR to your application's `Gemfile`:
 
-``` 
+```
 gem 'jsonapi-resources'
 ```
 
 And then execute:
 
-```bash 
+```bash
 bundle
 ```
 
 Or install it yourself as:
 
-```bash 
+```bash
 gem install jsonapi-resources
 ```
 
@@ -61,16 +61,16 @@ gem install jsonapi-resources
 
 * **Ensure the bug was not already reported** by searching on GitHub under [Issues](https://github.com/cerebris/jsonapi-resources/issues).
 
-* If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/cerebris/jsonapi-resources/issues/new). 
-Be sure to include a **title and clear description**, as much relevant information as possible, 
+* If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/cerebris/jsonapi-resources/issues/new).
+Be sure to include a **title and clear description**, as much relevant information as possible,
 and a **code sample** or an **executable test case** demonstrating the expected behavior that is not occurring.
 
-* If possible, use the relevant bug report templates to create the issue. 
-Simply copy the content of the appropriate template into a .rb file, make the necessary changes to demonstrate the issue, 
+* If possible, use the relevant bug report templates to create the issue.
+Simply copy the content of the appropriate template into a .rb file, make the necessary changes to demonstrate the issue,
 and **paste the content into the issue description or attach as a file**:
   * [**Rails 5** issues](https://github.com/cerebris/jsonapi-resources/blob/master/lib/bug_report_templates/rails_5_master.rb)
 
 
 ## License
 
-Copyright 2014-2017 Cerebris Corporation. MIT License (see LICENSE for details).
+Copyright 2014-2020 Cerebris Corporation. MIT License (see LICENSE for details).
