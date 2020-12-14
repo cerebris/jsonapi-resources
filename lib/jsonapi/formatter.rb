@@ -92,6 +92,17 @@ module JSONAPI
 end
 
 class UnderscoredKeyFormatter < JSONAPI::KeyFormatter
+  class << self
+    def format(arg)
+      # take care of modules
+      arg.to_s.split('/').last
+    end
+
+    def unformat(arg, modules: [])
+      # take care of modules
+      modules.push(arg.to_s).join('/')
+    end
+  end
 end
 
 class CamelizedKeyFormatter < JSONAPI::KeyFormatter
