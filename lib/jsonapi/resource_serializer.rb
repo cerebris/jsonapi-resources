@@ -331,7 +331,7 @@ module JSONAPI
       linkage = []
 
       rids && rids.each do |details|
-        id = details.id
+        id = details.custom_id || details.id
         type = details.resource_klass.try(:_type)
         if type && id
           linkage.append({'type' => format_key(type), 'id' => @id_formatter.format(id)})
@@ -346,7 +346,7 @@ module JSONAPI
 
       {
           'type' => format_key(rid.resource_klass._type),
-          'id' => @id_formatter.format(rid.id),
+          'id' => @id_formatter.format(rid.custom_id || rid.id),
       }
     end
 

@@ -71,7 +71,12 @@ module JSONAPI
       # @param keys [Array<key>] Array of primary keys to find resources for
       # @option options [Hash] :context The context of the request, set in the controller
       def find_to_populate_by_keys(keys, options = {})
-        records = records_for_populate(options).where(_primary_key => keys)
+        records = 
+          if resource_key_type == :id
+            records_for_populate(options).where(_primary_key => keys)
+          else
+            records_for_populate(options).where(resource_key_type => keys)
+          end
         resources_for(records, options[:context])
       end
 
@@ -115,6 +120,10 @@ module JSONAPI
         resource_table_alias = resource_klass._table_name
 
         pluck_fields = [Arel.sql("#{concat_table_field(resource_table_alias, resource_klass._primary_key)} AS #{resource_table_alias}_#{resource_klass._primary_key}")]
+        
+        if resource_klass.resource_key_type != :id
+          pluck_fields << Arel.sql("#{concat_table_field(resource_table_alias, resource_klass.resource_key_type)} AS #{resource_table_alias}_#{resource_klass.resource_key_type}")
+        end
 
         cache_field = attribute_to_model_field(:_cache_field) if options[:cache]
         if cache_field
@@ -133,6 +142,7 @@ module JSONAPI
 
               linkage_table_alias = join_manager.join_details_by_polymorphic_relationship(linkage_relationship, resource_type)[:alias]
               primary_key = klass._primary_key
+              # TODO: maybe an update here too for `custom` key?
               pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}")
             end
           else
@@ -141,6 +151,7 @@ module JSONAPI
 
             linkage_table_alias = join_manager.join_details_by_relationship(linkage_relationship)[:alias]
             primary_key = klass._primary_key
+            # TODO: maybe an update here too for `custom` key?
             pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}")
           end
         end
@@ -161,13 +172,18 @@ module JSONAPI
         fragments = {}
         rows = records.pluck(*pluck_fields)
         rows.each do |row|
-          rid = JSONAPI::ResourceIdentity.new(resource_klass, pluck_fields.length == 1 ? row : row[0])
+          nb_ids = resource_klass.resource_key_type == 'id' ? 1 : 2
+          rid = JSONAPI::ResourceIdentity.new(resource_klass, *row.first(nb_ids))
 
           fragments[rid] ||= JSONAPI::ResourceFragment.new(rid)
           attributes_offset = 1
 
           if cache_field
             fragments[rid].cache = cast_to_attribute_type(row[1], cache_field[:type])
+            unless resource_klass.resource_key_type == 'id'
+              fragments[rid].custom_cache = cast_to_attribute_type(row[2], cache_field[:type])
+              attributes_offset+= 1
+            end
             attributes_offset+= 1
           end
 
@@ -245,13 +261,20 @@ module JSONAPI
         records = apply_request_settings_to_records(records: records(options),
                                resource_klass: related_klass,
                                primary_keys: source_rid.id,
+                               custom_primary_keys: source_rids.custom_id,
                                join_manager: join_manager,
                                filters: filters,
                                options: options)
 
         related_alias = join_manager.join_details_by_relationship(relationship)[:alias]
 
-        records = records.select(Arel.sql("#{concat_table_field(related_alias, related_klass._primary_key)}"))
+        records =
+          if resource_klass.resource_key_type != 'id'
+            records.select(Arel.sql("#{concat_table_field(related_alias, related_klass.resource_key_type)}"))
+          else
+            records.select(Arel.sql("#{concat_table_field(related_alias, related_klass._primary_key)}"))
+          end
+         
 
         count_records(records)
       end
@@ -366,7 +389,12 @@ module JSONAPI
       end
 
       def find_record_by_key(key, options = {})
-        record = apply_request_settings_to_records(records: records(options), primary_keys: key, options: options).first
+        custom_key = nil
+        if resource_key_type != 'id'
+          custom_key = key
+          key = nil
+        end
+        record = apply_request_settings_to_records(records: records(options), primary_keys: key, custom_primary_keys: custom_key, options: options).first
         fail JSONAPI::Exceptions::RecordNotFound.new(key) if record.nil?
         record
       end
@@ -378,6 +406,7 @@ module JSONAPI
       def find_related_monomorphic_fragments(source_rids, relationship, options, connect_source_identity)
         filters = options.fetch(:filters, {})
         source_ids = source_rids.collect {|rid| rid.id}
+        custom_source_ids = source_rids.collect {|rid| rid.custom_id}
 
         include_directives = options[:include_directives] ? options[:include_directives].include_directives : {}
         resource_klass = relationship.resource_klass
@@ -401,17 +430,24 @@ module JSONAPI
                                resource_klass: resource_klass,
                                sort_criteria: sort_criteria,
                                primary_keys: source_ids,
+                               custom_primary_keys: custom_source_ids,
                                paginator: paginator,
                                filters: filters,
                                join_manager: join_manager,
                                options: options)
-
         resource_table_alias = join_manager.join_details_by_relationship(relationship)[:alias]
 
-        pluck_fields = [
-            Arel.sql("#{_table_name}.#{_primary_key} AS source_id"),
-            Arel.sql("#{concat_table_field(resource_table_alias, resource_klass._primary_key)} AS #{resource_table_alias}_#{resource_klass._primary_key}")
-        ]
+        pluck_fields = [Arel.sql("#{_table_name}.#{_primary_key} AS source_id")]
+        if resource_key_type != 'id'
+          custom_primary_key = concat_table_field(_table_name, resource_key_type)
+          pluck_fields << Arel.sql("#{custom_primary_key} AS #{_table_name}_#{resource_key_type}")
+        end
+        pluck_fields << Arel.sql("#{concat_table_field(resource_table_alias, resource_klass._primary_key)} AS #{resource_table_alias}_#{resource_klass._primary_key}")
+        if resource_klass.resource_key_type != 'id'
+          custom_resource_primary_key = concat_table_field(resource_table_alias, resource_klass.resource_key_type)
+          pluck_fields << Arel.sql("#{custom_resource_primary_key} AS #{resource_table_alias}_#{resource_klass.resource_key_type}")
+        end
+        # TODO: maybe an update here too for `custom` key?
 
         cache_field = resource_klass.attribute_to_model_field(:_cache_field) if options[:cache]
         if cache_field
@@ -430,6 +466,7 @@ module JSONAPI
 
               linkage_table_alias = join_manager.join_details_by_polymorphic_relationship(linkage_relationship, resource_type)[:alias]
               primary_key = klass._primary_key
+              # TODO: maybe an update here too for `custom` key?
               pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}")
             end
           else
@@ -438,6 +475,7 @@ module JSONAPI
 
             linkage_table_alias = join_manager.join_details_by_relationship(linkage_relationship)[:alias]
             primary_key = klass._primary_key
+            # TODO: maybe an update here too for `custom` key?
             pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}")
           end
         end
@@ -458,11 +496,14 @@ module JSONAPI
         fragments = {}
         rows = records.distinct.pluck(*pluck_fields)
         rows.each do |row|
-          rid = JSONAPI::ResourceIdentity.new(resource_klass, row[1])
+          field_offset = 1
+          field_offset += 1 if resource_key_type != 'id'
+          nb_after_offset = resource_klass.resource_key_type == 'id' ? 1 : 2
+          rid = JSONAPI::ResourceIdentity.new(resource_klass, *row[field_offset, nb_after_offset])
 
           fragments[rid] ||= JSONAPI::ResourceFragment.new(rid)
 
-          attributes_offset = 2
+          attributes_offset = field_offset + nb_after_offset
 
           if cache_field
             fragments[rid].cache = cast_to_attribute_type(row[attributes_offset], cache_field[:type])
@@ -474,8 +515,8 @@ module JSONAPI
             attributes_offset+= 1
           end
 
-          source_rid = JSONAPI::ResourceIdentity.new(self, row[0])
-
+          source_rid = JSONAPI::ResourceIdentity.new(self, *row.first(nb_after_offset))
+          
           fragments[rid].add_related_from(source_rid)
 
           linkage_fields.each do |linkage_field|
@@ -495,7 +536,6 @@ module JSONAPI
             end
           end
         end
-
         fragments
       end
 
@@ -504,6 +544,7 @@ module JSONAPI
       def find_related_polymorphic_fragments(source_rids, relationship, options, connect_source_identity)
         filters = options.fetch(:filters, {})
         source_ids = source_rids.collect {|rid| rid.id}
+        custom_source_ids = source_rids.collect {|rid| rid.custom_id}
 
         resource_klass = relationship.resource_klass
         include_directives = options[:include_directives] ? options[:include_directives].include_directives : {}
@@ -533,6 +574,7 @@ module JSONAPI
                                resource_klass: resource_klass,
                                sort_primary: true,
                                primary_keys: source_ids,
+                               custom_primary_keys: custom_source_ids,
                                paginator: paginator,
                                filters: filters,
                                join_manager: join_manager,
@@ -542,11 +584,13 @@ module JSONAPI
         related_key = concat_table_field(_table_name, relationship.foreign_key)
         related_type = concat_table_field(_table_name, relationship.polymorphic_type)
 
-        pluck_fields = [
-            Arel.sql("#{primary_key} AS #{_table_name}_#{_primary_key}"),
-            Arel.sql("#{related_key} AS #{_table_name}_#{relationship.foreign_key}"),
-            Arel.sql("#{related_type} AS #{_table_name}_#{relationship.polymorphic_type}")
-        ]
+        pluck_fields = [Arel.sql("#{primary_key} AS #{_table_name}_#{_primary_key}")]
+        if resource_klass.resource_key_type != 'id'
+          custom_primary_key = concat_table_field(_table_name, resource_key_type)
+          pluck_fields << Arel.sql("#{custom_primary_key} AS #{_table_name}_#{resource_key_type}")
+        end
+        pluck_fields << Arel.sql("#{related_key} AS #{_table_name}_#{relationship.foreign_key}")
+        pluck_fields << Arel.sql("#{related_type} AS #{_table_name}_#{relationship.polymorphic_type}")
 
         # Get the additional fields from each relation. There's a limitation that the fields must exist in each relation
 
@@ -616,6 +660,7 @@ module JSONAPI
 
               linkage_table_alias = join_manager.join_details_by_polymorphic_relationship(linkage_relationship, resource_type)[:alias]
               primary_key = klass._primary_key
+              # TODO: maybe an update here too for `custom` key?
               pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}")
             end
           else
@@ -685,6 +730,7 @@ module JSONAPI
                                             resource_klass: self,
                                             filters: {},
                                             primary_keys: nil,
+                                            custom_primary_keys: nil,
                                             sort_criteria: nil,
                                             sort_primary: nil,
                                             paginator: nil,
@@ -696,7 +742,10 @@ module JSONAPI
 
         if primary_keys
           records = records.where(_primary_key => primary_keys)
+        elsif custom_primary_keys
+          records = records.where(resource_key_type => custom_primary_keys)
         end
+
 
         unless filters.empty?
           records = resource_klass.filter_records(records, filters, options)

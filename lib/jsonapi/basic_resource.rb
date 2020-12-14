@@ -287,7 +287,7 @@ module JSONAPI
       if reflect
         existing_rids = self.class.find_related_fragments([identity], relationship_type, options)
 
-        existing = existing_rids.keys.collect { |rid| rid.id }
+        existing = existing_rids.keys.collect { |rid| rid.custom_id || rid.id }
 
         to_delete = existing - (relationship_key_values & existing)
         to_delete.each do |key|

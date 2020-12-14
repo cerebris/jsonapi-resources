@@ -13,13 +13,14 @@ module JSONAPI
   class ResourceFragment
     attr_reader :identity, :attributes, :related_from, :related
 
-    attr_accessor :primary, :cache
+    attr_accessor :primary, :cache, :custom_cache
 
     alias :cache_field :cache #ToDo: Rename one or the other
 
     def initialize(identity)
       @identity = identity
       @cache = nil
+      @custom_cache = nil
       @attributes = {}
       @related = {}
       @primary = false

@@ -153,15 +153,23 @@ module JSONAPI
 
         resource_klass = resource_rid.resource_klass
         id = resource_rid.id
+        custom_id = resource_rid.custom_id
+        
 
         flattened_tree[resource_klass] ||= {}
 
-        flattened_tree[resource_klass][id] ||= {primary: fragment.primary, relationships: {}}
-        flattened_tree[resource_klass][id][:cache_id] ||= fragment.cache
+        if custom_id
+          flattened_tree[resource_klass][custom_id] ||= {primary: fragment.primary, relationships: {}}
+          flattened_tree[resource_klass][custom_id][:cache_id] ||= fragment.custom_cache
+        else
+          flattened_tree[resource_klass][id] ||= {primary: fragment.primary, relationships: {}}
+          flattened_tree[resource_klass][id][:cache_id] ||= fragment.cache
+        end
 
         fragment.related.try(:each_pair) do |relationship_name, related_rids|
-          flattened_tree[resource_klass][id][:relationships][relationship_name] ||= Set.new
-          flattened_tree[resource_klass][id][:relationships][relationship_name].merge(related_rids)
+          final_key = custom_id ? custom_id : id
+          flattened_tree[resource_klass][final_key][:relationships][relationship_name] ||= Set.new
+          flattened_tree[resource_klass][final_key][:relationships][relationship_name].merge(related_rids)
         end
       end
 
