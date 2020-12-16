@@ -1430,7 +1430,7 @@ class RequestTest < ActionDispatch::IntegrationTest
                        }
 
     $test_user = Person.find(1)
-    assert_equal 2, JSONAPI.configuration.resource_cache.instance_variable_get(:@key_access).length
+    assert_equal 2, JSONAPI.configuration.resource_cache.instance_variable_get(:@data).length
 
     get "/api/v9/people/#{$test_user.id}?include=preferences"
     assert_jsonapi_response 200
@@ -1477,7 +1477,7 @@ class RequestTest < ActionDispatch::IntegrationTest
                          ]
                        }
 
-    assert_equal 4, JSONAPI.configuration.resource_cache.instance_variable_get(:@key_access).length
+    assert_equal 4, JSONAPI.configuration.resource_cache.instance_variable_get(:@data).length
 
   ensure
     JSONAPI.configuration = original_config
@@ -1522,7 +1522,7 @@ class RequestTest < ActionDispatch::IntegrationTest
                          }
                        }
 
-    assert_equal 1, JSONAPI.configuration.resource_cache.instance_variable_get(:@key_access).length
+    assert_equal 1, JSONAPI.configuration.resource_cache.instance_variable_get(:@data).length
 
     $test_user = Person.find(1)
 
@@ -1550,7 +1550,7 @@ class RequestTest < ActionDispatch::IntegrationTest
                          }
                        }
 
-    assert_equal 2, JSONAPI.configuration.resource_cache.instance_variable_get(:@key_access).length
+    assert_equal 2, JSONAPI.configuration.resource_cache.instance_variable_get(:@data).length
 
   ensure
     JSONAPI.configuration = original_config
