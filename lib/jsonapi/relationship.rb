@@ -24,7 +24,7 @@ module JSONAPI
       end
 
       @always_include_optional_linkage_data = options.fetch(:always_include_optional_linkage_data, false) == true
-      @eager_load_on_include = options.fetch(:eager_load_on_include, false) == true
+      @eager_load_on_include = options.fetch(:eager_load_on_include, true) == true
       @allow_include = options[:allow_include]
       @class_name = nil
       @inverse_relationship = nil

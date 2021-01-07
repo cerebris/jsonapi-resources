@@ -24,6 +24,12 @@ class PostsControllerTest < ActionController::TestCase
     assert json_response['data'].is_a?(Array)
   end
 
+  def test_index_includes
+    assert_cacheable_get :index, params: { include: 'author,comments' }
+    assert_response :success
+    assert json_response['data'].is_a?(Array)
+  end
+
   def test_accept_header_missing
     @request.headers['Accept'] = nil
 

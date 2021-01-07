@@ -2,6 +2,10 @@ module JSONAPI
   class ActiveRelationResource < BasicResource
     root_resource
 
+    def find_related_ids(relationship, options = {})
+      self.class.find_related_fragments([self], relationship.name, options).keys.collect { |rid| rid.id }
+    end
+
     class << self
       # Finds Resources using the `filters`. Pagination and sort options are used when provided
       #
@@ -90,8 +94,11 @@ module JSONAPI
       #    the ResourceInstances matching the filters, sorting, and pagination rules along with any request
       #    additional_field values
       def find_fragments(filters, options = {})
-        include_directives = options[:include_directives] ? options[:include_directives].include_directives : {}
+        include_directives = options.fetch(:include_directives, {})
         resource_klass = self
+
+        fragments = {}
+
         linkage_relationships = to_one_relationships_for_linkage(include_directives[:include_related])
 
         sort_criteria = options.fetch(:sort_criteria) { [] }
@@ -129,18 +136,26 @@ module JSONAPI
           if linkage_relationship.polymorphic? && linkage_relationship.belongs_to?
             linkage_relationship.resource_types.each do |resource_type|
               klass = resource_klass_for(resource_type)
-              linkage_fields << {relationship_name: name, resource_klass: klass}
-
               linkage_table_alias = join_manager.join_details_by_polymorphic_relationship(linkage_relationship, resource_type)[:alias]
               primary_key = klass._primary_key
+
+              linkage_fields << {relationship_name: name,
+                                 resource_klass: klass,
+                                 field: "#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}",
+                                 alias: "#{linkage_table_alias}_#{primary_key}"}
+
               pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}")
             end
           else
             klass = linkage_relationship.resource_klass
-            linkage_fields << {relationship_name: name, resource_klass: klass}
-
             linkage_table_alias = join_manager.join_details_by_relationship(linkage_relationship)[:alias]
             primary_key = klass._primary_key
+
+            linkage_fields << {relationship_name: name,
+                               resource_klass: klass,
+                               field: "#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}",
+                               alias: "#{linkage_table_alias}_#{primary_key}"}
+
             pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}")
           end
         end
@@ -158,7 +173,6 @@ module JSONAPI
           pluck_fields << Arel.sql(field)
         end
 
-        fragments = {}
         rows = records.pluck(*pluck_fields)
         rows.each do |row|
           rid = JSONAPI::ResourceIdentity.new(resource_klass, pluck_fields.length == 1 ? row : row[0])
@@ -204,23 +218,23 @@ module JSONAPI
       # @return [Hash{ResourceIdentity => {identity: => ResourceIdentity, cache: cache_field, attributes: => {name => value}, related: {relationship_name: [] }}}]
       #    the ResourceInstances matching the filters, sorting, and pagination rules along with any request
       #    additional_field values
-      def find_related_fragments(source_rids, relationship_name, options = {})
+      def find_related_fragments(source, relationship_name, options = {})
         relationship = _relationship(relationship_name)
 
         if relationship.polymorphic? # && relationship.foreign_key_on == :self
-          find_related_polymorphic_fragments(source_rids, relationship, options, false)
+          find_related_polymorphic_fragments(source, relationship, options, false)
         else
-          find_related_monomorphic_fragments(source_rids, relationship, options, false)
+          find_related_monomorphic_fragments(source, relationship, options, false)
         end
       end
 
-      def find_included_fragments(source_rids, relationship_name, options)
+      def find_included_fragments(source, relationship_name, options)
         relationship = _relationship(relationship_name)
 
         if relationship.polymorphic? # && relationship.foreign_key_on == :self
-          find_related_polymorphic_fragments(source_rids, relationship, options, true)
+          find_related_polymorphic_fragments(source, relationship, options, true)
         else
-          find_related_monomorphic_fragments(source_rids, relationship, options, true)
+          find_related_monomorphic_fragments(source, relationship, options, true)
         end
       end
 
@@ -231,7 +245,7 @@ module JSONAPI
       # @option options [Hash] :context The context of the request, set in the controller
       #
       # @return [Integer] the count
-      def count_related(source_rid, relationship_name, options = {})
+      def count_related(source_resource, relationship_name, options = {})
         relationship = _relationship(relationship_name)
         related_klass = relationship.resource_klass
 
@@ -244,7 +258,7 @@ module JSONAPI
 
         records = apply_request_settings_to_records(records: records(options),
                                resource_klass: related_klass,
-                               primary_keys: source_rid.id,
+                               primary_keys: source_resource.id,
                                join_manager: join_manager,
                                filters: filters,
                                options: options)
@@ -375,11 +389,11 @@ module JSONAPI
         apply_request_settings_to_records(records: records(options), primary_keys: keys, options: options)
       end
 
-      def find_related_monomorphic_fragments(source_rids, relationship, options, connect_source_identity)
+      def find_related_monomorphic_fragments(source_fragments, relationship, options, connect_source_identity)
         filters = options.fetch(:filters, {})
-        source_ids = source_rids.collect {|rid| rid.id}
+        source_ids = source_fragments.collect {|item| item.identity.id}
 
-        include_directives = options[:include_directives] ? options[:include_directives].include_directives : {}
+        include_directives = options.fetch(:include_directives, {})
         resource_klass = relationship.resource_klass
         linkage_relationships = resource_klass.to_one_relationships_for_linkage(include_directives[:include_related])
 
@@ -501,12 +515,12 @@ module JSONAPI
 
       # Gets resource identities where the related resource is polymorphic and the resource type and id
       # are stored on the primary resources. Cache fields will always be on the related resources.
-      def find_related_polymorphic_fragments(source_rids, relationship, options, connect_source_identity)
+      def find_related_polymorphic_fragments(source_fragments, relationship, options, connect_source_identity)
         filters = options.fetch(:filters, {})
-        source_ids = source_rids.collect {|rid| rid.id}
+        source_ids = source_fragments.collect {|item| item.identity.id}
 
         resource_klass = relationship.resource_klass
-        include_directives = options[:include_directives] ? options[:include_directives].include_directives : {}
+        include_directives = options.fetch(:include_directives, {})
 
         linkage_relationships = []
 
