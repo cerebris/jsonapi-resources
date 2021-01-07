@@ -291,7 +291,7 @@ module JSONAPI
           return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
         end
 
-        verified_filter = relationship.resource_klass.verify_filters(filter_method => value)
+        verified_filter = relationship.resource_klass.verify_filters({ filter_method => value }, @context)
         @include_directives.merge_filter(relationship.name, verified_filter)
       else
         return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
