@@ -173,6 +173,10 @@ class ResourceTest < ActiveSupport::TestCase
     refute PersonResource._abstract
   end
 
+  def test_inherited_calls_superclass
+    assert_equal(BaseResource.subclasses, [PersonResource, SpecialBaseResource])
+  end
+
   def test_nil_model_class
     # ToDo:Figure out why this test does not work on Rails 4.0
     # :nocov:
