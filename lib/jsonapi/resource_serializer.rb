@@ -22,8 +22,8 @@ module JSONAPI
       @primary_resource_klass = primary_resource_klass
       @fields                 = options.fetch(:fields, {})
       @include                = options.fetch(:include, [])
-      @include_directives     = options[:include_directives]
-      @include_directives     ||= JSONAPI::IncludeDirectives.new(@primary_resource_klass, @include)
+      @include_directives     = options.fetch(:include_directives,
+                                              JSONAPI::IncludeDirectives.new(@primary_resource_klass, @include))
       @key_formatter          = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
       @id_formatter           = ValueFormatter.value_formatter_for(:id)
       @link_builder           = generate_link_builder(primary_resource_klass, options)
@@ -44,7 +44,7 @@ module JSONAPI
 
     # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
     def serialize_to_hash(source)
-      include_related = include_directives[:include_related] if include_directives
+      include_related = include_directives[:include_related]
       resource_set = JSONAPI::ResourceSet.new(source, include_related, options)
       resource_set.populate!(self, options[:context], options)
 

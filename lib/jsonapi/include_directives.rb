@@ -29,10 +29,6 @@ module JSONAPI
       @include_directives_hash[name]
     end
 
-    def include_directives_hash
-      @include_directives_hash
-    end
-
     private
 
     def parse_include(include)

@@ -110,5 +110,4 @@ class DefaultProcessorTest < ActionDispatch::IntegrationTest
     assert_equal 10, $populated_resource_set_has_one_includes.resource_klasses[PersonResource][1003][:relationships][:posts].first.id
     assert_equal 12, $populated_resource_set_has_one_includes.resource_klasses[PersonResource][1004][:relationships][:posts].first.id
   end
-
 end
