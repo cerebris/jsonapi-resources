@@ -24,19 +24,25 @@ class BugTest < Minitest::Test
     individual = Individual.create(name: 'test')
     ContactMedium.create(party: individual, name: 'test contact medium')
     get "/individuals/#{individual.id}"
-    assert last_response.ok?
+    assert_last_response_status 200
   end
 
   def test_get_party_via_contact_medium
     individual = Individual.create(name: 'test')
     contact_medium = ContactMedium.create(party: individual, name: 'test contact medium')
     get "/contact_media/#{contact_medium.id}/party"
-    # pp [:last_response, last_response]
-    # ["{\"errors\":[{\"title\":\"Internal Server Error\",\"detail\":\"Internal Server Error\",\"code\":\"500\",\"status\":\"500\",\"meta\":{\"exception\":\"Can't join 'ContactMedium' to association named 'organization'; perhaps you misspelled it?\"
-    assert last_response.ok?, "Expect an individual to have been found via contact medium resource's relationship 'party'"
+    assert_last_response_status 200, "Expect an individual to have been found via contact medium resource's relationship 'party'"
   end
 
   private
+
+  def assert_last_response_status(status, failure_reason=nil)
+    if last_response.status != status
+      json_response = JSON.parse(last_response.body)
+      pp json_response
+    end
+    assert_equal status, last_response.status, failure_reason
+  end
 
   def app
     Rails.application
