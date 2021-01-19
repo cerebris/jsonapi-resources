@@ -745,8 +745,8 @@ class Picture < ActiveRecord::Base
   belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
 
   belongs_to :imageable, polymorphic: true
-  belongs_to :document, -> { where( pictures: { imageable_type: 'Document' } ).eager_load( :pictures ) }, foreign_key: 'imageable_id'
-  belongs_to :product, -> { where( pictures: { imageable_type: 'Product' } ).eager_load( :pictures ) }, foreign_key: 'imageable_id'
+  belongs_to :document, -> { where( pictures: { imageable_type: 'Document' } ) }, foreign_key: 'imageable_id'
+  belongs_to :product, -> { where( pictures: { imageable_type: 'Product' } ) }, foreign_key: 'imageable_id'
 
   has_one :file_properties, as: 'fileable'
 end
