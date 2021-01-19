@@ -162,6 +162,10 @@ module JSONAPI
                 relationship: relationship,
                 options: options)
             }
+            unless join_node
+              warn "join node for #{related_resource_klass._type} not found"
+              next
+            end
 
             details = {alias: self.class.alias_from_arel_node(join_node), join_type: join_type}
 
@@ -234,7 +238,8 @@ module JSONAPI
             process_all_types = !segment.path_specified_resource_klass?
 
             if process_all_types || related_resource_klass == segment.resource_klass
-              related_resource_tree = process_path_to_tree(path_segments.dup, related_resource_klass, default_join_type, default_polymorphic_join_type)
+              # Prefer using `segment.resource_klass` insead of `related_resource_klass` to avoid inheritance issue
+              related_resource_tree = process_path_to_tree(path_segments.dup, segment.resource_klass, default_join_type, default_polymorphic_join_type)
               node[:resource_klasses][resource_klass][:relationships][segment.relationship].deep_merge!(related_resource_tree)
             end
           end
