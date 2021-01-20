@@ -13,7 +13,7 @@ class PostWithBadAfterSave < ActiveRecord::Base
   after_save :do_some_after_save_stuff
 
   def do_some_after_save_stuff
-    errors[:base] << 'Boom! Error added in after_save callback.'
+    errors.add(:base, 'Boom! Error added in after_save callback.')
     raise ActiveRecord::RecordInvalid.new(self)
   end
 end
@@ -23,7 +23,7 @@ class PostWithCustomValidationContext < ActiveRecord::Base
   validate :api_specific_check, on: :json_api_create
 
   def api_specific_check
-    errors[:base] << 'Record is invalid'
+    errors.add(:base, 'Record is invalid')
   end
 end
 
