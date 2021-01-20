@@ -7,16 +7,10 @@ module JSONAPI
     def self.install
       Mime::Type.register JSONAPI::MEDIA_TYPE, :api_json
 
-      # :nocov:
-      if Rails::VERSION::MAJOR >= 5
-        parsers = ActionDispatch::Request.parameter_parsers.merge(
-          Mime::Type.lookup(JSONAPI::MEDIA_TYPE).symbol => parser
-        )
-        ActionDispatch::Request.parameter_parsers = parsers
-      else
-        ActionDispatch::ParamsParser::DEFAULT_PARSERS[Mime::Type.lookup(JSONAPI::MEDIA_TYPE)] = parser
-      end
-      # :nocov:
+      parsers = ActionDispatch::Request.parameter_parsers.merge(
+        Mime::Type.lookup(JSONAPI::MEDIA_TYPE).symbol => parser
+      )
+      ActionDispatch::Request.parameter_parsers = parsers
     end
 
     def self.parser
