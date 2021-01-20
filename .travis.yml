@@ -17,15 +17,15 @@ rvm:
 matrix:
   exclude:
     - rvm: 3.0.0
-      env: 6.0.3.4 DATABASE_URL=postgres://postgres@localhost/jr_test
+      env: RAILS_VERSION=6.0.3.4 DATABASE_URL=postgres://postgres@localhost/jr_test
     - rvm: 3.0.0
-      env: 6.0.3.4
+      env: RAILS_VERSION=6.0.3.4
     - rvm: 3.0.0
-      env: 5.2.4.4 DATABASE_URL=postgres://postgres@localhost/jr_test
+      env: RAILS_VERSION=5.2.4.4 DATABASE_URL=postgres://postgres@localhost/jr_test
     - rvm: 3.0.0
-      env: 5.2.4.4
+      env: RAILS_VERSION=5.2.4.4
     - rvm: 3.0.0
-      env: 5.1.7
+      env: RAILS_VERSION=5.1.7
 before_install:
   - gem install bundler --version 2.2.5
 before_script:
