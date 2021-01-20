@@ -503,7 +503,7 @@ class Post < ActiveRecord::Base
   belongs_to :writer, class_name: 'Person', foreign_key: 'author_id'
   has_many :comments
   has_and_belongs_to_many :tags, join_table: :posts_tags
-  has_many :special_post_tags, source: :tag
+  has_many :special_post_tags
   has_many :special_tags, through: :special_post_tags, source: :tag
   belongs_to :section
   belongs_to :parent_post, class_name: 'Post', foreign_key: 'parent_post_id'
@@ -745,8 +745,8 @@ class Picture < ActiveRecord::Base
   belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
 
   belongs_to :imageable, polymorphic: true
-  belongs_to :document, -> { where( pictures: { imageable_type: 'Document' } ).eager_load( :pictures ) }, foreign_key: 'imageable_id'
-  belongs_to :product, -> { where( pictures: { imageable_type: 'Product' } ).eager_load( :pictures ) }, foreign_key: 'imageable_id'
+  belongs_to :document, -> { where( pictures: { imageable_type: 'Document' } ) }, foreign_key: 'imageable_id'
+  belongs_to :product, -> { where( pictures: { imageable_type: 'Product' } ) }, foreign_key: 'imageable_id'
 
   has_one :file_properties, as: 'fileable'
 end
