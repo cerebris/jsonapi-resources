@@ -8,7 +8,7 @@
 Like JSON:API itself, JR's design is focused on the resources served by an API. JR needs little more than a definition
 of your resources, including their attributes and relationships, to make your server compliant with JSON API.
 
-JR is designed to work with Rails 4.2+, and provides custom routes, controllers, and serializers. JR's resources may be
+JR is designed to work with Rails 5.1+, and provides custom routes, controllers, and serializers. JR's resources may be
 backed by ActiveRecord models or by custom objects.
 
 ## Documentation
