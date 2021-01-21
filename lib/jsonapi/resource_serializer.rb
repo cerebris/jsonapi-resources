@@ -3,7 +3,7 @@ module JSONAPI
 
     attr_reader :link_builder, :key_formatter, :serialization_options,
                 :fields, :include_directives, :always_include_to_one_linkage_data,
-                :always_include_to_many_linkage_data
+                :always_include_to_many_linkage_data, :options
 
     # initialize
     # Options can include
@@ -18,11 +18,12 @@ module JSONAPI
     # serialization_options: additional options that will be passed to resource meta and links lambdas
 
     def initialize(primary_resource_klass, options = {})
+      @options                = options
       @primary_resource_klass = primary_resource_klass
       @fields                 = options.fetch(:fields, {})
       @include                = options.fetch(:include, [])
-      @include_directives     = options[:include_directives]
-      @include_directives     ||= JSONAPI::IncludeDirectives.new(@primary_resource_klass, @include)
+      @include_directives     = options.fetch(:include_directives,
+                                              JSONAPI::IncludeDirectives.new(@primary_resource_klass, @include))
       @key_formatter          = options.fetch(:key_formatter, JSONAPI.configuration.key_formatter)
       @id_formatter           = ValueFormatter.value_formatter_for(:id)
       @link_builder           = generate_link_builder(primary_resource_klass, options)
@@ -39,6 +40,19 @@ module JSONAPI
       @_config_keys = {}
       @_supplying_attribute_fields = {}
       @_supplying_relationship_fields = {}
+    end
+
+    # Converts a single resource, or an array of resources to a hash, conforming to the JSONAPI structure
+    def serialize_to_hash(source)
+      include_related = include_directives[:include_related]
+      resource_set = JSONAPI::ResourceSet.new(source, include_related, options)
+      resource_set.populate!(self, options[:context], options)
+
+      if source.is_a?(Array)
+        serialize_resource_set_to_hash_plural(resource_set)
+      else
+        serialize_resource_set_to_hash_single(resource_set)
+      end
     end
 
     # Converts a resource_set to a hash, conforming to the JSONAPI structure

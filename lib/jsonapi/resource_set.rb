@@ -5,12 +5,24 @@ module JSONAPI
 
     attr_reader :resource_klasses, :populated
 
-    def initialize(resource_id_tree = nil)
+    def initialize(source, include_related = nil, options = nil)
       @populated = false
-      @resource_klasses = resource_id_tree.nil? ? {} : flatten_resource_id_tree(resource_id_tree)
+      tree = if source.is_a?(JSONAPI::ResourceTree)
+               source
+             elsif source.class < JSONAPI::BasicResource
+               JSONAPI::PrimaryResourceTree.new(resource: source, include_related: include_related, options: options)
+             elsif source.is_a?(Array)
+               JSONAPI::PrimaryResourceTree.new(resources: source, include_related: include_related, options: options)
+             end
+
+      if tree
+        @resource_klasses = flatten_resource_tree(tree)
+      end
     end
 
-    def populate!(serializer, context, find_options)
+    def populate!(serializer, context, options)
+      return if @populated
+
       # For each resource klass we want to generate the caching key
 
       # Hash for collecting types and ids
@@ -21,9 +33,9 @@ module JSONAPI
       # @type [Lookup[]]
       lookups = []
 
-
       # Step One collect all of the lookups for the cache, or keys that don't require cache access
       @resource_klasses.each_key do |resource_klass|
+        missed_resource_ids[resource_klass] ||= []
 
         serializer_config_key = serializer.config_key(resource_klass).gsub("/", "_")
         context_json = resource_klass.attribute_caching_context(context).to_json
@@ -47,7 +59,13 @@ module JSONAPI
             )
           )
         else
-          missed_resource_ids[resource_klass] = @resource_klasses[resource_klass].keys
+          @resource_klasses[resource_klass].keys.each do |k|
+            if @resource_klasses[resource_klass][k][:resource].nil?
+              missed_resource_ids[resource_klass] << k
+            else
+              register_resource(resource_klass, @resource_klasses[resource_klass][k][:resource])
+            end
+          end
         end
       end
 
@@ -60,7 +78,6 @@ module JSONAPI
         found_resources = {}
       end
 
-
       # Step Three collect the results and collect hit/miss stats
       stats = {}
       found_resources.each do |resource_klass, resources|
@@ -72,7 +89,6 @@ module JSONAPI
             stats[resource_klass][:misses] += 1
 
             # Collect misses
-            missed_resource_ids[resource_klass] ||= []
             missed_resource_ids[resource_klass].push(id)
           else
             stats[resource_klass][:hits] ||= 0
@@ -89,14 +105,15 @@ module JSONAPI
 
       # Step Four find any of the missing resources and join them into the result
       missed_resource_ids.each_pair do |resource_klass, ids|
-        find_opts = {context: context, fields: find_options[:fields]}
+        next if ids.empty?
+
+        find_opts = {context: context, fields: options[:fields]}
         found_resources = resource_klass.find_to_populate_by_keys(ids, find_opts)
 
         found_resources.each do |resource|
           relationship_data = @resource_klasses[resource_klass][resource.id][:relationships]
 
           if resource_klass.caching?
-
             serializer_config_key = serializer.config_key(resource_klass).gsub("/", "_")
             context_json = resource_klass.attribute_caching_context(context).to_json
             context_b64 = JSONAPI.configuration.resource_cache_digest_function.call(context_json)
@@ -148,8 +165,8 @@ module JSONAPI
       end
     end
 
-    def flatten_resource_id_tree(resource_id_tree, flattened_tree = {})
-      resource_id_tree.fragments.each_pair do |resource_rid, fragment|
+    def flatten_resource_tree(resource_tree, flattened_tree = {})
+      resource_tree.fragments.each_pair do |resource_rid, fragment|
 
         resource_klass = resource_rid.resource_klass
         id = resource_rid.id
@@ -157,7 +174,8 @@ module JSONAPI
         flattened_tree[resource_klass] ||= {}
 
         flattened_tree[resource_klass][id] ||= {primary: fragment.primary, relationships: {}}
-        flattened_tree[resource_klass][id][:cache_id] ||= fragment.cache
+        flattened_tree[resource_klass][id][:cache_id] ||= fragment.cache if fragment.cache
+        flattened_tree[resource_klass][id][:resource] ||= fragment.resource if fragment.resource
 
         fragment.related.try(:each_pair) do |relationship_name, related_rids|
           flattened_tree[resource_klass][id][:relationships][relationship_name] ||= Set.new
@@ -165,9 +183,9 @@ module JSONAPI
         end
       end
 
-      related_resource_id_trees = resource_id_tree.related_resource_id_trees
-      related_resource_id_trees.try(:each_value) do |related_resource_id_tree|
-        flatten_resource_id_tree(related_resource_id_tree, flattened_tree)
+      related_resource_trees = resource_tree.related_resource_trees
+      related_resource_trees.try(:each_value) do |related_resource_tree|
+        flatten_resource_tree(related_resource_tree, flattened_tree)
       end
 
       flattened_tree

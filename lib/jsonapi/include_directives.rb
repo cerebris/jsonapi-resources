@@ -25,8 +25,8 @@ module JSONAPI
       end
     end
 
-    def include_directives
-      @include_directives_hash
+    def [](name)
+      @include_directives_hash[name]
     end
 
     private

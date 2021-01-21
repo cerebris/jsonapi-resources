@@ -1597,11 +1597,16 @@ class PoroResource < JSONAPI::BasicResource
     end
 
     # Records
-    def find_fragments(filters, options = {})
+    def find_fragments(filters, options)
       fragments = {}
       find_records(filters, options).each do |record|
         rid = JSONAPI::ResourceIdentity.new(resource_klass, record.id)
-        fragments[rid] = JSONAPI::ResourceFragment.new(rid)
+        # We can use either the id or the full resource.
+        # fragments[rid] = JSONAPI::ResourceFragment.new(rid)
+        #  OR
+        # fragments[rid] = JSONAPI::ResourceFragment.new(rid, resource: resource_klass.new(record, options[:context]))
+        # In this case we will use the resource since we already looked up the model instance
+        fragments[rid] = JSONAPI::ResourceFragment.new(rid, resource: resource_klass.new(record, options[:context]))
       end
       fragments
     end
