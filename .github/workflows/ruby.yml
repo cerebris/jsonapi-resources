@@ -34,6 +34,8 @@ jobs:
           - 6.0.3.4
           - 5.2.4.4
           - 5.1.7
+          - 5.0.7.2
+          - 4.2.11
         database_url:
           - postgresql://postgres:password@localhost:5432/test
           - sqlite3:test_db
@@ -44,8 +46,16 @@ jobs:
             rails: 5.2.4.4
           - ruby: 3.0.0
             rails: 5.1.7
+          - ruby: 3.0.0
+            rails: 5.0.72
+          - ruby: 3.0.0
+            rails: 4.2.11
           - database_url: postgresql://postgres:password@localhost:5432/test
             rails: 5.1.7
+          - database_url: postgresql://postgres:password@localhost:5432/test
+            rails: 5.0.7.2
+          - database_url: postgresql://postgres:password@localhost:5432/test
+            rails: 4.2.11
     env:
       RAILS_VERSION: ${{ matrix.rails }}
       DATABASE_URL: ${{ matrix.database_url }}
