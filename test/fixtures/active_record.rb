@@ -517,24 +517,10 @@ class Post < ActiveRecord::Base
     case title
     when "can't destroy me", "can't destroy me either"
       errors.add(:base, "can't destroy me")
-
-      # :nocov:
-      if Rails::VERSION::MAJOR >= 5
-        throw(:abort)
-      else
-        return false
-      end
-      # :nocov:
+      throw(:abort)
     when "locked title"
       errors.add(:title, "is locked")
-
-      # :nocov:
-      if Rails::VERSION::MAJOR >= 5
-        throw(:abort)
-      else
-        return false
-      end
-      # :nocov:
+      throw(:abort)
     end
   end
 end
@@ -605,13 +591,7 @@ class Planet < ActiveRecord::Base
   def check_not_pluto
     # Pluto can't be a planet, so cancel the save
     if name.downcase == 'pluto'
-      # :nocov:
-      if Rails::VERSION::MAJOR >= 5
-        throw(:abort)
-      else
-        return false
-      end
-      # :nocov:
+      throw(:abort)
     end
   end
 end

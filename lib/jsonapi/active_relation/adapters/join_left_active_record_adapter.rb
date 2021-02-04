@@ -2,7 +2,6 @@ module JSONAPI
   module ActiveRelation
     module Adapters
       module JoinLeftActiveRecordAdapter
-
         # Extends left_joins functionality to rails 4, and uses the same logic for rails 5.0.x and 5.1.x
         # The default left_joins logic of rails 5.2.x is used. This results in and extra join in some cases. For
         # example Post.joins(:comments).joins_left(comments: :author) will join the comments table twice,

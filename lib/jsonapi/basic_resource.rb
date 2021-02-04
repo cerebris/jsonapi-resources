@@ -575,20 +575,12 @@ module JSONAPI
                        attr = @_attributes[attribute]
                        attr && attr[:delegate] ? attr[:delegate].to_sym : attribute
                      end
-        if Rails::VERSION::MAJOR >= 5
-          attribute_type = _model_class.attribute_types[field_name.to_s]
-        else
-          attribute_type = _model_class.column_types[field_name.to_s]
-        end
-        { name: field_name, type: attribute_type}
+
+        { name: field_name, type: _model_class.attribute_types[field_name.to_s]}
       end
 
       def cast_to_attribute_type(value, type)
-        if Rails::VERSION::MAJOR >= 5
-          return type.cast(value)
-        else
-          return type.type_cast_from_database(value)
-        end
+        type.cast(value)
       end
 
       def default_attribute_options
