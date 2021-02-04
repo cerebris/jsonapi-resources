@@ -756,7 +756,7 @@ module JSONAPI
 
       # Assumes ActiveRecord's counting. Override if you need a different counting method
       def count_records(records)
-        if Rails::VERSION::MAJOR >= 5 && ActiveRecord::VERSION::MINOR >= 1
+        if (Rails::VERSION::MAJOR == 5 && ActiveRecord::VERSION::MINOR >= 1) || Rails::VERSION::MAJOR >= 6
           records.count(:all)
         else
           records.count
