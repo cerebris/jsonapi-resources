@@ -207,7 +207,7 @@ module JSONAPI
       def find_related_fragments(source_rids, relationship_name, options = {})
         relationship = _relationship(relationship_name)
 
-        if relationship.polymorphic? # && relationship.foreign_key_on == :self
+        if relationship.polymorphic? && relationship.foreign_key_on != :self
           find_related_polymorphic_fragments(source_rids, relationship, options, false)
         else
           find_related_monomorphic_fragments(source_rids, relationship, options, false)
