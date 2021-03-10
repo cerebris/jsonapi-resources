@@ -317,7 +317,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_jsonapi_response 201
   end
 
-  def test_post_polymorphic_with_has_many_relationship
+  def test_post_sti_with_has_many_relationship
     post '/people', params:
       {
         'data' => {
@@ -380,7 +380,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_jsonapi_response 400, msg: "Submitting a thing as a vehicle should raise a type mismatch error"
   end
 
-  def test_post_polymorphic_invalid_with_not_matched_type_and_id
+  def test_post_sti_invalid_with_not_matched_type_and_id
     post '/people', params:
       {
         'data' => {
@@ -405,7 +405,7 @@ class RequestTest < ActionDispatch::IntegrationTest
         'Accept' => JSONAPI::MEDIA_TYPE
       }
 
-    assert_jsonapi_response 404, msg: "Submitting a thing as a vehicle should raise a record not found"
+    assert_jsonapi_response 404, msg: "Submitting a vehicle should raise a record not found if the type does not match"
   end
 
   def test_post_single_missing_data_contents
@@ -680,7 +680,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_jsonapi_response 400, msg: "Submitting a thing as a vehicle should raise a type mismatch error"
   end
 
-  def test_patch_polymorphic_invalid_with_not_matched_type_and_id
+  def test_patch_sti_invalid_with_not_matched_type_and_id
     patch '/people/1000', params:
       {
         'data' => {
