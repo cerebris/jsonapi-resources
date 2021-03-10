@@ -300,7 +300,7 @@ module JSONAPI
         _create_to_many_links(relationship_type, to_add, {})
 
         @reload_needed = true
-      elsif relationship.polymorphic?
+      elsif relationship.polymorphic? || relationship.sti?
         relationship_key_values.each do |relationship_key_value|
           relationship_resource_klass = self.class.resource_klass_for(relationship_key_value[:type])
           ids = relationship_key_value[:ids]
@@ -1093,7 +1093,7 @@ module JSONAPI
       end
 
       def define_foreign_key_setter(relationship)
-        if relationship.polymorphic?
+        if relationship.polymorphic? || relationship.sti?
           define_on_resource "#{relationship.foreign_key}=" do |v|
             _model.method("#{relationship.foreign_key}=").call(v[:id])
             _model.public_send("#{relationship.polymorphic_type}=", v[:type])

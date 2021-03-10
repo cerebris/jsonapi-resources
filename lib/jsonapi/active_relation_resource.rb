@@ -140,6 +140,7 @@ module JSONAPI
               primary_key = klass._primary_key
 
               linkage_fields << {relationship_name: name,
+                                 linkage_relationship: linkage_relationship,
                                  resource_klass: klass,
                                  field: "#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}",
                                  alias: "#{linkage_table_alias}_#{primary_key}"}
@@ -152,11 +153,16 @@ module JSONAPI
             primary_key = klass._primary_key
 
             linkage_fields << {relationship_name: name,
+                               linkage_relationship: linkage_relationship,
                                resource_klass: klass,
                                field: "#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}",
                                alias: "#{linkage_table_alias}_#{primary_key}"}
 
             pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}")
+
+            if linkage_relationship.sti?
+              pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, 'type')} AS #{linkage_table_alias}_type")
+            end
           end
         end
 
@@ -189,7 +195,14 @@ module JSONAPI
             fragments[rid].initialize_related(linkage_field_details[:relationship_name])
             related_id = row[attributes_offset]
             if related_id
-              related_rid = JSONAPI::ResourceIdentity.new(linkage_field_details[:resource_klass], related_id)
+              if linkage_field_details[:linkage_relationship].sti?
+                type = row[2]
+                related_rid = JSONAPI::ResourceIdentity.new(resource_klass_for(type), related_id)
+                attributes_offset+= 1
+              else
+                related_rid = JSONAPI::ResourceIdentity.new(linkage_field_details[:resource_klass], related_id)
+              end
+
               fragments[rid].add_related_identity(linkage_field_details[:relationship_name], related_rid)
             end
             attributes_offset+= 1
@@ -427,6 +440,10 @@ module JSONAPI
             Arel.sql("#{concat_table_field(resource_table_alias, resource_klass._primary_key)} AS #{resource_table_alias}_#{resource_klass._primary_key}")
         ]
 
+        if relationship.sti?
+          pluck_fields << Arel.sql("#{concat_table_field(resource_table_alias, 'type')} AS #{resource_table_alias}_type")
+        end
+
         cache_field = resource_klass.attribute_to_model_field(:_cache_field) if options[:cache]
         if cache_field
           pluck_fields << Arel.sql("#{concat_table_field(resource_table_alias, cache_field[:name])} AS #{resource_table_alias}_#{cache_field[:name]}")
@@ -472,11 +489,16 @@ module JSONAPI
         fragments = {}
         rows = records.distinct.pluck(*pluck_fields)
         rows.each do |row|
-          rid = JSONAPI::ResourceIdentity.new(resource_klass, row[1])
+          if relationship.sti?
+            type = row[2]
+            rid = JSONAPI::ResourceIdentity.new(resource_klass_for(type), row[1])
+            attributes_offset = 3
+          else
+            rid = JSONAPI::ResourceIdentity.new(resource_klass, row[1])
+            attributes_offset = 2
+          end
 
           fragments[rid] ||= JSONAPI::ResourceFragment.new(rid)
-
-          attributes_offset = 2
 
           if cache_field
             fragments[rid].cache = cast_to_attribute_type(row[attributes_offset], cache_field[:type])

@@ -2746,6 +2746,12 @@ class PeopleControllerTest < ActionController::TestCase
                     "self" => "http://test.host/people/1001/relationships/expense_entries",
                     "related" => "http://test.host/people/1001/expense_entries"
                 }
+            },
+            "favorite-vehicle" => {
+              "links" => {
+                "self" => "http://test.host/people/1001/relationships/favorite_vehicle",
+                "related" => "http://test.host/people/1001/favorite_vehicle"
+              }
             }
           }
         }
@@ -2763,6 +2769,18 @@ class PeopleControllerTest < ActionController::TestCase
     assert_cacheable_get :show_related_resource, params: {post_id: '2', relationship: 'author', source:'posts', include: 'posts'}
     assert_response :success
     assert_equal 'posts', json_response['included'][0]['type']
+  ensure
+    JSONAPI.configuration = original_config
+  end
+
+  def test_show_include_sti
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    JSONAPI.configuration.route_format = :underscored_key
+    get :show, params: {id: '1005', include: 'vehicles,favorite-vehicle'}
+    assert_response :success
+    assert_equal 'cars', json_response['included'][0]['type']
+    assert_equal 'cars', json_response['data']['relationships']['favorite-vehicle']['data']['type']
   ensure
     JSONAPI.configuration = original_config
   end

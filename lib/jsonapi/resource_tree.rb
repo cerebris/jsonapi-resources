@@ -216,7 +216,7 @@ module JSONAPI
       init_included_relationships(fragment, include_related)
 
       fragment.related_from.each do |rid|
-        @source_resource_tree.fragments[rid].add_related_identity(parent_relationship.name, fragment.identity)
+        @source_resource_tree.fragments[rid]&.add_related_identity(parent_relationship.name, fragment.identity)
       end
 
       if @fragments[fragment.identity]

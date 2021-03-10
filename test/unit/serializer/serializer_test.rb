@@ -373,6 +373,12 @@ class SerializerTest < ActionDispatch::IntegrationTest
                  self: '/people/1001/relationships/expenseEntries',
                  related: '/people/1001/expenseEntries'
                }
+             },
+             favoriteVehicle: {
+               links: {
+                 self: '/people/1001/relationships/favoriteVehicle',
+                 related: '/people/1001/favoriteVehicle'
+               }
              }
             }
           }
@@ -490,6 +496,12 @@ class SerializerTest < ActionDispatch::IntegrationTest
                 links: {
                   self: '/people/1001/relationships/expenseEntries',
                   related: '/people/1001/expenseEntries'
+                }
+              },
+              favoriteVehicle: {
+                links: {
+                  self: '/people/1001/relationships/favoriteVehicle',
+                  related: '/people/1001/favoriteVehicle'
                 }
               }
             }
@@ -656,6 +668,12 @@ class SerializerTest < ActionDispatch::IntegrationTest
                   self: '/people/1001/relationships/expenseEntries',
                   related: '/people/1001/expenseEntries'
                 }
+              },
+              favoriteVehicle: {
+                links: {
+                  self: '/people/1001/relationships/favoriteVehicle',
+                  related: '/people/1001/favoriteVehicle'
+                }
               }
             }
           }
@@ -781,6 +799,12 @@ class SerializerTest < ActionDispatch::IntegrationTest
                                 self: '/people/1001/relationships/expenseEntries',
                                 related: '/people/1001/expenseEntries'
                             }
+                        },
+                        favorite_vehicle: {
+                          links: {
+                            self: '/people/1001/relationships/favoriteVehicle',
+                            related: '/people/1001/favoriteVehicle'
+                          }
                         }
                     }
                 }
@@ -973,6 +997,12 @@ class SerializerTest < ActionDispatch::IntegrationTest
                 links: {
                   self: '/people/1001/relationships/expenseEntries',
                   related: '/people/1001/expenseEntries'
+                }
+              },
+              favoriteVehicle: {
+                links: {
+                  self: '/people/1001/relationships/favoriteVehicle',
+                  related: '/people/1001/favoriteVehicle'
                 }
               }
             }
