@@ -151,13 +151,13 @@ module JSONAPI
             linkage_fields << {relationship_name: name,
                                linkage_relationship: linkage_relationship,
                                resource_klass: klass,
-                               field: "#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}",
+                               field: "#{concat_table_field(linkage_table_alias, primary_key)} AS \"#{linkage_table_alias}_#{primary_key}\"",
                                alias: "#{linkage_table_alias}_#{primary_key}"}
 
-            pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}")
+            pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, primary_key)} AS \"#{linkage_table_alias}_#{primary_key}\"")
 
             if linkage_relationship.sti?
-              pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, 'type')} AS #{linkage_table_alias}_type")
+              pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, 'type')} AS \"#{linkage_table_alias}_type\"")
             end
           end
         end
