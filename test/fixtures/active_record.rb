@@ -43,6 +43,7 @@ ActiveRecord::Schema.define do
     t.boolean    :book_admin, default: false
     t.boolean    :special, default: false
     t.timestamps null: false
+    t.integer    :favorite_vehicle_id, index: true
   end
 
   create_table :author_details, force: true do |t|
@@ -439,11 +440,11 @@ end
 
 class Response < ActiveRecord::Base
 	belongs_to :session
-	has_one :paragraph, :class_name => "ResponseText::Paragraph"
+	has_one :paragraph, :class_name => "Paragraph"
 
 	def response_type
 		case self.type
-		when "Response::SingleTextbox"
+		when "SingleTextbox"
           "single_textbox"
 		else
           "question"
@@ -452,21 +453,21 @@ class Response < ActiveRecord::Base
 	def response_type=type
 		self.type = case type
 		when "single_textbox"
-          "Response::SingleTextbox"
+          "SingleTextbox"
 		else
 		  "Response"
 		end
 	end
 end
 
-class Response::SingleTextbox < Response
-  has_one :paragraph, :class_name => "ResponseText::Paragraph", :foreign_key => :response_id
+class SingleTextbox < Response
+  has_one :paragraph, :class_name => "Paragraph", :foreign_key => :response_id
 end
 
 class ResponseText < ActiveRecord::Base
 end
 
-class ResponseText::Paragraph < ResponseText
+class Paragraph < ResponseText
 end
 
 class Person < ActiveRecord::Base
@@ -478,6 +479,7 @@ class Person < ActiveRecord::Base
   belongs_to :preferences
   belongs_to :hair_cut
   has_one :author_detail
+  belongs_to :favorite_vehicle, class_name: 'Vehicle'
 
   has_and_belongs_to_many :books, join_table: :book_authors
   has_and_belongs_to_many :not_banned_books, -> { merge(Book.not_banned) },
@@ -1265,7 +1267,7 @@ class SessionResource < JSONAPI::Resource
       (datum[:relationships] || {}).each_pair { |k,v|
         case k
         when "paragraph"
-          response.paragraph = ResponseText::Paragraph.create(((v[:data][:attributes].respond_to?(:permit))? v[:data][:attributes].permit(:text) : v[:data][:attributes]))
+          response.paragraph = Paragraph.create(((v[:data][:attributes].respond_to?(:permit))? v[:data][:attributes].permit(:text) : v[:data][:attributes]))
         end
       }
     }
@@ -1285,8 +1287,6 @@ class SessionResource < JSONAPI::Resource
 end
 
 class ResponseResource < JSONAPI::Resource
-  model_hint model: Response::SingleTextbox, resource: :response
-
   has_one :session
 
   attributes :question_id, :response_type
@@ -1294,8 +1294,11 @@ class ResponseResource < JSONAPI::Resource
   has_one :paragraph
 end
 
+class SingleTextboxResource < ResponseResource
+end
+
 class ParagraphResource < JSONAPI::Resource
-  model_name 'ResponseText::Paragraph'
+  model_name 'Paragraph'
 
   attributes :text
 
@@ -1308,8 +1311,9 @@ class PersonResource < BaseResource
 
   has_many :comments, inverse_relationship: :author
   has_many :posts, inverse_relationship: :author
-  has_many :vehicles, polymorphic: true
+  has_many :vehicles, sti: true
 
+  has_one :favorite_vehicle, class_name: 'Vehicle', sti: true
   has_one :preferences
   has_one :hair_cut
 
@@ -1357,12 +1361,10 @@ class VehicleResource < JSONAPI::Resource
 end
 
 class CarResource < VehicleResource
-  model_name "Car"
   attributes :drive_layout
 end
 
 class BoatResource < VehicleResource
-  model_name "Boat"
   attributes :length_at_water_line
 end
 
@@ -2167,7 +2169,7 @@ module Api
     class ExpenseEntryResource < ExpenseEntryResource; end
     class IsoCurrencyResource < IsoCurrencyResource; end
     class EmployeeResource < EmployeeResource; end
-    class VehicleResource < PersonResource; end
+    class VehicleResource < VehicleResource; end
     class HairCutResource < HairCutResource; end
   end
 end

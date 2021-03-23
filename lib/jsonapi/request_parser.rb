@@ -567,7 +567,7 @@ module JSONAPI
       if links_object.length == 0
         add_result.call([])
       else
-        if relationship.polymorphic?
+        if relationship.polymorphic? || relationship.sti?
           polymorphic_results = []
 
           links_object.each_pair do |type, keys|

@@ -1,7 +1,7 @@
 module JSONAPI
   class Relationship
     attr_reader :acts_as_set, :foreign_key, :options, :name,
-                :class_name, :polymorphic, :always_include_optional_linkage_data,
+                :class_name, :polymorphic, :sti, :always_include_optional_linkage_data,
                 :parent_resource, :eager_load_on_include, :custom_methods,
                 :inverse_relationship, :allow_include
 
@@ -22,6 +22,7 @@ module JSONAPI
         ActiveSupport::Deprecation.warn('Use polymorphic_types instead of polymorphic_relations')
         @polymorphic_types ||= options[:polymorphic_relations]
       end
+      @sti = options.fetch(:sti, false)
 
       @always_include_optional_linkage_data = options.fetch(:always_include_optional_linkage_data, false) == true
       @eager_load_on_include = options.fetch(:eager_load_on_include, false) == true
@@ -39,6 +40,8 @@ module JSONAPI
     end
 
     alias_method :polymorphic?, :polymorphic
+    alias_method :sti?, :sti
+
     alias_method :parent_resource_klass, :parent_resource
 
     def primary_key
@@ -63,12 +66,12 @@ module JSONAPI
           next unless Module === klass
           if ActiveRecord::Base > klass
             klass.reflect_on_all_associations(:has_many).select{|r| r.options[:as] }.each do |reflection|
-              (hash[reflection.options[:as]] ||= []) << klass.name.downcase
+              (hash[reflection.options[:as]] ||= []) << klass.name.underscore
             end
           end
         end
       end
-      @poly_hash[name.to_sym]
+      @poly_hash[name.to_sym] || []
     end
 
     def resource_types
