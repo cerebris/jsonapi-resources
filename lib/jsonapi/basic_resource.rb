@@ -1058,7 +1058,7 @@ module JSONAPI
       end
 
       def construct_order_options(sort_params)
-        sort_params ||= default_sort
+        sort_params = default_sort if sort_params.blank?
 
         return {} unless sort_params
 
