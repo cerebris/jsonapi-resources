@@ -63,7 +63,7 @@ module JSONAPI
           next unless Module === klass
           if ActiveRecord::Base > klass
             klass.reflect_on_all_associations(:has_many).select{|r| r.options[:as] }.each do |reflection|
-              (hash[reflection.options[:as]] ||= []) << klass.name.downcase
+              (hash[reflection.options[:as]] ||= []) << klass.name.underscore
             end
           end
         end
