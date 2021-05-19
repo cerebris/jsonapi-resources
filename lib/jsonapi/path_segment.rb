@@ -30,7 +30,7 @@ module JSONAPI
       end
 
       def eql?(other)
-        relationship == other.relationship && resource_klass == other.resource_klass
+        other.is_a?(JSONAPI::PathSegment::Relationship) && relationship == other.relationship && resource_klass == other.resource_klass
       end
 
       def hash
@@ -59,7 +59,7 @@ module JSONAPI
       end
 
       def eql?(other)
-        field_name == other.field_name && resource_klass == other.resource_klass
+        other.is_a?(JSONAPI::PathSegment::Field) && field_name == other.field_name && resource_klass == other.resource_klass
       end
 
       def delegated_field_name
