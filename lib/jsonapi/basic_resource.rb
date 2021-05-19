@@ -873,7 +873,7 @@ module JSONAPI
         if !_polymorphic
           ''
         else
-          @_polymorphic_name ||= _model_name.to_s.downcase
+          @_polymorphic_name ||= _model_name.to_s.underscore
         end
       end
 
@@ -927,7 +927,7 @@ module JSONAPI
             next unless Module === klass
             if klass < ActiveRecord::Base
               klass.reflect_on_all_associations(:has_many).select{|r| r.options[:as] }.each do |reflection|
-                (hash[reflection.options[:as]] ||= []) << klass.name.downcase
+                (hash[reflection.options[:as]] ||= []) << klass.name.underscore
               end
             end
           end
