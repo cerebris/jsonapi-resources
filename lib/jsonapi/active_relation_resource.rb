@@ -114,11 +114,11 @@ module JSONAPI
         # This alias is going to be resolve down to the model's table name and will not actually be an alias
         resource_table_alias = resource_klass._table_name
 
-        pluck_fields = [Arel.sql("#{concat_table_field(resource_table_alias, resource_klass._primary_key)} AS #{resource_table_alias}_#{resource_klass._primary_key}")]
+        pluck_fields = [sql_field_with_alias(resource_table_alias, resource_klass._primary_key)]
 
         cache_field = attribute_to_model_field(:_cache_field) if options[:cache]
         if cache_field
-          pluck_fields << Arel.sql("#{concat_table_field(resource_table_alias, cache_field[:name])} AS #{resource_table_alias}_#{cache_field[:name]}")
+          pluck_fields << sql_field_with_alias(resource_table_alias, cache_field[:name])
         end
 
         linkage_fields = []
@@ -133,7 +133,7 @@ module JSONAPI
 
               linkage_table_alias = join_manager.join_details_by_polymorphic_relationship(linkage_relationship, resource_type)[:alias]
               primary_key = klass._primary_key
-              pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}")
+              pluck_fields << sql_field_with_alias(linkage_table_alias, primary_key)
             end
           else
             klass = linkage_relationship.resource_klass
@@ -141,7 +141,7 @@ module JSONAPI
 
             linkage_table_alias = join_manager.join_details_by_relationship(linkage_relationship)[:alias]
             primary_key = klass._primary_key
-            pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}")
+            pluck_fields << sql_field_with_alias(linkage_table_alias, primary_key)
           end
         end
 
@@ -150,7 +150,7 @@ module JSONAPI
         attributes.try(:each) do |attribute|
           model_field = resource_klass.attribute_to_model_field(attribute)
           model_fields[attribute] = model_field
-          pluck_fields << Arel.sql("#{concat_table_field(resource_table_alias, model_field[:name])} AS #{resource_table_alias}_#{model_field[:name]}")
+          pluck_fields << sql_field_with_alias(resource_table_alias, model_field[:name])
         end
 
         sort_fields = options.dig(:_relation_helper_options, :sort_fields)
@@ -409,13 +409,13 @@ module JSONAPI
         resource_table_alias = join_manager.join_details_by_relationship(relationship)[:alias]
 
         pluck_fields = [
-            Arel.sql("#{_table_name}.#{_primary_key} AS source_id"),
-            Arel.sql("#{concat_table_field(resource_table_alias, resource_klass._primary_key)} AS #{resource_table_alias}_#{resource_klass._primary_key}")
+          Arel.sql("#{_table_name}.#{_primary_key} AS \"source_id\""),
+          sql_field_with_alias(resource_table_alias, resource_klass._primary_key)
         ]
 
         cache_field = resource_klass.attribute_to_model_field(:_cache_field) if options[:cache]
         if cache_field
-          pluck_fields << Arel.sql("#{concat_table_field(resource_table_alias, cache_field[:name])} AS #{resource_table_alias}_#{cache_field[:name]}")
+          pluck_fields << sql_field_with_alias(resource_table_alias, cache_field[:name])
         end
 
         linkage_fields = []
@@ -430,7 +430,7 @@ module JSONAPI
 
               linkage_table_alias = join_manager.join_details_by_polymorphic_relationship(linkage_relationship, resource_type)[:alias]
               primary_key = klass._primary_key
-              pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}")
+              pluck_fields << sql_field_with_alias(linkage_table_alias, primary_key)
             end
           else
             klass = linkage_relationship.resource_klass
@@ -438,7 +438,7 @@ module JSONAPI
 
             linkage_table_alias = join_manager.join_details_by_relationship(linkage_relationship)[:alias]
             primary_key = klass._primary_key
-            pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}")
+            pluck_fields << sql_field_with_alias(linkage_table_alias, primary_key)
           end
         end
 
@@ -447,7 +447,7 @@ module JSONAPI
         attributes.try(:each) do |attribute|
           model_field = resource_klass.attribute_to_model_field(attribute)
           model_fields[attribute] = model_field
-          pluck_fields << Arel.sql("#{concat_table_field(resource_table_alias, model_field[:name])} AS #{resource_table_alias}_#{model_field[:name]}")
+          pluck_fields << sql_field_with_alias(resource_table_alias, model_field[:name])
         end
 
         sort_fields = options.dig(:_relation_helper_options, :sort_fields)
@@ -543,9 +543,9 @@ module JSONAPI
         related_type = concat_table_field(_table_name, relationship.polymorphic_type)
 
         pluck_fields = [
-            Arel.sql("#{primary_key} AS #{_table_name}_#{_primary_key}"),
-            Arel.sql("#{related_key} AS #{_table_name}_#{relationship.foreign_key}"),
-            Arel.sql("#{related_type} AS #{_table_name}_#{relationship.polymorphic_type}")
+            Arel.sql("#{primary_key} AS #{alias_table_field(_table_name, _primary_key)}"),
+            Arel.sql("#{related_key} AS #{alias_table_field(_table_name, relationship.foreign_key)}"),
+            Arel.sql("#{related_type} AS #{alias_table_field(_table_name, relationship.polymorphic_type)}")
         ]
 
         # Get the additional fields from each relation. There's a limitation that the fields must exist in each relation
@@ -570,7 +570,7 @@ module JSONAPI
 
             cache_offset = relation_index
             if cache_field
-              pluck_fields << Arel.sql("#{concat_table_field(table_alias, cache_field[:name])} AS cache_#{type}_#{cache_field[:name]}")
+              pluck_fields << sql_field_with_alias(table_alias, cache_field[:name])
               relation_index+= 1
             end
 
@@ -579,7 +579,7 @@ module JSONAPI
             attributes.try(:each) do |attribute|
               model_field = related_klass.attribute_to_model_field(attribute)
               model_fields[attribute] = model_field
-              pluck_fields << Arel.sql("#{concat_table_field(table_alias, model_field[:name])} AS #{table_alias}_#{model_field[:name]}")
+              pluck_fields << sql_field_with_alias(table_alias, model_field[:name])
               relation_index+= 1
             end
 
@@ -616,7 +616,7 @@ module JSONAPI
 
               linkage_table_alias = join_manager.join_details_by_polymorphic_relationship(linkage_relationship, resource_type)[:alias]
               primary_key = klass._primary_key
-              pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}")
+              pluck_fields << sql_field_with_alias(linkage_table_alias, primary_key)
             end
           else
             klass = linkage_relationship.resource_klass
@@ -624,7 +624,7 @@ module JSONAPI
 
             linkage_table_alias = join_manager.join_details_by_relationship(linkage_relationship)[:alias]
             primary_key = klass._primary_key
-            pluck_fields << Arel.sql("#{concat_table_field(linkage_table_alias, primary_key)} AS #{linkage_table_alias}_#{primary_key}")
+            pluck_fields << sql_field_with_alias(linkage_table_alias, primary_key)
           end
         end
 
@@ -790,7 +790,31 @@ module JSONAPI
         if table.blank? || field.to_s.include?('.')
           # :nocov:
           if quoted
-            "\"#{field.to_s}\""
+            quote(field)
+          else
+            field.to_s
+          end
+          # :nocov:
+        else
+          if quoted
+            "#{quote(table)}.#{quote(field)}"
+          else
+            # :nocov:
+            "#{table.to_s}.#{field.to_s}"
+            # :nocov:
+          end
+        end
+      end
+
+      def sql_field_with_alias(table, field, quoted = true)
+        Arel.sql("#{concat_table_field(table, field, quoted)} AS #{alias_table_field(table, field, quoted)}")
+      end
+
+      def alias_table_field(table, field, quoted = false)
+        if table.blank? || field.to_s.include?('.')
+          # :nocov:
+          if quoted
+            quote(field)
           else
             field.to_s
           end
@@ -798,13 +822,18 @@ module JSONAPI
         else
           if quoted
             # :nocov:
-            "\"#{table.to_s}\".\"#{field.to_s}\""
+            quote("#{table.to_s}_#{field.to_s}")
             # :nocov:
           else
-            "#{table.to_s}.#{field.to_s}"
+            "#{table.to_s}_#{field.to_s}"
           end
         end
       end
+
+      def quote(field)
+        "\"#{field.to_s}\""
+      end
+
 
       def apply_filters(records, filters, options = {})
         if filters
