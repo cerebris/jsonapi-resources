@@ -85,7 +85,7 @@ module JSONAPI
                                                                    find_related_resource_options)
 
         related_resource_tree = source_resource_tree.get_related_resource_tree(relationship)
-        related_resource_tree.add_resource_fragments(related_fragments, include_related[key][include_related])
+        related_resource_tree.add_resource_fragments(related_fragments, include_related[key][:include_related])
 
         # Now recursively get the related resources for the currently found resources
         load_included(relationship.resource_klass,
