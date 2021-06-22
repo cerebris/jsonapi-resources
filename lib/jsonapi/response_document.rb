@@ -1,9 +1,10 @@
 module JSONAPI
   class ResponseDocument
-    attr_reader :serialized_results
+    attr_reader :serialized_results, :results
 
     def initialize(options = {})
       @serialized_results = []
+      @results = []
       @result_codes = []
       @error_results = []
       @global_errors = []
@@ -30,6 +31,7 @@ module JSONAPI
           add_global_error(error)
         end
       else
+        @results.push result
         @serialized_results.push result.to_hash(operation.options[:serializer])
         @result_codes.push result.code.to_i
         update_links(operation.options[:serializer], result)
