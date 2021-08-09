@@ -234,7 +234,7 @@ module JSONAPI
         render_options[:body] = JSON.generate(content)
       end
 
-      render_options[:location] = content[:data]["links"][:self] if (
+      render_options[:location] = content[:data]["links"]["self"] if (
         response_doc.status == :created && content[:data].class != Array && content[:data]["links"]
       )
 

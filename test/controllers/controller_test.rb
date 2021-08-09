@@ -591,6 +591,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 'JR is Great', json_response['data']['attributes']['title']
     assert_equal 'JSONAPIResources is the greatest thing since unsliced bread.', json_response['data']['attributes']['body']
     assert_equal "http://test.host/posts/#{json_response['data']['id']}", json_response['data']['links']['self']
+    assert_equal json_response['data']['links']['self'], response.location
   end
 
   def test_create_simple_id_not_allowed
