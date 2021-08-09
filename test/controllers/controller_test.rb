@@ -4371,7 +4371,8 @@ class Api::BoxesControllerTest < ActionController::TestCase
                             "links" => {
                                 "self" => "http://test.host/api/things/40/relationships/things",
                                 "related" => "http://test.host/api/things/40/things"
-                            }
+                            },
+                            "data"=>[]
                         }
                     }
                 },
