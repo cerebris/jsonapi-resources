@@ -174,7 +174,10 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_inherited_calls_superclass
-    assert_equal(BaseResource.subclasses, [PersonResource, SpecialBaseResource])
+    subclasses = BaseResource.subclasses
+    assert_includes(subclasses, PersonResource)
+    assert_includes(subclasses, SpecialBaseResource)
+    assert_equal(2, subclasses.size)
   end
 
   def test_nil_model_class
