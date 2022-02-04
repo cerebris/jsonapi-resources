@@ -51,8 +51,8 @@ module JSONAPI
       @fetchable_fields = Set.new(fetchable_fields)
 
       # Relationships left uncompiled because we'll often want to insert included ids on retrieval
-      @relationships = relationships
-
+      # Remove the data since that should not be cached
+      @relationships = relationships&.transform_values {|v| v.delete_if {|k, _v| k == 'data'} }
       @links_json = CompiledJson.of(links_json)
       @attributes_json = CompiledJson.of(attributes_json)
       @meta_json = CompiledJson.of(meta_json)
