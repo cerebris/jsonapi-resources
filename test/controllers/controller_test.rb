@@ -304,6 +304,22 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration.allow_filter = true
   end
 
+  def test_cached_result_does_not_include_relationship_data
+    JSONAPI.configuration.resource_cache = ActiveSupport::Cache::MemoryStore.new
+    JSONAPI.configuration.default_caching = true
+
+    get :show, params: {id: '1', include: 'author'}
+    assert_response :success
+    assert json_response['data']['relationships']['author']['data']
+
+    get :show, params: {id: '1'}
+    assert_response :success
+    refute json_response['data']['relationships']['author']['data']
+  ensure
+    JSONAPI.configuration.resource_cache = nil
+    JSONAPI.configuration.default_caching = false
+  end
+
   def test_index_include_one_level_query_count
     assert_query_count(4) do
       assert_cacheable_get :index, params: {include: 'author'}
