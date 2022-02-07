@@ -40,7 +40,7 @@ module JSONAPI
                 :resource_cache_digest_function,
                 :resource_cache_usage_report_function,
                 :default_exclude_links,
-                :merge_resource_records_for_joins
+                :use_related_resource_records_for_joins
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -160,9 +160,10 @@ module JSONAPI
       # specific default links to exclude, which may be `:self` and `:related`.
       self.default_exclude_links = :none
 
-      # Merge related resources `records` when performing joins and a relation_name is not specified.
-      # This will bring in permission scopes on the included resources. This can be overridden per relationship.
-      self.merge_resource_records_for_joins = true
+      # Use related `records` when performing joins. If a relation_name is specified this option is ignored for the
+      # relationship. This will bring in permission scopes on the included resources.
+      # This can be overridden per relationship.
+      self.use_related_resource_records_for_joins = true
     end
 
     def cache_formatters=(bool)
@@ -305,7 +306,7 @@ module JSONAPI
 
     attr_writer :default_exclude_links
 
-    attr_writer :merge_resource_records_for_joins
+    attr_writer :use_related_resource_records_for_joins
   end
 
   class << self

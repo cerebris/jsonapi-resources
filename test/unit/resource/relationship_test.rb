@@ -20,36 +20,36 @@ end
 
 class TestRelationshipOptionsPostsResource < JSONAPI::Resource
   model_name 'Post'
-  has_one :author, allow_include: :is_admin, merge_resource_records_for_joins: false
+  has_one :author, allow_include: :is_admin, use_related_resource_records_for_joins: false
 end
 
 class RelationshipTest < ActiveSupport::TestCase
-  def test_merge_resource_records_for_joins_enabled_by_default
-    assert JSONAPI.configuration.merge_resource_records_for_joins == true
+  def test_use_related_resource_records_for_joins_enabled_by_default
+    assert JSONAPI.configuration.use_related_resource_records_for_joins == true
     relationship = JSONAPI::Relationship::ToOne.new(:author)
-    assert relationship.merge_resource_records_for_joins
+    assert relationship.use_related_resource_records_for_joins
   end
 
-  def test_merge_resource_records_for_joins_can_be_disabled_globally
+  def test_use_related_resource_records_for_joins_can_be_disabled_globally
     original_config = JSONAPI.configuration.dup
 
-    JSONAPI.configuration.merge_resource_records_for_joins = false
+    JSONAPI.configuration.use_related_resource_records_for_joins = false
     relationship = JSONAPI::Relationship::ToOne.new(:author)
-    assert relationship.merge_resource_records_for_joins == false
+    assert relationship.use_related_resource_records_for_joins == false
   ensure
     JSONAPI.configuration = original_config
   end
 
-  def test_merge_resource_records_for_joins_is_disabled_by_deafult_with_relation_name
+  def test_use_related_resource_records_for_joins_is_disabled_by_deafult_with_relation_name
     relationship = JSONAPI::Relationship::ToOne.new(:author,
                                                     relation_name: "foo" )
-    refute relationship.merge_resource_records_for_joins
+    refute relationship.use_related_resource_records_for_joins
   end
 
-  def test_merge_resource_records_for_joins_can_be_disabled
+  def test_use_related_resource_records_for_joins_can_be_disabled
     relationship = JSONAPI::Relationship::ToOne.new(:author,
-                                                    merge_resource_records_for_joins: false )
-    refute relationship.merge_resource_records_for_joins
+                                                    use_related_resource_records_for_joins: false )
+    refute relationship.use_related_resource_records_for_joins
   end
 end
 

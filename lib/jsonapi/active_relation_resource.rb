@@ -325,7 +325,7 @@ module JSONAPI
           end
         end
 
-        if relationship.merge_resource_records_for_joins
+        if relationship.use_related_resource_records_for_joins
           records = records.merge(self.records(options))
         end
 
