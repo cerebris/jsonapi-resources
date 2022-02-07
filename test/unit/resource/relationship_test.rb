@@ -20,36 +20,36 @@ end
 
 class TestRelationshipOptionsPostsResource < JSONAPI::Resource
   model_name 'Post'
-  has_one :author, allow_include: :is_admin, merge_resource_records: false
+  has_one :author, allow_include: :is_admin, merge_resource_records_for_joins: false
 end
 
 class RelationshipTest < ActiveSupport::TestCase
-  def test_merge_resource_records_enabled_by_default
-    assert JSONAPI.configuration.merge_resource_records == true
+  def test_merge_resource_records_for_joins_enabled_by_default
+    assert JSONAPI.configuration.merge_resource_records_for_joins == true
     relationship = JSONAPI::Relationship::ToOne.new(:author)
-    assert relationship.merge_resource_records
+    assert relationship.merge_resource_records_for_joins
   end
 
-  def test_merge_resource_records_can_be_disabled_globally
+  def test_merge_resource_records_for_joins_can_be_disabled_globally
     original_config = JSONAPI.configuration.dup
 
-    JSONAPI.configuration.merge_resource_records = false
+    JSONAPI.configuration.merge_resource_records_for_joins = false
     relationship = JSONAPI::Relationship::ToOne.new(:author)
-    assert relationship.merge_resource_records == false
+    assert relationship.merge_resource_records_for_joins == false
   ensure
     JSONAPI.configuration = original_config
   end
 
-  def test_merge_resource_records_is_disabled_by_deafult_with_relation_name
+  def test_merge_resource_records_for_joins_is_disabled_by_deafult_with_relation_name
     relationship = JSONAPI::Relationship::ToOne.new(:author,
                                                     relation_name: "foo" )
-    refute relationship.merge_resource_records
+    refute relationship.merge_resource_records_for_joins
   end
 
-  def test_merge_resource_records_can_be_disabled
+  def test_merge_resource_records_for_joins_can_be_disabled
     relationship = JSONAPI::Relationship::ToOne.new(:author,
-                                                    merge_resource_records: false )
-    refute relationship.merge_resource_records
+                                                    merge_resource_records_for_joins: false )
+    refute relationship.merge_resource_records_for_joins
   end
 end
 

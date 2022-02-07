@@ -3,7 +3,7 @@ module JSONAPI
     attr_reader :acts_as_set, :foreign_key, :options, :name,
                 :class_name, :polymorphic, :always_include_optional_linkage_data,
                 :parent_resource, :eager_load_on_include, :custom_methods,
-                :inverse_relationship, :allow_include, :merge_resource_records
+                :inverse_relationship, :allow_include, :merge_resource_records_for_joins
 
     attr_writer :allow_include
 
@@ -23,8 +23,8 @@ module JSONAPI
         @polymorphic_types ||= options[:polymorphic_relations]
       end
 
-      merge_resource_record_default = options[:relation_name] ? false : JSONAPI.configuration.merge_resource_records
-      @merge_resource_records = options.fetch(:merge_resource_records, merge_resource_record_default) == true
+      merge_resource_record_default = options[:relation_name] ? false : JSONAPI.configuration.merge_resource_records_for_joins
+      @merge_resource_records_for_joins = options.fetch(:merge_resource_records_for_joins, merge_resource_record_default) == true
 
       @always_include_optional_linkage_data = options.fetch(:always_include_optional_linkage_data, false) == true
       @eager_load_on_include = options.fetch(:eager_load_on_include, false) == true
