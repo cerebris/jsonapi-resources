@@ -39,7 +39,8 @@ module JSONAPI
                 :default_resource_cache_field,
                 :resource_cache_digest_function,
                 :resource_cache_usage_report_function,
-                :default_exclude_links
+                :default_exclude_links,
+                :use_related_resource_records_for_joins
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -158,6 +159,11 @@ module JSONAPI
       # and relationships. Accepts either `:default`, `:none`, or array containing the
       # specific default links to exclude, which may be `:self` and `:related`.
       self.default_exclude_links = :none
+
+      # Use a related resource's `records` when performing joins. This setting allows included resources to account for
+      # permission scopes. It can be overridden explicitly per relationship. Furthermore, specifying a `relation_name`
+      # on a relationship will cause this setting to be ignored.
+      self.use_related_resource_records_for_joins = true
     end
 
     def cache_formatters=(bool)
@@ -299,6 +305,8 @@ module JSONAPI
     attr_writer :resource_cache_usage_report_function
 
     attr_writer :default_exclude_links
+
+    attr_writer :use_related_resource_records_for_joins
   end
 
   class << self

@@ -3,7 +3,7 @@ module JSONAPI
     attr_reader :acts_as_set, :foreign_key, :options, :name,
                 :class_name, :polymorphic, :always_include_optional_linkage_data,
                 :parent_resource, :eager_load_on_include, :custom_methods,
-                :inverse_relationship, :allow_include
+                :inverse_relationship, :allow_include, :use_related_resource_records_for_joins
 
     attr_writer :allow_include
 
@@ -22,6 +22,15 @@ module JSONAPI
         ActiveSupport::Deprecation.warn('Use polymorphic_types instead of polymorphic_relations')
         @polymorphic_types ||= options[:polymorphic_relations]
       end
+
+      use_related_resource_records_for_joins_default = if options[:relation_name]
+                                                         false
+                                                       else
+                                                         JSONAPI.configuration.use_related_resource_records_for_joins
+                                                       end
+      
+      @use_related_resource_records_for_joins = options.fetch(:use_related_resource_records_for_joins,
+                                                              use_related_resource_records_for_joins_default) == true
 
       @always_include_optional_linkage_data = options.fetch(:always_include_optional_linkage_data, false) == true
       @eager_load_on_include = options.fetch(:eager_load_on_include, false) == true

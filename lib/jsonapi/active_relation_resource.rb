@@ -324,6 +324,11 @@ module JSONAPI
             records = records.joins_left(relation_name)
           end
         end
+
+        if relationship.use_related_resource_records_for_joins
+          records = records.merge(self.records(options))
+        end
+
         records
       end
 
