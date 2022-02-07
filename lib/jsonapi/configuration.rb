@@ -160,9 +160,9 @@ module JSONAPI
       # specific default links to exclude, which may be `:self` and `:related`.
       self.default_exclude_links = :none
 
-      # Use related `records` when performing joins. If a relation_name is specified this option is ignored for the
-      # relationship. This will bring in permission scopes on the included resources.
-      # This can be overridden per relationship.
+      # Use a related resource's records when performing joins. This setting allows included resources to account for
+      # permission scopes. It can be overridden explicitly per relationship. Furthermore, specifying a relation_name on
+      # a relationship will cause this setting to be ignored.
       self.use_related_resource_records_for_joins = true
     end
 

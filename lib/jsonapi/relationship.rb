@@ -23,8 +23,14 @@ module JSONAPI
         @polymorphic_types ||= options[:polymorphic_relations]
       end
 
-      merge_resource_record_default = options[:relation_name] ? false : JSONAPI.configuration.use_related_resource_records_for_joins
-      @use_related_resource_records_for_joins = options.fetch(:use_related_resource_records_for_joins, merge_resource_record_default) == true
+      use_related_resource_records_for_joins_default = if options[:relation_name]
+                                                         false
+                                                       else
+                                                         JSONAPI.configuration.use_related_resource_records_for_joins
+                                                       end
+      
+      @use_related_resource_records_for_joins = options.fetch(:use_related_resource_records_for_joins,
+                                                              use_related_resource_records_for_joins_default) == true
 
       @always_include_optional_linkage_data = options.fetch(:always_include_optional_linkage_data, false) == true
       @eager_load_on_include = options.fetch(:eager_load_on_include, false) == true
