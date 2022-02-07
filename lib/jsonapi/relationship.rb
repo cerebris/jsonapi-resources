@@ -22,7 +22,10 @@ module JSONAPI
         ActiveSupport::Deprecation.warn('Use polymorphic_types instead of polymorphic_relations')
         @polymorphic_types ||= options[:polymorphic_relations]
       end
-      @merge_resource_records = options.fetch(:merge_resource_records, options[:relation_name].nil?) == true
+
+      merge_resource_record_default = options[:relation_name] ? false : JSONAPI.configuration.merge_resource_records
+      @merge_resource_records = options.fetch(:merge_resource_records, merge_resource_record_default) == true
+
       @always_include_optional_linkage_data = options.fetch(:always_include_optional_linkage_data, false) == true
       @eager_load_on_include = options.fetch(:eager_load_on_include, false) == true
       @allow_include = options[:allow_include]

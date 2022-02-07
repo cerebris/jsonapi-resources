@@ -25,8 +25,19 @@ end
 
 class RelationshipTest < ActiveSupport::TestCase
   def test_merge_resource_records_enabled_by_default
+    assert JSONAPI.configuration.merge_resource_records == true
     relationship = JSONAPI::Relationship::ToOne.new(:author)
     assert relationship.merge_resource_records
+  end
+
+  def test_merge_resource_records_can_be_disabled_globally
+    original_config = JSONAPI.configuration.dup
+
+    JSONAPI.configuration.merge_resource_records = false
+    relationship = JSONAPI::Relationship::ToOne.new(:author)
+    assert relationship.merge_resource_records == false
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_merge_resource_records_is_disabled_by_deafult_with_relation_name
