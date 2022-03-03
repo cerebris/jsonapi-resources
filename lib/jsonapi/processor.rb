@@ -65,13 +65,13 @@ module JSONAPI
       resource_set.populate!(serializer, context, find_options)
 
       page_options = result_options
-      if (JSONAPI.configuration.top_level_meta_include_record_count || (paginator && paginator.class.requires_record_count))
+      if (top_level_meta_include_record_count || (paginator && paginator.class.requires_record_count))
         page_options[:record_count] = resource_klass.count(verified_filters,
                                                            context: context,
                                                            include_directives: include_directives)
       end
 
-      if (JSONAPI.configuration.top_level_meta_include_page_count && paginator && page_options[:record_count])
+      if (top_level_meta_include_page_count && paginator && page_options[:record_count])
         page_options[:page_count] = paginator ? paginator.calculate_page_count(page_options[:record_count]) : 1
       end
 
@@ -197,9 +197,9 @@ module JSONAPI
       resource_set.populate!(serializer, context, find_options)
 
       opts = result_options
-      if ((JSONAPI.configuration.top_level_meta_include_record_count) ||
+      if ((top_level_meta_include_record_count) ||
           (paginator && paginator.class.requires_record_count) ||
-          (JSONAPI.configuration.top_level_meta_include_page_count))
+          (top_level_meta_include_page_count))
 
         opts[:record_count] = source_resource.class.count_related(
             source_resource.identity,
@@ -207,7 +207,7 @@ module JSONAPI
             find_options)
       end
 
-      if (JSONAPI.configuration.top_level_meta_include_page_count && opts[:record_count])
+      if (top_level_meta_include_page_count && opts[:record_count])
         opts[:page_count] = paginator.calculate_page_count(opts[:record_count])
       end
 
@@ -380,6 +380,14 @@ module JSONAPI
       resource_id_tree = find_resource_id_tree_from_resource_relationship(resource, relationship_name, options, include_related)
 
       JSONAPI::ResourceSet.new(resource_id_tree)
+    end
+
+    def top_level_meta_include_record_count
+      JSONAPI.configuration.top_level_meta_include_record_count
+    end
+
+    def top_level_meta_include_page_count
+      JSONAPI.configuration.top_level_meta_include_page_count
     end
 
     private
