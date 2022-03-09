@@ -13,9 +13,16 @@ module JSONAPI
       # :nocov:
     end
 
+    def requires_record_count
+      # :nocov:
+      self.class.requires_record_count
+      # :nocov:
+    end
+
     class << self
       def requires_record_count
         # :nocov:
+        # @deprecated
         false
         # :nocov:
       end
@@ -36,7 +43,12 @@ class OffsetPaginator < JSONAPI::Paginator
     verify_pagination_params
   end
 
+  # @deprecated
   def self.requires_record_count
+    true
+  end
+
+  def requires_record_count
     true
   end
 
@@ -127,7 +139,12 @@ class PagedPaginator < JSONAPI::Paginator
     verify_pagination_params
   end
 
+  # @deprecated
   def self.requires_record_count
+    true
+  end
+
+  def requires_record_count
     true
   end
 

@@ -65,7 +65,7 @@ module JSONAPI
       resource_set.populate!(serializer, context, find_options)
 
       page_options = result_options
-      if (top_level_meta_include_record_count || (paginator && paginator.class.requires_record_count))
+      if (top_level_meta_include_record_count || (paginator && paginator.requires_record_count))
         page_options[:record_count] = resource_klass.count(verified_filters,
                                                            context: context,
                                                            include_directives: include_directives)
@@ -198,7 +198,7 @@ module JSONAPI
 
       opts = result_options
       if ((top_level_meta_include_record_count) ||
-          (paginator && paginator.class.requires_record_count) ||
+          (paginator && paginator.requires_record_count) ||
           (top_level_meta_include_page_count))
 
         opts[:record_count] = source_resource.class.count_related(
@@ -213,7 +213,7 @@ module JSONAPI
 
       opts[:pagination_params] = if paginator && JSONAPI.configuration.top_level_links_include_pagination
                                    page_options = {}
-                                   page_options[:record_count] = opts[:record_count] if paginator.class.requires_record_count
+                                   page_options[:record_count] = opts[:record_count] if paginator.requires_record_count
                                    paginator.links_page_params(page_options.merge(fetched_resources: resource_set))
                                  else
                                    {}
