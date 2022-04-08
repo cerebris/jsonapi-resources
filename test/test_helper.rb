@@ -62,7 +62,9 @@ class TestApp < Rails::Application
   config.active_support.halt_callback_chains_on_return_false = false
   config.active_record.time_zone_aware_types = [:time, :datetime]
   config.active_record.belongs_to_required_by_default = false
-  unless Rails::VERSION::MAJOR == 5 && Rails::VERSION::MINOR < 2 || Rails::VERSION::MAJOR == 6 && Rails::VERSION::MINOR >= 1
+  unless Rails::VERSION::MAJOR == 5 && Rails::VERSION::MINOR < 2 ||
+           Rails::VERSION::MAJOR == 6 && Rails::VERSION::MINOR >= 1 ||
+           Rails::VERSION::MAJOR > 6
     config.active_record.sqlite3.represent_boolean_as_integer = true
   end
 end
@@ -221,6 +223,7 @@ TestApp.routes.draw do
   jsonapi_resources :posts do
     jsonapi_relationships
     jsonapi_links :special_tags
+    jsonapi_links :super_tags, only: [:create]
   end
   jsonapi_resources :sections
   jsonapi_resources :iso_currencies

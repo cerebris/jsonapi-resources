@@ -1637,6 +1637,40 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal [502,503,505], post_object.tag_ids
   end
 
+  def test_create_relationship_to_many_with_create_method_option
+    PostResource.class_eval do
+      has_many :super_tags, acts_as_set: true, relation_name: :special_tags, class_name: 'Tag',
+                            create_method: :add_super_tag
+      def add_super_tag(tag)
+        tag.update!(name: "#{tag.name}[super]")
+        @model.special_post_tags.create!(tag: tag)
+      end
+    end
+
+    set_content_type_header!
+
+    tag_502_name = Tag.find(502).name
+    tag_503_name = Tag.find(503).name
+
+    put :create_relationship, params: {post_id: 3, relationship: 'super_tags', data: [{type: 'tags', id: 502}, {type: 'tags', id: 503}]}
+
+    assert_response :no_content
+    post_object = Post.find(3)
+    assert_equal 2, post_object.special_tags.collect { |tag| tag.id }.length
+    assert matches_array? [502, 503], post_object.special_tags.collect { |tag| tag.id }
+    assert_equal "#{tag_502_name}[super]", Tag.find(502).name
+    assert_equal "#{tag_503_name}[super]", Tag.find(503).name
+
+    tag_505_name = Tag.find(505).name
+
+    post :create_relationship, params: {post_id: 3, relationship: 'super_tags', data: [{type: 'tags', id: 502}, {type: 'tags', id: 505}]}
+
+    assert_response :no_content
+    post_object.reload
+    assert_equal [502,503,505], post_object.special_tag_ids
+    assert_equal "#{tag_505_name}[super]", Tag.find(505).name
+  end
+
   def test_update_relationship_to_many_missing_tags
     set_content_type_header!
     put :update_relationship, params: {post_id: 3, relationship: 'tags'}

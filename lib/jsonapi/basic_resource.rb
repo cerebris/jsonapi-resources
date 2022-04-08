@@ -246,10 +246,9 @@ module JSONAPI
 
     def _create_to_many_links(relationship_type, relationship_key_values, options)
       relationship = self.class._relationships[relationship_type]
-      relation_name = relationship.relation_name(context: @context)
 
       if options[:reflected_source]
-        @model.public_send(relation_name) << options[:reflected_source]._model
+        _create_to_many_link(relationship, options[:reflected_source])
         return :completed
       end
 
@@ -274,13 +273,22 @@ module JSONAPI
           end
           @reload_needed = true
         else
-          unless @model.public_send(relation_name).include?(related_resource._model)
-            @model.public_send(relation_name) << related_resource._model
-          end
+          _create_to_many_link(relationship, related_resource)
         end
       end
 
       :completed
+    end
+
+    def _create_to_many_link(relationship, related_resource)
+      relation_name = relationship.relation_name(context: @context)
+      return if @model.public_send(relation_name).include?(related_resource._model)
+
+      if relationship.options[:create_method]
+        public_send(relationship.options.fetch(:create_method), related_resource._model)
+      else
+        @model.public_send(relation_name) << related_resource._model
+      end
     end
 
     def _replace_to_many_links(relationship_type, relationship_key_values, options)
