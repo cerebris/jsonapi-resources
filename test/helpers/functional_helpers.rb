@@ -32,8 +32,8 @@ module Helpers
     #       end
     #   end
     #
-    #   if @response.content_type
-    #     ct = @response.content_type
+    #   if @response.media_type
+    #     ct = @response.media_type
     #   elsif methods.include?('assert_response_response')
     #     ct = assert_response_response
     #   else
