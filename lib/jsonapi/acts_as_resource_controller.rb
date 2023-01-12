@@ -140,8 +140,8 @@ module JSONAPI
     end
 
     def verify_content_type_header
-      unless request.content_type == JSONAPI::MEDIA_TYPE
-        fail JSONAPI::Exceptions::UnsupportedMediaTypeError.new(request.content_type)
+      unless request.media_type == JSONAPI::MEDIA_TYPE
+        fail JSONAPI::Exceptions::UnsupportedMediaTypeError.new(request.media_type)
       end
       true
     rescue => e
