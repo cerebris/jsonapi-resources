@@ -10,6 +10,18 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     services:
+      mysql:
+        image: mysql
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       postgres:
         image: postgres
         env:
@@ -35,6 +47,7 @@ jobs:
           - 5.2.4.4
           - 5.1.7
         database_url:
+          - mysql2://root:root@127.0.0.1:3306/test
           - postgresql://postgres:password@localhost:5432/test
           - sqlite3:test_db
         exclude:
