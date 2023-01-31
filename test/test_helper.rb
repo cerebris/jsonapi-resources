@@ -501,8 +501,8 @@ class ActionDispatch::IntegrationTest
     end
 
     assert_equal(
-      non_caching_response.pretty_inspect,
-      json_response.pretty_inspect,
+      non_caching_response.pretty_inspect.tr("`", %{"}),
+      json_response.pretty_inspect.tr("`", %{"}),
       "Cache warmup response must match normal response"
     )
 
@@ -511,8 +511,8 @@ class ActionDispatch::IntegrationTest
     end
 
     assert_equal(
-      non_caching_response.pretty_inspect,
-      json_response.pretty_inspect,
+      non_caching_response.pretty_inspect.tr("`", %{"}),
+      json_response.pretty_inspect.tr("`", %{"}),
       "Cached response must match normal response"
     )
     assert_equal 0, cached[:total][:misses], "Cached response must not cause any cache misses"
@@ -580,8 +580,8 @@ class ActionController::TestCase
           "Cache (mode: #{mode}) #{phase} response status must match normal response"
         )
         assert_equal(
-          non_caching_response.pretty_inspect,
-          json_response_sans_all_backtraces.pretty_inspect,
+          non_caching_response.pretty_inspect.tr("`", %{"}),
+          json_response_sans_all_backtraces.pretty_inspect.tr("`", %{"}),
           "Cache (mode: #{mode}) #{phase} response body must match normal response"
         )
         assert_operator(
