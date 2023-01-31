@@ -804,14 +804,14 @@ module JSONAPI
         if table.blank? || field.to_s.include?('.')
           # :nocov:
           if quoted
-            quote(field)
+            quote(field) # split on '.'?
           else
             field.to_s
           end
           # :nocov:
         else
           if quoted
-            "#{quote(table)}.#{quote(field)}"
+            "#{quote_table_name(table)}.#{quote_column_name(field)}"
           else
             # :nocov:
             "#{table.to_s}.#{field.to_s}"
@@ -828,7 +828,7 @@ module JSONAPI
         if table.blank? || field.to_s.include?('.')
           # :nocov:
           if quoted
-            quote(field)
+            quote_column_name(field)
           else
             field.to_s
           end
@@ -836,12 +836,20 @@ module JSONAPI
         else
           if quoted
             # :nocov:
-            quote("#{table.to_s}_#{field.to_s}")
+            quote_column_name("#{table.to_s}_#{field.to_s}")
             # :nocov:
           else
             "#{table.to_s}_#{field.to_s}"
           end
         end
+      end
+
+      def quote_table_name(table_name)
+        quote(table_name)
+      end
+
+      def quote_column_name(column_name)
+        quote(column_name)
       end
 
       def quote(field)
