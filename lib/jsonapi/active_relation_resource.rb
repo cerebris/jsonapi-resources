@@ -868,6 +868,7 @@ module JSONAPI
       end
 
       def quote(field)
+        raise "zomg, we are using the fallback for #{field}"
         %{"#{field.to_s}"}
       end
 
