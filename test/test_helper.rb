@@ -468,7 +468,7 @@ class Minitest::Test
     case adapter_name
     when 'SQLite', 'PostgreSQL'
       %{"}
-    when 'MySQL'
+    when 'Mysql2'
       %{`}
     else
       fail ArgumentError, "Unhandled adapter #{adapter_name} in #{__callee__}"
