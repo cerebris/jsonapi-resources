@@ -860,6 +860,7 @@ module JSONAPI
       end
 
       def quote_column_name(column_name)
+        return column_name if column_name == "*"
         if _model_class.try(:connection)
           _model_class.connection.quote_column_name(column_name)
         else
@@ -868,7 +869,6 @@ module JSONAPI
       end
 
       def quote(field)
-        raise "zomg, we are using the fallback for #{field}"
         %{"#{field.to_s}"}
       end
 
