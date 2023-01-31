@@ -853,7 +853,7 @@ module JSONAPI
 
       def quote_table_name(table_name)
         if _model_class.try(:connection)
-          _model_class.connection.quote(table_name)
+          _model_class.connection.quote_table_name(table_name)
         else
           quote(table_name)
         end
@@ -861,14 +861,14 @@ module JSONAPI
 
       def quote_column_name(column_name)
         if _model_class.try(:connection)
-          _model_class.connection.quote(column_name)
+          _model_class.connection.quote_column_name(column_name)
         else
           quote(column_name)
         end
       end
 
       def quote(field)
-        "\"#{field.to_s}\""
+        %{"#{field.to_s}"}
       end
 
       def apply_filters(records, filters, options = {})
