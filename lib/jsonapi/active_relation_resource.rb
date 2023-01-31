@@ -800,6 +800,10 @@ module JSONAPI
         apply_sort(records, order_options, options)
       end
 
+      def sql_field_with_alias(table, field, quoted = true)
+        Arel.sql("#{concat_table_field(table, field, quoted)} AS #{alias_table_field(table, field, quoted)}")
+      end
+
       def concat_table_field(table, field, quoted = false)
         if table.blank?
           split_table, split_field = field.to_s.split('.')
@@ -825,10 +829,6 @@ module JSONAPI
             # :nocov:
           end
         end
-      end
-
-      def sql_field_with_alias(table, field, quoted = true)
-        Arel.sql("#{concat_table_field(table, field, quoted)} AS #{alias_table_field(table, field, quoted)}")
       end
 
       def alias_table_field(table, field, quoted = false)
