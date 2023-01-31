@@ -852,11 +852,19 @@ module JSONAPI
       end
 
       def quote_table_name(table_name)
-        quote(table_name)
+        if _model_class.try(:connection)
+          _model_class.connection.quote(table_name)
+        else
+          quote(table_name)
+        end
       end
 
       def quote_column_name(column_name)
-        quote(column_name)
+        if _model_class.try(:connection)
+          _model_class.connection.quote(column_name)
+        else
+          quote(column_name)
+        end
       end
 
       def quote(field)
