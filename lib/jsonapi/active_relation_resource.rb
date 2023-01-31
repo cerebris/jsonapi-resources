@@ -801,10 +801,17 @@ module JSONAPI
       end
 
       def concat_table_field(table, field, quoted = false)
-        if table.blank? || field.to_s.include?('.')
+        if table.blank?
+          split_table, split_field = field.to_s.split('.')
+          if split_table && split_field
+            table = split_table
+            field = split_field
+          end
+        end
+        if table.blank?
           # :nocov:
           if quoted
-            quote(field) # split on '.'?
+            quote_column_name(field)
           else
             field.to_s
           end
