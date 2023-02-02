@@ -462,6 +462,29 @@ class Minitest::Test
 
   self.fixture_path = "#{Rails.root}/fixtures"
   fixtures :all
+
+  def adapter_name
+    ActiveRecord::Base.connection.adapter_name
+  end
+
+  def db_quote_identifier
+    case adapter_name
+    when 'SQLite', 'PostgreSQL'
+      %{"}
+    when 'Mysql2'
+      %{`}
+    else
+      fail ArgumentError, "Unhandled adapter #{adapter_name} in #{__callee__}"
+    end
+  end
+
+  def db_true
+    ActiveRecord::Base.connection.quote(true)
+  end
+
+  def sql_for_compare(sql)
+    sql.tr(db_quote_identifier, %{"})
+  end
 end
 
 class ActiveSupport::TestCase
@@ -504,8 +527,8 @@ class ActionDispatch::IntegrationTest
     end
 
     assert_equal(
-      non_caching_response.pretty_inspect,
-      json_response.pretty_inspect,
+      sql_for_compare(non_caching_response.pretty_inspect),
+      sql_for_compare(json_response.pretty_inspect),
       "Cache warmup response must match normal response"
     )
 
@@ -514,8 +537,8 @@ class ActionDispatch::IntegrationTest
     end
 
     assert_equal(
-      non_caching_response.pretty_inspect,
-      json_response.pretty_inspect,
+      sql_for_compare(non_caching_response.pretty_inspect),
+      sql_for_compare(json_response.pretty_inspect),
       "Cached response must match normal response"
     )
     assert_equal 0, cached[:total][:misses], "Cached response must not cause any cache misses"
@@ -583,8 +606,8 @@ class ActionController::TestCase
           "Cache (mode: #{mode}) #{phase} response status must match normal response"
         )
         assert_equal(
-          non_caching_response.pretty_inspect,
-          json_response_sans_all_backtraces.pretty_inspect,
+          sql_for_compare(non_caching_response.pretty_inspect),
+          sql_for_compare(json_response_sans_all_backtraces.pretty_inspect),
           "Cache (mode: #{mode}) #{phase} response body must match normal response"
         )
         assert_operator(
