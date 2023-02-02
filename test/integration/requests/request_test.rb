@@ -1122,7 +1122,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_patch_formatted_dasherized
-    _original_config = JSONAPI.configuration.dup
+    original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     patch '/api/v6/purchase-orders/1', params:
@@ -1141,6 +1141,8 @@ class RequestTest < ActionDispatch::IntegrationTest
           }
 
     assert_jsonapi_response 200
+  ensure
+    JSONAPI.configuration = original_config
   end
 
   def test_patch_formatted_dasherized_links
