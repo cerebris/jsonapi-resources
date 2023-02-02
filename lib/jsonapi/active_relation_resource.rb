@@ -800,18 +800,29 @@ module JSONAPI
         apply_sort(records, order_options, options)
       end
 
+      def sql_field_with_alias(table, field, quoted = true)
+        Arel.sql("#{concat_table_field(table, field, quoted)} AS #{alias_table_field(table, field, quoted)}")
+      end
+
       def concat_table_field(table, field, quoted = false)
-        if table.blank? || field.to_s.include?('.')
+        if table.blank?
+          split_table, split_field = field.to_s.split('.')
+          if split_table && split_field
+            table = split_table
+            field = split_field
+          end
+        end
+        if table.blank?
           # :nocov:
           if quoted
-            quote(field)
+            quote_column_name(field)
           else
             field.to_s
           end
           # :nocov:
         else
           if quoted
-            "#{quote(table)}.#{quote(field)}"
+            "#{quote_table_name(table)}.#{quote_column_name(field)}"
           else
             # :nocov:
             "#{table.to_s}.#{field.to_s}"
@@ -820,15 +831,11 @@ module JSONAPI
         end
       end
 
-      def sql_field_with_alias(table, field, quoted = true)
-        Arel.sql("#{concat_table_field(table, field, quoted)} AS #{alias_table_field(table, field, quoted)}")
-      end
-
       def alias_table_field(table, field, quoted = false)
         if table.blank? || field.to_s.include?('.')
           # :nocov:
           if quoted
-            quote(field)
+            quote_column_name(field)
           else
             field.to_s
           end
@@ -836,7 +843,7 @@ module JSONAPI
         else
           if quoted
             # :nocov:
-            quote("#{table.to_s}_#{field.to_s}")
+            quote_column_name("#{table.to_s}_#{field.to_s}")
             # :nocov:
           else
             "#{table.to_s}_#{field.to_s}"
@@ -844,8 +851,26 @@ module JSONAPI
         end
       end
 
+      def quote_table_name(table_name)
+        if _model_class&.connection
+          _model_class.connection.quote_table_name(table_name)
+        else
+          quote(table_name)
+        end
+      end
+
+      def quote_column_name(column_name)
+        return column_name if column_name == "*"
+        if _model_class&.connection
+          _model_class.connection.quote_column_name(column_name)
+        else
+          quote(column_name)
+        end
+      end
+
+      # fallback quote identifier when database adapter not available
       def quote(field)
-        "\"#{field.to_s}\""
+        %{"#{field.to_s}"}
       end
 
       def apply_filters(records, filters, options = {})
