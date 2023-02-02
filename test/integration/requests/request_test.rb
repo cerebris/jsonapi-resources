@@ -1122,7 +1122,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_patch_formatted_dasherized
-    original_config = JSONAPI.configuration.dup
+    _original_config = JSONAPI.configuration.dup
     JSONAPI.configuration.route_format = :dasherized_route
     JSONAPI.configuration.json_key_format = :dasherized_key
     patch '/api/v6/purchase-orders/1', params:
@@ -1376,7 +1376,7 @@ class RequestTest < ActionDispatch::IntegrationTest
         JSONAPI.configuration.allow_include = false
       CODE
     end
-    assert_match /DEPRECATION WARNING: `allow_include` has been replaced by `default_allow_include_to_one` and `default_allow_include_to_many` options./, err
+    assert_match(/DEPRECATION WARNING: `allow_include` has been replaced by `default_allow_include_to_one` and `default_allow_include_to_many` options./, err)
   ensure
     JSONAPI.configuration = original_config
     ActiveSupport::Deprecation.silenced = true
