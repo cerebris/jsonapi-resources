@@ -852,7 +852,7 @@ module JSONAPI
       end
 
       def quote_table_name(table_name)
-        if _model_class.try(:connection)
+        if _model_class&.connection
           _model_class.connection.quote_table_name(table_name)
         else
           quote(table_name)
@@ -861,13 +861,14 @@ module JSONAPI
 
       def quote_column_name(column_name)
         return column_name if column_name == "*"
-        if _model_class.try(:connection)
+        if _model_class&.connection
           _model_class.connection.quote_column_name(column_name)
         else
           quote(column_name)
         end
       end
 
+      # fallback quote identifier when database adapter not available
       def quote(field)
         %{"#{field.to_s}"}
       end
