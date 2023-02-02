@@ -494,15 +494,15 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :success
     assert json_response['data'].length > 10, 'there are enough records to show sort'
+    expected = Post
+      .all
+      .left_joins(:author)
+      .merge(Person.order(name: :asc))
+      .map(&:id)
+      .map(&:to_s)
+    ids = json_response['data'].map {|data| data['id'] }
 
-    # Postgres sorts nulls last, whereas sqlite and mysql sort nulls first
-    if ENV['DATABASE_URL'].starts_with?('postgres')
-      assert_equal '17', json_response['data'][-1]['id'], 'nil is at the start'
-      assert_equal post.id.to_s, json_response['data'][0]['id'], 'alphabetically first user is not first'
-    else
-      assert_equal '17', json_response['data'][0]['id'], 'nil is at the end'
-      assert_equal post.id.to_s, json_response['data'][1]['id'], 'alphabetically first user is second'
-    end
+    assert_equal expected, ids, "since adapter_sorts_nulls_last=#{adapter_sorts_nulls_last}"
   end
 
   def test_desc_sorting_by_relationship_field
@@ -512,14 +512,15 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :success
     assert json_response['data'].length > 10, 'there are enough records to show sort'
 
-    # Postgres sorts nulls last, whereas sqlite and mysql sort nulls first
-    if ENV['DATABASE_URL'].starts_with?('postgres')
-      assert_equal '17', json_response['data'][0]['id'], 'nil is at the start'
-      assert_equal post.id.to_s, json_response['data'][-1]['id']
-    else
-      assert_equal '17', json_response['data'][-1]['id'], 'nil is at the end'
-      assert_equal post.id.to_s, json_response['data'][-2]['id'], 'alphabetically first user is second last'
-    end
+    expected = Post
+      .all
+      .left_joins(:author)
+      .merge(Person.order(name: :desc))
+      .map(&:id)
+      .map(&:to_s)
+    ids = json_response['data'].map {|data| data['id'] }
+
+    assert_equal expected, ids, "since adapter_sorts_nulls_last=#{adapter_sorts_nulls_last}"
   end
 
   def test_sorting_by_relationship_field_include
@@ -529,13 +530,15 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :success
     assert json_response['data'].length > 10, 'there are enough records to show sort'
 
-    if ENV['DATABASE_URL'].starts_with?('postgres')
-      assert_equal '17', json_response['data'][-1]['id'], 'nil is at the top'
-      assert_equal post.id.to_s, json_response['data'][0]['id']
-    else
-      assert_equal '17', json_response['data'][0]['id'], 'nil is at the top'
-      assert_equal post.id.to_s, json_response['data'][1]['id'], 'alphabetically first user is second'
-    end
+    expected = Post
+      .all
+      .left_joins(:author)
+      .merge(Person.order(name: :asc))
+      .map(&:id)
+      .map(&:to_s)
+    ids = json_response['data'].map {|data| data['id'] }
+
+    assert_equal expected, ids, "since adapter_sorts_nulls_last=#{adapter_sorts_nulls_last}"
   end
 
   def test_invalid_sort_param
@@ -4772,11 +4775,11 @@ class RobotsControllerTest < ActionController::TestCase
     assert_cacheable_get :index, params: {sort: 'name'}
     assert_response :success
 
-    if ENV['DATABASE_URL'].starts_with?('postgres')
-      assert_equal 'jane', json_response['data'].first['attributes']['name']
-    else
-      assert_equal 'John', json_response['data'].first['attributes']['name']
-    end
+    expected_names = Robot
+      .all
+      .order(name: :asc)
+      .map(&:name)
+    assert_equal expected_names.first, json_response['data'].first['attributes']['name'], "since adapter_sorts_nulls_last=#{adapter_sorts_nulls_last}"
   end
 
   def test_fetch_robots_with_sort_by_lower_name
