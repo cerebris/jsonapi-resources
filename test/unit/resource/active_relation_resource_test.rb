@@ -40,7 +40,8 @@ class ActiveRelationResourceTest < ActiveSupport::TestCase
                    JSONAPI::ResourceIdentity.new(ArPostResource, 20)]
     source_fragments = source_rids.collect {|rid| JSONAPI::ResourceFragment.new(rid) }
 
-    related_fragments = ArPostResource.find_included_fragments(source_fragments, 'author', options)
+    relationship = ArPostResource._relationship('author')
+    related_fragments = ArPostResource.find_included_fragments(source_fragments, relationship, options)
 
     assert_equal 2, related_fragments.length
     assert_equal JSONAPI::ResourceIdentity.new(AuthorResource, 1001), related_fragments.keys[0]
@@ -56,7 +57,8 @@ class ActiveRelationResourceTest < ActiveSupport::TestCase
                    JSONAPI::ResourceIdentity.new(ArPostResource, 20)]
     source_fragments = source_rids.collect {|rid| JSONAPI::ResourceFragment.new(rid) }
 
-    related_fragments = ArPostResource.find_included_fragments(source_fragments, 'author', options)
+    relationship = ArPostResource._relationship('author')
+    related_fragments = ArPostResource.find_included_fragments(source_fragments, relationship, options)
 
     assert_equal 2, related_fragments.length
     assert_equal JSONAPI::ResourceIdentity.new(AuthorResource, 1001), related_fragments.keys[0]
@@ -74,7 +76,8 @@ class ActiveRelationResourceTest < ActiveSupport::TestCase
                    JSONAPI::ResourceIdentity.new(ArPostResource, 14)]
     source_fragments = source_rids.collect {|rid| JSONAPI::ResourceFragment.new(rid) }
 
-    related_fragments = ArPostResource.find_included_fragments(source_fragments, 'tags', options)
+    relationship = ArPostResource._relationship('tags')
+    related_fragments = ArPostResource.find_included_fragments(source_fragments, relationship, options)
 
     assert_equal 8, related_fragments.length
     assert_equal JSONAPI::ResourceIdentity.new(TagResource, 501), related_fragments.keys[0]
@@ -90,7 +93,8 @@ class ActiveRelationResourceTest < ActiveSupport::TestCase
     source_rids = [JSONAPI::ResourceIdentity.new(ArPostResource, 15)]
     source_fragments = source_rids.collect {|rid| JSONAPI::ResourceFragment.new(rid) }
 
-    related_fragments = ArPostResource.find_included_fragments(source_fragments, 'tags', options)
+    relationship = ArPostResource._relationship('tags')
+    related_fragments = ArPostResource.find_included_fragments(source_fragments, relationship, options)
 
     assert_equal 1, related_fragments.length
     assert_equal JSONAPI::ResourceIdentity.new(TagResource, 516), related_fragments.keys[0]
@@ -107,7 +111,8 @@ class ActiveRelationResourceTest < ActiveSupport::TestCase
                    JSONAPI::ResourceIdentity.new(ArPostResource, 14)]
     source_fragments = source_rids.collect {|rid| JSONAPI::ResourceFragment.new(rid) }
 
-    related_fragments = ArPostResource.find_included_fragments(source_fragments, 'tags', options)
+    relationship = ArPostResource._relationship('tags')
+    related_fragments = ArPostResource.find_included_fragments(source_fragments, relationship, options)
 
     assert_equal 8, related_fragments.length
     assert_equal JSONAPI::ResourceIdentity.new(TagResource, 501), related_fragments.keys[0]
@@ -125,7 +130,8 @@ class ActiveRelationResourceTest < ActiveSupport::TestCase
                    JSONAPI::ResourceIdentity.new(PictureResource, 3)]
     source_fragments = source_rids.collect {|rid| JSONAPI::ResourceFragment.new(rid) }
 
-    related_fragments = PictureResource.find_included_fragments(source_fragments, 'imageable', options)
+    relationship = PictureResource._relationship('imageable')
+    related_fragments = PictureResource.find_included_fragments(source_fragments, relationship, options)
 
     assert_equal 2, related_fragments.length
     assert_equal JSONAPI::ResourceIdentity.new(ProductResource, 1), related_fragments.keys[0]
@@ -144,7 +150,8 @@ class ActiveRelationResourceTest < ActiveSupport::TestCase
                    JSONAPI::ResourceIdentity.new(PictureResource, 3)]
     source_fragments = source_rids.collect {|rid| JSONAPI::ResourceFragment.new(rid) }
 
-    related_fragments = PictureResource.find_included_fragments(source_fragments, 'imageable', options)
+    relationship = PictureResource._relationship('imageable')
+    related_fragments = PictureResource.find_included_fragments(source_fragments, relationship, options)
 
     assert_equal 2, related_fragments.length
     assert_equal JSONAPI::ResourceIdentity.new(ProductResource, 1), related_fragments.keys[0]

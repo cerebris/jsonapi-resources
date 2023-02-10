@@ -270,16 +270,20 @@ class ResourceTest < ActiveSupport::TestCase
   def test_to_many_relationship_filters
     post_resource = PostResource.new(Post.find(1), nil)
 
-    comments = PostResource.find_included_fragments([post_resource], :comments, {})
+    comments = PostResource.find_included_fragments([post_resource], PostResource._relationship(:comments), {})
     assert_equal(2, comments.size)
 
-    filtered_comments = PostResource.find_included_fragments([post_resource], :comments, { filters: { body: 'i liked it' } })
+    filtered_comments = PostResource.find_included_fragments([post_resource],
+                                                             PostResource._relationship(:comments),
+                                                             { filters: { body: 'i liked it' } })
     assert_equal(1, filtered_comments.size)
   end
 
   def test_to_many_relationship_sorts
     post_resource = PostResource.new(Post.find(1), nil)
-    comment_ids = post_resource.class.find_included_fragments([post_resource], :comments, {}).keys.collect {|c| c.id }
+    comment_ids = post_resource.class.find_included_fragments([post_resource],
+                                                              PostResource._relationship(:comments),
+                                                              {}).keys.collect {|c| c.id }
     assert_equal [1,2], comment_ids
 
     # define apply_filters method on post resource to sort descending
@@ -294,7 +298,7 @@ class ResourceTest < ActiveSupport::TestCase
 
     sorted_comment_ids = post_resource.class.find_included_fragments(
         [post_resource],
-        :comments,
+        PostResource._relationship(:comments),
         { sort_criteria: [{ field: 'id', direction: :desc }] }).keys.collect {|c| c.id}
 
     assert_equal [2,1], sorted_comment_ids

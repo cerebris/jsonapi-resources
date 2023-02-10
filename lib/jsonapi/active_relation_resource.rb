@@ -3,7 +3,7 @@ module JSONAPI
     root_resource
 
     def find_related_ids(relationship, options = {})
-      self.class.find_related_fragments([self], relationship.name, options).keys.collect { |rid| rid.id }
+      self.class.find_related_fragments([self], relationship, options).keys.collect { |rid| rid.id }
     end
 
     class << self
@@ -203,9 +203,7 @@ module JSONAPI
       # @return [Hash{ResourceIdentity => {identity: => ResourceIdentity, cache: cache_field, related: {relationship_name: [] }}}]
       #    the ResourceInstances matching the filters, sorting, and pagination rules along with any request
       #    additional_field values
-      def find_related_fragments(source, relationship_name, options = {})
-        relationship = _relationship(relationship_name)
-
+      def find_related_fragments(source, relationship, options = {})
         if relationship.polymorphic? # && relationship.foreign_key_on == :self
           find_related_polymorphic_fragments(source, relationship, options, false)
         else
@@ -213,9 +211,7 @@ module JSONAPI
         end
       end
 
-      def find_included_fragments(source, relationship_name, options)
-        relationship = _relationship(relationship_name)
-
+      def find_included_fragments(source, relationship, options)
         if relationship.polymorphic? # && relationship.foreign_key_on == :self
           find_related_polymorphic_fragments(source, relationship, options, true)
         else

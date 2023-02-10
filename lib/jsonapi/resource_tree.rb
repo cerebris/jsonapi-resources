@@ -81,7 +81,7 @@ module JSONAPI
         find_related_resource_options[:cache] = resource_klass.caching?
 
         related_fragments = resource_klass.find_included_fragments(source_resource_tree.fragments.values,
-                                                                   relationship_name,
+                                                                   relationship,
                                                                    find_related_resource_options)
 
         related_resource_tree = source_resource_tree.get_related_resource_tree(relationship)
