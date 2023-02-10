@@ -80,17 +80,15 @@ module JSONAPI
       end
 
       # Finds Resource fragments using the `filters`. Pagination and sort options are used when provided.
-      # Retrieving the ResourceIdentities and attributes does not instantiate a model instance.
       # Note: This is incompatible with Polymorphic resources (which are going to come from two separate tables)
       #
       # @param filters [Hash] the filters hash
       # @option options [Hash] :context The context of the request, set in the controller
       # @option options [Hash] :sort_criteria The `sort criteria`
       # @option options [Hash] :include_directives The `include_directives`
-      # @option options [Hash] :attributes Additional fields to be retrieved.
       # @option options [Boolean] :cache Return the resources' cache field
       #
-      # @return [Hash{ResourceIdentity => {identity: => ResourceIdentity, cache: cache_field, attributes: => {name => value}}}]
+      # @return [Hash{ResourceIdentity => {identity: => ResourceIdentity, cache: cache_field}]
       #    the ResourceInstances matching the filters, sorting, and pagination rules along with any request
       #    additional_field values
       def find_fragments(filters, options = {})
@@ -160,14 +158,6 @@ module JSONAPI
           end
         end
 
-        model_fields = {}
-        attributes = options[:attributes]
-        attributes.try(:each) do |attribute|
-          model_field = resource_klass.attribute_to_model_field(attribute)
-          model_fields[attribute] = model_field
-          pluck_fields << sql_field_with_alias(resource_table_alias, model_field[:name])
-        end
-
         sort_fields = options.dig(:_relation_helper_options, :sort_fields)
         sort_fields.try(:each) do |field|
           pluck_fields << Arel.sql(field)
@@ -194,10 +184,6 @@ module JSONAPI
             end
             attributes_offset+= 1
           end
-
-          model_fields.each_with_index do |k, idx|
-            fragments[rid].attributes[k[0]]= cast_to_attribute_type(row[idx + attributes_offset], k[1][:type])
-          end
         end
 
         if JSONAPI.configuration.warn_on_performance_issues && (rows.length > fragments.length)
@@ -212,10 +198,9 @@ module JSONAPI
       # @param source_rids [Array<ResourceIdentity>] The resources to find related ResourcesIdentities for
       # @param relationship_name [String | Symbol] The name of the relationship
       # @option options [Hash] :context The context of the request, set in the controller
-      # @option options [Hash] :attributes Additional fields to be retrieved.
       # @option options [Boolean] :cache Return the resources' cache field
       #
-      # @return [Hash{ResourceIdentity => {identity: => ResourceIdentity, cache: cache_field, attributes: => {name => value}, related: {relationship_name: [] }}}]
+      # @return [Hash{ResourceIdentity => {identity: => ResourceIdentity, cache: cache_field, related: {relationship_name: [] }}}]
       #    the ResourceInstances matching the filters, sorting, and pagination rules along with any request
       #    additional_field values
       def find_related_fragments(source, relationship_name, options = {})
@@ -456,14 +441,6 @@ module JSONAPI
           end
         end
 
-        model_fields = {}
-        attributes = options[:attributes]
-        attributes.try(:each) do |attribute|
-          model_field = resource_klass.attribute_to_model_field(attribute)
-          model_fields[attribute] = model_field
-          pluck_fields << sql_field_with_alias(resource_table_alias, model_field[:name])
-        end
-
         sort_fields = options.dig(:_relation_helper_options, :sort_fields)
         sort_fields.try(:each) do |field|
           pluck_fields << Arel.sql(field)
@@ -480,11 +457,6 @@ module JSONAPI
 
           if cache_field
             fragments[rid].cache = cast_to_attribute_type(row[attributes_offset], cache_field[:type])
-            attributes_offset+= 1
-          end
-
-          model_fields.each_with_index do |k, idx|
-            fragments[rid].add_attribute(k[0], cast_to_attribute_type(row[idx + attributes_offset], k[1][:type]))
             attributes_offset+= 1
           end
 
@@ -567,8 +539,6 @@ module JSONAPI
         relation_positions = {}
         relation_index = pluck_fields.length
 
-        attributes = options.fetch(:attributes, [])
-
         # Add resource specific fields
         if resource_types.nil? || resource_types.length == 0
           # :nocov:
@@ -588,27 +558,9 @@ module JSONAPI
               relation_index+= 1
             end
 
-            model_fields = {}
-            field_offset = relation_index
-            attributes.try(:each) do |attribute|
-              model_field = related_klass.attribute_to_model_field(attribute)
-              model_fields[attribute] = model_field
-              pluck_fields << sql_field_with_alias(table_alias, model_field[:name])
-              relation_index+= 1
-            end
-
-            model_offset = relation_index
-            model_fields.each do |_k, v|
-              pluck_fields << Arel.sql("#{concat_table_field(table_alias, v[:name])}")
-              relation_index+= 1
-            end
-
             relation_positions[type] = {relation_klass: related_klass,
                                         cache_field: cache_field,
-                                        cache_offset: cache_offset,
-                                        model_fields: model_fields,
-                                        model_offset: model_offset,
-                                        field_offset: field_offset}
+                                        cache_offset: cache_offset}
           end
         end
 
@@ -671,12 +623,6 @@ module JSONAPI
 
             if cache_field
               related_fragments[rid].cache = cast_to_attribute_type(row[cache_offset], cache_field[:type])
-            end
-
-            if attributes.length > 0
-              model_fields.each_with_index do |k, idx|
-                related_fragments[rid].add_attribute(k[0], cast_to_attribute_type(row[idx + field_offset], k[1][:type]))
-              end
             end
 
             linkage_fields.each_with_index do |linkage_field_details, idx|
