@@ -1053,7 +1053,7 @@ module JSONAPI
       end
 
       def default_sort
-        [{field: 'id', direction: :asc}]
+        [{field: _primary_key, direction: :asc}]
       end
 
       def construct_order_options(sort_params)
