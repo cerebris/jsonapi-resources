@@ -4167,17 +4167,48 @@ class Api::BoxesControllerTest < ActionController::TestCase
 
     assert_response :success
 
-    # The test is hardcoded with the include order. This should be changed at some
-    # point since either thing could come first and still be valid
-    assert_equal '10', json_response['included'][0]['id']
-    assert_equal 'things', json_response['included'][0]['type']
-    assert_equal '10001',  json_response['included'][0]['relationships']['user']['data']['id']
-    assert_nil json_response['included'][0]['relationships']['things']['data']
+    sorted_includeds = json_response['included'].map {|included|
+      {
+        'id' => included['id'],
+        'type' => included['type'],
+        'relationships_user_data_id' => included['relationships'].dig('user', 'data', 'id'),
+        'relationships_things_data_ids' => included['relationships'].dig('things', 'data')&.map {|data| data['id'] }&.sort,
+      }
+    }.sort_by {|included| "#{included['type']}-#{Integer(included['id'])}" }
 
-    assert_equal '20', json_response['included'][1]['id']
-    assert_equal 'things', json_response['included'][1]['type']
-    assert_equal '10001', json_response['included'][1]['relationships']['user']['data']['id']
-    assert_nil json_response['included'][1]['relationships']['things']['data']
+    expected = [
+      {
+        'id'=>'10',
+        'type'=>'things',
+        'relationships_user_data_id'=>'10001',
+        'relationships_things_data_ids'=>nil
+      },
+      {
+        'id'=>'20',
+        'type'=>'things',
+        'relationships_user_data_id'=>'10001',
+        'relationships_things_data_ids'=>nil
+      },
+      {
+        'id'=>'30',
+        'type'=>'things',
+        'relationships_user_data_id'=>'10002',
+        'relationships_things_data_ids'=>nil
+      },
+      {
+        'id'=>'10001',
+        'type'=>'users',
+        'relationships_user_data_id'=>nil,
+        'relationships_things_data_ids'=>['10', '20']
+      },
+      {
+        'id'=>'10002',
+        'type'=>'users',
+        'relationships_user_data_id'=>nil,
+        'relationships_things_data_ids'=>['30']
+      },
+    ]
+    assert_array_equals expected, sorted_includeds
   end
 
   def test_complex_includes_things_nested_things
