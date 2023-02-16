@@ -4215,8 +4215,15 @@ class Api::BoxesControllerTest < ActionController::TestCase
     assert_cacheable_get :index, params: {include: 'things,things.things,things.things.things'}
 
     assert_response :success
-    assert_hash_equals(
-        {
+    sorted_json_response_data = json_response["data"]
+      .sort_by {|data| Integer(data["id"]) }
+    sorted_json_response_included = json_response["included"]
+      .sort_by {|included| "#{included['type']}-#{Integer(included['id'])}" }
+    sorted_json_response = {
+      "data" => sorted_json_response_data,
+      "included" => sorted_json_response_included,
+    }
+    expected = {
             "data" => [
                 {
                     "id" => "100",
@@ -4471,15 +4478,23 @@ class Api::BoxesControllerTest < ActionController::TestCase
                     }
                 }
             ]
-        },
-        json_response)
+        }
+    assert_hash_equals(expected_response, sorted_json_response)
   end
 
   def test_complex_includes_nested_things_secondary_users
     assert_cacheable_get :index, params: {include: 'things,things.user,things.things'}
 
     assert_response :success
-    assert_hash_equals(
+    sorted_json_response_data = json_response["data"]
+      .sort_by {|data| Integer(data["id"]) }
+    sorted_json_response_included = json_response["included"]
+      .sort_by {|included| "#{included['type']}-#{Integer(included['id'])}" }
+    sorted_json_response = {
+      "data" => sorted_json_response_data,
+      "included" => sorted_json_response_included,
+    }
+    expected =
         {
             "data" => [
                 {
@@ -4766,8 +4781,8 @@ class Api::BoxesControllerTest < ActionController::TestCase
                     }
                 }
             ]
-        },
-        json_response)
+        }
+    assert_hash_equals(expected, sorted_json_response)
   end
 end
 
@@ -4810,7 +4825,10 @@ class RobotsControllerTest < ActionController::TestCase
       .all
       .order(name: :asc)
       .map(&:name)
-    assert_equal expected_names.first, json_response['data'].first['attributes']['name'], "since adapter_sorts_nulls_last=#{adapter_sorts_nulls_last}"
+    actual_names = json_response['data'].map {|data|
+      data['attributes']['name']
+    }
+    assert_equal expected_names, actual_names, "since adapter_sorts_nulls_last=#{adapter_sorts_nulls_last}"
   end
 
   def test_fetch_robots_with_sort_by_lower_name
