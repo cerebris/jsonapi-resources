@@ -4226,7 +4226,7 @@ class Api::BoxesControllerTest < ActionController::TestCase
       "data" => sorted_json_response_data,
       "included" => sorted_json_response_included,
     }
-    expected = {
+    expected_response = {
             "data" => [
                 {
                     "id" => "100",
