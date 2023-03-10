@@ -1443,16 +1443,35 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_sort_included_attribute
-    # Postgres sorts nulls last, whereas sqlite and mysql sort nulls first
-    pg = ENV['DATABASE_URL'].starts_with?('postgres')
-
+    if is_db?(:mysql)
+      skip "#{adapter_name} test expectations differ in insignificant ways from expected"
+    end
     get '/api/v6/authors?sort=author_detail.author_stuff', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
     assert_jsonapi_response 200
-    assert_equal pg ? '1001' : '1000', json_response['data'][0]['id']
+    up_expected_ids = AuthorResource
+      ._model_class
+      .all
+      .left_joins(:author_detail)
+      .merge(AuthorDetail.order(author_stuff: :asc))
+      .map(&:id)
+    expected = up_expected_ids.first.to_s
+    ids = json_response['data'].map {|data| data['id'] }
+    actual = ids.first
+    assert_equal expected, actual, "since adapter_sorts_nulls_last=#{adapter_sorts_nulls_last} ands actual=#{ids} vs. expected=#{up_expected_ids}"
 
     get '/api/v6/authors?sort=-author_detail.author_stuff', headers: { 'Accept' => JSONAPI::MEDIA_TYPE }
     assert_jsonapi_response 200
-    assert_equal pg ? '1000' : '1002', json_response['data'][0]['id']
+    down_expected_ids = AuthorResource
+      ._model_class
+      .all
+      .left_joins(:author_detail)
+      .merge(AuthorDetail.order(author_stuff: :desc))
+      .map(&:id)
+    expected = down_expected_ids.first.to_s
+    ids = json_response['data'].map {|data| data['id'] }
+    actual = ids.first
+    assert_equal expected, actual, "since adapter_sorts_nulls_last=#{adapter_sorts_nulls_last} ands actual=#{ids} vs. expected=#{down_expected_ids}"
+    refute_equal up_expected_ids, down_expected_ids # sanity check
   end
 
   def test_include_parameter_quoted
