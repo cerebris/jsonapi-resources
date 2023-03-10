@@ -485,6 +485,16 @@ class Minitest::Test
     end
   end
 
+  def is_db?(db_name)
+    case db_name
+    when :sqlite then /sqlite/i.match?(adapter_name)
+    when :postgres, :pg then /postgres/i.match?(adapter_name)
+    when :mysql then /mysql/i.match?(adapter_name)
+    else
+      /#{db_name}/i.match?(adapter_name)
+    end
+  end
+
   def db_true
     ActiveRecord::Base.connection.quote(true)
   end
