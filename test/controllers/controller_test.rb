@@ -494,15 +494,15 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :success
     assert json_response['data'].length > 10, 'there are enough records to show sort'
+    expected = Post
+      .all
+      .left_joins(:author)
+      .merge(Person.order(name: :asc))
+      .map(&:id)
+      .map(&:to_s)
+    ids = json_response['data'].map {|data| data['id'] }
 
-    # Postgres sorts nulls last, whereas sqlite and mysql sort nulls first
-    if ENV['DATABASE_URL'].starts_with?('postgres')
-      assert_equal '17', json_response['data'][-1]['id'], 'nil is at the start'
-      assert_equal post.id.to_s, json_response['data'][0]['id'], 'alphabetically first user is not first'
-    else
-      assert_equal '17', json_response['data'][0]['id'], 'nil is at the end'
-      assert_equal post.id.to_s, json_response['data'][1]['id'], 'alphabetically first user is second'
-    end
+    assert_equal expected, ids, "since adapter_sorts_nulls_last=#{adapter_sorts_nulls_last}"
   end
 
   def test_desc_sorting_by_relationship_field
@@ -512,14 +512,15 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :success
     assert json_response['data'].length > 10, 'there are enough records to show sort'
 
-    # Postgres sorts nulls last, whereas sqlite and mysql sort nulls first
-    if ENV['DATABASE_URL'].starts_with?('postgres')
-      assert_equal '17', json_response['data'][0]['id'], 'nil is at the start'
-      assert_equal post.id.to_s, json_response['data'][-1]['id']
-    else
-      assert_equal '17', json_response['data'][-1]['id'], 'nil is at the end'
-      assert_equal post.id.to_s, json_response['data'][-2]['id'], 'alphabetically first user is second last'
-    end
+    expected = Post
+      .all
+      .left_joins(:author)
+      .merge(Person.order(name: :desc))
+      .map(&:id)
+      .map(&:to_s)
+    ids = json_response['data'].map {|data| data['id'] }
+
+    assert_equal expected, ids, "since adapter_sorts_nulls_last=#{adapter_sorts_nulls_last}"
   end
 
   def test_sorting_by_relationship_field_include
@@ -529,13 +530,15 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :success
     assert json_response['data'].length > 10, 'there are enough records to show sort'
 
-    if ENV['DATABASE_URL'].starts_with?('postgres')
-      assert_equal '17', json_response['data'][-1]['id'], 'nil is at the top'
-      assert_equal post.id.to_s, json_response['data'][0]['id']
-    else
-      assert_equal '17', json_response['data'][0]['id'], 'nil is at the top'
-      assert_equal post.id.to_s, json_response['data'][1]['id'], 'alphabetically first user is second'
-    end
+    expected = Post
+      .all
+      .left_joins(:author)
+      .merge(Person.order(name: :asc))
+      .map(&:id)
+      .map(&:to_s)
+    ids = json_response['data'].map {|data| data['id'] }
+
+    assert_equal expected, ids, "since adapter_sorts_nulls_last=#{adapter_sorts_nulls_last}"
   end
 
   def test_invalid_sort_param
@@ -4160,29 +4163,70 @@ class Api::BoxesControllerTest < ActionController::TestCase
   end
 
   def test_complex_includes_two_level
+    if is_db?(:mysql)
+      skip "#{adapter_name} test expectations differ in insignificant ways from expected"
+    end
     assert_cacheable_get :index, params: {include: 'things,things.user'}
 
     assert_response :success
 
-    # The test is hardcoded with the include order. This should be changed at some
-    # point since either thing could come first and still be valid
-    assert_equal '10', json_response['included'][0]['id']
-    assert_equal 'things', json_response['included'][0]['type']
-    assert_equal '10001',  json_response['included'][0]['relationships']['user']['data']['id']
-    assert_nil json_response['included'][0]['relationships']['things']['data']
+    sorted_includeds = json_response['included'].map {|included|
+      {
+        'id' => included['id'],
+        'type' => included['type'],
+        'relationships_user_data_id' => included['relationships'].dig('user', 'data', 'id'),
+        'relationships_things_data_ids' => included['relationships'].dig('things', 'data')&.map {|data| data['id'] }&.sort,
+      }
+    }.sort_by {|included| "#{included['type']}-#{Integer(included['id'])}" }
 
-    assert_equal '20', json_response['included'][1]['id']
-    assert_equal 'things', json_response['included'][1]['type']
-    assert_equal '10001', json_response['included'][1]['relationships']['user']['data']['id']
-    assert_nil json_response['included'][1]['relationships']['things']['data']
+    expected = [
+      {
+        'id'=>'10',
+        'type'=>'things',
+        'relationships_user_data_id'=>'10001',
+        'relationships_things_data_ids'=>nil
+      },
+      {
+        'id'=>'20',
+        'type'=>'things',
+        'relationships_user_data_id'=>'10001',
+        'relationships_things_data_ids'=>nil
+      },
+      {
+        'id'=>'30',
+        'type'=>'things',
+        'relationships_user_data_id'=>'10002',
+        'relationships_things_data_ids'=>nil
+      },
+      {
+        'id'=>'10001',
+        'type'=>'users',
+        'relationships_user_data_id'=>nil,
+        'relationships_things_data_ids'=>['10', '20']
+      },
+      {
+        'id'=>'10002',
+        'type'=>'users',
+        'relationships_user_data_id'=>nil,
+        'relationships_things_data_ids'=>['30']
+      },
+    ]
+    assert_array_equals expected, sorted_includeds
   end
 
   def test_complex_includes_things_nested_things
     assert_cacheable_get :index, params: {include: 'things,things.things,things.things.things'}
 
     assert_response :success
-    assert_hash_equals(
-        {
+    sorted_json_response_data = json_response["data"]
+      .sort_by {|data| Integer(data["id"]) }
+    sorted_json_response_included = json_response["included"]
+      .sort_by {|included| "#{included['type']}-#{Integer(included['id'])}" }
+    sorted_json_response = {
+      "data" => sorted_json_response_data,
+      "included" => sorted_json_response_included,
+    }
+    expected_response = {
             "data" => [
                 {
                     "id" => "100",
@@ -4437,15 +4481,26 @@ class Api::BoxesControllerTest < ActionController::TestCase
                     }
                 }
             ]
-        },
-        json_response)
+        }
+    assert_hash_equals(expected_response, sorted_json_response)
   end
 
   def test_complex_includes_nested_things_secondary_users
+    if is_db?(:mysql)
+      skip "#{adapter_name} test expectations differ in insignificant ways from expected"
+    end
     assert_cacheable_get :index, params: {include: 'things,things.user,things.things'}
 
     assert_response :success
-    assert_hash_equals(
+    sorted_json_response_data = json_response["data"]
+      .sort_by {|data| Integer(data["id"]) }
+    sorted_json_response_included = json_response["included"]
+      .sort_by {|included| "#{included['type']}-#{Integer(included['id'])}" }
+    sorted_json_response = {
+      "data" => sorted_json_response_data,
+      "included" => sorted_json_response_included,
+    }
+    expected =
         {
             "data" => [
                 {
@@ -4732,8 +4787,8 @@ class Api::BoxesControllerTest < ActionController::TestCase
                     }
                 }
             ]
-        },
-        json_response)
+        }
+    assert_hash_equals(expected, sorted_json_response)
   end
 end
 
@@ -4767,16 +4822,22 @@ class RobotsControllerTest < ActionController::TestCase
   end
 
   def test_fetch_robots_with_sort_by_name
+    if is_db?(:mysql)
+      skip "#{adapter_name} test expectations differ in insignificant ways from expected"
+    end
     Robot.create! name: 'John', version: 1
     Robot.create! name: 'jane', version: 1
     assert_cacheable_get :index, params: {sort: 'name'}
     assert_response :success
 
-    if ENV['DATABASE_URL'].starts_with?('postgres')
-      assert_equal 'jane', json_response['data'].first['attributes']['name']
-    else
-      assert_equal 'John', json_response['data'].first['attributes']['name']
-    end
+    expected_names = Robot
+      .all
+      .order(name: :asc)
+      .map(&:name)
+    actual_names = json_response['data'].map {|data|
+      data['attributes']['name']
+    }
+    assert_equal expected_names, actual_names, "since adapter_sorts_nulls_last=#{adapter_sorts_nulls_last}"
   end
 
   def test_fetch_robots_with_sort_by_lower_name

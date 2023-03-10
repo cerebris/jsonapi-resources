@@ -467,6 +467,16 @@ class Minitest::Test
     ActiveRecord::Base.connection.adapter_name
   end
 
+  # Postgres sorts nulls last, whereas sqlite and mysql sort nulls first
+  def adapter_sorts_nulls_last
+    case adapter_name
+    when 'PostgreSQL' then true
+    when 'SQLite', 'Mysql2' then false
+    else
+      fail ArgumentError, "Unhandled adapter #{adapter_name} in #{__callee__}"
+    end
+  end
+
   def db_quote_identifier
     case adapter_name
     when 'SQLite', 'PostgreSQL'
@@ -475,6 +485,16 @@ class Minitest::Test
       %{`}
     else
       fail ArgumentError, "Unhandled adapter #{adapter_name} in #{__callee__}"
+    end
+  end
+
+  def is_db?(db_name)
+    case db_name
+    when :sqlite then /sqlite/i.match?(adapter_name)
+    when :postgres, :pg then /postgres/i.match?(adapter_name)
+    when :mysql then /mysql/i.match?(adapter_name)
+    else
+      /#{db_name}/i.match?(adapter_name)
     end
   end
 
