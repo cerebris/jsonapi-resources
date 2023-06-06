@@ -39,7 +39,8 @@ module JSONAPI
                 :default_resource_cache_field,
                 :resource_cache_digest_function,
                 :resource_cache_usage_report_function,
-                :default_exclude_links
+                :default_exclude_links,
+                :default_resource_retrieval_strategy
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -158,6 +159,8 @@ module JSONAPI
       # and relationships. Accepts either `:default`, `:none`, or array containing the
       # specific default links to exclude, which may be `:self` and `:related`.
       self.default_exclude_links = :none
+
+      self.default_resource_retrieval_strategy = 'JSONAPI::ActiveRelationRetrievalV10'
     end
 
     def cache_formatters=(bool)
@@ -309,6 +312,8 @@ module JSONAPI
     attr_writer :resource_cache_usage_report_function
 
     attr_writer :default_exclude_links
+
+    attr_writer :default_resource_retrieval_strategy
   end
 
   class << self

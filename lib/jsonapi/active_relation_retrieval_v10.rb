@@ -1,12 +1,10 @@
 module JSONAPI
-  class ActiveRelationResource < BasicResource
-    root_resource
-
+  module ActiveRelationRetrievalV10
     def find_related_ids(relationship, options = {})
       self.class.find_related_fragments([self], relationship, options).keys.collect { |rid| rid.id }
     end
 
-    class << self
+    module ClassMethods
       # Finds Resources using the `filters`. Pagination and sort options are used when provided
       #
       # @param filters [Hash] the filters hash
@@ -848,7 +846,7 @@ module JSONAPI
           records = call_method_or_proc(strategy, records, value, options)
         else
           join_manager = options.dig(:_relation_helper_options, :join_manager)
-          field = join_manager ? get_aliased_field(filter, join_manager) : filter
+          field = join_manager ? get_aliased_field(filter, join_manager) : filter.to_s
           records = records.where(Arel.sql(field) => value)
         end
 
