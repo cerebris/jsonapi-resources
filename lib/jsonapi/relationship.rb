@@ -15,7 +15,7 @@ module JSONAPI
       @acts_as_set = options.fetch(:acts_as_set, false) == true
       @foreign_key = options[:foreign_key] ? options[:foreign_key].to_sym : nil
       @parent_resource = options[:parent_resource]
-      @relation_name = options.fetch(:relation_name, @name)
+      @relation_name = options[:relation_name]
       @polymorphic = options.fetch(:polymorphic, false) == true
       @polymorphic_types = options[:polymorphic_types]
       if options[:polymorphic_relations]
@@ -62,7 +62,7 @@ module JSONAPI
         ObjectSpace.each_object do |klass|
           next unless Module === klass
           if ActiveRecord::Base > klass
-            klass.reflect_on_all_associations(:has_many).select{|r| r.options[:as] }.each do |reflection|
+            klass.reflect_on_all_associations(:has_many).select { |r| r.options[:as] }.each do |reflection|
               (hash[reflection.options[:as]] ||= []) << klass.name.downcase
             end
           end
@@ -73,7 +73,7 @@ module JSONAPI
 
     def resource_types
       if polymorphic? && belongs_to?
-        @polymorphic_types ||= self.class.polymorphic_types(@relation_name).collect {|t| t.pluralize}
+        @polymorphic_types ||= self.class.polymorphic_types(_relation_name).collect { |t| t.pluralize }
       else
         [resource_klass._type.to_s.pluralize]
       end
@@ -84,15 +84,15 @@ module JSONAPI
     end
 
     def relation_name(options)
-      case @relation_name
-        when Symbol
-          # :nocov:
-          @relation_name
-          # :nocov:
-        when String
-          @relation_name.to_sym
-        when Proc
-          @relation_name.call(options)
+      case _relation_name
+      when Symbol
+        # :nocov:
+        _relation_name
+        # :nocov:
+      when String
+        _relation_name.to_sym
+      when Proc
+        _relation_name.call(options)
       end
     end
 
@@ -108,14 +108,14 @@ module JSONAPI
 
     def exclude_links(exclude)
       case exclude
-        when :default, "default"
-          @_exclude_links = [:self, :related]
-        when :none, "none"
-          @_exclude_links = []
-        when Array
-          @_exclude_links = exclude.collect {|link| link.to_sym}
-        else
-          fail "Invalid exclude_links"
+      when :default, "default"
+        @_exclude_links = [:self, :related]
+      when :none, "none"
+        @_exclude_links = []
+      when Array
+        @_exclude_links = exclude.collect { |link| link.to_sym }
+      else
+        fail "Invalid exclude_links"
       end
     end
 
@@ -125,6 +125,10 @@ module JSONAPI
 
     def exclude_link?(link)
       _exclude_links.include?(link.to_sym)
+    end
+
+    def _relation_name
+      @relation_name || @name
     end
 
     class ToOne < Relationship
@@ -167,10 +171,10 @@ module JSONAPI
                      @allow_include
                    end
 
-        if !!strategy == strategy #check for boolean
+        if !!strategy == strategy # check for boolean
           return strategy
         elsif strategy.is_a?(Symbol) || strategy.is_a?(String)
-          parent_resource.send(strategy, context)
+          parent_resource_klass.send(strategy, context)
         else
           strategy.call(context)
         end
@@ -192,7 +196,7 @@ module JSONAPI
 
       def to_s
         # :nocov: useful for debugging
-        "#{parent_resource}.#{name}(ToMany)"
+        "#{parent_resource_klass}.#{name}(ToMany)"
         # :nocov:
       end
 
@@ -209,10 +213,10 @@ module JSONAPI
                      @allow_include
                    end
 
-        if !!strategy == strategy #check for boolean
+        if !!strategy == strategy # check for boolean
           return strategy
         elsif strategy.is_a?(Symbol) || strategy.is_a?(String)
-          parent_resource.send(strategy, context)
+          parent_resource_klass.send(strategy, context)
         else
           strategy.call(context)
         end
