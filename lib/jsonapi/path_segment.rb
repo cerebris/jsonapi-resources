@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JSONAPI
   class PathSegment
     def self.parse(source_resource_klass:, segment_string:, parse_fields: true)

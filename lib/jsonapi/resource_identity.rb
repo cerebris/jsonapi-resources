@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JSONAPI
 
   # ResourceIdentity describes a unique identity of a resource in the system.

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JSONAPI
   VALIDATION_ERROR = '100'
   INVALID_RESOURCE = '101'

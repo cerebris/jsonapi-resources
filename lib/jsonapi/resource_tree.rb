@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JSONAPI
 
   # A tree structure representing the resource structure of the requested resource(s). This is an intermediate structure

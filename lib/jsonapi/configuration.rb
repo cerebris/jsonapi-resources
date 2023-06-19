@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'jsonapi/formatter'
 require 'jsonapi/processor'
 require 'concurrent'
