@@ -199,9 +199,11 @@ module JSONAPI
         (paginator && paginator.class.requires_record_count) ||
         (JSONAPI.configuration.top_level_meta_include_page_count))
 
+        relationship = source_resource.class._relationship(relationship_type)
+
         opts[:record_count] = source_resource.class.count_related(
           source_resource,
-          relationship_type,
+          relationship,
           options)
       end
 

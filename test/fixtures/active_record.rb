@@ -467,6 +467,7 @@ class ResponseText < ActiveRecord::Base
 end
 
 class ResponseText::Paragraph < ResponseText
+  belongs_to :response
 end
 
 class Person < ActiveRecord::Base
@@ -1709,7 +1710,9 @@ class CraterResource < JSONAPI::Resource
 
   filter :description, apply: -> (records, value, options) {
     fail "context not set" unless options[:context][:current_user] != nil && options[:context][:current_user] == $test_user
-    records.where(concat_table_field(options.dig(:_relation_helper_options, :join_manager).source_join_details[:alias], :description) => value)
+    join_manager = options.dig(:_relation_helper_options, :join_manager)
+    field = join_manager ? get_aliased_field('description', join_manager) : 'description'
+    records.where(Arel.sql(field) => value)
   }
 
   def self.verify_key(key, context = nil)
@@ -1750,6 +1753,8 @@ class PictureResource < JSONAPI::Resource
   has_one :author
 
   has_one :imageable, polymorphic: true
+  has_one :document, exclude_linkage_data: true
+  has_one :product, exclude_linkage_data: true
   has_one :file_properties, inverse_relationship: :fileable, :foreign_key_on => :related, polymorphic: true
 
   filter 'imageable.name', perform_joins: true, apply: -> (records, value, options) {
@@ -1767,6 +1772,7 @@ end
 
 class ImageableResource < JSONAPI::Resource
   polymorphic
+  has_one :picture
 end
 
 class FileableResource < JSONAPI::Resource
@@ -1775,7 +1781,9 @@ end
 
 class DocumentResource < JSONAPI::Resource
   attribute :name
-  has_many :pictures, inverse_relationship: :imageable
+
+  has_many :pictures
+
   has_one :author, class_name: 'Person'
 
   has_one :file_properties, inverse_relationship: :fileable, :foreign_key_on => :related
@@ -1783,7 +1791,7 @@ end
 
 class ProductResource < JSONAPI::Resource
   attribute :name
-  has_many :pictures, inverse_relationship: :imageable
+  has_many :pictures, inverse_relationship: :product
   has_one :designer, class_name: 'Person'
 
   has_one :file_properties, inverse_relationship: :fileable, :foreign_key_on => :related
@@ -2345,7 +2353,7 @@ module Api
         key
       }
 
-      has_one :person, :foreign_key_on => :related
+      has_one :person, foreign_key_on: :related, relation_name: :author
 
       attribute :nickname
     end

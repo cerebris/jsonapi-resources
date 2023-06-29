@@ -160,7 +160,10 @@ module JSONAPI
       # specific default links to exclude, which may be `:self` and `:related`.
       self.default_exclude_links = :none
 
-      self.default_resource_retrieval_strategy = 'JSONAPI::ActiveRelationRetrievalV10'
+
+      # 'JSONAPI::ActiveRelationRetrieval'
+      # 'JSONAPI::ActiveRelationRetrievalV10'
+      self.default_resource_retrieval_strategy = 'JSONAPI::ActiveRelationRetrieval'
     end
 
     def cache_formatters=(bool)

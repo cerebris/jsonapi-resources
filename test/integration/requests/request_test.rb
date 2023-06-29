@@ -1557,6 +1557,10 @@ class RequestTest < ActionDispatch::IntegrationTest
                                  "links" => {
                                    "self" => "http://www.example.com/api/v9/preferences/relationships/person",
                                    "related" => "http://www.example.com/api/v9/preferences/person"
+                                 },
+                                 'data' => {
+                                   'type' => 'people',
+                                   'id' => '1005'
                                  }
                                }
                              },
@@ -1616,6 +1620,10 @@ class RequestTest < ActionDispatch::IntegrationTest
                                  "links" => {
                                    "self" => "http://www.example.com/api/v9/preferences/relationships/person",
                                    "related" => "http://www.example.com/api/v9/preferences/person"
+                                 },
+                                 "data" => {
+                                   "type" => "people",
+                                   "id" => "1005"
                                  }
                                }
                              },
@@ -1664,6 +1672,10 @@ class RequestTest < ActionDispatch::IntegrationTest
                                  "links" => {
                                    "self" => "http://www.example.com/api/v9/preferences/relationships/person",
                                    "related" => "http://www.example.com/api/v9/preferences/person"
+                                 },
+                                 "data" => {
+                                   "type" => "people",
+                                   "id" => "1001"
                                  }
                                }
                              },

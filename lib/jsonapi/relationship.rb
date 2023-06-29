@@ -1,7 +1,7 @@
 module JSONAPI
   class Relationship
     attr_reader :acts_as_set, :foreign_key, :options, :name,
-                :class_name, :polymorphic, :always_include_optional_linkage_data,
+                :class_name, :polymorphic, :always_include_optional_linkage_data, :exclude_linkage_data,
                 :parent_resource, :eager_load_on_include, :custom_methods,
                 :inverse_relationship, :allow_include
 
@@ -23,11 +23,13 @@ module JSONAPI
         @polymorphic_types ||= options[:polymorphic_relations]
       end
 
+      @exclude_linkage_data = options[:exclude_linkage_data]
       @always_include_optional_linkage_data = options.fetch(:always_include_optional_linkage_data, false) == true
       @eager_load_on_include = options.fetch(:eager_load_on_include, true) == true
       @allow_include = options[:allow_include]
       @class_name = nil
-      @inverse_relationship = nil
+
+      @inverse_relationship = options[:inverse_relationship]&.to_sym
 
       @_routed = false
       @_warned_missing_route = false
@@ -55,6 +57,20 @@ module JSONAPI
       # :nocov:
       @table_name ||= resource_klass._table_name
       # :nocov:
+    end
+
+    def inverse_relationship
+      unless @inverse_relationship
+        @inverse_relationship ||= if resource_klass._relationship(@parent_resource._type.to_s.singularize).present?
+                                    @parent_resource._type.to_s.singularize.to_sym
+                                  elsif resource_klass._relationship(@parent_resource._type).present?
+                                    @parent_resource._type.to_sym
+                                  else
+                                    nil
+                                  end
+      end
+
+      @inverse_relationship
     end
 
     def self.polymorphic_types(name)
@@ -139,9 +155,9 @@ module JSONAPI
         @class_name = options.fetch(:class_name, name.to_s.camelize)
         @foreign_key ||= "#{name}_id".to_sym
         @foreign_key_on = options.fetch(:foreign_key_on, :self)
-        if parent_resource
-          @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type)
-        end
+        # if parent_resource
+        #   @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type)
+        # end
       end
 
       def to_s
@@ -161,6 +177,7 @@ module JSONAPI
       end
 
       def include_optional_linkage_data?
+        return false if @exclude_linkage_data
         @always_include_optional_linkage_data || JSONAPI::configuration.always_include_to_one_linkage_data
       end
 
@@ -189,9 +206,9 @@ module JSONAPI
         @class_name = options.fetch(:class_name, name.to_s.camelize.singularize)
         @foreign_key ||= "#{name.to_s.singularize}_ids".to_sym
         @reflect = options.fetch(:reflect, true) == true
-        if parent_resource
-          @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type.to_s.singularize.to_sym)
-        end
+        # if parent_resource
+        #   @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type.to_s.singularize.to_sym)
+        # end
       end
 
       def to_s

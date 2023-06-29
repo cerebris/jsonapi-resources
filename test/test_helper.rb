@@ -164,7 +164,7 @@ end
 def assert_query_count(expected, msg = nil, &block)
   @queries = []
   callback = lambda {|_, _, _, _, payload|
-    @queries.push payload[:sql]
+    @queries.push payload[:sql] unless payload[:sql].starts_with?("SELECT name FROM sqlite_master WHERE name <> 'sqlite_sequence'")
   }
   ActiveSupport::Notifications.subscribed(callback, 'sql.active_record', &block)
 

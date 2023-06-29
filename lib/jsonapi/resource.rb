@@ -444,14 +444,26 @@ module JSONAPI
         end
       end
 
+      def warn_about_missing_retrieval_methods
+        resource_retrieval_methods = %i[find count find_by_key find_by_keys find_to_populate_by_keys find_fragments
+                                        find_related_fragments find_included_fragments count_related]
+
+        resource_retrieval_methods.each do |method_name|
+          warn "#{self.name} has not defined standard method #{method_name}" unless self.respond_to?(method_name)
+        end
+      end
+
       def inherited(subclass)
         super
 
-        # Defer loading the resource retrieval module until the class has been fully read to allow setting a custom
-        # _default_resource_behavior_module_name in the class definition
+        # Defer loading the resource retrieval strategy module until the class has been fully read to allow setting
+        # a custom _resource_retrieval_strategy in the class definition
         trace_point = TracePoint.new(:end) do |tp|
           if subclass == tp.self
-            subclass.load_resource_retrieval_strategy unless subclass._abstract
+            unless subclass._abstract
+              subclass.load_resource_retrieval_strategy
+              subclass.warn_about_missing_retrieval_methods
+            end
             tp.disable
           end
         end
@@ -467,8 +479,6 @@ module JSONAPI
         subclass._attributes = (_attributes || {}).dup
         subclass.polymorphic(false)
         subclass.key_type(@_resource_key_type)
-        # subclass.(_included_strategy)
-        # subclass.related_strategy(_related_strategy)
 
         subclass._model_hints = (_model_hints || {}).dup
 
@@ -507,7 +517,7 @@ module JSONAPI
           original_relationships.each_value do |relationship|
             options = relationship.options.dup
             options[:parent_resource] = self
-            options[:inverse_relationship] = relationship.inverse_relationship
+            options[:inverse_relationship] = relationship.options[:inverse_relationship]
             _add_relationship(relationship.class, relationship.name, options)
           end
         end
@@ -913,7 +923,7 @@ module JSONAPI
       end
 
       def _default_primary_key
-        @_default_primary_key ||=_model_class.respond_to?(:primary_key) ? _model_class.primary_key : :id
+        @_default_primary_key ||= _model_class.respond_to?(:primary_key) ? _model_class.primary_key : :id
       end
 
       def _cache_field

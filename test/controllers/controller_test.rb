@@ -4215,6 +4215,8 @@ class Api::BoxesControllerTest < ActionController::TestCase
   end
 
   def test_complex_includes_things_nested_things
+    # skip "TODO: Issues with new ActiveRelationRetrieval"
+
     assert_cacheable_get :index, params: {include: 'things,things.things,things.things.things'}
 
     assert_response :success
@@ -4228,264 +4230,280 @@ class Api::BoxesControllerTest < ActionController::TestCase
     }
     expected_response = {
             "data" => [
-                {
-                    "id" => "100",
-                    "type" => "boxes",
-                    "links" => {
-                        "self" => "http://test.host/api/boxes/100"
-                    },
-                    "relationships" => {
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/boxes/100/relationships/things",
-                                "related" => "http://test.host/api/boxes/100/things"
-                            },
-                            "data" => [
-                                {
-                                    "type" => "things",
-                                    "id" => "10"
-                                },
-                                {
-                                    "type" => "things",
-                                    "id" => "20"
-                                }
-                            ]
-                        }
-                    }
+              {
+                "id" => "100",
+                "type" => "boxes",
+                "links" => {
+                  "self" => "http://test.host/api/boxes/100"
                 },
-                {
-                    "id" => "102",
-                    "type" => "boxes",
+                "relationships" => {
+                  "things" => {
                     "links" => {
-                        "self" => "http://test.host/api/boxes/102"
+                      "self" => "http://test.host/api/boxes/100/relationships/things",
+                      "related" => "http://test.host/api/boxes/100/things"
                     },
-                    "relationships" => {
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/boxes/102/relationships/things",
-                                "related" => "http://test.host/api/boxes/102/things"
-                            },
-                            "data" => [
-                                {
-                                    "type" => "things",
-                                    "id" => "30"
-                                }
-                            ]
-                        }
-                    }
+                    "data" => [
+                      {
+                        "type" => "things",
+                        "id" => "10"
+                      },
+                      {
+                        "type" => "things",
+                        "id" => "20"
+                      }
+                    ]
+                  }
                 }
+              },
+              {
+                "id" => "102",
+                "type" => "boxes",
+                "links" => {
+                  "self" => "http://test.host/api/boxes/102"
+                },
+                "relationships" => {
+                  "things" => {
+                    "links" => {
+                      "self" => "http://test.host/api/boxes/102/relationships/things",
+                      "related" => "http://test.host/api/boxes/102/things"
+                    },
+                    "data" => [
+                      {
+                        "type" => "things",
+                        "id" => "30"
+                      }
+                    ]
+                  }
+                }
+              }
             ],
             "included" => [
-                {
-                    "id" => "10",
-                    "type" => "things",
-                    "links" => {
-                        "self" => "http://test.host/api/things/10"
-                    },
-                    "relationships" => {
-                        "box" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/10/relationships/box",
-                                "related" => "http://test.host/api/things/10/box"
-                            },
-                            "data" => {
-                                "type" => "boxes",
-                                "id" => "100"
-                            }
-                        },
-                        "user" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/10/relationships/user",
-                                "related" => "http://test.host/api/things/10/user"
-                            }
-                        },
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/10/relationships/things",
-                                "related" => "http://test.host/api/things/10/things"
-                            },
-                            "data" => [
-                                {
-                                    "type" => "things",
-                                    "id" => "20"
-                                }
-                            ]
-                        }
-                    }
+              {
+                "id" => "10",
+                "type" => "things",
+                "links" => {
+                  "self" => "http://test.host/api/things/10"
                 },
-                {
-                    "id" => "20",
-                    "type" => "things",
+                "relationships" => {
+                  "box" => {
                     "links" => {
-                        "self" => "http://test.host/api/things/20"
+                      "self" => "http://test.host/api/things/10/relationships/box",
+                      "related" => "http://test.host/api/things/10/box"
                     },
-                    "relationships" => {
-                        "box" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/20/relationships/box",
-                                "related" => "http://test.host/api/things/20/box"
-                            },
-                            "data" => {
-                                "type" => "boxes",
-                                "id" => "100"
-                            }
-                        },
-                        "user" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/20/relationships/user",
-                                "related" => "http://test.host/api/things/20/user"
-                            }
-                        },
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/20/relationships/things",
-                                "related" => "http://test.host/api/things/20/things"
-                            },
-                            "data" => [
-                                {
-                                    "type" => "things",
-                                    "id" => "10"
-                                }
-                            ]
-                        }
+                    "data" => {
+                      "type" => "boxes",
+                      "id" => "100"
                     }
-                },
-                {
-                    "id" => "30",
-                    "type" => "things",
+                  },
+                  "user" => {
                     "links" => {
-                        "self" => "http://test.host/api/things/30"
-                    },
-                    "relationships" => {
-                        "box" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/30/relationships/box",
-                                "related" => "http://test.host/api/things/30/box"
-                            },
-                            "data" => {
-                                "type" => "boxes",
-                                "id" => "102"
-                            }
-                        },
-                        "user" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/30/relationships/user",
-                                "related" => "http://test.host/api/things/30/user"
-                            }
-                        },
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/30/relationships/things",
-                                "related" => "http://test.host/api/things/30/things"
-                            },
-                            "data" => [
-                                {
-                                    "type" => "things",
-                                    "id" => "40"
-                                },
-                                {
-                                    "type" => "things",
-                                    "id" => "50"
-                                }
-
-                            ]
-                        }
+                      "self" => "http://test.host/api/things/10/relationships/user",
+                      "related" => "http://test.host/api/things/10/user"
                     }
-                },
-                {
-                    "id" => "40",
-                    "type" => "things",
+                  },
+                  "things" => {
                     "links" => {
-                        "self" => "http://test.host/api/things/40"
+                      "self" => "http://test.host/api/things/10/relationships/things",
+                      "related" => "http://test.host/api/things/10/things"
                     },
-                    "relationships" => {
-                        "box" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/40/relationships/box",
-                                "related" => "http://test.host/api/things/40/box"
-                            }
-                        },
-                        "user" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/40/relationships/user",
-                                "related" => "http://test.host/api/things/40/user"
-                            }
-                        },
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/40/relationships/things",
-                                "related" => "http://test.host/api/things/40/things"
-                            },
-                            "data"=>[]
-                        }
-                    }
-                },
-                {
-                    "id" => "50",
-                    "type" => "things",
-                    "links" => {
-                        "self" => "http://test.host/api/things/50"
-                    },
-                    "relationships" => {
-                        "box" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/50/relationships/box",
-                                "related" => "http://test.host/api/things/50/box"
-                            }
-                        },
-                        "user" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/50/relationships/user",
-                                "related" => "http://test.host/api/things/50/user"
-                            }
-                        },
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/50/relationships/things",
-                                "related" => "http://test.host/api/things/50/things"
-                            },
-                            "data" => [
-                                {
-                                    "type" => "things",
-                                    "id" => "60"
-                                }
-                            ]
-                        }
-                    }
-                },
-                {
-                    "id" => "60",
-                    "type" => "things",
-                    "links" => {
-                        "self" => "http://test.host/api/things/60"
-                    },
-                    "relationships" => {
-                        "box" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/60/relationships/box",
-                                "related" => "http://test.host/api/things/60/box"
-                            }
-                        },
-                        "user" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/60/relationships/user",
-                                "related" => "http://test.host/api/things/60/user"
-                            }
-                        },
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/60/relationships/things",
-                                "related" => "http://test.host/api/things/60/things"
-                            }
-                        }
-                    }
+                    "data" => [
+                      {
+                        "type" => "things",
+                        "id" => "20"
+                      }
+                    ]
+                  }
                 }
+              },
+              {
+                "id" => "20",
+                "type" => "things",
+                "links" => {
+                  "self" => "http://test.host/api/things/20"
+                },
+                "relationships" => {
+                  "box" => {
+                    "links" => {
+                      "self" => "http://test.host/api/things/20/relationships/box",
+                      "related" => "http://test.host/api/things/20/box"
+                    },
+                    "data" => {
+                      "type" => "boxes",
+                      "id" => "100"
+                    }
+                  },
+                  "user" => {
+                    "links" => {
+                      "self" => "http://test.host/api/things/20/relationships/user",
+                      "related" => "http://test.host/api/things/20/user"
+                    }
+                  },
+                  "things" => {
+                    "links" => {
+                      "self" => "http://test.host/api/things/20/relationships/things",
+                      "related" => "http://test.host/api/things/20/things"
+                    },
+                    "data" => [
+                      {
+                        "type" => "things",
+                        "id" => "10"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "id" => "30",
+                "type" => "things",
+                "links" => {
+                  "self" => "http://test.host/api/things/30"
+                },
+                "relationships" => {
+                  "box" => {
+                    "links" => {
+                      "self" => "http://test.host/api/things/30/relationships/box",
+                      "related" => "http://test.host/api/things/30/box"
+                    },
+                    "data" => {
+                      "type" => "boxes",
+                      "id" => "102"
+                    }
+                  },
+                  "user" => {
+                    "links" => {
+                      "self" => "http://test.host/api/things/30/relationships/user",
+                      "related" => "http://test.host/api/things/30/user"
+                    }
+                  },
+                  "things" => {
+                    "links" => {
+                      "self" => "http://test.host/api/things/30/relationships/things",
+                      "related" => "http://test.host/api/things/30/things"
+                    },
+                    "data" => [
+                      {
+                        "type" => "things",
+                        "id" => "40"
+                      },
+                      {
+                        "type" => "things",
+                        "id" => "50"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "id" => "40",
+                "type" => "things",
+                "links" => {
+                  "self" => "http://test.host/api/things/40"
+                },
+                "relationships" => {
+                  "box" => {
+                    "links" => {
+                      "self" => "http://test.host/api/things/40/relationships/box",
+                      "related" => "http://test.host/api/things/40/box"
+                    }
+                  },
+                  "user" => {
+                    "links" => {
+                      "self" => "http://test.host/api/things/40/relationships/user",
+                      "related" => "http://test.host/api/things/40/user"
+                    }
+                  },
+                  "things" => {
+                    "links" => {
+                      "self" => "http://test.host/api/things/40/relationships/things",
+                      "related" => "http://test.host/api/things/40/things"
+                    },
+                    "data" => [
+                      {
+                        "type" => "things",
+                        "id" => "30"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "id" => "50",
+                "type" => "things",
+                "links" => {
+                  "self" => "http://test.host/api/things/50"
+                },
+                "relationships" => {
+                  "box" => {
+                    "links" => {
+                      "self" => "http://test.host/api/things/50/relationships/box",
+                      "related" => "http://test.host/api/things/50/box"
+                    }
+                  },
+                  "user" => {
+                    "links" => {
+                      "self" => "http://test.host/api/things/50/relationships/user",
+                      "related" => "http://test.host/api/things/50/user"
+                    }
+                  },
+                  "things" => {
+                    "links" => {
+                      "self" => "http://test.host/api/things/50/relationships/things",
+                      "related" => "http://test.host/api/things/50/things"
+                    },
+                    "data" => [
+                      {
+                        "type" => "things",
+                        "id" => "30"
+                      },
+                      {
+                        "type" => "things",
+                        "id" => "60"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "id" => "60",
+                "type" => "things",
+                "links" => {
+                  "self" => "http://test.host/api/things/60"
+                },
+                "relationships" => {
+                  "box" => {
+                    "links" => {
+                      "self" => "http://test.host/api/things/60/relationships/box",
+                      "related" => "http://test.host/api/things/60/box"
+                    }
+                  },
+                  "user" => {
+                    "links" => {
+                      "self" => "http://test.host/api/things/60/relationships/user",
+                      "related" => "http://test.host/api/things/60/user"
+                    }
+                  },
+                  "things" => {
+                    "links" => {
+                      "self" => "http://test.host/api/things/60/relationships/things",
+                      "related" => "http://test.host/api/things/60/things"
+                    },
+                    "data" => [
+                      {
+                        "type" => "things",
+                        "id" => "50"
+                      }
+                    ]
+                  }
+                }
+              }
             ]
-        }
+    }
     assert_hash_equals(expected_response, sorted_json_response)
   end
 
   def test_complex_includes_nested_things_secondary_users
+    # skip "TODO: Issues with new ActiveRelationRetrieval"
+
     if is_db?(:mysql)
       skip "#{adapter_name} test expectations differ in insignificant ways from expected"
     end
@@ -4501,293 +4519,303 @@ class Api::BoxesControllerTest < ActionController::TestCase
       "included" => sorted_json_response_included,
     }
     expected =
-        {
-            "data" => [
-                {
-                    "id" => "100",
-                    "type" => "boxes",
-                    "links" => {
-                        "self" => "http://test.host/api/boxes/100"
-                    },
-                    "relationships" => {
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/boxes/100/relationships/things",
-                                "related" => "http://test.host/api/boxes/100/things"
-                            },
-                            "data" => [
-                                {
-                                    "type" => "things",
-                                    "id" => "10"
-                                },
-                                {
-                                    "type" => "things",
-                                    "id" => "20"
-                                }
-                            ]
-                        }
-                    }
+      {
+        "data" => [
+          {
+            "id" => "100",
+            "type" => "boxes",
+            "links" => {
+              "self" => "http://test.host/api/boxes/100"
+            },
+            "relationships" => {
+              "things" => {
+                "links" => {
+                  "self" => "http://test.host/api/boxes/100/relationships/things",
+                  "related" => "http://test.host/api/boxes/100/things"
                 },
-                {
-                    "id" => "102",
-                    "type" => "boxes",
-                    "links" => {
-                        "self" => "http://test.host/api/boxes/102"
-                    },
-                    "relationships" => {
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/boxes/102/relationships/things",
-                                "related" => "http://test.host/api/boxes/102/things"
-                            },
-                            "data" => [
-                                {
-                                    "type" => "things",
-                                    "id" => "30"
-                                }
-                            ]
-                        }
-                    }
+                "data" => [
+                  {
+                    "type" => "things",
+                    "id" => "10"
+                  },
+                  {
+                    "type" => "things",
+                    "id" => "20"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id" => "102",
+            "type" => "boxes",
+            "links" => {
+              "self" => "http://test.host/api/boxes/102"
+            },
+            "relationships" => {
+              "things" => {
+                "links" => {
+                  "self" => "http://test.host/api/boxes/102/relationships/things",
+                  "related" => "http://test.host/api/boxes/102/things"
+                },
+                "data" => [
+                  {
+                    "type" => "things",
+                    "id" => "30"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "included" => [
+          {
+            "id" => "10",
+            "type" => "things",
+            "links" => {
+              "self" => "http://test.host/api/things/10"
+            },
+            "relationships" => {
+              "box" => {
+                "links" => {
+                  "self" => "http://test.host/api/things/10/relationships/box",
+                  "related" => "http://test.host/api/things/10/box"
+                },
+                "data" => {
+                  "type" => "boxes",
+                  "id" => "100"
                 }
-            ],
-            "included" => [
-                {
-                    "id" => "10",
-                    "type" => "things",
-                    "links" => {
-                        "self" => "http://test.host/api/things/10"
-                    },
-                    "relationships" => {
-                        "box" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/10/relationships/box",
-                                "related" => "http://test.host/api/things/10/box"
-                            },
-                            "data" => {
-                                "type" => "boxes",
-                                "id" => "100"
-                            }
-                        },
-                        "user" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/10/relationships/user",
-                                "related" => "http://test.host/api/things/10/user"
-                            },
-                            "data" => {
-                                "type" => "users",
-                                "id" => "10001"
-                            }
-                        },
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/10/relationships/things",
-                                "related" => "http://test.host/api/things/10/things"
-                            },
-                            "data" => [
-                                {
-                                    "type" => "things",
-                                    "id" => "20"
-                                }
-                            ]
-                        }
-                    }
+              },
+              "user" => {
+                "links" => {
+                  "self" => "http://test.host/api/things/10/relationships/user",
+                  "related" => "http://test.host/api/things/10/user"
                 },
-                {
-                    "id" => "20",
-                    "type" => "things",
-                    "links" => {
-                        "self" => "http://test.host/api/things/20"
-                    },
-                    "relationships" => {
-                        "box" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/20/relationships/box",
-                                "related" => "http://test.host/api/things/20/box"
-                            },
-                            "data" => {
-                                "type" => "boxes",
-                                "id" => "100"
-                            }
-                        },
-                        "user" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/20/relationships/user",
-                                "related" => "http://test.host/api/things/20/user"
-                            },
-                            "data" => {
-                                "type" => "users",
-                                "id" => "10001"
-                            }
-                        },
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/20/relationships/things",
-                                "related" => "http://test.host/api/things/20/things"
-                            },
-                            "data" => [
-                                {
-                                    "type" => "things",
-                                    "id" => "10"
-                                }
-                            ]
-                        }
-                    }
-                },
-                {
-                    "id" => "30",
-                    "type" => "things",
-                    "links" => {
-                        "self" => "http://test.host/api/things/30"
-                    },
-                    "relationships" => {
-                        "box" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/30/relationships/box",
-                                "related" => "http://test.host/api/things/30/box"
-                            },
-                            "data" => {
-                                "type" => "boxes",
-                                "id" => "102"
-                            }
-                        },
-                        "user" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/30/relationships/user",
-                                "related" => "http://test.host/api/things/30/user"
-                            },
-                            "data" => {
-                                "type" => "users",
-                                "id" => "10002"
-                            }
-
-                        },
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/30/relationships/things",
-                                "related" => "http://test.host/api/things/30/things"
-                            },
-                            "data" => [
-                                {
-                                    "type" => "things",
-                                    "id" => "40"
-                                },
-                                {
-                                    "type" => "things",
-                                    "id" => "50"
-                                }
-
-                            ]
-                        }
-                    }
-                },
-                {
-                    "id" => "40",
-                    "type" => "things",
-                    "links" => {
-                        "self" => "http://test.host/api/things/40"
-                    },
-                    "relationships" => {
-                        "box" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/40/relationships/box",
-                                "related" => "http://test.host/api/things/40/box"
-                            }
-                        },
-                        "user" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/40/relationships/user",
-                                "related" => "http://test.host/api/things/40/user"
-                            }
-                        },
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/40/relationships/things",
-                                "related" => "http://test.host/api/things/40/things"
-                            }
-                        }
-                    }
-                },
-                {
-                    "id" => "50",
-                    "type" => "things",
-                    "links" => {
-                        "self" => "http://test.host/api/things/50"
-                    },
-                    "relationships" => {
-                        "box" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/50/relationships/box",
-                                "related" => "http://test.host/api/things/50/box"
-                            }
-                        },
-                        "user" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/50/relationships/user",
-                                "related" => "http://test.host/api/things/50/user"
-                            }
-                        },
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/things/50/relationships/things",
-                                "related" => "http://test.host/api/things/50/things"
-                            }
-                        }
-                    }
-                },
-                {
-                    "id" => "10001",
-                    "type" => "users",
-                    "links" => {
-                        "self" => "http://test.host/api/users/10001"
-                    },
-                    "attributes" => {
-                        "name" => "user 1"
-                    },
-                    "relationships" => {
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/users/10001/relationships/things",
-                                "related" => "http://test.host/api/users/10001/things"
-                            },
-                            "data" => [
-                                {
-                                    "type" => "things",
-                                    "id" => "10"
-                                },
-                                {
-                                    "type" => "things",
-                                    "id" => "20"
-                                }
-                            ]
-                        }
-                    }
-                },
-                {
-                    "id" => "10002",
-                    "type" => "users",
-                    "links" => {
-                        "self" => "http://test.host/api/users/10002"
-                    },
-                    "attributes" => {
-                        "name" => "user 2"
-                    },
-                    "relationships" => {
-                        "things" => {
-                            "links" => {
-                                "self" => "http://test.host/api/users/10002/relationships/things",
-                                "related" => "http://test.host/api/users/10002/things"
-                            },
-                            "data" => [
-                                {
-                                    "type" => "things",
-                                    "id" => "30"
-                                }
-                            ]
-                        }
-                    }
+                "data" => {
+                  "type" => "users",
+                  "id" => "10001"
                 }
-            ]
-        }
+              },
+              "things" => {
+                "links" => {
+                  "self" => "http://test.host/api/things/10/relationships/things",
+                  "related" => "http://test.host/api/things/10/things"
+                },
+                "data" => [
+                  {
+                    "type" => "things",
+                    "id" => "20"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id" => "20",
+            "type" => "things",
+            "links" => {
+              "self" => "http://test.host/api/things/20"
+            },
+            "relationships" => {
+              "box" => {
+                "links" => {
+                  "self" => "http://test.host/api/things/20/relationships/box",
+                  "related" => "http://test.host/api/things/20/box"
+                },
+                "data" => {
+                  "type" => "boxes",
+                  "id" => "100"
+                }
+              },
+              "user" => {
+                "links" => {
+                  "self" => "http://test.host/api/things/20/relationships/user",
+                  "related" => "http://test.host/api/things/20/user"
+                },
+                "data" => {
+                  "type" => "users",
+                  "id" => "10001"
+                }
+              },
+              "things" => {
+                "links" => {
+                  "self" => "http://test.host/api/things/20/relationships/things",
+                  "related" => "http://test.host/api/things/20/things"
+                },
+                "data" => [
+                  {
+                    "type" => "things",
+                    "id" => "10"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id" => "30",
+            "type" => "things",
+            "links" => {
+              "self" => "http://test.host/api/things/30"
+            },
+            "relationships" => {
+              "box" => {
+                "links" => {
+                  "self" => "http://test.host/api/things/30/relationships/box",
+                  "related" => "http://test.host/api/things/30/box"
+                },
+                "data" => {
+                  "type" => "boxes",
+                  "id" => "102"
+                }
+              },
+              "user" => {
+                "links" => {
+                  "self" => "http://test.host/api/things/30/relationships/user",
+                  "related" => "http://test.host/api/things/30/user"
+                },
+                "data" => {
+                  "type" => "users",
+                  "id" => "10002"
+                }
+              },
+              "things" => {
+                "links" => {
+                  "self" => "http://test.host/api/things/30/relationships/things",
+                  "related" => "http://test.host/api/things/30/things"
+                },
+                "data" => [
+                  {
+                    "type" => "things",
+                    "id" => "40"
+                  },
+                  {
+                    "type" => "things",
+                    "id" => "50"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id" => "40",
+            "type" => "things",
+            "links" => {
+              "self" => "http://test.host/api/things/40"
+            },
+            "relationships" => {
+              "box" => {
+                "links" => {
+                  "self" => "http://test.host/api/things/40/relationships/box",
+                  "related" => "http://test.host/api/things/40/box"
+                }
+              },
+              "user" => {
+                "links" => {
+                  "self" => "http://test.host/api/things/40/relationships/user",
+                  "related" => "http://test.host/api/things/40/user"
+                }
+              },
+              "things" => {
+                "links" => {
+                  "self" => "http://test.host/api/things/40/relationships/things",
+                  "related" => "http://test.host/api/things/40/things"
+                },
+                "data" => [
+                  {
+                    "type" => "things",
+                    "id" => "30"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id" => "50",
+            "type" => "things",
+            "links" => {
+              "self" => "http://test.host/api/things/50"
+            },
+            "relationships" => {
+              "box" => {
+                "links" => {
+                  "self" => "http://test.host/api/things/50/relationships/box",
+                  "related" => "http://test.host/api/things/50/box"
+                }
+              },
+              "user" => {
+                "links" => {
+                  "self" => "http://test.host/api/things/50/relationships/user",
+                  "related" => "http://test.host/api/things/50/user"
+                }
+              },
+              "things" => {
+                "links" => {
+                  "self" => "http://test.host/api/things/50/relationships/things",
+                  "related" => "http://test.host/api/things/50/things"
+                },
+                "data" => [
+                  {
+                    "type" => "things",
+                    "id" => "30"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id" => "10001",
+            "type" => "users",
+            "links" => {
+              "self" => "http://test.host/api/users/10001"
+            },
+            "attributes" => {
+              "name" => "user 1"
+            },
+            "relationships" => {
+              "things" => {
+                "links" => {
+                  "self" => "http://test.host/api/users/10001/relationships/things",
+                  "related" => "http://test.host/api/users/10001/things"
+                },
+                "data" => [
+                  {
+                    "type" => "things",
+                    "id" => "10"
+                  },
+                  {
+                    "type" => "things",
+                    "id" => "20"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id" => "10002",
+            "type" => "users",
+            "links" => {
+              "self" => "http://test.host/api/users/10002"
+            },
+            "attributes" => {
+              "name" => "user 2"
+            },
+            "relationships" => {
+              "things" => {
+                "links" => {
+                  "self" => "http://test.host/api/users/10002/relationships/things",
+                  "related" => "http://test.host/api/users/10002/things"
+                },
+                "data" => [
+                  {
+                    "type" => "things",
+                    "id" => "30"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
     assert_hash_equals(expected, sorted_json_response)
   end
 end

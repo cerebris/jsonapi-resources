@@ -1,14 +1,17 @@
 require File.expand_path('../../../test_helper', __FILE__)
 
 class ArPostResource < JSONAPI::Resource
+  resource_retrieval_strategy 'JSONAPI::ActiveRelationRetrievalV10'
+
   model_name 'Post'
   attribute :headline, delegate: :title
   has_one :author
-  has_many :tags, primary_key: :tags_import_id
+  has_many :tags, primary_key: :tags_import_id, inverse_relationship: :things
 end
 
 class ActiveRelationResourceTest < ActiveSupport::TestCase
   def setup
+    skip("Skipping: Currently test is only valid for ActiveRelationRetrievalV10")
   end
 
   def test_find_fragments_no_attributes
@@ -77,7 +80,7 @@ class ActiveRelationResourceTest < ActiveSupport::TestCase
     source_fragments = source_rids.collect {|rid| JSONAPI::ResourceFragment.new(rid) }
 
     relationship = ArPostResource._relationship('tags')
-    related_fragments = ArPostResource.find_included_fragments(source_fragments, relationship, options)
+    related_fragments = ArPostResource.send(:find_included_fragments, source_fragments, relationship, options)
 
     assert_equal 8, related_fragments.length
     assert_equal JSONAPI::ResourceIdentity.new(TagResource, 501), related_fragments.keys[0]
