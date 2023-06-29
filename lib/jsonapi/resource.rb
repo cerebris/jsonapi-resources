@@ -236,7 +236,7 @@ module JSONAPI
       return false if !relationship.reflect ||
         (!JSONAPI.configuration.use_relationship_reflection || options[:reflected_source])
 
-      inverse_relationship = relationship.resource_klass._relationships[relationship.inverse_relationship]
+      inverse_relationship = relationship.resource_klass._relationship(relationship.inverse_relationship)
       if inverse_relationship.nil?
         warn "Inverse relationship could not be found for #{self.class.name}.#{relationship.name}. Relationship reflection disabled."
         return false
@@ -245,7 +245,7 @@ module JSONAPI
     end
 
     def _create_to_many_links(relationship_type, relationship_key_values, options)
-      relationship = self.class._relationships[relationship_type]
+      relationship = self.class._relationship(relationship_type)
       relation_name = relationship.relation_name(context: @context)
 
       if options[:reflected_source]
@@ -267,7 +267,7 @@ module JSONAPI
 
       related_resources.each do |related_resource|
         if reflect
-          if related_resource.class._relationships[relationship.inverse_relationship].is_a?(JSONAPI::Relationship::ToMany)
+          if related_resource.class._relationship(relationship.inverse_relationship).is_a?(JSONAPI::Relationship::ToMany)
             related_resource.create_to_many_links(relationship.inverse_relationship, [id], reflected_source: self)
           else
             related_resource.replace_to_one_link(relationship.inverse_relationship, id, reflected_source: self)
@@ -329,7 +329,7 @@ module JSONAPI
     end
 
     def _replace_to_one_link(relationship_type, relationship_key_value, _options)
-      relationship = self.class._relationships[relationship_type]
+      relationship = self.class._relationship(relationship_type)
 
       send("#{relationship.foreign_key}=", relationship_key_value)
       @save_needed = true
@@ -338,7 +338,7 @@ module JSONAPI
     end
 
     def _replace_polymorphic_to_one_link(relationship_type, key_value, key_type, _options)
-      relationship = self.class._relationships[relationship_type.to_sym]
+      relationship = self.class._relationship(relationship_type.to_sym)
 
       send("#{relationship.foreign_key}=", {type: key_type, id: key_value})
       @save_needed = true
@@ -347,7 +347,7 @@ module JSONAPI
     end
 
     def _remove_to_many_link(relationship_type, key, options)
-      relationship = self.class._relationships[relationship_type]
+      relationship = self.class._relationship(relationship_type)
 
       reflect = reflect_relationship?(relationship, options)
 
@@ -358,7 +358,7 @@ module JSONAPI
         if related_resource.nil?
           fail JSONAPI::Exceptions::RecordNotFound.new(key)
         else
-          if related_resource.class._relationships[relationship.inverse_relationship].is_a?(JSONAPI::Relationship::ToMany)
+          if related_resource.class._relationship(relationship.inverse_relationship).is_a?(JSONAPI::Relationship::ToMany)
             related_resource.remove_to_many_link(relationship.inverse_relationship, id, reflected_source: self)
           else
             related_resource.remove_to_one_link(relationship.inverse_relationship, reflected_source: self)
@@ -379,7 +379,7 @@ module JSONAPI
     end
 
     def _remove_to_one_link(relationship_type, _options)
-      relationship = self.class._relationships[relationship_type]
+      relationship = self.class._relationship(relationship_type)
 
       send("#{relationship.foreign_key}=", nil)
       @save_needed = true
@@ -885,8 +885,7 @@ module JSONAPI
 
       def _relationship(type)
         return nil unless type
-        type = type.to_sym
-        @_relationships[type]
+        @_relationships[type.to_sym]
       end
 
       def _model_name

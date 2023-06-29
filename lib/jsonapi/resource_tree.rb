@@ -130,7 +130,7 @@ module JSONAPI
         if source_rid && connect_source_identity
           resource_fragment.add_related_from(source_rid)
           source_klass = source_rid.resource_klass
-          related_relationship_name = source_klass._relationships[source_relationship_name].inverse_relationship
+          related_relationship_name = source_klass._relationship(source_relationship_name).inverse_relationship
           if related_relationship_name
             resource_fragment.add_related_identity(related_relationship_name, source_rid)
           end

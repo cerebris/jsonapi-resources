@@ -149,19 +149,19 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_relationship_parent_point_to_correct_resource
-    assert_equal MyModule::MyNamespacedResource, MyModule::MyNamespacedResource._relationships[:related].parent_resource
+    assert_equal MyModule::MyNamespacedResource, MyModule::MyNamespacedResource._relationship(:related).parent_resource
   end
 
   def test_relationship_parent_option_point_to_correct_resource
-    assert_equal MyModule::MyNamespacedResource, MyModule::MyNamespacedResource._relationships[:related].options[:parent_resource]
+    assert_equal MyModule::MyNamespacedResource, MyModule::MyNamespacedResource._relationship(:related).options[:parent_resource]
   end
 
   def test_derived_resources_relationships_parent_point_to_correct_resource
-    assert_equal MyAPI::MyNamespacedResource, MyAPI::MyNamespacedResource._relationships[:related].parent_resource
+    assert_equal MyAPI::MyNamespacedResource, MyAPI::MyNamespacedResource._relationship(:related).parent_resource
   end
 
   def test_derived_resources_relationships_parent_options_point_to_correct_resource
-    assert_equal MyAPI::MyNamespacedResource, MyAPI::MyNamespacedResource._relationships[:related].options[:parent_resource]
+    assert_equal MyAPI::MyNamespacedResource, MyAPI::MyNamespacedResource._relationship(:related).options[:parent_resource]
   end
 
   def test_base_resource_abstract

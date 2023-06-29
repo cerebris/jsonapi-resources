@@ -47,7 +47,7 @@ module JSONAPI
         fragment = fragment.to_sym
 
         if current_resource_klass
-          current_relationship = current_resource_klass._relationships[fragment]
+          current_relationship = current_resource_klass._relationship(fragment)
           current_resource_klass = current_relationship.try(:resource_klass)
         else
           raise JSONAPI::Exceptions::InvalidInclude.new(current_resource_klass, current_path)
