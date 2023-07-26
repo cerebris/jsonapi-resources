@@ -1485,7 +1485,18 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_getting_different_resources_when_sti
-    assert_cacheable_jsonapi_get '/vehicles'
+    get '/vehicles'
+    assert_jsonapi_response 200
+    types = json_response['data'].map{|r| r['type']}.to_set
+    assert types == Set['cars', 'boats']
+
+    # Testing the cached get separately since find_to_populate_by_keys does not use sorting resulting in
+    # unsorted results with STI
+    cache = ActiveSupport::Cache::MemoryStore.new
+    with_resource_caching(cache) do
+      get '/vehicles'
+    end
+    assert_jsonapi_response 200
     types = json_response['data'].map{|r| r['type']}.to_set
     assert types == Set['cars', 'boats']
   end

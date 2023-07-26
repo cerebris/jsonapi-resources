@@ -114,25 +114,37 @@ module JSONAPI
                                join_manager: join_manager,
                                options: options)
 
-        # This alias is going to be resolve down to the model's table name and will not actually be an alias
-        resource_table_alias = resource_klass._table_name
+        if options[:cache]
+          # This alias is going to be resolve down to the model's table name and will not actually be an alias
+          resource_table_alias = resource_klass._table_name
 
-        pluck_fields = [sql_field_with_alias(resource_table_alias, resource_klass._primary_key)]
+          pluck_fields = [sql_field_with_alias(resource_table_alias, resource_klass._primary_key)]
 
-        cache_field = attribute_to_model_field(:_cache_field) if options[:cache]
-        if cache_field
+          cache_field = attribute_to_model_field(:_cache_field)
           pluck_fields << sql_field_with_alias(resource_table_alias, cache_field[:name])
-        end
 
-        linkage_fields = []
+          linkage_fields = []
 
-        linkage_relationships.each do |name|
-          linkage_relationship = resource_klass._relationship(name)
+          linkage_relationships.each do |name|
+            linkage_relationship = resource_klass._relationship(name)
 
-          if linkage_relationship.polymorphic? && linkage_relationship.belongs_to?
-            linkage_relationship.resource_types.each do |resource_type|
-              klass = resource_klass_for(resource_type)
-              linkage_table_alias = join_manager.join_details_by_polymorphic_relationship(linkage_relationship, resource_type)[:alias]
+            if linkage_relationship.polymorphic? && linkage_relationship.belongs_to?
+              linkage_relationship.resource_types.each do |resource_type|
+                klass = resource_klass_for(resource_type)
+                linkage_table_alias = join_manager.join_details_by_polymorphic_relationship(linkage_relationship, resource_type)[:alias]
+                primary_key = klass._primary_key
+
+                linkage_fields << {relationship_name: name,
+                                   resource_klass: klass,
+                                   field: sql_field_with_alias(linkage_table_alias, primary_key),
+                                   alias: alias_table_field(linkage_table_alias, primary_key)}
+
+                pluck_fields << sql_field_with_alias(linkage_table_alias, primary_key)
+              end
+            else
+              klass = linkage_relationship.resource_klass
+              linkage_table_alias = join_manager.join_details_by_relationship(linkage_relationship)[:alias]
+              fail "Missing linkage_table_alias for #{linkage_relationship}" unless linkage_table_alias
               primary_key = klass._primary_key
 
               linkage_fields << {relationship_name: name,
@@ -142,51 +154,93 @@ module JSONAPI
 
               pluck_fields << sql_field_with_alias(linkage_table_alias, primary_key)
             end
-          else
-            klass = linkage_relationship.resource_klass
-            linkage_table_alias = join_manager.join_details_by_relationship(linkage_relationship)[:alias]
-            fail "Missing linkage_table_alias for #{linkage_relationship}" unless linkage_table_alias
-            primary_key = klass._primary_key
-
-            linkage_fields << {relationship_name: name,
-                               resource_klass: klass,
-                               field: sql_field_with_alias(linkage_table_alias, primary_key),
-                               alias: alias_table_field(linkage_table_alias, primary_key)}
-
-            pluck_fields << sql_field_with_alias(linkage_table_alias, primary_key)
           end
-        end
 
-        sort_fields = options.dig(:_relation_helper_options, :sort_fields)
-        sort_fields.try(:each) do |field|
-          pluck_fields << Arel.sql(field)
-        end
+          sort_fields = options.dig(:_relation_helper_options, :sort_fields)
+          sort_fields.try(:each) do |field|
+            pluck_fields << Arel.sql(field)
+          end
 
-        rows = records.pluck(*pluck_fields)
-        rows.each do |row|
-          rid = JSONAPI::ResourceIdentity.new(resource_klass, pluck_fields.length == 1 ? row : row[0])
+          rows = records.pluck(*pluck_fields)
+          rows.each do |row|
+            rid = JSONAPI::ResourceIdentity.new(resource_klass, pluck_fields.length == 1 ? row : row[0])
 
-          fragments[rid] ||= JSONAPI::ResourceFragment.new(rid)
-          attributes_offset = 1
+            fragments[rid] ||= JSONAPI::ResourceFragment.new(rid)
+            attributes_offset = 2
 
-          if cache_field
             fragments[rid].cache = cast_to_attribute_type(row[1], cache_field[:type])
-            attributes_offset+= 1
-          end
 
-          linkage_fields.each do |linkage_field_details|
-            fragments[rid].initialize_related(linkage_field_details[:relationship_name])
-            related_id = row[attributes_offset]
-            if related_id
-              related_rid = JSONAPI::ResourceIdentity.new(linkage_field_details[:resource_klass], related_id)
-              fragments[rid].add_related_identity(linkage_field_details[:relationship_name], related_rid)
+            linkage_fields.each do |linkage_field_details|
+              fragments[rid].initialize_related(linkage_field_details[:relationship_name])
+              related_id = row[attributes_offset]
+              if related_id
+                related_rid = JSONAPI::ResourceIdentity.new(linkage_field_details[:resource_klass], related_id)
+                fragments[rid].add_related_identity(linkage_field_details[:relationship_name], related_rid)
+              end
+              attributes_offset+= 1
             end
-            attributes_offset+= 1
           end
-        end
 
-        if JSONAPI.configuration.warn_on_performance_issues && (rows.length > fragments.length)
-          warn "Performance issue detected: `#{self.name.to_s}.records` returned non-normalized results in `#{self.name.to_s}.find_fragments`."
+          if JSONAPI.configuration.warn_on_performance_issues && (rows.length > fragments.length)
+            warn "Performance issue detected: `#{self.name.to_s}.records` returned non-normalized results in `#{self.name.to_s}.find_fragments`."
+          end
+        else
+          linkage_fields = []
+
+          linkage_relationships.each do |name|
+            linkage_relationship = resource_klass._relationship(name)
+
+            if linkage_relationship.polymorphic? && linkage_relationship.belongs_to?
+              linkage_relationship.resource_types.each do |resource_type|
+                klass = resource_klass_for(resource_type)
+                linkage_table_alias = join_manager.join_details_by_polymorphic_relationship(linkage_relationship, resource_type)[:alias]
+                primary_key = klass._primary_key
+
+                select_alias = "jr_l_#{name}_#{resource_type}_pk"
+                select_alias_statement = sql_field_with_fixed_alias(linkage_table_alias, primary_key, select_alias)
+
+                linkage_fields << {relationship_name: name,
+                                   resource_klass: klass,
+                                   select: select_alias_statement,
+                                   select_alias: select_alias}
+              end
+            else
+              klass = linkage_relationship.resource_klass
+              linkage_table_alias = join_manager.join_details_by_relationship(linkage_relationship)[:alias]
+              fail "Missing linkage_table_alias for #{linkage_relationship}" unless linkage_table_alias
+              primary_key = klass._primary_key
+
+              select_alias = "jr_l_#{name}_pk"
+              select_alias_statement = sql_field_with_fixed_alias(linkage_table_alias, primary_key, select_alias)
+              linkage_fields << {relationship_name: name,
+                                 resource_klass: klass,
+                                 select: select_alias_statement,
+                                 select_alias: select_alias}
+            end
+          end
+
+
+          if linkage_fields.any?
+            records = records.select(linkage_fields.collect {|f| f[:select]})
+          end
+
+          star = concat_table_field(_table_name, '*')
+          records = records.select(star)
+          resources = resources_for(records, options[:context])
+
+          resources.each do |resource|
+            rid = resource.identity
+            fragments[rid] ||= JSONAPI::ResourceFragment.new(rid, resource: resource)
+
+            linkage_fields.each do |linkage_field_details|
+              fragments[rid].initialize_related(linkage_field_details[:relationship_name])
+              related_id = resource._model.attributes[linkage_field_details[:select_alias]]
+              if related_id
+                related_rid = JSONAPI::ResourceIdentity.new(linkage_field_details[:resource_klass], related_id)
+                fragments[rid].add_related_identity(linkage_field_details[:relationship_name], related_rid)
+              end
+            end
+          end
         end
 
         fragments
@@ -281,83 +335,145 @@ module JSONAPI
                                                     join_manager: join_manager,
                                                     options: options)
 
-        # This alias is going to be resolve down to the model's table name and will not actually be an alias
-        resource_table_alias = self._table_name
-        parent_table_alias = join_manager.join_details_by_relationship(relationship)[:alias]
+        fragments = {}
 
-        pluck_fields = [
-          sql_field_with_alias(resource_table_alias, self._primary_key),
-          sql_field_with_alias(parent_table_alias, parent_resource_klass._primary_key)
-        ]
+        if options[:cache]
+          # This alias is going to be resolve down to the model's table name and will not actually be an alias
+          resource_table_alias = self._table_name
+          parent_table_alias = join_manager.join_details_by_relationship(relationship)[:alias]
 
-        cache_field = attribute_to_model_field(:_cache_field) if options[:cache]
-        if cache_field
+          pluck_fields = [
+            sql_field_with_alias(resource_table_alias, self._primary_key),
+            sql_field_with_alias(parent_table_alias, parent_resource_klass._primary_key)
+          ]
+
+          cache_field = attribute_to_model_field(:_cache_field)
           pluck_fields << sql_field_with_alias(resource_table_alias, cache_field[:name])
-        end
 
-        linkage_fields = []
+          linkage_fields = []
 
-        linkage_relationships.each do |name|
-          linkage_relationship = _relationship(name)
+          linkage_relationships.each do |name|
+            linkage_relationship = _relationship(name)
 
-          if linkage_relationship.polymorphic? && linkage_relationship.belongs_to?
-            linkage_relationship.resource_types.each do |resource_type|
-              klass = resource_klass_for(resource_type)
+            if linkage_relationship.polymorphic? && linkage_relationship.belongs_to?
+              linkage_relationship.resource_types.each do |resource_type|
+                klass = resource_klass_for(resource_type)
+                linkage_fields << {relationship_name: name, resource_klass: klass}
+
+                linkage_table_alias = join_manager.join_details_by_polymorphic_relationship(linkage_relationship, resource_type)[:alias]
+                primary_key = klass._primary_key
+                pluck_fields << sql_field_with_alias(linkage_table_alias, primary_key)
+              end
+            else
+              klass = linkage_relationship.resource_klass
               linkage_fields << {relationship_name: name, resource_klass: klass}
 
-              linkage_table_alias = join_manager.join_details_by_polymorphic_relationship(linkage_relationship, resource_type)[:alias]
+              linkage_table_alias = join_manager.join_details_by_relationship(linkage_relationship)[:alias]
               primary_key = klass._primary_key
               pluck_fields << sql_field_with_alias(linkage_table_alias, primary_key)
             end
-          else
-            klass = linkage_relationship.resource_klass
-            linkage_fields << {relationship_name: name, resource_klass: klass}
-
-            linkage_table_alias = join_manager.join_details_by_relationship(linkage_relationship)[:alias]
-            primary_key = klass._primary_key
-            pluck_fields << sql_field_with_alias(linkage_table_alias, primary_key)
-          end
-        end
-
-        sort_fields = options.dig(:_relation_helper_options, :sort_fields)
-        sort_fields.try(:each) do |field|
-          pluck_fields << Arel.sql(field)
-        end
-
-        fragments = {}
-        rows = records.distinct.pluck(*pluck_fields)
-        rows.each do |row|
-          rid = JSONAPI::ResourceIdentity.new(self, row[0])
-          fragments[rid] ||= JSONAPI::ResourceFragment.new(rid)
-
-          parent_rid = JSONAPI::ResourceIdentity.new(parent_resource_klass, row[1])
-          fragments[rid].add_related_from(parent_rid)
-
-          if connect_source_identity
-            fragments[rid].add_related_identity(relationship.name, parent_rid)
           end
 
-          attributes_offset = 2
-
-          if cache_field
-            fragments[rid].cache = cast_to_attribute_type(row[attributes_offset], cache_field[:type])
-            attributes_offset+= 1
+          sort_fields = options.dig(:_relation_helper_options, :sort_fields)
+          sort_fields.try(:each) do |field|
+            pluck_fields << Arel.sql(field)
           end
 
-          linkage_fields.each do |linkage_field|
-            fragments[rid].initialize_related(linkage_field[:relationship_name])
-            related_id = row[attributes_offset]
-            if related_id
-              related_rid = JSONAPI::ResourceIdentity.new(linkage_field[:resource_klass], related_id)
-              fragments[rid].add_related_identity(linkage_field[:relationship_name], related_rid)
+          rows = records.distinct.pluck(*pluck_fields)
+          rows.each do |row|
+            rid = JSONAPI::ResourceIdentity.new(self, row[0])
+            fragments[rid] ||= JSONAPI::ResourceFragment.new(rid)
+
+            parent_rid = JSONAPI::ResourceIdentity.new(parent_resource_klass, row[1])
+            fragments[rid].add_related_from(parent_rid)
+
+            if connect_source_identity
+              fragments[rid].add_related_identity(relationship.name, parent_rid)
             end
+
+            attributes_offset = 2
+            fragments[rid].cache = cast_to_attribute_type(row[attributes_offset], cache_field[:type])
+
             attributes_offset += 1
+
+            linkage_fields.each do |linkage_field|
+              fragments[rid].initialize_related(linkage_field[:relationship_name])
+              related_id = row[attributes_offset]
+              if related_id
+                related_rid = JSONAPI::ResourceIdentity.new(linkage_field[:resource_klass], related_id)
+                fragments[rid].add_related_identity(linkage_field[:relationship_name], related_rid)
+              end
+              attributes_offset += 1
+            end
+          end
+        else
+          linkage_fields = []
+
+          linkage_relationships.each do |name|
+            linkage_relationship = _relationship(name)
+
+            if linkage_relationship.polymorphic? && linkage_relationship.belongs_to?
+              linkage_relationship.resource_types.each do |resource_type|
+                klass = linkage_relationship.resource_klass.resource_klass_for(resource_type)
+                primary_key = klass._primary_key
+                linkage_table_alias = join_manager.join_details_by_polymorphic_relationship(linkage_relationship, resource_type)[:alias]
+
+                select_alias = "jr_l_#{name}_#{resource_type}_pk"
+                select_alias_statement = sql_field_with_fixed_alias(linkage_table_alias, primary_key, select_alias)
+                linkage_fields << {relationship_name: name,
+                                   resource_klass: klass,
+                                   select: select_alias_statement,
+                                   select_alias: select_alias}
+              end
+            else
+              klass = linkage_relationship.resource_klass
+              primary_key = klass._primary_key
+              linkage_table_alias = join_manager.join_details_by_relationship(linkage_relationship)[:alias]
+              select_alias = "jr_l_#{name}_pk"
+              select_alias_statement = sql_field_with_fixed_alias(linkage_table_alias, primary_key, select_alias)
+
+
+              linkage_fields << {relationship_name: name,
+                                 resource_klass: klass,
+                                 select: select_alias_statement,
+                                 select_alias: select_alias}
+            end
           end
 
-        end
+          parent_table_alias = join_manager.join_details_by_relationship(relationship)[:alias]
+          source_field = sql_field_with_fixed_alias(parent_table_alias, parent_resource_klass._primary_key, "jr_source_id")
 
-        if JSONAPI.configuration.warn_on_performance_issues && (rows.length > fragments.length)
-          warn "Performance issue detected: `#{self.name.to_s}.records` returned non-normalized results in `#{self.name.to_s}.find_included_fragments_from_inverse`."
+          star = concat_table_field(_table_name, '*')
+          records = records.select(star, source_field)
+
+          if linkage_fields.any?
+            records = records.select(linkage_fields.collect {|f| f[:select]})
+          end
+
+          resources = resources_for(records, options[:context])
+
+          resources.each do |resource|
+            rid = resource.identity
+
+            fragments[rid] ||= JSONAPI::ResourceFragment.new(rid, resource: resource)
+
+            parent_rid = JSONAPI::ResourceIdentity.new(parent_resource_klass, resource._model.attributes['jr_source_id'])
+
+            if connect_source_identity
+              fragments[rid].add_related_identity(relationship.name, parent_rid)
+            end
+
+            fragments[rid].add_related_from(parent_rid)
+
+            linkage_fields.each do |linkage_field_details|
+              fragments[rid].initialize_related(linkage_field_details[:relationship_name])
+              related_id = resource._model.attributes[linkage_field_details[:select_alias]]
+              if related_id
+                related_rid = JSONAPI::ResourceIdentity.new(linkage_field_details[:resource_klass], related_id)
+                fragments[rid].add_related_identity(linkage_field_details[:relationship_name], related_rid)
+              end
+            end
+          end
         end
 
         fragments
@@ -646,6 +762,10 @@ module JSONAPI
 
       def sql_field_with_alias(table, field, quoted = true)
         Arel.sql("#{concat_table_field(table, field, quoted)} AS #{alias_table_field(table, field, quoted)}")
+      end
+
+      def sql_field_with_fixed_alias(table, field, alias_as,  quoted = true)
+        Arel.sql("#{concat_table_field(table, field, quoted)} AS #{alias_as}")
       end
 
       def concat_table_field(table, field, quoted = false)
