@@ -339,7 +339,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_index_include_two_levels_query_count
-    assert_query_count(6) do
+    assert_query_count(3) do
       assert_cacheable_get :index, params: {include: 'author,author.comments'}
     end
     assert_response :success
@@ -390,7 +390,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_filter_relationship_single
-    assert_query_count(2) do
+    assert_query_count(1) do
       assert_cacheable_get :index, params: {filter: {tags: '505,501'}}
     end
     assert_response :success
@@ -401,7 +401,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_filter_relationships_multiple
-    assert_query_count(2) do
+    assert_query_count(1) do
       assert_cacheable_get :index, params: {filter: {tags: '505,501', comments: '3'}}
     end
     assert_response :success
@@ -3297,7 +3297,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   def test_books_offset_pagination_no_params_includes_query_count_one_level
     Api::V2::BookResource.paginator :offset
 
-    assert_query_count(5) do
+    assert_query_count(3) do
       assert_cacheable_get :index, params: {include: 'book-comments'}
     end
     assert_response :success
@@ -3308,7 +3308,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   def test_books_offset_pagination_no_params_includes_query_count_two_levels
     Api::V2::BookResource.paginator :offset
 
-    assert_query_count(7) do
+    assert_query_count(4) do
       assert_cacheable_get :index, params: {include: 'book-comments,book-comments.author'}
     end
     assert_response :success
@@ -3436,7 +3436,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
   def test_books_included_paged
     Api::V2::BookResource.paginator :offset
 
-    assert_query_count(5) do
+    assert_query_count(3) do
       assert_cacheable_get :index, params: {filter: {id: '0'}, include: 'book-comments'}
       assert_response :success
       assert_equal 1, json_response['data'].size
@@ -3448,7 +3448,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     $test_user = Person.find(1001)
     Api::V2::BookResource.paginator :offset
     JSONAPI.configuration.top_level_meta_include_record_count = true
-    assert_query_count(3) do
+    assert_query_count(2) do
       assert_cacheable_get :index, params: {page: {offset: 50, limit: 12}}
       assert_response :success
       assert_equal 12, json_response['data'].size
@@ -3463,7 +3463,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     $test_user = Person.find(1001)
     Api::V2::BookResource.paginator :offset
     JSONAPI.configuration.top_level_meta_include_record_count = true
-    assert_query_count(5) do
+    assert_query_count(3) do
       assert_cacheable_get :index, params: {page: {offset: 0, limit: 12}, include: 'book-comments'}
       assert_response :success
       assert_equal 12, json_response['data'].size
@@ -3481,7 +3481,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     $test_user = Person.find(1001)
     JSONAPI.configuration.top_level_meta_include_record_count = true
     Api::V2::BookResource.paginator :offset
-    assert_query_count(7) do
+    assert_query_count(4) do
       assert_cacheable_get :index, params: {page: {offset: 0, limit: 12}, include: 'book-comments.author'}
       assert_response :success
       assert_equal 12, json_response['data'].size
@@ -3497,7 +3497,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     $test_user = Person.find(1005)
     Api::V2::BookResource.paginator :offset
     JSONAPI.configuration.top_level_meta_include_record_count = true
-    assert_query_count(3) do
+    assert_query_count(2) do
       assert_cacheable_get :index, params: {page: {offset: 50, limit: 12}, filter: {banned: 'true'}}
     end
     assert_response :success
@@ -3512,7 +3512,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     $test_user = Person.find(1005)
     Api::V2::BookResource.paginator :offset
     JSONAPI.configuration.top_level_meta_include_record_count = true
-    assert_query_count(3) do
+    assert_query_count(2) do
       assert_cacheable_get :index, params: {page: {offset: 50, limit: 12}, filter: {banned: 'false'}, fields: {books: 'id,title'}}
     end
     assert_response :success
@@ -3527,7 +3527,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     $test_user = Person.find(1001)
     Api::V2::BookResource.paginator :offset
     JSONAPI.configuration.top_level_meta_include_record_count = true
-    assert_query_count(3) do
+    assert_query_count(2) do
       assert_cacheable_get :index, params: {page: {offset: 590, limit: 20}}
     end
     assert_response :success
@@ -3542,7 +3542,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     $test_user = Person.find(1001)
     Api::V2::BookResource.paginator :none
 
-    assert_query_count(4) do
+    assert_query_count(2) do
       assert_cacheable_get :index, params: {filter: {id: '0,1,2,3,4'}, include: 'book-comments'}
     end
     assert_response :success
@@ -3659,7 +3659,7 @@ class Api::V2::BookCommentsControllerTest < ActionController::TestCase
 
   def test_book_comments_all_for_admin
     $test_user = Person.find(1005)
-    assert_query_count(2) do
+    assert_query_count(1) do
       assert_cacheable_get :index
     end
     assert_response :success
@@ -3668,7 +3668,7 @@ class Api::V2::BookCommentsControllerTest < ActionController::TestCase
 
   def test_book_comments_unapproved_context_based
     $test_user = Person.find(1005)
-    assert_query_count(2) do
+    assert_query_count(1) do
       assert_cacheable_get :index, params: {filter: {approved: 'false'}}
     end
     assert_response :success
@@ -3677,7 +3677,7 @@ class Api::V2::BookCommentsControllerTest < ActionController::TestCase
 
   def test_book_comments_exclude_unapproved_context_based
     $test_user = Person.find(1001)
-    assert_query_count(2) do
+    assert_query_count(1) do
       assert_cacheable_get :index
     end
     assert_response :success
@@ -4140,6 +4140,9 @@ class AuthorsControllerTest < ActionController::TestCase
     assert json_response['included'][0]['relationships']['imageable']['data']
     assert_equal 'products', json_response['included'][0]['relationships']['imageable']['data']['type']
     assert_equal '1', json_response['included'][0]['relationships']['imageable']['data']['id']
+
+    refute json_response['included'][0]['relationships'].keys.include?('product')
+    refute json_response['included'][0]['relationships'].keys.include?('document')
   ensure
     JSONAPI.configuration.always_include_to_one_linkage_data = false
   end

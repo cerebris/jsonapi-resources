@@ -1782,7 +1782,7 @@ end
 class DocumentResource < JSONAPI::Resource
   attribute :name
 
-  has_many :pictures
+  has_many :pictures, inverse_relationship: :imageable
 
   has_one :author, class_name: 'Person'
 
@@ -1791,7 +1791,7 @@ end
 
 class ProductResource < JSONAPI::Resource
   attribute :name
-  has_many :pictures
+  has_many :pictures, inverse_relationship: :imageable
   has_one :designer, class_name: 'Person'
 
   has_one :file_properties, inverse_relationship: :fileable, :foreign_key_on => :related

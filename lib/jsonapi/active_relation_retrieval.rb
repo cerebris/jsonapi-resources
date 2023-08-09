@@ -224,8 +224,7 @@ module JSONAPI
             records = records.select(linkage_fields.collect {|f| f[:select]})
           end
 
-          star = concat_table_field(_table_name, '*')
-          records = records.select(star)
+          records = records.select(concat_table_field(_table_name, Arel.star))
           resources = resources_for(records, options[:context])
 
           resources.each do |resource|
@@ -443,8 +442,7 @@ module JSONAPI
           parent_table_alias = join_manager.join_details_by_relationship(relationship)[:alias]
           source_field = sql_field_with_fixed_alias(parent_table_alias, parent_resource_klass._primary_key, "jr_source_id")
 
-          star = concat_table_field(_table_name, '*')
-          records = records.select(star, source_field)
+          records = records.select(concat_table_field(_table_name, Arel.star), source_field)
 
           if linkage_fields.any?
             records = records.select(linkage_fields.collect {|f| f[:select]})

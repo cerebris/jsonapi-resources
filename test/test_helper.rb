@@ -169,7 +169,7 @@ def assert_query_count(expected, msg = nil, &block)
   ActiveSupport::Notifications.subscribed(callback, 'sql.active_record', &block)
 
   show_queries unless expected == @queries.size
-  # assert expected == @queries.size, "Expected #{expected} queries, ran #{@queries.size} queries"
+  assert expected == @queries.size, "Expected #{expected} queries, ran #{@queries.size} queries"
   @queries = nil
 end
 
@@ -502,6 +502,10 @@ class Minitest::Test
   def sql_for_compare(sql)
     sql.tr(db_quote_identifier, %{"})
   end
+
+  def response_json_for_compare(response)
+    response.pretty_inspect
+  end
 end
 
 class ActiveSupport::TestCase
@@ -544,8 +548,8 @@ class ActionDispatch::IntegrationTest
     end
 
     assert_equal(
-      sql_for_compare(non_caching_response.pretty_inspect),
-      sql_for_compare(json_response.pretty_inspect),
+      response_json_for_compare(non_caching_response),
+      response_json_for_compare(json_response),
       "Cache warmup response must match normal response"
     )
 
@@ -554,8 +558,8 @@ class ActionDispatch::IntegrationTest
     end
 
     assert_equal(
-      sql_for_compare(non_caching_response.pretty_inspect),
-      sql_for_compare(json_response.pretty_inspect),
+      response_json_for_compare(non_caching_response),
+      response_json_for_compare(json_response),
       "Cached response must match normal response"
     )
     assert_equal 0, cached[:total][:misses], "Cached response must not cause any cache misses"
@@ -623,10 +627,12 @@ class ActionController::TestCase
           "Cache (mode: #{mode}) #{phase} response status must match normal response"
         )
         assert_equal(
-          sql_for_compare(non_caching_response.pretty_inspect),
-          sql_for_compare(json_response_sans_all_backtraces.pretty_inspect),
-          "Cache (mode: #{mode}) #{phase} response body must match normal response"
+          response_json_for_compare(non_caching_response),
+          response_json_for_compare(json_response_sans_all_backtraces),
+          "Cache (mode: #{mode}) #{phase} response body must match normal response\n#{non_caching_response.pretty_inspect},\n#{json_response_sans_all_backtraces.pretty_inspect}"
         )
+
+        # The query count will now differ between the cached and non cached versions so we will not test that
         # assert_operator(
         #   cache_queries.size,
         #   :<=,

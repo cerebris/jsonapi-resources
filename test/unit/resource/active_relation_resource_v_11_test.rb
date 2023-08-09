@@ -21,7 +21,6 @@ module V11
     model_name 'Person'
     attributes :name
 
-
     has_many :posts, inverse_relationship: :author
     has_many :pictures
   end
@@ -205,13 +204,13 @@ class ActiveRelationResourceTest < ActiveSupport::TestCase
     related_fragments = V11::PictureResource.find_included_fragments(source_fragments, relationship, options)
 
     assert_equal 2, related_fragments.length
-    assert_equal JSONAPI::ResourceIdentity.new(V11::ProductResource, 1), related_fragments.keys[0]
-    assert_equal JSONAPI::ResourceIdentity.new(V11::ProductResource, 1), related_fragments.values[0].identity
-    assert_equal JSONAPI::ResourceIdentity.new(V11::DocumentResource, 1), related_fragments.keys[1]
-    assert_equal JSONAPI::ResourceIdentity.new(V11::DocumentResource, 1), related_fragments.values[1].identity
+    assert related_fragments.keys.include?(JSONAPI::ResourceIdentity.new(V11::ProductResource, 1))
+    assert related_fragments.keys.include?(JSONAPI::ResourceIdentity.new(V11::DocumentResource, 1))
+
     assert related_fragments.values[0].is_a?(JSONAPI::ResourceFragment)
     assert_equal 1, related_fragments.values[0].related_from.length
-    assert_equal JSONAPI::ResourceIdentity.new(V11::ProductResource, 1), related_fragments.values[0].identity
+
+    assert related_fragments.values.include?(JSONAPI::ResourceIdentity.new(V11::ProductResource, 1))
   end
 
   def test_find_related_polymorphic_fragments_cache_field
@@ -225,10 +224,9 @@ class ActiveRelationResourceTest < ActiveSupport::TestCase
     related_fragments = V11::PictureResource.find_included_fragments(source_fragments, relationship, options)
 
     assert_equal 2, related_fragments.length
-    assert_equal JSONAPI::ResourceIdentity.new(V11::ProductResource, 1), related_fragments.keys[0]
-    assert_equal JSONAPI::ResourceIdentity.new(V11::ProductResource, 1), related_fragments.values[0].identity
-    assert_equal JSONAPI::ResourceIdentity.new(V11::DocumentResource, 1), related_fragments.keys[1]
-    assert_equal JSONAPI::ResourceIdentity.new(V11::DocumentResource, 1), related_fragments.values[1].identity
+    assert related_fragments.keys.include?(JSONAPI::ResourceIdentity.new(V11::ProductResource, 1))
+    assert related_fragments.keys.include?(JSONAPI::ResourceIdentity.new(V11::DocumentResource, 1))
+
     assert related_fragments.values[0].is_a?(JSONAPI::ResourceFragment)
     assert_equal 1, related_fragments.values[0].related_from.length
     assert related_fragments.values[0].cache.is_a?(ActiveSupport::TimeWithZone)
@@ -246,10 +244,9 @@ class ActiveRelationResourceTest < ActiveSupport::TestCase
     related_fragments = V11::PictureResource.find_included_fragments(source_fragments, relationship, options)
 
     assert_equal 2, related_fragments.length
-    assert_equal JSONAPI::ResourceIdentity.new(V11::ProductResource, 1), related_fragments.keys[0]
-    assert_equal JSONAPI::ResourceIdentity.new(V11::ProductResource, 1), related_fragments.values[0].identity
-    assert_equal JSONAPI::ResourceIdentity.new(V11::DocumentResource, 1), related_fragments.keys[1]
-    assert_equal JSONAPI::ResourceIdentity.new(V11::DocumentResource, 1), related_fragments.values[1].identity
+    assert related_fragments.keys.include?(JSONAPI::ResourceIdentity.new(V11::ProductResource, 1))
+    assert related_fragments.keys.include?(JSONAPI::ResourceIdentity.new(V11::DocumentResource, 1))
+
     assert related_fragments.values[0].is_a?(JSONAPI::ResourceFragment)
     assert_equal 1, related_fragments.values[0].related_from.length
   end

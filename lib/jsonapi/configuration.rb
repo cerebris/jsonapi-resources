@@ -163,7 +163,6 @@ module JSONAPI
 
       # 'JSONAPI::ActiveRelationRetrieval'
       # 'JSONAPI::ActiveRelationRetrievalV10'
-      # self.default_resource_retrieval_strategy = 'JSONAPI::ActiveRelationRetrieval'
       self.default_resource_retrieval_strategy = 'JSONAPI::ActiveRelationRetrieval'
     end
 

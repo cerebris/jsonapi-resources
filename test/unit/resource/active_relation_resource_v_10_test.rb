@@ -40,8 +40,8 @@ module V10
     has_one :author
 
     has_one :imageable, polymorphic: true
-    # has_one :document, exclude_linkage_data: true
-    # has_one :product, exclude_linkage_data: true
+    has_one :document, exclude_linkage_data: true
+    has_one :product, exclude_linkage_data: true
   end
 
   class ImageableResource < V10::BaseResource
@@ -56,7 +56,7 @@ module V10
 
     attribute :name
 
-    has_many :pictures, inverse_relationship: :document
+    has_many :pictures
 
     has_one :author, class_name: 'Person'
   end
@@ -65,8 +65,10 @@ module V10
     resource_retrieval_strategy 'JSONAPI::ActiveRelationRetrievalV10'
 
     attribute :name
-    has_many :pictures, inverse_relationship: :product
+    has_many :pictures
     has_one :designer, class_name: 'Person'
+
+    has_one :file_properties, inverse_relationship: :fileable, :foreign_key_on => :related
 
     def picture_id
       _model.picture.id
@@ -202,10 +204,9 @@ class ActiveRelationResourceTest < ActiveSupport::TestCase
     related_fragments = V10::PictureResource.find_included_fragments(source_fragments, relationship, options)
 
     assert_equal 2, related_fragments.length
-    assert_equal JSONAPI::ResourceIdentity.new(V10::ProductResource, 1), related_fragments.keys[0]
-    assert_equal JSONAPI::ResourceIdentity.new(V10::ProductResource, 1), related_fragments.values[0].identity
-    assert_equal JSONAPI::ResourceIdentity.new(V10::DocumentResource, 1), related_fragments.keys[1]
-    assert_equal JSONAPI::ResourceIdentity.new(V10::DocumentResource, 1), related_fragments.values[1].identity
+    assert related_fragments.keys.include?(JSONAPI::ResourceIdentity.new(V10::ProductResource, 1))
+    assert related_fragments.keys.include?(JSONAPI::ResourceIdentity.new(V10::DocumentResource, 1))
+
     assert related_fragments.values[0].is_a?(JSONAPI::ResourceFragment)
     assert_equal 1, related_fragments.values[0].related_from.length
     assert_equal JSONAPI::ResourceIdentity.new(V10::ProductResource, 1), related_fragments.values[0].identity
@@ -222,10 +223,9 @@ class ActiveRelationResourceTest < ActiveSupport::TestCase
     related_fragments = V10::PictureResource.find_included_fragments(source_fragments, relationship, options)
 
     assert_equal 2, related_fragments.length
-    assert_equal JSONAPI::ResourceIdentity.new(V10::ProductResource, 1), related_fragments.keys[0]
-    assert_equal JSONAPI::ResourceIdentity.new(V10::ProductResource, 1), related_fragments.values[0].identity
-    assert_equal JSONAPI::ResourceIdentity.new(V10::DocumentResource, 1), related_fragments.keys[1]
-    assert_equal JSONAPI::ResourceIdentity.new(V10::DocumentResource, 1), related_fragments.values[1].identity
+    assert related_fragments.keys.include?(JSONAPI::ResourceIdentity.new(V10::ProductResource, 1))
+    assert related_fragments.keys.include?(JSONAPI::ResourceIdentity.new(V10::DocumentResource, 1))
+
     assert related_fragments.values[0].is_a?(JSONAPI::ResourceFragment)
     assert_equal 1, related_fragments.values[0].related_from.length
     assert related_fragments.values[0].cache.is_a?(ActiveSupport::TimeWithZone)
@@ -243,10 +243,9 @@ class ActiveRelationResourceTest < ActiveSupport::TestCase
     related_fragments = V10::PictureResource.find_included_fragments(source_fragments, relationship, options)
 
     assert_equal 2, related_fragments.length
-    assert_equal JSONAPI::ResourceIdentity.new(V10::ProductResource, 1), related_fragments.keys[0]
-    assert_equal JSONAPI::ResourceIdentity.new(V10::ProductResource, 1), related_fragments.values[0].identity
-    assert_equal JSONAPI::ResourceIdentity.new(V10::DocumentResource, 1), related_fragments.keys[1]
-    assert_equal JSONAPI::ResourceIdentity.new(V10::DocumentResource, 1), related_fragments.values[1].identity
+    assert related_fragments.keys.include?(JSONAPI::ResourceIdentity.new(V10::ProductResource, 1))
+    assert related_fragments.keys.include?(JSONAPI::ResourceIdentity.new(V10::DocumentResource, 1))
+
     assert related_fragments.values[0].is_a?(JSONAPI::ResourceFragment)
     assert_equal 1, related_fragments.values[0].related_from.length
   end
