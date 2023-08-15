@@ -667,6 +667,10 @@ class ActionController::TestCase
     @queries = orig_queries
   end
 
+  def testing_v10?
+    JSONAPI.configuration.default_resource_retrieval_strategy == 'JSONAPI::ActiveRelationRetrievalV10'
+  end
+
   private
 
   def json_response_sans_all_backtraces
