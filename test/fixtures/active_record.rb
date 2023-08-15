@@ -729,7 +729,7 @@ class Picture < ActiveRecord::Base
   belongs_to :document, -> { where( pictures: { imageable_type: 'Document' } ) }, foreign_key: 'imageable_id'
   belongs_to :product, -> { where( pictures: { imageable_type: 'Product' } ) }, foreign_key: 'imageable_id'
 
-  has_one :file_properties, as: 'fileable'
+  has_one :file_properties, as: :fileable
 end
 
 class Vehicle < ActiveRecord::Base
@@ -745,13 +745,13 @@ end
 class Document < ActiveRecord::Base
   has_many :pictures, as: :imageable
   belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
-  has_one :file_properties, as: 'fileable'
+  has_one :file_properties, as: :fileable
 end
 
 class Product < ActiveRecord::Base
   has_many :pictures, as: :imageable
   belongs_to :designer, class_name: 'Person', foreign_key: 'designer_id'
-  has_one :file_properties, as: 'fileable'
+  has_one :file_properties, as: :fileable
 end
 
 class FileProperties < ActiveRecord::Base
@@ -1753,9 +1753,11 @@ class PictureResource < JSONAPI::Resource
   has_one :author
 
   has_one :imageable, polymorphic: true
-  has_one :document, exclude_linkage_data: true
-  has_one :product, exclude_linkage_data: true
-  has_one :file_properties, inverse_relationship: :fileable, :foreign_key_on => :related, polymorphic: true
+  # the imageable polymorphic relationship will implicitly create the following relationships
+  # has_one :document, exclude_linkage_data: true, polymorphic_type_relationship_for: :imageable
+  # has_one :product, exclude_linkage_data: true, polymorphic_type_relationship_for: :imageable
+
+  has_one :file_properties, :foreign_key_on => :related
 
   filter 'imageable.name', perform_joins: true, apply: -> (records, value, options) {
     join_manager = options.dig(:_relation_helper_options, :join_manager)
@@ -1782,7 +1784,8 @@ end
 class DocumentResource < JSONAPI::Resource
   attribute :name
 
-  has_many :pictures, inverse_relationship: :imageable
+  # Will use implicitly defined inverse relationship on PictureResource
+  has_many :pictures
 
   has_one :author, class_name: 'Person'
 
@@ -1791,7 +1794,9 @@ end
 
 class ProductResource < JSONAPI::Resource
   attribute :name
-  has_many :pictures, inverse_relationship: :imageable
+
+  # Will use implicitly defined inverse relationship on PictureResource
+  has_many :pictures
   has_one :designer, class_name: 'Person'
 
   has_one :file_properties, inverse_relationship: :fileable, :foreign_key_on => :related
@@ -2201,8 +2206,6 @@ module Api
 
     class PostResource < PostResource
       attribute :base
-
-      has_one :author
 
       def base
         _model.title

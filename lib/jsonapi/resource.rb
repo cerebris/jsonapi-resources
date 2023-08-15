@@ -741,7 +741,7 @@ module JSONAPI
       end
 
       def fields
-        @_fields_cache ||= _relationships.keys | _attributes.keys
+        @_fields_cache ||= _relationships.select { |k,v| !v.hidden? }.keys | _attributes.keys
       end
 
       def resources_for(records, context)

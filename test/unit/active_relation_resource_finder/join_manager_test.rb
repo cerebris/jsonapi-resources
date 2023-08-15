@@ -222,7 +222,7 @@ class JoinManagerTest < ActiveSupport::TestCase
                                                                           relationships: relationships)
 
     records = PictureResource.records({})
-    records = join_manager.join(records, {})
+    join_manager.join(records, {})
 
     assert_hash_equals({alias: 'pictures', join_type: :root}, join_manager.source_join_details)
     assert_hash_equals({alias: 'products', join_type: :left}, join_manager.join_details_by_polymorphic_relationship(PictureResource._relationship(:imageable), 'products'))

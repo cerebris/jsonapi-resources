@@ -3,7 +3,7 @@ module JSONAPI
     attr_reader :acts_as_set, :foreign_key, :options, :name,
                 :class_name, :polymorphic, :always_include_optional_linkage_data, :exclude_linkage_data,
                 :parent_resource, :eager_load_on_include, :custom_methods,
-                :inverse_relationship, :allow_include
+                :inverse_relationship, :allow_include, :hidden
 
     attr_writer :allow_include
 
@@ -22,6 +22,8 @@ module JSONAPI
         ActiveSupport::Deprecation.warn('Use polymorphic_types instead of polymorphic_relations')
         @polymorphic_types ||= options[:polymorphic_relations]
       end
+
+      @hidden = options.fetch(:hidden, false) == true
 
       @exclude_linkage_data = options[:exclude_linkage_data]
       @always_include_optional_linkage_data = options.fetch(:always_include_optional_linkage_data, false) == true
@@ -158,6 +160,13 @@ module JSONAPI
         # if parent_resource
         #   @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type)
         # end
+
+        if options.fetch(:create_implicit_polymorphic_type_relationships, true) == true && polymorphic?
+          # Setup the implicit relationships for the polymorphic types and exclude linkage data
+          setup_implicit_relationships_for_polymorphic_types
+        end
+
+        @polymorphic_type_relationship_for = options[:polymorphic_type_relationship_for]
       end
 
       def to_s
@@ -172,8 +181,23 @@ module JSONAPI
         # :nocov:
       end
 
+      def hidden?
+        @hidden || @polymorphic_type_relationship_for.present?
+      end
+
       def polymorphic_type
         "#{name}_type" if polymorphic?
+      end
+
+      def setup_implicit_relationships_for_polymorphic_types(exclude_linkage_data: true)
+        types = self.class.polymorphic_types(_relation_name)
+        return unless types
+
+        types.each do |type|
+          parent_resource.has_one(type.to_s.downcase.singularize,
+                                  exclude_linkage_data: exclude_linkage_data,
+                                  polymorphic_type_relationship_for: name)
+        end
       end
 
       def include_optional_linkage_data?
@@ -215,6 +239,10 @@ module JSONAPI
         # :nocov: useful for debugging
         "#{parent_resource_klass}.#{name}(ToMany)"
         # :nocov:
+      end
+
+      def hidden?
+        @hidden
       end
 
       def include_optional_linkage_data?

@@ -40,8 +40,6 @@ module V10
     has_one :author
 
     has_one :imageable, polymorphic: true
-    has_one :document, exclude_linkage_data: true
-    has_one :product, exclude_linkage_data: true
   end
 
   class ImageableResource < V10::BaseResource
@@ -68,7 +66,7 @@ module V10
     has_many :pictures
     has_one :designer, class_name: 'Person'
 
-    has_one :file_properties, inverse_relationship: :fileable, :foreign_key_on => :related
+    has_one :file_properties, :foreign_key_on => :related
 
     def picture_id
       _model.picture.id
