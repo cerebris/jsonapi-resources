@@ -212,6 +212,7 @@ class ResourceTest < ActiveSupport::TestCase
     assert_output nil, "[DUPLICATE RELATIONSHIP] `mother` has already been defined in FelineResource.\n" do
       FelineResource.instance_eval do
         has_one :mother, class_name: 'Cat'
+        load_deferred_relationships
       end
     end
   end
@@ -248,32 +249,36 @@ class ResourceTest < ActiveSupport::TestCase
   end
 
   def test_filter_on_to_many_relationship_id
-    posts = PostResource.find(:comments => 3)
+    directives = JSONAPI::IncludeDirectives.new(PostResource, ['comments'])
+    posts = PostResource.find({ comments: 3 }, { include_directives: directives })
     assert_equal([2], posts.map(&:id))
   end
 
   def test_filter_on_aliased_to_many_relationship_id
+    directives = JSONAPI::IncludeDirectives.new(BookResource, ['book_comments'])
+
     # Comment 2 is approved
-    books = Api::V2::BookResource.find(:aliased_comments => 2)
+    books = Api::V2::BookResource.find({ aliased_comments: 2}, { include_directives: directives })
     assert_equal([0], books.map(&:id))
 
     # However, comment 3 is non-approved, so it won't be accessible through this relationship
-    books = Api::V2::BookResource.find(:aliased_comments => 3)
+    books = Api::V2::BookResource.find({ aliased_comments: 3}, { include_directives: directives })
     assert_equal([], books.map(&:id))
   end
 
   def test_filter_on_has_one_relationship_id
-    prefs = PreferencesResource.find(:author => 1001)
+    directives = JSONAPI::IncludeDirectives.new(PreferencesResource, ['author'])
+    prefs = PreferencesResource.find({ author: 1001 }, { include_directives: directives })
     assert_equal([1], prefs.map(&:id))
   end
 
   def test_to_many_relationship_filters
     post_resource = PostResource.new(Post.find(1), nil)
 
-    comments = PostResource.find_included_fragments([post_resource], PostResource._relationship(:comments), {})
+    comments = PostResource.find_related_fragments(post_resource.fragment, PostResource._relationship(:comments), {})
     assert_equal(2, comments.size)
 
-    filtered_comments = PostResource.find_included_fragments([post_resource],
+    filtered_comments = PostResource.find_related_fragments(post_resource.fragment,
                                                              PostResource._relationship(:comments),
                                                              { filters: { body: 'i liked it' } })
     assert_equal(1, filtered_comments.size)
@@ -281,7 +286,7 @@ class ResourceTest < ActiveSupport::TestCase
 
   def test_to_many_relationship_sorts
     post_resource = PostResource.new(Post.find(1), nil)
-    comment_ids = post_resource.class.find_included_fragments([post_resource],
+    comment_ids = post_resource.class.find_related_fragments(post_resource.fragment,
                                                               PostResource._relationship(:comments),
                                                               {}).keys.collect {|c| c.id }
     assert_equal [1,2], comment_ids
@@ -296,8 +301,8 @@ class ResourceTest < ActiveSupport::TestCase
       end
     end
 
-    sorted_comment_ids = post_resource.class.find_included_fragments(
-        [post_resource],
+    sorted_comment_ids = post_resource.class.find_related_fragments(
+        post_resource.fragment,
         PostResource._relationship(:comments),
         { sort_criteria: [{ field: 'id', direction: :desc }] }).keys.collect {|c| c.id}
 
@@ -305,10 +310,10 @@ class ResourceTest < ActiveSupport::TestCase
 
   ensure
     PostResource.instance_eval do
-      def apply_sort(records, order_options, context = {})
+      def apply_sort(records, order_options, options)
         if order_options.any?
           order_options.each_pair do |field, direction|
-            records = apply_single_sort(records, field, direction, context)
+            records = apply_single_sort(records, field, direction, options)
           end
         end
 
@@ -316,48 +321,6 @@ class ResourceTest < ActiveSupport::TestCase
       end
     end
   end
-
-  # ToDo: Implement relationship pagination
-  #
-  # def test_to_many_relationship_pagination
-  #   post_resource = PostResource.new(Post.find(1), nil)
-  #   comments = post_resource.comments
-  #   assert_equal 2, comments.size
-  #
-  #   # define apply_filters method on post resource to not respect filters
-  #   PostResource.instance_eval do
-  #     def apply_pagination(records, criteria, order_options)
-  #       # :nocov:
-  #       records
-  #       # :nocov:
-  #     end
-  #   end
-  #
-  #   paginator_class = Class.new(JSONAPI::Paginator) do
-  #     def initialize(params)
-  #       # param parsing and validation here
-  #       @page = params.to_i
-  #     end
-  #
-  #     def apply(relation, order_options)
-  #       relation.offset(@page).limit(1)
-  #     end
-  #   end
-  #
-  #   paged_comments = post_resource.comments(paginator: paginator_class.new(1))
-  #   assert_equal 1, paged_comments.size
-  #
-  # ensure
-  #   # reset method to original implementation
-  #   PostResource.instance_eval do
-  #     def apply_pagination(records, criteria, order_options)
-  #       # :nocov:
-  #       records = paginator.apply(records, order_options) if paginator
-  #       records
-  #       # :nocov:
-  #     end
-  #   end
-  # end
 
   def test_key_type_integer
     FelineResource.instance_eval do

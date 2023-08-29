@@ -31,6 +31,8 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_post_sessions
+    skip "This test isn't compatible with v09" if testing_v09?
+
     session_id = SecureRandom.uuid
 
     post '/sessions', params: {

@@ -162,6 +162,7 @@ module JSONAPI
 
 
       # 'JSONAPI::ActiveRelationRetrieval'
+      # 'JSONAPI::ActiveRelationRetrievalV09'
       # 'JSONAPI::ActiveRelationRetrievalV10'
       self.default_resource_retrieval_strategy = 'JSONAPI::ActiveRelationRetrieval'
     end
@@ -248,16 +249,6 @@ module JSONAPI
       ActiveSupport::Deprecation.warn('`allow_include` has been replaced by `default_allow_include_to_one` and `default_allow_include_to_many` options.')
       @default_allow_include_to_one = allow_include
       @default_allow_include_to_many = allow_include
-    end
-
-    def whitelist_all_exceptions=(allow_all_exceptions)
-      ActiveSupport::Deprecation.warn('`whitelist_all_exceptions` has been replaced by `allow_all_exceptions`')
-      @allow_all_exceptions = allow_all_exceptions
-    end
-
-    def exception_class_whitelist=(exception_class_allowlist)
-      ActiveSupport::Deprecation.warn('`exception_class_whitelist` has been replaced by `exception_class_allowlist`')
-      @exception_class_allowlist = exception_class_allowlist
     end
 
     attr_writer :allow_sort, :allow_filter, :default_allow_include_to_one, :default_allow_include_to_many

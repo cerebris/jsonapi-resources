@@ -1,5 +1,14 @@
 module Helpers
   module ConfigurationHelpers
+    def with_jsonapi_config_changes(&block)
+      orig_config = JSONAPI.configuration.dup
+      yield
+    ensure
+      $PostProcessorRaisesErrors = false
+      $PostSerializerRaisesErrors = false
+      JSONAPI.configuration = orig_config
+    end
+
     def with_jsonapi_config(new_config_options)
       original_config = JSONAPI.configuration.dup # TODO should be a deep dup
       begin

@@ -81,7 +81,7 @@ module JSONAPI
           next unless Module === klass
           if ActiveRecord::Base > klass
             klass.reflect_on_all_associations(:has_many).select { |r| r.options[:as] }.each do |reflection|
-              (hash[reflection.options[:as]] ||= []) << klass.name.downcase
+              (hash[reflection.options[:as]] ||= []) << klass.name.underscore
             end
           end
         end
@@ -191,7 +191,10 @@ module JSONAPI
 
       def setup_implicit_relationships_for_polymorphic_types(exclude_linkage_data: true)
         types = self.class.polymorphic_types(_relation_name)
-        return unless types
+        unless types.present?
+          warn "No polymorphic types found for #{parent_resource.name} #{_relation_name}"
+          return
+        end
 
         types.each do |type|
           parent_resource.has_one(type.to_s.downcase.singularize,

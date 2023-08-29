@@ -34,8 +34,16 @@ module JSONAPI
       end
     end
 
+    def include_directives
+      @include_directives_hash
+    end
+
     def [](name)
       @include_directives_hash[name]
+    end
+
+    def model_includes
+      get_includes(@include_directives_hash)
     end
 
     private

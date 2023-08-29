@@ -565,6 +565,11 @@ class ActionDispatch::IntegrationTest
     assert_equal 0, cached[:total][:misses], "Cached response must not cause any cache misses"
     assert_equal warmup[:total][:misses], cached[:total][:hits], "Cached response must use cache"
   end
+
+
+  def testing_v09?
+    JSONAPI.configuration.default_resource_retrieval_strategy == 'JSONAPI::ActiveRelationRetrievalV09'
+  end
 end
 
 class ActionController::TestCase
@@ -669,6 +674,10 @@ class ActionController::TestCase
 
   def testing_v10?
     JSONAPI.configuration.default_resource_retrieval_strategy == 'JSONAPI::ActiveRelationRetrievalV10'
+  end
+
+  def testing_v09?
+    JSONAPI.configuration.default_resource_retrieval_strategy == 'JSONAPI::ActiveRelationRetrievalV09'
   end
 
   private

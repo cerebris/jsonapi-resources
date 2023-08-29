@@ -1251,7 +1251,9 @@ class SessionResource < JSONAPI::Resource
       }
     }
   end
-  def responses
+
+  def responses(options)
+    []
   end
 
   def self.creatable_fields(context)

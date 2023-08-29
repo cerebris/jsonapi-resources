@@ -94,51 +94,6 @@ module JSONAPI
                       options)
       end
     end
-
-    def add_resources_to_tree(resource_klass,
-                              tree,
-                              resources,
-                              include_related,
-                              source_rid: nil,
-                              source_relationship_name: nil,
-                              connect_source_identity: true)
-      fragments = {}
-
-      resources.each do |resource|
-        next unless resource
-
-        # fragments[resource.identity] ||= ResourceFragment.new(resource.identity, resource: resource)
-        # resource_fragment = fragments[resource.identity]
-        # ToDo: revert when not needed for testing
-        resource_fragment = if fragments[resource.identity]
-                              fragments[resource.identity]
-                            else
-                              fragments[resource.identity] = ResourceFragment.new(resource.identity, resource: resource)
-                              fragments[resource.identity]
-                            end
-
-        if resource.class.caching?
-          resource_fragment.cache = resource.cache_field_value
-        end
-
-        linkage_relationships = resource_klass.to_one_relationships_for_linkage(resource.class, include_related)
-        linkage_relationships.each do |relationship_name|
-          related_resource = resource.send(relationship_name)
-          resource_fragment.add_related_identity(relationship_name, related_resource&.identity)
-        end
-
-        if source_rid && connect_source_identity
-          resource_fragment.add_related_from(source_rid)
-          source_klass = source_rid.resource_klass
-          related_relationship_name = source_klass._relationship(source_relationship_name).inverse_relationship
-          if related_relationship_name
-            resource_fragment.add_related_identity(related_relationship_name, source_rid)
-          end
-        end
-      end
-
-      tree.add_resource_fragments(fragments, include_related)
-    end
   end
 
   class PrimaryResourceTree < ResourceTree
@@ -180,7 +135,7 @@ module JSONAPI
       resource_klasses = Set.new
       @fragments.each_key { |identity| resource_klasses << identity.resource_klass }
 
-      resource_klasses.each { |resource_klass| load_included(resource_klass, self, include_related, options)}
+      resource_klasses.each { |resource_klass| load_included(resource_klass, self, include_related, options) }
 
       self
     end

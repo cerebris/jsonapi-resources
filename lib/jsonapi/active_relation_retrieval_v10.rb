@@ -1,7 +1,7 @@
 module JSONAPI
   module ActiveRelationRetrievalV10
     def find_related_ids(relationship, options = {})
-      self.class.find_related_fragments([self], relationship, options).keys.collect { |rid| rid.id }
+      self.class.find_related_fragments(self, relationship, options).keys.collect { |rid| rid.id }
     end
 
     module ClassMethods
@@ -101,7 +101,7 @@ module JSONAPI
 
         join_manager = ActiveRelation::JoinManager.new(resource_klass: resource_klass,
                                                        source_relationship: nil,
-                                                       relationships: linkage_relationships,
+                                                       relationships: linkage_relationships.collect(&:name),
                                                        sort_criteria: sort_criteria,
                                                        filters: filters)
 
@@ -126,8 +126,8 @@ module JSONAPI
 
         linkage_fields = []
 
-        linkage_relationships.each do |name|
-          linkage_relationship = resource_klass._relationship(name)
+        linkage_relationships.each do |linkage_relationship|
+          linkage_relationship_name = linkage_relationship.name
 
           if linkage_relationship.polymorphic? && linkage_relationship.belongs_to?
             linkage_relationship.resource_types.each do |resource_type|
@@ -135,7 +135,7 @@ module JSONAPI
               linkage_table_alias = join_manager.join_details_by_polymorphic_relationship(linkage_relationship, resource_type)[:alias]
               primary_key = klass._primary_key
 
-              linkage_fields << {relationship_name: name,
+              linkage_fields << {relationship_name: linkage_relationship_name,
                                  resource_klass: klass,
                                  field: sql_field_with_alias(linkage_table_alias, primary_key),
                                  alias: alias_table_field(linkage_table_alias, primary_key)}
@@ -147,7 +147,7 @@ module JSONAPI
             linkage_table_alias = join_manager.join_details_by_relationship(linkage_relationship)[:alias]
             primary_key = klass._primary_key
 
-            linkage_fields << {relationship_name: name,
+            linkage_fields << {relationship_name: linkage_relationship_name,
                                resource_klass: klass,
                                field: sql_field_with_alias(linkage_table_alias, primary_key),
                                alias: alias_table_field(linkage_table_alias, primary_key)}
@@ -201,19 +201,19 @@ module JSONAPI
       # @return [Hash{ResourceIdentity => {identity: => ResourceIdentity, cache: cache_field, related: {relationship_name: [] }}}]
       #    the ResourceInstances matching the filters, sorting, and pagination rules along with any request
       #    additional_field values
-      def find_related_fragments(source, relationship, options = {})
-        if relationship.polymorphic? # && relationship.foreign_key_on == :self
-          find_related_polymorphic_fragments(source, relationship, options, false)
+      def find_related_fragments(source_fragment, relationship, options = {})
+        if relationship.polymorphic?
+          find_related_polymorphic_fragments([source_fragment], relationship, options, false)
         else
-          find_related_monomorphic_fragments(source, relationship, options, false)
+          find_related_monomorphic_fragments([source_fragment], relationship, options, false)
         end
       end
 
-      def find_included_fragments(source, relationship, options)
-        if relationship.polymorphic? # && relationship.foreign_key_on == :self
-          find_related_polymorphic_fragments(source, relationship, options, true)
+      def find_included_fragments(source_fragments, relationship, options)
+        if relationship.polymorphic?
+          find_related_polymorphic_fragments(source_fragments, relationship, options, true)
         else
-          find_related_monomorphic_fragments(source, relationship, options, true)
+          find_related_monomorphic_fragments(source_fragments, relationship, options, true)
         end
       end
 
@@ -342,17 +342,6 @@ module JSONAPI
         records.merge(relationship_records)
       end
 
-      def to_one_relationships_for_linkage(include_related)
-        include_related ||= {}
-        relationships = []
-        _relationships.each do |name, relationship|
-          if relationship.is_a?(JSONAPI::Relationship::ToOne) && !include_related.has_key?(name) && relationship.include_optional_linkage_data?
-            relationships << name
-          end
-        end
-        relationships
-      end
-
       # protected
 
       def find_record_by_key(key, options = {})
@@ -381,7 +370,7 @@ module JSONAPI
 
         join_manager = ActiveRelation::JoinManagerV10.new(resource_klass: self,
                                                        source_relationship: relationship,
-                                                       relationships: linkage_relationships,
+                                                       relationships: linkage_relationships.collect(&:name),
                                                        sort_criteria: sort_criteria,
                                                        filters: filters)
 
@@ -410,13 +399,13 @@ module JSONAPI
 
         linkage_fields = []
 
-        linkage_relationships.each do |name|
-          linkage_relationship = resource_klass._relationship(name)
+        linkage_relationships.each do |linkage_relationship|
+          linkage_relationship_name = linkage_relationship.name
 
           if linkage_relationship.polymorphic? && linkage_relationship.belongs_to?
             linkage_relationship.resource_types.each do |resource_type|
               klass = resource_klass_for(resource_type)
-              linkage_fields << {relationship_name: name, resource_klass: klass}
+              linkage_fields << {relationship_name: linkage_relationship_name, resource_klass: klass}
 
               linkage_table_alias = join_manager.join_details_by_polymorphic_relationship(linkage_relationship, resource_type)[:alias]
               primary_key = klass._primary_key
@@ -424,7 +413,7 @@ module JSONAPI
             end
           else
             klass = linkage_relationship.resource_klass
-            linkage_fields << {relationship_name: name, resource_klass: klass}
+            linkage_fields << {relationship_name: linkage_relationship_name, resource_klass: klass}
 
             linkage_table_alias = join_manager.join_details_by_relationship(linkage_relationship)[:alias]
             primary_key = klass._primary_key
@@ -485,7 +474,7 @@ module JSONAPI
         resource_klass = relationship.resource_klass
         include_directives = options.fetch(:include_directives, {})
 
-        linkage_relationships = []
+        linkage_relationship_paths = []
 
         resource_types = relationship.resource_types
 
@@ -493,13 +482,13 @@ module JSONAPI
           related_resource_klass = resource_klass_for(resource_type)
           relationships = related_resource_klass.to_one_relationships_for_linkage(include_directives[:include_related])
           relationships.each do |r|
-            linkage_relationships << "##{resource_type}.#{r}"
+            linkage_relationship_paths << "##{resource_type}.#{r.name}"
           end
         end
 
         join_manager = ActiveRelation::JoinManagerV10.new(resource_klass: self,
                                                        source_relationship: relationship,
-                                                       relationships: linkage_relationships,
+                                                       relationships: linkage_relationship_paths,
                                                        filters: filters)
 
         paginator = options[:paginator]
@@ -559,7 +548,7 @@ module JSONAPI
         linkage_fields = []
         linkage_offset = relation_index
 
-        linkage_relationships.each do |linkage_relationship_path|
+        linkage_relationship_paths.each do |linkage_relationship_path|
           path = JSONAPI::Path.new(resource_klass: self,
                                    path_string: "#{relationship.name}#{linkage_relationship_path}",
                                    ensure_default_field: false)
