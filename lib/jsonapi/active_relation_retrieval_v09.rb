@@ -542,7 +542,7 @@ module JSONAPI
         associations = []
         model_names.inject do |prev, current|
           association = prev.classify.constantize.reflect_on_all_associations.detect do |assoc|
-            assoc.name.to_s.downcase == current.downcase
+            assoc.name.to_s.underscore == current.underscore
           end
           associations << association
           association.class_name

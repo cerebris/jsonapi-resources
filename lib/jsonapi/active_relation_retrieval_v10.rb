@@ -595,7 +595,7 @@ module JSONAPI
               end
             end
 
-            relation_position = relation_positions[row[2].downcase.pluralize]
+            relation_position = relation_positions[row[2].underscore.pluralize]
             model_fields = relation_position[:model_fields]
             cache_field = relation_position[:cache_field]
             cache_offset = relation_position[:cache_offset]

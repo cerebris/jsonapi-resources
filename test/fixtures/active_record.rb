@@ -591,7 +591,7 @@ class Planet < ActiveRecord::Base
 
   def check_not_pluto
     # Pluto can't be a planet, so cancel the save
-    if name.downcase == 'pluto'
+    if name.underscore == 'pluto'
       throw(:abort)
     end
   end

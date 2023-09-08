@@ -744,7 +744,7 @@ class TitleValueFormatter < JSONAPI::ValueFormatter
     end
 
     def unformat(value)
-      value.to_s.downcase
+      value.to_s.underscore
     end
   end
 end

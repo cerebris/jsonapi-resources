@@ -197,7 +197,7 @@ module JSONAPI
         end
 
         types.each do |type|
-          parent_resource.has_one(type.to_s.downcase.singularize,
+          parent_resource.has_one(type.to_s.underscore.singularize,
                                   exclude_linkage_data: exclude_linkage_data,
                                   polymorphic_type_relationship_for: name)
         end
