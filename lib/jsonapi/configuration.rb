@@ -160,10 +160,19 @@ module JSONAPI
       # specific default links to exclude, which may be `:self` and `:related`.
       self.default_exclude_links = :none
 
-
+      # Global configuration for resource retrieval strategy used by the Resource class.
+      # Selecting a default_resource_retrieval_strategy will affect all resources that derive from
+      # Resource. The default value is 'JSONAPI::ActiveRelationRetrieval'.
+      #
+      # To use multiple retrieval strategies, set this to :none and set a custom retrieval strategy
+      # per resource (or base resource) using the class method `resource_retrieval_strategy`.
+      #
+      # Available strategies:
       # 'JSONAPI::ActiveRelationRetrieval'
       # 'JSONAPI::ActiveRelationRetrievalV09'
       # 'JSONAPI::ActiveRelationRetrievalV10'
+      # :none
+      # :self
       self.default_resource_retrieval_strategy = 'JSONAPI::ActiveRelationRetrieval'
     end
 
