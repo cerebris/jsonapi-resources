@@ -1653,7 +1653,6 @@ class PostsControllerTest < ActionController::TestCase
     set_content_type_header!
     # Reflection turned off since tags doesn't have the inverse relationship
     PostResource.has_many :special_tags, relation_name: :special_tags, class_name: "Tag", reflect: false
-    PostResource.load_deferred_relationships
 
     post :create_relationship, params: {post_id: 14, relationship: 'special_tags', data: [{type: 'tags', id: 502}]}
 

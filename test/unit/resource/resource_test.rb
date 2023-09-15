@@ -212,7 +212,6 @@ class ResourceTest < ActiveSupport::TestCase
     assert_output nil, "[DUPLICATE RELATIONSHIP] `mother` has already been defined in FelineResource.\n" do
       FelineResource.instance_eval do
         has_one :mother, class_name: 'Cat'
-        load_deferred_relationships
       end
     end
   end

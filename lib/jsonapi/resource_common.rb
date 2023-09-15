@@ -456,7 +456,6 @@ module JSONAPI
           if subclass == tp.self
             unless subclass._abstract
               subclass.warn_about_missing_retrieval_methods
-              subclass.load_deferred_relationships
             end
             tp.disable
           end
@@ -1139,23 +1138,18 @@ module JSONAPI
       end
 
       def _add_relationship(klass, *attrs)
+        _clear_fields_cache
+
         options = attrs.extract_options!
-        relationship_name = attrs[0].to_sym
-        check_reserved_relationship_name(relationship_name)
+        options[:parent_resource] = self
 
-        @deferred_relationship_definitions ||= []
-        @deferred_relationship_definitions << { type: klass, relationship_name: relationship_name, options: options }
-      rescue => e
-        warn "[RELATIONSHIP ERROR] #{e.message}"
-      end
+        attrs.each do |name|
+          relationship_name = name.to_sym
+          check_reserved_relationship_name(relationship_name)
+          check_duplicate_relationship_name(relationship_name)
 
-      def load_deferred_relationships
-        return unless @deferred_relationship_definitions.present?
-
-        @deferred_relationship_definitions.each do |definition|
-          _setup_relationship(definition[:type], definition[:relationship_name], definition[:options])
+          define_relationship_methods(relationship_name.to_sym, klass, options)
         end
-        @deferred_relationship_definitions = []
       end
 
       def _setup_relationship(klass, *attrs)
