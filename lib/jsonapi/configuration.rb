@@ -164,8 +164,8 @@ module JSONAPI
       # Selecting a default_resource_retrieval_strategy will affect all resources that derive from
       # Resource. The default value is 'JSONAPI::ActiveRelationRetrieval'.
       #
-      # To use multiple retrieval strategies, set this to :none and set a custom retrieval strategy
-      # per resource (or base resource) using the class method `resource_retrieval_strategy`.
+      # To use multiple retrieval strategies in an app set this to :none and set a custom retrieval strategy
+      # per resource (or base resource) using the class method `load_resource_retrieval_strategy`.
       #
       # Available strategies:
       # 'JSONAPI::ActiveRelationRetrieval'

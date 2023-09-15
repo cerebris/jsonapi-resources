@@ -1525,7 +1525,7 @@ class EmployeeResource < JSONAPI::Resource
   has_many :expense_entries
 end
 
-class PoroResource < JSONAPI::Resource
+class PoroResource < JSONAPI::SimpleResource
   root_resource
 
   class << self
@@ -1638,8 +1638,6 @@ class PoroResource < JSONAPI::Resource
 end
 
 class BreedResource < PoroResource
-  resource_retrieval_strategy :self
-
   attribute :name, format: :title
 
   # This is unneeded, just here for testing

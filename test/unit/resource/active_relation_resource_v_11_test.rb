@@ -1,14 +1,12 @@
 require File.expand_path('../../../test_helper', __FILE__)
 
 module V11
-  class BaseResource < JSONAPI::Resource
+  class BaseResource < JSONAPI::SimpleResource
+    load_resource_retrieval_strategy 'JSONAPI::ActiveRelationRetrieval'
     abstract
-    resource_retrieval_strategy 'JSONAPI::ActiveRelationRetrieval'
   end
 
   class PostResource < V11::BaseResource
-    resource_retrieval_strategy 'JSONAPI::ActiveRelationRetrieval'
-
     model_name 'Post'
     attribute :headline, delegate: :title
     has_one :author
@@ -16,8 +14,6 @@ module V11
   end
 
   class AuthorResource < V11::BaseResource
-    resource_retrieval_strategy 'JSONAPI::ActiveRelationRetrieval'
-
     model_name 'Person'
     attributes :name
 
@@ -26,16 +22,12 @@ module V11
   end
 
   class TagResource < V11::BaseResource
-    resource_retrieval_strategy 'JSONAPI::ActiveRelationRetrieval'
-
     attributes :name
 
     has_many :posts
   end
 
   class PictureResource < V11::BaseResource
-    resource_retrieval_strategy 'JSONAPI::ActiveRelationRetrieval'
-
     attribute :name
     has_one :author
 
@@ -43,15 +35,11 @@ module V11
   end
 
   class ImageableResource < V11::BaseResource
-    resource_retrieval_strategy 'JSONAPI::ActiveRelationRetrieval'
-
     polymorphic
     has_one :picture
   end
 
   class DocumentResource < V11::BaseResource
-    resource_retrieval_strategy 'JSONAPI::ActiveRelationRetrieval'
-
     attribute :name
 
     has_many :pictures
@@ -60,8 +48,6 @@ module V11
   end
 
   class ProductResource < V11::BaseResource
-    resource_retrieval_strategy 'JSONAPI::ActiveRelationRetrieval'
-
     attribute :name
     has_many :pictures
     has_one :designer, class_name: 'Person'

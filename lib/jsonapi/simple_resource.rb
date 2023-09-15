@@ -2,9 +2,8 @@ require 'jsonapi/callbacks'
 require 'jsonapi/configuration'
 
 module JSONAPI
-  class Resource
+  class SimpleResource
     include ResourceCommon
-    load_resource_retrieval_strategy
     root_resource
     abstract
     immutable

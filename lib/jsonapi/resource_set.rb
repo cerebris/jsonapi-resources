@@ -9,7 +9,7 @@ module JSONAPI
       @populated = false
       tree = if source.is_a?(JSONAPI::ResourceTree)
                source
-             elsif source.class < JSONAPI::Resource
+             elsif source.class.include?(JSONAPI::ResourceCommon)
                JSONAPI::PrimaryResourceTree.new(resource: source, include_related: include_related, options: options)
              elsif source.is_a?(Array)
                JSONAPI::PrimaryResourceTree.new(resources: source, include_related: include_related, options: options)

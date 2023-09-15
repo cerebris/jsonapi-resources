@@ -427,17 +427,8 @@ module JSONAPI
     end
 
     module ClassMethods
-      def resource_retrieval_strategy(name)
-        @resource_retrieval_strategy = name
-      end
-
-      def _resource_retrieval_strategy
-        @resource_retrieval_strategy || JSONAPI.configuration.default_resource_retrieval_strategy
-      end
-
-      # TODO: Reword the naming of this feature
-      def load_resource_retrieval_strategy
-        module_name = _resource_retrieval_strategy.to_s
+      def load_resource_retrieval_strategy(module_name = JSONAPI.configuration.default_resource_retrieval_strategy)
+        module_name = module_name.to_s
 
         return if module_name.blank? || module_name == 'self' || module_name == 'none'
 
@@ -460,11 +451,10 @@ module JSONAPI
         super
 
         # Defer loading the resource retrieval strategy module until the class has been fully read to allow setting
-        # a custom _resource_retrieval_strategy in the class definition
+        # a custom resource_retrieval_strategy in the class definition
         trace_point = TracePoint.new(:end) do |tp|
           if subclass == tp.self
             unless subclass._abstract
-              subclass.load_resource_retrieval_strategy
               subclass.warn_about_missing_retrieval_methods
               subclass.load_deferred_relationships
             end
@@ -682,7 +672,7 @@ module JSONAPI
       end
 
       def model_hint(model: _model_name, resource: _type)
-        resource_type = ((resource.is_a?(Class)) && (resource < JSONAPI::Resource)) ? resource._type : resource.to_s
+        resource_type = ((resource.is_a?(Class)) && resource.include?(JSONAPI::ResourceCommon)) ? resource._type : resource.to_s
 
         _model_hints[model.to_s.gsub('::', '/').underscore] = resource_type.to_s
       end
