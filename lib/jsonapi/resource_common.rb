@@ -456,6 +456,7 @@ module JSONAPI
           if subclass == tp.self
             unless subclass._abstract
               subclass.warn_about_missing_retrieval_methods
+              subclass.warn_about_unused_methods if subclass.methods.include?(:warn_about_unused_methods)
             end
             tp.disable
           end

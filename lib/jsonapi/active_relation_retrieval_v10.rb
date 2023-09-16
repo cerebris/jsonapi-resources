@@ -838,6 +838,18 @@ module JSONAPI
 
         records
       end
+
+      def warn_about_unused_methods
+        if Rails.env.development?
+          if !caching? && implements_class_method?(:records_for_populate)
+            warn "#{self}: The `records_for_populate` method is not used when caching is disabled."
+          end
+        end
+      end
+
+      def implements_class_method?(method_name)
+        methods(false).include?(method_name)
+      end
     end
   end
 end
