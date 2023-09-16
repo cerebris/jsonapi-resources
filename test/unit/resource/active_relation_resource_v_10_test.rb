@@ -1,8 +1,9 @@
 require File.expand_path('../../../test_helper', __FILE__)
 
 module V10
-  class BaseResource < JSONAPI::SimpleResource
-    load_resource_retrieval_strategy 'JSONAPI::ActiveRelationRetrievalV10'
+  class BaseResource
+    include JSONAPI::ResourceCommon
+    resource_retrieval_strategy 'JSONAPI::ActiveRelationRetrievalV10'
     abstract
   end
 

@@ -427,14 +427,23 @@ module JSONAPI
     end
 
     module ClassMethods
-      def load_resource_retrieval_strategy(module_name = JSONAPI.configuration.default_resource_retrieval_strategy)
+      def resource_retrieval_strategy(module_name = JSONAPI.configuration.default_resource_retrieval_strategy)
+        if @_resource_retrieval_strategy_loaded
+          warn "Resource retrieval strategy #{@_resource_retrieval_strategy_loaded} already loaded for #{self.name}"
+          return
+        end
+
         module_name = module_name.to_s
 
         return if module_name.blank? || module_name == 'self' || module_name == 'none'
 
         class_eval do
-          include module_name.safe_constantize
+          resource_retrieval_module = module_name.safe_constantize
+          raise "Unable to find resource_retrieval_strategy #{module_name}" unless resource_retrieval_module
+
+          include resource_retrieval_module
           extend "#{module_name}::ClassMethods".safe_constantize
+          @_resource_retrieval_strategy_loaded = module_name
         end
       end
 
@@ -500,6 +509,9 @@ module JSONAPI
 
         subclass._clear_cached_attribute_options
         subclass._clear_fields_cache
+
+        subclass._resource_retrieval_strategy_loaded = @_resource_retrieval_strategy_loaded
+        subclass.resource_retrieval_strategy unless subclass._resource_retrieval_strategy_loaded
       end
 
       def rebuild_relationships(relationships)
@@ -546,7 +558,8 @@ module JSONAPI
         end
       end
 
-      attr_accessor :_attributes, :_relationships, :_type, :_model_hints, :_routed, :_warned_missing_route
+      attr_accessor :_attributes, :_relationships, :_type, :_model_hints, :_routed, :_warned_missing_route,
+                    :_resource_retrieval_strategy_loaded
       attr_writer :_allowed_filters, :_paginator, :_allowed_sort
 
       def create(context)
