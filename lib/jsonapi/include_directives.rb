@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JSONAPI
   class IncludeDirectives
     # Construct an IncludeDirectives Hash from an array of dot separated include strings.

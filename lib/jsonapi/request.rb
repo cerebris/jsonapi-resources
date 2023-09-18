@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JSONAPI
   class Request
     attr_accessor :fields, :include, :filters, :sort_criteria, :errors, :controller_module_path,

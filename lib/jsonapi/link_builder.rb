@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JSONAPI
   class LinkBuilder
     attr_reader :base_url,

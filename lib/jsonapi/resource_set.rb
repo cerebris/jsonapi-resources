@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JSONAPI
   # Contains a hash of resource types which contain a hash of resources, relationships and primary status keyed by
   # resource id.

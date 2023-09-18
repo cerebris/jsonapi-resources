@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JSONAPI
 
   # Cache which memoizes the given block.

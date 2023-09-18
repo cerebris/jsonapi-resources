@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JSONAPI
   class Operation
     attr_reader :resource_klass, :operation_type, :options

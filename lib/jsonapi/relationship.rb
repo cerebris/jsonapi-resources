@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JSONAPI
   class Relationship
     attr_reader :acts_as_set, :foreign_key, :options, :name,

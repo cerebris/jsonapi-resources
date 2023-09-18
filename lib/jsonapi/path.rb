@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JSONAPI
   class Path
     attr_reader :segments, :resource_klass
