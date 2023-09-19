@@ -110,4 +110,4 @@ and **paste the content into the issue description or attach as a file**:
 
 ## License
 
-Copyright 2014-2021 Cerebris Corporation. MIT License (see LICENSE for details).
+Copyright 2014-2023 Cerebris Corporation. MIT License (see LICENSE for details).

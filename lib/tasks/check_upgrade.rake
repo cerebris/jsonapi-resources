@@ -7,7 +7,7 @@ namespace :jsonapi do
     task :check_upgrade => :environment do
       Rails.application.eager_load!
 
-      resource_klasses = ObjectSpace.each_object(Class).select { |klass| klass < JSONAPI::Resource}
+      resource_klasses = ObjectSpace.each_object(Class).select { |klass| klass.include?(JSONAPI::ResourceCommon)}
 
       puts "Checking #{resource_klasses.count} resources"
 

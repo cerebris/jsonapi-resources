@@ -41,7 +41,8 @@ module JSONAPI
                 :default_resource_cache_field,
                 :resource_cache_digest_function,
                 :resource_cache_usage_report_function,
-                :default_exclude_links
+                :default_exclude_links,
+                :default_resource_retrieval_strategy
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -160,6 +161,21 @@ module JSONAPI
       # and relationships. Accepts either `:default`, `:none`, or array containing the
       # specific default links to exclude, which may be `:self` and `:related`.
       self.default_exclude_links = :none
+
+      # Global configuration for resource retrieval strategy used by the Resource class.
+      # Selecting a default_resource_retrieval_strategy will affect all resources that derive from
+      # Resource. The default value is 'JSONAPI::ActiveRelationRetrieval'.
+      #
+      # To use multiple retrieval strategies in an app set this to :none and set a custom retrieval strategy
+      # per resource (or base resource) using the class method `load_resource_retrieval_strategy`.
+      #
+      # Available strategies:
+      # 'JSONAPI::ActiveRelationRetrieval'
+      # 'JSONAPI::ActiveRelationRetrievalV09'
+      # 'JSONAPI::ActiveRelationRetrievalV10'
+      # :none
+      # :self
+      self.default_resource_retrieval_strategy = 'JSONAPI::ActiveRelationRetrieval'
     end
 
     def cache_formatters=(bool)
@@ -246,16 +262,6 @@ module JSONAPI
       @default_allow_include_to_many = allow_include
     end
 
-    def whitelist_all_exceptions=(allow_all_exceptions)
-      ActiveSupport::Deprecation.warn('`whitelist_all_exceptions` has been replaced by `allow_all_exceptions`')
-      @allow_all_exceptions = allow_all_exceptions
-    end
-
-    def exception_class_whitelist=(exception_class_allowlist)
-      ActiveSupport::Deprecation.warn('`exception_class_whitelist` has been replaced by `exception_class_allowlist`')
-      @exception_class_allowlist = exception_class_allowlist
-    end
-
     attr_writer :allow_sort, :allow_filter, :default_allow_include_to_one, :default_allow_include_to_many
 
     attr_writer :default_paginator
@@ -311,6 +317,8 @@ module JSONAPI
     attr_writer :resource_cache_usage_report_function
 
     attr_writer :default_exclude_links
+
+    attr_writer :default_resource_retrieval_strategy
   end
 
   class << self
