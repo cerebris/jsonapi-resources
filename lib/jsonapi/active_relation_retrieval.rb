@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JSONAPI
   module ActiveRelationRetrieval
     def find_related_ids(relationship, options = {})

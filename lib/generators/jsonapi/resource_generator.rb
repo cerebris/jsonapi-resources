@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Jsonapi
   class ResourceGenerator < Rails::Generators::NamedBase
     source_root File.expand_path('../templates', __FILE__)
