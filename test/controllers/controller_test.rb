@@ -339,7 +339,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_index_filter_by_ids_and_fields_specify_unrelated_type
     assert_cacheable_get :index, params: {filter: {id: '1,2'}, 'fields' => {'currencies' => 'code'}}
     assert_response :bad_request
-    assert_match /currencies is not a valid resource./, json_response['errors'][0]['detail']
+    assert_match(/currencies is not a valid resource./, json_response['errors'][0]['detail'])
   end
 
   def test_index_filter_by_ids_and_fields_2
@@ -360,9 +360,9 @@ class PostsControllerTest < ActionController::TestCase
     end
     assert_response :success
     assert_equal 3, json_response['data'].size
-    assert_match /New post/, response.body
-    assert_match /JR Solves your serialization woes!/, response.body
-    assert_match /JR How To/, response.body
+    assert_match(/New post/, response.body)
+    assert_match(/JR Solves your serialization woes!/, response.body)
+    assert_match(/JR How To/, response.body)
   end
 
   def test_filter_relationships_multiple
@@ -371,7 +371,7 @@ class PostsControllerTest < ActionController::TestCase
     end
     assert_response :success
     assert_equal 1, json_response['data'].size
-    assert_match /JR Solves your serialization woes!/, response.body
+    assert_match(/JR Solves your serialization woes!/, response.body)
   end
 
   def test_filter_relationships_multiple_not_found
@@ -383,43 +383,43 @@ class PostsControllerTest < ActionController::TestCase
   def test_bad_filter
     assert_cacheable_get :index, params: {filter: {post_ids: '1,2'}}
     assert_response :bad_request
-    assert_match /post_ids is not allowed/, response.body
+    assert_match(/post_ids is not allowed/, response.body)
   end
 
   def test_bad_filter_value_not_integer_array
     assert_cacheable_get :index, params: {filter: {id: 'asdfg'}}
     assert_response :bad_request
-    assert_match /asdfg is not a valid value for id/, response.body
+    assert_match(/asdfg is not a valid value for id/, response.body)
   end
 
   def test_bad_filter_value_not_integer
     assert_cacheable_get :index, params: {filter: {id: 'asdfg'}}
     assert_response :bad_request
-    assert_match /asdfg is not a valid value for id/, response.body
+    assert_match(/asdfg is not a valid value for id/, response.body)
   end
 
   def test_bad_filter_value_not_found_array
     assert_cacheable_get :index, params: {filter: {id: '5412333'}}
     assert_response :not_found
-    assert_match /5412333 could not be found/, response.body
+    assert_match(/5412333 could not be found/, response.body)
   end
 
   def test_bad_filter_value_not_found
     assert_cacheable_get :index, params: {filter: {id: '5412333'}}
     assert_response :not_found
-    assert_match /5412333 could not be found/, json_response['errors'][0]['detail']
+    assert_match(/5412333 could not be found/, json_response['errors'][0]['detail'])
   end
 
   def test_field_not_supported
     assert_cacheable_get :index, params: {filter: {id: '1,2'}, 'fields' => {'posts' => 'id,title,rank,author'}}
     assert_response :bad_request
-    assert_match /rank is not a valid field for posts./, json_response['errors'][0]['detail']
+    assert_match(/rank is not a valid field for posts./, json_response['errors'][0]['detail'])
   end
 
   def test_resource_not_supported
     assert_cacheable_get :index, params: {filter: {id: '1,2'}, 'fields' => {'posters' => 'id,title'}}
     assert_response :bad_request
-    assert_match /posters is not a valid resource./, json_response['errors'][0]['detail']
+    assert_match(/posters is not a valid resource./, json_response['errors'][0]['detail'])
   end
 
   def test_index_filter_on_relationship
@@ -461,7 +461,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_sorting_by_relationship_field
-    post  = create_alphabetically_first_user_and_post
+    _post  = create_alphabetically_first_user_and_post
     assert_cacheable_get :index, params: {sort: 'author.name'}
 
     assert_response :success
@@ -478,7 +478,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_desc_sorting_by_relationship_field
-    post  = create_alphabetically_first_user_and_post
+    _post  = create_alphabetically_first_user_and_post
     assert_cacheable_get :index, params: {sort: '-author.name'}
 
     assert_response :success
@@ -496,7 +496,7 @@ class PostsControllerTest < ActionController::TestCase
   end
 
   def test_sorting_by_relationship_field_include
-    post  = create_alphabetically_first_user_and_post
+    _post  = create_alphabetically_first_user_and_post
     assert_cacheable_get :index, params: {include: 'author', sort: 'author.name'}
 
     assert_response :success
@@ -517,7 +517,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_cacheable_get :index, params: {sort: 'asdfg'}
 
     assert_response :bad_request
-    assert_match /asdfg is not a valid sort criteria for post/, response.body
+    assert_match(/asdfg is not a valid sort criteria for post/, response.body)
   end
 
   def test_show_single_with_sort_disallowed
@@ -532,7 +532,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_cacheable_get :index, params: {sort: 'id'}
 
     assert_response :bad_request
-    assert_match /id is not a valid sort criteria for post/, response.body
+    assert_match(/id is not a valid sort criteria for post/, response.body)
   end
 
   def test_show_single_no_includes
@@ -647,31 +647,31 @@ class PostsControllerTest < ActionController::TestCase
   def test_show_single_with_fields_string
     assert_cacheable_get :show, params: {id: '1', fields: 'author'}
     assert_response :bad_request
-    assert_match /Fields must specify a type./, json_response['errors'][0]['detail']
+    assert_match(/Fields must specify a type./, json_response['errors'][0]['detail'])
   end
 
   def test_show_single_invalid_id_format
     assert_cacheable_get :show, params: {id: 'asdfg'}
     assert_response :bad_request
-    assert_match /asdfg is not a valid value for id/, response.body
+    assert_match(/asdfg is not a valid value for id/, response.body)
   end
 
   def test_show_single_missing_record
     assert_cacheable_get :show, params: {id: '5412333'}
     assert_response :not_found
-    assert_match /record identified by 5412333 could not be found/, response.body
+    assert_match(/record identified by 5412333 could not be found/, response.body)
   end
 
   def test_show_malformed_fields_not_list
     assert_cacheable_get :show, params: {id: '1', 'fields' => ''}
     assert_response :bad_request
-    assert_match /Fields must specify a type./, json_response['errors'][0]['detail']
+    assert_match(/Fields must specify a type./, json_response['errors'][0]['detail'])
   end
 
   def test_show_malformed_fields_type_not_list
     assert_cacheable_get :show, params: {id: '1', 'fields' => {'posts' => ''}}
     assert_response :bad_request
-    assert_match /nil is not a valid field for posts./, json_response['errors'][0]['detail']
+    assert_match(/nil is not a valid field for posts./, json_response['errors'][0]['detail'])
   end
 
   def test_create_simple
@@ -715,7 +715,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /id is not allowed/, response.body
+    assert_match(/id is not allowed/, response.body)
     assert_nil response.location
   end
 
@@ -737,7 +737,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :unprocessable_entity
     # TODO: check if this validation is working
-    assert_match /author - can't be blank/, response.body
+    assert_match(/author - can't be blank/, response.body)
     assert_nil response.location
   end
 
@@ -758,7 +758,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /Data is not a valid Links Object./, response.body
+    assert_match(/Data is not a valid Links Object./, response.body)
   end
 
   def test_create_extra_param
@@ -779,7 +779,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /asdfg is not allowed/, response.body
+    assert_match(/asdfg is not allowed/, response.body)
     assert_nil response.location
   end
 
@@ -879,7 +879,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /Invalid data format/, response.body
+    assert_match(/Invalid data format/, response.body)
   end
 
   def test_create_simple_missing_posts
@@ -899,7 +899,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /The required parameter, data, is missing./, json_response['errors'][0]['detail']
+    assert_match(/The required parameter, data, is missing./, json_response['errors'][0]['detail'])
     assert_nil response.location
   end
 
@@ -920,7 +920,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /posts_spelled_wrong is not a valid resource./, json_response['errors'][0]['detail']
+    assert_match(/posts_spelled_wrong is not a valid resource./, json_response['errors'][0]['detail'])
     assert_nil response.location
   end
 
@@ -940,7 +940,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /The required parameter, type, is missing./, json_response['errors'][0]['detail']
+    assert_match(/The required parameter, type, is missing./, json_response['errors'][0]['detail'])
     assert_nil response.location
   end
 
@@ -961,7 +961,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /subject/, json_response['errors'][0]['detail']
+    assert_match(/subject/, json_response['errors'][0]['detail'])
     assert_nil response.location
   end
 
@@ -1263,7 +1263,7 @@ class PostsControllerTest < ActionController::TestCase
     put :update_relationship, params: {post_id: 3, relationship: 'section', data: {type: 'sections', ids: 'foo'}}
 
     assert_response :bad_request
-    assert_match /Invalid Links Object/, response.body
+    assert_match(/Invalid Links Object/, response.body)
   end
 
   def test_update_relationship_to_one_invalid_links_hash_count
@@ -1271,7 +1271,7 @@ class PostsControllerTest < ActionController::TestCase
     put :update_relationship, params: {post_id: 3, relationship: 'section', data: {type: 'sections'}}
 
     assert_response :bad_request
-    assert_match /Invalid Links Object/, response.body
+    assert_match(/Invalid Links Object/, response.body)
   end
 
   def test_update_relationship_to_many_not_array
@@ -1279,7 +1279,7 @@ class PostsControllerTest < ActionController::TestCase
     put :update_relationship, params: {post_id: 3, relationship: 'tags', data: {type: 'tags', id: 502}}
 
     assert_response :bad_request
-    assert_match /Invalid Links Object/, response.body
+    assert_match(/Invalid Links Object/, response.body)
   end
 
   def test_update_relationship_to_one_invalid_links_hash_keys_type_mismatch
@@ -1287,7 +1287,7 @@ class PostsControllerTest < ActionController::TestCase
     put :update_relationship, params: {post_id: 3, relationship: 'section', data: {type: 'comment', id: '3'}}
 
     assert_response :bad_request
-    assert_match /Type Mismatch/, response.body
+    assert_match(/Type Mismatch/, response.body)
   end
 
   def test_update_nil_to_many_links
@@ -1305,7 +1305,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /Invalid Links Object/, response.body
+    assert_match(/Invalid Links Object/, response.body)
   end
 
   def test_update_bad_hash_to_many_links
@@ -1323,7 +1323,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /Invalid Links Object/, response.body
+    assert_match(/Invalid Links Object/, response.body)
   end
 
   def test_update_other_to_many_links
@@ -1341,7 +1341,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /Invalid Links Object/, response.body
+    assert_match(/Invalid Links Object/, response.body)
   end
 
   def test_update_other_to_many_links_data_nil
@@ -1359,7 +1359,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /Invalid Links Object/, response.body
+    assert_match(/Invalid Links Object/, response.body)
   end
 
   def test_update_relationship_to_one_singular_param_id_nil
@@ -1506,7 +1506,7 @@ class PostsControllerTest < ActionController::TestCase
     post :create_relationship, params: {post_id: 3, relationship: 'tags', data: [{type: 'comments', id: 5}]}
 
     assert_response :bad_request
-    assert_match /Type Mismatch/, response.body
+    assert_match(/Type Mismatch/, response.body)
   end
 
   def test_create_relationship_to_many_missing_id
@@ -1514,7 +1514,7 @@ class PostsControllerTest < ActionController::TestCase
     post :create_relationship, params: {post_id: 3, relationship: 'tags', data: [{type: 'tags', idd: 505}]}
 
     assert_response :bad_request
-    assert_match /Data is not a valid Links Object./, response.body
+    assert_match(/Data is not a valid Links Object./, response.body)
   end
 
   def test_create_relationship_to_many_not_array
@@ -1522,7 +1522,7 @@ class PostsControllerTest < ActionController::TestCase
     post :create_relationship, params: {post_id: 3, relationship: 'tags', data: {type: 'tags', id: 505}}
 
     assert_response :bad_request
-    assert_match /Data is not a valid Links Object./, response.body
+    assert_match(/Data is not a valid Links Object./, response.body)
   end
 
   def test_create_relationship_to_many_missing_data
@@ -1530,7 +1530,7 @@ class PostsControllerTest < ActionController::TestCase
     post :create_relationship, params: {post_id: 3, relationship: 'tags'}
 
     assert_response :bad_request
-    assert_match /The required parameter, data, is missing./, response.body
+    assert_match(/The required parameter, data, is missing./, response.body)
   end
 
   def test_create_relationship_to_many_join_table_no_reflection
@@ -1614,7 +1614,7 @@ class PostsControllerTest < ActionController::TestCase
     put :update_relationship, params: {post_id: 3, relationship: 'tags'}
 
     assert_response :bad_request
-    assert_match /The required parameter, data, is missing./, response.body
+    assert_match(/The required parameter, data, is missing./, response.body)
   end
 
   def test_delete_relationship_to_many
@@ -1718,7 +1718,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /The URL does not support the key 2/, response.body
+    assert_match(/The URL does not support the key 2/, response.body)
   end
 
   def test_update_extra_param
@@ -1743,7 +1743,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /asdfg is not allowed/, response.body
+    assert_match(/asdfg is not allowed/, response.body)
   end
 
   def test_update_extra_param_in_links
@@ -1768,7 +1768,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /asdfg is not allowed/, response.body
+    assert_match(/asdfg is not allowed/, response.body)
   end
 
   def test_update_extra_param_in_links_allow_extra_params
@@ -1777,7 +1777,7 @@ class PostsControllerTest < ActionController::TestCase
       JSONAPI.configuration.use_text_errors = true
 
       set_content_type_header!
-      javascript = Section.find_by(name: 'javascript')
+      _javascript = Section.find_by(name: 'javascript')
 
       put :update, params:
         {
@@ -1822,7 +1822,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /The required parameter, data, is missing./, response.body
+    assert_match(/The required parameter, data, is missing./, response.body)
   end
 
   def test_update_missing_key
@@ -1840,7 +1840,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /The resource object does not contain a key/, response.body
+    assert_match(/The resource object does not contain a key/, response.body)
   end
 
   def test_update_missing_type
@@ -1864,7 +1864,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /The required parameter, type, is missing./, response.body
+    assert_match(/The required parameter, type, is missing./, response.body)
   end
 
   def test_update_unknown_key
@@ -1889,7 +1889,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /body is not allowed/, response.body
+    assert_match(/body is not allowed/, response.body)
   end
 
   def test_update_multiple_ids
@@ -1913,7 +1913,7 @@ class PostsControllerTest < ActionController::TestCase
     }
 
     assert_response :bad_request
-    assert_match /The URL does not support the key 3/, response.body
+    assert_match(/The URL does not support the key 3/, response.body)
   end
 
   def test_update_multiple_array
@@ -1940,7 +1940,7 @@ class PostsControllerTest < ActionController::TestCase
         }
 
     assert_response :bad_request
-    assert_match /Invalid data format/, response.body
+    assert_match(/Invalid data format/, response.body)
   end
 
   def test_update_unpermitted_attributes
@@ -1962,7 +1962,7 @@ class PostsControllerTest < ActionController::TestCase
       }
 
     assert_response :bad_request
-    assert_match /subject is not allowed./, response.body
+    assert_match(/subject is not allowed./, response.body)
   end
 
   def test_update_bad_attributes
@@ -2014,7 +2014,7 @@ class PostsControllerTest < ActionController::TestCase
     initial_count = Post.count
     delete :destroy, params: {id: '5,6'}
     assert_response :bad_request
-    assert_match /5,6 is not a valid value for id/, response.body
+    assert_match(/5,6 is not a valid value for id/, response.body)
     assert_equal initial_count, Post.count
   end
 
@@ -2051,7 +2051,7 @@ class PostsControllerTest < ActionController::TestCase
   def test_show_to_many_relationship_invalid_id
     assert_cacheable_get :show_relationship, params: {post_id: '2,1', relationship: 'tags'}
     assert_response :bad_request
-    assert_match /2,1 is not a valid value for id/, response.body
+    assert_match(/2,1 is not a valid value for id/, response.body)
   end
 
   def test_show_to_one_relationship_nil
@@ -2110,25 +2110,25 @@ class TagsControllerTest < ActionController::TestCase
   def test_tags_show_multiple
     assert_cacheable_get :show, params: { id: '506,507,508,509' }
     assert_response :bad_request
-    assert_match /506,507,508,509 is not a valid value for id/, response.body
+    assert_match(/506,507,508,509 is not a valid value for id/, response.body)
   end
 
   def test_tags_show_multiple_with_include
     assert_cacheable_get :show, params: { id: '506,507,508,509', include: 'posts.tags,posts.author.posts' }
     assert_response :bad_request
-    assert_match /506,507,508,509 is not a valid value for id/, response.body
+    assert_match(/506,507,508,509 is not a valid value for id/, response.body)
   end
 
   def test_tags_show_multiple_with_nonexistent_ids
     assert_cacheable_get :show, params: { id: '506,5099,509,50100' }
     assert_response :bad_request
-    assert_match /506,5099,509,50100 is not a valid value for id/, response.body
+    assert_match(/506,5099,509,50100 is not a valid value for id/, response.body)
   end
 
   def test_tags_show_multiple_with_nonexistent_ids_at_the_beginning
     assert_cacheable_get :show, params: { id: '5099,509,50100' }
     assert_response :bad_request
-    assert_match /5099,509,50100 is not a valid value for id/, response.body
+    assert_match(/5099,509,50100 is not a valid value for id/, response.body)
   end
 
   def test_nested_includes_sort
@@ -2266,7 +2266,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
 
       assert_cacheable_get :show, params: { id: 1, include: 'isoCurrencies,employees' }
       assert_response :bad_request
-      assert_match /isoCurrencies is not a valid includable relationship of expenseEntries/, json_response['errors'][0]['detail']
+      assert_match(/isoCurrencies is not a valid includable relationship of expenseEntries/, json_response['errors'][0]['detail'])
     end
   end
 
@@ -2276,7 +2276,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
 
       assert_cacheable_get :show, params: { id: 1, include: 'isoCurrency,employee.post' }
       assert_response :bad_request
-      assert_match /post is not a valid includable relationship of employees/, json_response['errors'][0]['detail']
+      assert_match(/post is not a valid includable relationship of employees/, json_response['errors'][0]['detail'])
     end
   end
 
@@ -2286,7 +2286,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
 
       assert_cacheable_get :index, params: { include: 'invalid../../../../' }
       assert_response :bad_request
-      assert_match /invalid is not a valid includable relationship of expenseEntries/, json_response['errors'][0]['detail']
+      assert_match(/invalid is not a valid includable relationship of expenseEntries/, json_response['errors'][0]['detail'])
     end
   end
 
@@ -2296,7 +2296,7 @@ class ExpenseEntriesControllerTest < ActionController::TestCase
 
       assert_cacheable_get :index, params: { include: 'invalid.foo.bar.dfsdfs,dfsdfs.sdfwe.ewrerw.erwrewrew' }
       assert_response :bad_request
-      assert_match /invalid is not a valid includable relationship of expenseEntries/, json_response['errors'][0]['detail']
+      assert_match(/invalid is not a valid includable relationship of expenseEntries/, json_response['errors'][0]['detail'])
     end
   end
 
@@ -2635,8 +2635,8 @@ class PeopleControllerTest < ActionController::TestCase
       assert_equal 2, json_response['errors'].size
       assert_equal JSONAPI::VALIDATION_ERROR, json_response['errors'][0]['code']
       assert_equal JSONAPI::VALIDATION_ERROR, json_response['errors'][1]['code']
-      assert_match /dateJoined - can't be blank/, response.body
-      assert_match /name - can't be blank/, response.body
+      assert_match(/dateJoined - can't be blank/, response.body)
+      assert_match(/name - can't be blank/, response.body)
     end
   end
 
@@ -2660,7 +2660,7 @@ class PeopleControllerTest < ActionController::TestCase
       assert_response :unprocessable_entity
       assert_equal 1, json_response['errors'].size
       assert_equal JSONAPI::VALIDATION_ERROR, json_response['errors'][0]['code']
-      assert_match /name - can't be blank/, response.body
+      assert_match(/name - can't be blank/, response.body)
     end
   end
 
@@ -2985,7 +2985,7 @@ class BreedsControllerTest < ActionController::TestCase
     assert_cacheable_get :show, params: { id: '0,2' }
 
     assert_response :bad_request
-    assert_match /0,2 is not a valid value for id/, response.body
+    assert_match(/0,2 is not a valid value for id/, response.body)
   end
 
   def test_poro_create_simple
@@ -3019,7 +3019,7 @@ class BreedsControllerTest < ActionController::TestCase
 
     assert_equal 1, json_response['errors'].size
     assert_equal JSONAPI::VALIDATION_ERROR, json_response['errors'][0]['code']
-    assert_match /name - can't be blank/, response.body
+    assert_match(/name - can't be blank/, response.body)
   end
 
   def test_poro_create_update
@@ -3340,7 +3340,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
     assert_cacheable_get :index, params: { page: { offset_bad: 50, limit: 12 } }
     assert_response :bad_request
-    assert_match /offset_bad is not an allowed page parameter./, json_response['errors'][0]['detail']
+    assert_match(/offset_bad is not an allowed page parameter./, json_response['errors'][0]['detail'])
   end
 
   def test_books_offset_pagination_bad_param_value_limit_to_large
@@ -3348,7 +3348,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
     assert_cacheable_get :index, params: { page: { offset: 50, limit: 1000 } }
     assert_response :bad_request
-    assert_match /Limit exceeds maximum page size of 20./, json_response['errors'][0]['detail']
+    assert_match(/Limit exceeds maximum page size of 20./, json_response['errors'][0]['detail'])
   end
 
   def test_books_offset_pagination_bad_param_value_limit_too_small
@@ -3356,7 +3356,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
     assert_cacheable_get :index, params: { page: { offset: 50, limit: -1 } }
     assert_response :bad_request
-    assert_match /-1 is not a valid value for limit page parameter./, json_response['errors'][0]['detail']
+    assert_match(/-1 is not a valid value for limit page parameter./, json_response['errors'][0]['detail'])
   end
 
   def test_books_offset_pagination_bad_param_offset_less_than_zero
@@ -3364,7 +3364,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
     assert_cacheable_get :index, params: { page: { offset: -1, limit: 20 } }
     assert_response :bad_request
-    assert_match /-1 is not a valid value for offset page parameter./, json_response['errors'][0]['detail']
+    assert_match(/-1 is not a valid value for offset page parameter./, json_response['errors'][0]['detail'])
   end
 
   def test_books_offset_pagination_invalid_page_format
@@ -3372,7 +3372,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
     assert_cacheable_get :index, params: { page: 50 }
     assert_response :bad_request
-    assert_match /Invalid Page Object./, json_response['errors'][0]['detail']
+    assert_match(/Invalid Page Object./, json_response['errors'][0]['detail'])
   end
 
   def test_books_paged_pagination_no_params
@@ -3407,7 +3407,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
     assert_cacheable_get :index, params: { page: { number_bad: 50, size: 12 } }
     assert_response :bad_request
-    assert_match /number_bad is not an allowed page parameter./, json_response['errors'][0]['detail']
+    assert_match(/number_bad is not an allowed page parameter./, json_response['errors'][0]['detail'])
   end
 
   def test_books_paged_pagination_bad_param_value_limit_to_large
@@ -3415,7 +3415,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
     assert_cacheable_get :index, params: { page: { number: 50, size: 1000 } }
     assert_response :bad_request
-    assert_match /size exceeds maximum page size of 20./, json_response['errors'][0]['detail']
+    assert_match(/size exceeds maximum page size of 20./, json_response['errors'][0]['detail'])
   end
 
   def test_books_paged_pagination_bad_param_value_limit_too_small
@@ -3423,7 +3423,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
     assert_cacheable_get :index, params: { page: { number: 50, size: -1 } }
     assert_response :bad_request
-    assert_match /-1 is not a valid value for size page parameter./, json_response['errors'][0]['detail']
+    assert_match(/-1 is not a valid value for size page parameter./, json_response['errors'][0]['detail'])
   end
 
   def test_books_paged_pagination_invalid_page_format_incorrect
@@ -3431,7 +3431,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
 
     assert_cacheable_get :index, params: { page: 'qwerty' }
     assert_response :bad_request
-    assert_match /0 is not a valid value for number page parameter./, json_response['errors'][0]['detail']
+    assert_match(/0 is not a valid value for number page parameter./, json_response['errors'][0]['detail'])
   end
 
   def test_books_paged_pagination_invalid_page_format_interpret_int
@@ -3825,7 +3825,7 @@ class Api::V1::PlanetsControllerTest < ActionController::TestCase
       }
 
     assert_response :unprocessable_entity
-    assert_match /Save failed or was cancelled/, json_response['errors'][0]['detail']
+    assert_match(/Save failed or was cancelled/, json_response['errors'][0]['detail'])
   end
 end
 
@@ -4058,7 +4058,7 @@ class Api::V7::CategoriesControllerTest < ActionController::TestCase
 
     get :show, params: { id: '1' }
     assert_response 500
-    assert_match /Internal Server Error/, json_response['errors'][0]['detail']
+    assert_match(/Internal Server Error/, json_response['errors'][0]['detail'])
   end
 
   def test_not_allowed_error_in_controller
@@ -4066,7 +4066,17 @@ class Api::V7::CategoriesControllerTest < ActionController::TestCase
       JSONAPI.configuration.exception_class_allowlist = []
       get :show, params: { id: '1' }
       assert_response 500
-      assert_match /Internal Server Error/, json_response['errors'][0]['detail']
+      assert_match(/Internal Server Error/, json_response['errors'][0]['detail'])
+    end
+  end
+
+  def test_not_allowlisted_error_in_controller
+    with_jsonapi_config_changes do
+      original_config = JSONAPI.configuration.dup
+      JSONAPI.configuration.exception_class_allowlist = []
+      get :show, params: {id: '1'}
+      assert_response 500
+      assert_match(/Internal Server Error/, json_response['errors'][0]['detail'])
     end
   end
 
