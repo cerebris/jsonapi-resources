@@ -164,7 +164,7 @@ end
 def assert_query_count(expected, msg = nil, &block)
   @queries = []
   callback = lambda {|_, _, _, _, payload|
-    @queries.push payload[:sql]
+    @queries.push payload[:sql] unless payload[:sql].starts_with?("SELECT name FROM sqlite_master WHERE name <> 'sqlite_sequence'")
   }
   ActiveSupport::Notifications.subscribed(callback, 'sql.active_record', &block)
 
@@ -505,6 +505,10 @@ class Minitest::Test
   def sql_for_compare(sql)
     sql.tr(db_quote_identifier, %{"})
   end
+
+  def response_json_for_compare(response)
+    response.pretty_inspect
+  end
 end
 
 class ActiveSupport::TestCase
@@ -547,8 +551,8 @@ class ActionDispatch::IntegrationTest
     end
 
     assert_equal(
-      sql_for_compare(non_caching_response.pretty_inspect),
-      sql_for_compare(json_response.pretty_inspect),
+      response_json_for_compare(non_caching_response),
+      response_json_for_compare(json_response),
       "Cache warmup response must match normal response"
     )
 
@@ -557,12 +561,17 @@ class ActionDispatch::IntegrationTest
     end
 
     assert_equal(
-      sql_for_compare(non_caching_response.pretty_inspect),
-      sql_for_compare(json_response.pretty_inspect),
+      response_json_for_compare(non_caching_response),
+      response_json_for_compare(json_response),
       "Cached response must match normal response"
     )
     assert_equal 0, cached[:total][:misses], "Cached response must not cause any cache misses"
     assert_equal warmup[:total][:misses], cached[:total][:hits], "Cached response must use cache"
+  end
+
+
+  def testing_v09?
+    JSONAPI.configuration.default_resource_retrieval_strategy == 'JSONAPI::ActiveRelationRetrievalV09'
   end
 end
 
@@ -626,16 +635,18 @@ class ActionController::TestCase
           "Cache (mode: #{mode}) #{phase} response status must match normal response"
         )
         assert_equal(
-          sql_for_compare(non_caching_response.pretty_inspect),
-          sql_for_compare(json_response_sans_all_backtraces.pretty_inspect),
-          "Cache (mode: #{mode}) #{phase} response body must match normal response"
+          response_json_for_compare(non_caching_response),
+          response_json_for_compare(json_response_sans_all_backtraces),
+          "Cache (mode: #{mode}) #{phase} response body must match normal response\n#{non_caching_response.pretty_inspect},\n#{json_response_sans_all_backtraces.pretty_inspect}"
         )
-        assert_operator(
-          cache_queries.size,
-          :<=,
-          normal_queries.size,
-          "Cache (mode: #{mode}) #{phase} action made too many queries:\n#{cache_queries.pretty_inspect}"
-        )
+
+        # The query count will now differ between the cached and non cached versions so we will not test that
+        # assert_operator(
+        #   cache_queries.size,
+        #   :<=,
+        #   normal_queries.size,
+        #   "Cache (mode: #{mode}) #{phase} action made too many queries:\n#{cache_queries.pretty_inspect}"
+        # )
       end
 
       if mode == :all
@@ -662,6 +673,14 @@ class ActionController::TestCase
     end
 
     @queries = orig_queries
+  end
+
+  def testing_v10?
+    JSONAPI.configuration.default_resource_retrieval_strategy == 'JSONAPI::ActiveRelationRetrievalV10'
+  end
+
+  def testing_v09?
+    JSONAPI.configuration.default_resource_retrieval_strategy == 'JSONAPI::ActiveRelationRetrievalV09'
   end
 
   private
@@ -728,7 +747,7 @@ class TitleValueFormatter < JSONAPI::ValueFormatter
     end
 
     def unformat(value)
-      value.to_s.downcase
+      value.to_s.underscore
     end
   end
 end

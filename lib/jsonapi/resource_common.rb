@@ -1,30 +1,27 @@
 # frozen_string_literal: true
 
-require 'jsonapi/callbacks'
-require 'jsonapi/configuration'
-
 module JSONAPI
-  class BasicResource
-    include Callbacks
+  module ResourceCommon
 
-    @abstract = true
-    @immutable = true
-    @root = true
+    def self.included(base)
+      base.extend ClassMethods
 
-    attr_reader :context
+      base.include Callbacks
+      base.define_jsonapi_resources_callbacks :create,
+                                         :update,
+                                         :remove,
+                                         :save,
+                                         :create_to_many_link,
+                                         :replace_to_many_links,
+                                         :create_to_one_link,
+                                         :replace_to_one_link,
+                                         :replace_polymorphic_to_one_link,
+                                         :remove_to_many_link,
+                                         :remove_to_one_link,
+                                         :replace_fields
 
-    define_jsonapi_resources_callbacks :create,
-                                       :update,
-                                       :remove,
-                                       :save,
-                                       :create_to_many_link,
-                                       :replace_to_many_links,
-                                       :create_to_one_link,
-                                       :replace_to_one_link,
-                                       :replace_polymorphic_to_one_link,
-                                       :remove_to_many_link,
-                                       :remove_to_one_link,
-                                       :replace_fields
+      base.attr_reader :context
+    end
 
     def initialize(model, context)
       @model = model
@@ -44,6 +41,10 @@ module JSONAPI
 
     def identity
       JSONAPI::ResourceIdentity.new(self.class, id)
+    end
+
+    def fragment(cache: nil, primary: false)
+      @fragment ||= JSONAPI::ResourceFragment.new(identity, resource: self, cache: cache, primary: primary)
     end
 
     def cache_field_value
@@ -238,7 +239,7 @@ module JSONAPI
       return false if !relationship.reflect ||
         (!JSONAPI.configuration.use_relationship_reflection || options[:reflected_source])
 
-      inverse_relationship = relationship.resource_klass._relationships[relationship.inverse_relationship]
+      inverse_relationship = relationship.resource_klass._relationship(relationship.inverse_relationship)
       if inverse_relationship.nil?
         warn "Inverse relationship could not be found for #{self.class.name}.#{relationship.name}. Relationship reflection disabled."
         return false
@@ -247,7 +248,7 @@ module JSONAPI
     end
 
     def _create_to_many_links(relationship_type, relationship_key_values, options)
-      relationship = self.class._relationships[relationship_type]
+      relationship = self.class._relationship(relationship_type)
       relation_name = relationship.relation_name(context: @context)
 
       if options[:reflected_source]
@@ -269,7 +270,7 @@ module JSONAPI
 
       related_resources.each do |related_resource|
         if reflect
-          if related_resource.class._relationships[relationship.inverse_relationship].is_a?(JSONAPI::Relationship::ToMany)
+          if related_resource.class._relationship(relationship.inverse_relationship).is_a?(JSONAPI::Relationship::ToMany)
             related_resource.create_to_many_links(relationship.inverse_relationship, [id], reflected_source: self)
           else
             related_resource.replace_to_one_link(relationship.inverse_relationship, id, reflected_source: self)
@@ -308,8 +309,8 @@ module JSONAPI
           ids = relationship_key_value[:ids]
 
           related_records = relationship_resource_klass
-            .records(options)
-            .where({relationship_resource_klass._primary_key => ids})
+                              .records(options)
+                              .where({relationship_resource_klass._primary_key => ids})
 
           missed_ids = ids - related_records.pluck(relationship_resource_klass._primary_key)
 
@@ -331,7 +332,7 @@ module JSONAPI
     end
 
     def _replace_to_one_link(relationship_type, relationship_key_value, _options)
-      relationship = self.class._relationships[relationship_type]
+      relationship = self.class._relationship(relationship_type)
 
       send("#{relationship.foreign_key}=", relationship_key_value)
       @save_needed = true
@@ -340,7 +341,7 @@ module JSONAPI
     end
 
     def _replace_polymorphic_to_one_link(relationship_type, key_value, key_type, _options)
-      relationship = self.class._relationships[relationship_type.to_sym]
+      relationship = self.class._relationship(relationship_type.to_sym)
 
       send("#{relationship.foreign_key}=", {type: key_type, id: key_value})
       @save_needed = true
@@ -349,7 +350,7 @@ module JSONAPI
     end
 
     def _remove_to_many_link(relationship_type, key, options)
-      relationship = self.class._relationships[relationship_type]
+      relationship = self.class._relationship(relationship_type)
 
       reflect = reflect_relationship?(relationship, options)
 
@@ -360,7 +361,7 @@ module JSONAPI
         if related_resource.nil?
           fail JSONAPI::Exceptions::RecordNotFound.new(key)
         else
-          if related_resource.class._relationships[relationship.inverse_relationship].is_a?(JSONAPI::Relationship::ToMany)
+          if related_resource.class._relationship(relationship.inverse_relationship).is_a?(JSONAPI::Relationship::ToMany)
             related_resource.remove_to_many_link(relationship.inverse_relationship, id, reflected_source: self)
           else
             related_resource.remove_to_one_link(relationship.inverse_relationship, reflected_source: self)
@@ -381,7 +382,7 @@ module JSONAPI
     end
 
     def _remove_to_one_link(relationship_type, _options)
-      relationship = self.class._relationships[relationship_type]
+      relationship = self.class._relationship(relationship_type)
 
       send("#{relationship.foreign_key}=", nil)
       @save_needed = true
@@ -425,9 +426,52 @@ module JSONAPI
       send(relationship.foreign_key)
     end
 
-    class << self
+    module ClassMethods
+      def resource_retrieval_strategy(module_name = JSONAPI.configuration.default_resource_retrieval_strategy)
+        if @_resource_retrieval_strategy_loaded
+          warn "Resource retrieval strategy #{@_resource_retrieval_strategy_loaded} already loaded for #{self.name}"
+          return
+        end
+
+        module_name = module_name.to_s
+
+        return if module_name.blank? || module_name == 'self' || module_name == 'none'
+
+        class_eval do
+          resource_retrieval_module = module_name.safe_constantize
+          raise "Unable to find resource_retrieval_strategy #{module_name}" unless resource_retrieval_module
+
+          include resource_retrieval_module
+          extend "#{module_name}::ClassMethods".safe_constantize
+          @_resource_retrieval_strategy_loaded = module_name
+        end
+      end
+
+      def warn_about_missing_retrieval_methods
+        resource_retrieval_methods = %i[find count find_by_key find_by_keys find_to_populate_by_keys find_fragments
+                                        find_related_fragments find_included_fragments count_related]
+
+        resource_retrieval_methods.each do |method_name|
+          warn "#{self.name} has not defined standard method #{method_name}" unless self.respond_to?(method_name)
+        end
+      end
+
       def inherited(subclass)
         super
+
+        # Defer loading the resource retrieval strategy module until the class has been fully read to allow setting
+        # a custom resource_retrieval_strategy in the class definition
+        trace_point = TracePoint.new(:end) do |tp|
+          if subclass == tp.self
+            unless subclass._abstract
+              subclass.warn_about_missing_retrieval_methods
+              subclass.warn_about_unused_methods if subclass.methods.include?(:warn_about_unused_methods)
+            end
+            tp.disable
+          end
+        end
+        trace_point.enable
+
         subclass.abstract(false)
         subclass.immutable(false)
         subclass.caching(_caching)
@@ -465,6 +509,9 @@ module JSONAPI
 
         subclass._clear_cached_attribute_options
         subclass._clear_fields_cache
+
+        subclass._resource_retrieval_strategy_loaded = @_resource_retrieval_strategy_loaded
+        subclass.resource_retrieval_strategy unless subclass._resource_retrieval_strategy_loaded
       end
 
       def rebuild_relationships(relationships)
@@ -476,7 +523,7 @@ module JSONAPI
           original_relationships.each_value do |relationship|
             options = relationship.options.dup
             options[:parent_resource] = self
-            options[:inverse_relationship] = relationship.inverse_relationship
+            options[:inverse_relationship] = relationship.options[:inverse_relationship]
             _add_relationship(relationship.class, relationship.name, options)
           end
         end
@@ -511,7 +558,8 @@ module JSONAPI
         end
       end
 
-      attr_accessor :_attributes, :_relationships, :_type, :_model_hints, :_routed, :_warned_missing_route
+      attr_accessor :_attributes, :_relationships, :_type, :_model_hints, :_routed, :_warned_missing_route,
+                    :_resource_retrieval_strategy_loaded
       attr_writer :_allowed_filters, :_paginator, :_allowed_sort
 
       def create(context)
@@ -574,7 +622,7 @@ module JSONAPI
                        # Note: this will allow the returning of model attributes without a corresponding
                        # resource attribute, for example a belongs_to id such as `author_id` or bypassing
                        # the delegate.
-                       attr = @_attributes[attribute]
+                       attr = @_attributes[attribute.to_sym]
                        attr && attr[:delegate] ? attr[:delegate].to_sym : attribute
                      end
 
@@ -592,14 +640,14 @@ module JSONAPI
       def relationship(*attrs)
         options = attrs.extract_options!
         klass = case options[:to]
-                  when :one
-                    Relationship::ToOne
-                  when :many
-                    Relationship::ToMany
-                  else
-                    #:nocov:#
-                    fail ArgumentError.new('to: must be either :one or :many')
-                    #:nocov:#
+                when :one
+                  Relationship::ToOne
+                when :many
+                  Relationship::ToMany
+                else
+                  #:nocov:#
+                  fail ArgumentError.new('to: must be either :one or :many')
+                  #:nocov:#
                 end
         _add_relationship(klass, *attrs, options.except(:to))
       end
@@ -610,10 +658,10 @@ module JSONAPI
 
       def belongs_to(*attrs)
         ActiveSupport::Deprecation.warn "In #{name} you exposed a `has_one` relationship "\
-                                        " using the `belongs_to` class method. We think `has_one`" \
-                                        " is more appropriate. If you know what you're doing," \
-                                        " and don't want to see this warning again, override the" \
-                                        " `belongs_to` class method on your resource."
+                                      " using the `belongs_to` class method. We think `has_one`" \
+                                      " is more appropriate. If you know what you're doing," \
+                                      " and don't want to see this warning again, override the" \
+                                      " `belongs_to` class method on your resource."
         _add_relationship(Relationship::ToOne, *attrs)
       end
 
@@ -637,7 +685,7 @@ module JSONAPI
       end
 
       def model_hint(model: _model_name, resource: _type)
-        resource_type = ((resource.is_a?(Class)) && (resource < JSONAPI::BasicResource)) ? resource._type : resource.to_s
+        resource_type = ((resource.is_a?(Class)) && resource.include?(JSONAPI::ResourceCommon)) ? resource._type : resource.to_s
 
         _model_hints[model.to_s.gsub('::', '/').underscore] = resource_type.to_s
       end
@@ -700,7 +748,22 @@ module JSONAPI
       end
 
       def fields
-        @_fields_cache ||= _relationships.keys | _attributes.keys
+        @_fields_cache ||= _relationships.select { |k,v| !v.hidden? }.keys | _attributes.keys
+      end
+
+      def to_one_relationships_including_optional_linkage_data
+        # ToDo: can we only calculate this once?
+        @to_one_relationships_including_optional_linkage_data =
+          _relationships.select do |_name, relationship|
+            relationship.is_a?(JSONAPI::Relationship::ToOne) && relationship.include_optional_linkage_data?
+          end
+      end
+
+      def to_one_relationships_for_linkage(include_related)
+        # exclude the relationships that are already included in the include_related param
+        include_related_names = include_related.present? ? include_related.keys : []
+        relationship_names = to_one_relationships_including_optional_linkage_data.keys - include_related_names
+        _relationships.fetch_values(*relationship_names)
       end
 
       def resources_for(records, context)
@@ -712,6 +775,10 @@ module JSONAPI
       def resource_for(model_record, context)
         resource_klass = resource_klass_for_model(model_record)
         resource_klass.new(model_record, context)
+      end
+
+      def resource_for_model(model, context)
+        resource_for(resource_type_for(model), context)
       end
 
       def verify_filters(filters, context = nil)
@@ -774,12 +841,12 @@ module JSONAPI
         if @_singleton_options && @_singleton_options[:singleton_key]
           strategy = @_singleton_options[:singleton_key]
           case strategy
-            when Proc
-              key = strategy.call(context)
-            when Symbol, String
-              key = send(strategy, context)
-            else
-              raise "singleton_key must be a proc or function name"
+          when Proc
+            key = strategy.call(context)
+          when Symbol, String
+            key = send(strategy, context)
+          else
+            raise "singleton_key must be a proc or function name"
           end
         end
         key
@@ -854,13 +921,12 @@ module JSONAPI
 
       def _relationship(type)
         return nil unless type
-        type = type.to_sym
-        @_relationships[type]
+        @_relationships[type.to_sym]
       end
 
       def _model_name
         if _abstract
-           ''
+          ''
         else
           return @_model_name.to_s if defined?(@_model_name)
           class_name = self.name
@@ -874,7 +940,7 @@ module JSONAPI
         if !_polymorphic
           ''
         else
-          @_polymorphic_name ||= _model_name.to_s.downcase
+          @_polymorphic_name ||= _model_name.to_s.underscore
         end
       end
 
@@ -883,7 +949,7 @@ module JSONAPI
       end
 
       def _default_primary_key
-        @_default_primary_key ||=_model_class.respond_to?(:primary_key) ? _model_class.primary_key : :id
+        @_default_primary_key ||= _model_class.respond_to?(:primary_key) ? _model_class.primary_key : :id
       end
 
       def _cache_field
@@ -928,7 +994,7 @@ module JSONAPI
             next unless Module === klass
             if klass < ActiveRecord::Base
               klass.reflect_on_all_associations(:has_many).select{|r| r.options[:as] }.each do |reflection|
-                (hash[reflection.options[:as]] ||= []) << klass.name.downcase
+                (hash[reflection.options[:as]] ||= []) << klass.name.underscore
               end
             end
           end
@@ -974,14 +1040,14 @@ module JSONAPI
 
       def parse_exclude_links(exclude)
         case exclude
-          when :default, "default"
-            [:self]
-          when :none, "none"
-            []
-          when Array
-            exclude.collect {|link| link.to_sym}
-          else
-            fail "Invalid exclude_links"
+        when :default, "default"
+          [:self]
+        when :none, "none"
+          []
+        when Array
+          exclude.collect {|link| link.to_sym}
+        else
+          fail "Invalid exclude_links"
         end
       end
 
@@ -1015,6 +1081,22 @@ module JSONAPI
 
       def attribute_caching_context(_context)
         nil
+      end
+
+      def _included_strategy
+        @_included_strategy || JSONAPI.configuration.default_included_strategy
+      end
+
+      def included_strategy(included_strategy)
+        @_included_strategy = included_strategy
+      end
+
+      def _related_strategy
+        @_related_strategy || JSONAPI.configuration.default_related_strategy
+      end
+
+      def related_strategy(related_strategy)
+        @_related_strategy = related_strategy
       end
 
       # Generate a hashcode from the value to be used as part of the cache lookup
@@ -1055,7 +1137,7 @@ module JSONAPI
       end
 
       def default_sort
-        [{field: 'id', direction: :asc}]
+        [{field: _primary_key, direction: :asc}]
       end
 
       def construct_order_options(sort_params)
@@ -1084,11 +1166,23 @@ module JSONAPI
         end
       end
 
+      def _setup_relationship(klass, *attrs)
+        _clear_fields_cache
+
+        options = attrs.extract_options!
+        options[:parent_resource] = self
+
+        relationship_name = attrs[0].to_sym
+        check_duplicate_relationship_name(relationship_name)
+
+        define_relationship_methods(relationship_name.to_sym, klass, options)
+      end
+
       # ResourceBuilder methods
       def define_relationship_methods(relationship_name, relationship_klass, options)
         relationship = register_relationship(
-            relationship_name,
-            relationship_klass.new(relationship_name, options)
+          relationship_name,
+          relationship_klass.new(relationship_name, options)
         )
 
         define_foreign_key_setter(relationship)
@@ -1105,10 +1199,11 @@ module JSONAPI
             _model.method("#{relationship.foreign_key}=").call(value)
           end
         end
+        relationship.foreign_key
       end
 
       def define_on_resource(method_name, &block)
-        return if method_defined?(method_name)
+        return method_name if method_defined?(method_name)
         define_method(method_name, block)
       end
 

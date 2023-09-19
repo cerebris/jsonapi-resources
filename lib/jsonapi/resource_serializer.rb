@@ -307,7 +307,7 @@ module JSONAPI
         if field_set.include?(name)
 
           relationship_name = unformat_key(name).to_sym
-          relationship_klass = source.resource_klass._relationships[relationship_name]
+          relationship_klass = source.resource_klass._relationship(relationship_name)
 
           if relationship_klass.is_a?(JSONAPI::Relationship::ToOne)
             # include_linkage = @always_include_to_one_linkage_data | relationship_klass.always_include_linkage_data

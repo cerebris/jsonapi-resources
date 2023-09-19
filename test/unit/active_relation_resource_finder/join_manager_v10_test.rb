@@ -1,15 +1,7 @@
 require File.expand_path('../../../test_helper', __FILE__)
 require 'jsonapi-resources'
 
-class JoinManagerTest < ActiveSupport::TestCase
-  # def setup
-  #   JSONAPI.configuration.default_alias_on_join = false
-  # end
-  #
-  # def teardown
-  #   JSONAPI.configuration.default_alias_on_join = false
-  # end
-
+class JoinManagerV10Test < ActiveSupport::TestCase
   def test_no_added_joins
     join_manager = JSONAPI::ActiveRelation::JoinManagerV10.new(resource_klass: PostResource)
 
@@ -54,8 +46,8 @@ class JoinManagerTest < ActiveSupport::TestCase
 
   def test_add_sibling_joins
     filters = {
-        'tags' => ['1'],
-        'author' => ['1']
+      'tags' => ['1'],
+      'author' => ['1']
     }
 
     join_manager = JSONAPI::ActiveRelation::JoinManagerV10.new(resource_klass: PostResource, filters: filters)
@@ -71,7 +63,7 @@ class JoinManagerTest < ActiveSupport::TestCase
 
   def test_add_joins_source_relationship
     join_manager = JSONAPI::ActiveRelation::JoinManagerV10.new(resource_klass: PostResource,
-                                                                          source_relationship: PostResource._relationship(:comments))
+                                                            source_relationship: PostResource._relationship(:comments))
     records = PostResource.records({})
     records = join_manager.join(records, {})
 
@@ -82,7 +74,7 @@ class JoinManagerTest < ActiveSupport::TestCase
 
   def test_add_joins_source_relationship_with_custom_apply
     join_manager = JSONAPI::ActiveRelation::JoinManagerV10.new(resource_klass: Api::V10::PostResource,
-                                                                          source_relationship: Api::V10::PostResource._relationship(:comments))
+                                                            source_relationship: Api::V10::PostResource._relationship(:comments))
     records = Api::V10::PostResource.records({})
     records = join_manager.join(records, {})
 
@@ -95,9 +87,9 @@ class JoinManagerTest < ActiveSupport::TestCase
 
   def test_add_nested_scoped_joins
     filters = {
-        'comments.author' => ['1'],
-        'comments.tags' => ['1'],
-        'author' => ['1']
+      'comments.author' => ['1'],
+      'comments.tags' => ['1'],
+      'author' => ['1']
     }
 
     join_manager = JSONAPI::ActiveRelation::JoinManagerV10.new(resource_klass: Api::V10::PostResource, filters: filters)
@@ -112,9 +104,9 @@ class JoinManagerTest < ActiveSupport::TestCase
 
     # Now test with different order for the filters
     filters = {
-        'author' => ['1'],
-        'comments.author' => ['1'],
-        'comments.tags' => ['1']
+      'author' => ['1'],
+      'comments.author' => ['1'],
+      'comments.tags' => ['1']
     }
 
     join_manager = JSONAPI::ActiveRelation::JoinManagerV10.new(resource_klass: Api::V10::PostResource, filters: filters)
@@ -130,9 +122,9 @@ class JoinManagerTest < ActiveSupport::TestCase
 
   def test_add_nested_joins_with_fields
     filters = {
-        'comments.author.name' => ['1'],
-        'comments.tags.id' => ['1'],
-        'author.foo' => ['1']
+      'comments.author.name' => ['1'],
+      'comments.tags.id' => ['1'],
+      'author.foo' => ['1']
     }
 
     join_manager = JSONAPI::ActiveRelation::JoinManagerV10.new(resource_klass: Api::V10::PostResource, filters: filters)
@@ -150,7 +142,7 @@ class JoinManagerTest < ActiveSupport::TestCase
     relationships = %w(author author.comments tags)
 
     join_manager = JSONAPI::ActiveRelation::JoinManagerV10.new(resource_klass: Api::V10::PostResource, relationships: relationships,
-                                                                          source_relationship: Api::V10::PostResource._relationship(:comments))
+                                                            source_relationship: Api::V10::PostResource._relationship(:comments))
     records = Api::V10::PostResource.records({})
     records = join_manager.join(records, {})
 
@@ -162,16 +154,16 @@ class JoinManagerTest < ActiveSupport::TestCase
 
   def test_add_joins_with_sub_relationship_and_filters
     filters = {
-        'author.name' => ['1'],
-        'author.comments.name' => ['Foo']
+      'author.name' => ['1'],
+      'author.comments.name' => ['Foo']
     }
 
     relationships = %w(author author.comments tags)
 
     join_manager = JSONAPI::ActiveRelation::JoinManagerV10.new(resource_klass: PostResource,
-                                                                          filters: filters,
-                                                                          relationships: relationships,
-                                                                          source_relationship: PostResource._relationship(:comments))
+                                                            filters: filters,
+                                                            relationships: relationships,
+                                                            source_relationship: PostResource._relationship(:comments))
     records = PostResource.records({})
     records = join_manager.join(records, {})
 
@@ -183,10 +175,8 @@ class JoinManagerTest < ActiveSupport::TestCase
   end
 
   def test_polymorphic_join_belongs_to_just_source
-    join_manager = JSONAPI::ActiveRelation::JoinManagerV10.new(
-      resource_klass: PictureResource,
-      source_relationship: PictureResource._relationship(:imageable)
-    )
+    join_manager = JSONAPI::ActiveRelation::JoinManagerV10.new(resource_klass: PictureResource,
+                                                            source_relationship: PictureResource._relationship(:imageable))
 
     records = PictureResource.records({})
     records = join_manager.join(records, {})
@@ -213,16 +203,16 @@ class JoinManagerTest < ActiveSupport::TestCase
 
   def test_polymorphic_join_belongs_to_filter_on_resource
     filters = {
-        'imageable#documents.name' => ['foo']
+      'imageable#documents.name' => ['foo']
     }
 
     relationships = %w(imageable file_properties)
     join_manager = JSONAPI::ActiveRelation::JoinManagerV10.new(resource_klass: PictureResource,
-                                                                          filters: filters,
-                                                                          relationships: relationships)
+                                                            filters: filters,
+                                                            relationships: relationships)
 
     records = PictureResource.records({})
-    join_manager.join(records, {})
+    records = join_manager.join(records, {})
 
     assert_hash_equals({alias: 'pictures', join_type: :root}, join_manager.source_join_details)
     assert_hash_equals({alias: 'products', join_type: :left}, join_manager.join_details_by_polymorphic_relationship(PictureResource._relationship(:imageable), 'products'))

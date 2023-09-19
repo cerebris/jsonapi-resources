@@ -34,6 +34,10 @@ module JSONAPI
       [@resource_klass, @id].hash
     end
 
+    def <=>(other_identity)
+      self.id <=> other_identity.id
+    end
+
     # Creates a string representation of the identifier.
     def to_s
       # :nocov:
