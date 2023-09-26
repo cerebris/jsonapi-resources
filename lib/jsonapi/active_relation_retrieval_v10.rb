@@ -101,7 +101,7 @@ module JSONAPI
 
         sort_criteria = options.fetch(:sort_criteria) { [] }
 
-        join_manager = ActiveRelation::JoinManager.new(resource_klass: resource_klass,
+        join_manager = ActiveRelation::JoinManagerV10.new(resource_klass: resource_klass,
                                                        source_relationship: nil,
                                                        relationships: linkage_relationships.collect(&:name),
                                                        sort_criteria: sort_criteria,
@@ -316,6 +316,11 @@ module JSONAPI
             records = records.joins_left(relation_name)
           end
         end
+
+        if relationship.use_related_resource_records_for_joins
+          records = records.merge(self.records(options))
+        end
+
         records
       end
 
