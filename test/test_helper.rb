@@ -1,3 +1,6 @@
+# Configure Rails Environment
+ENV["RAILS_ENV"] = "test"
+
 require 'simplecov'
 require 'database_cleaner'
 
@@ -22,8 +25,20 @@ end
 
 ENV['DATABASE_URL'] ||= "sqlite3:test_db"
 
-require 'active_record/railtie'
-require 'rails/test_help'
+require File.expand_path('../test/dummy/config/environment', __FILE__)
+# ActiveRecord::Migrator.migrations_paths = [File.expand_path("../test/dummy/db/migrate", __dir__)]
+Rails.root = File.dirname(__FILE__)
+require "rails/test_help"
+
+# Load fixtures from the engine
+if ActiveSupport::TestCase.respond_to?(:fixture_path=)
+  ActiveSupport::TestCase.fixture_path = File.expand_path("fixtures", __dir__)
+  ActionDispatch::IntegrationTest.fixture_path = ActiveSupport::TestCase.fixture_path
+  ActiveSupport::TestCase.file_fixture_path = ActiveSupport::TestCase.fixture_path + "/files"
+  ActiveSupport::TestCase.fixtures :all
+	require File.expand_path('../fixtures/active_record', __FILE__)
+end
+
 require 'minitest/mock'
 require 'jsonapi-resources'
 require 'pry'
@@ -32,8 +47,6 @@ require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/assertions', __FILE__)
 require File.expand_path('../helpers/functional_helpers', __FILE__)
 require File.expand_path('../helpers/configuration_helpers', __FILE__)
-
-Rails.env = 'test'
 
 I18n.load_path += Dir[File.expand_path("../../locales/*.yml", __FILE__)]
 I18n.enforce_available_locales = false
@@ -45,27 +58,6 @@ end
 ActiveSupport::Deprecation.silenced = true
 
 puts "Testing With RAILS VERSION #{Rails.version}"
-
-class TestApp < Rails::Application
-  config.eager_load = false
-  config.root = File.dirname(__FILE__)
-  config.session_store :cookie_store, key: 'session'
-  config.secret_key_base = 'secret'
-
-  #Raise errors on unsupported parameters
-  config.action_controller.action_on_unpermitted_parameters = :raise
-
-  ActiveRecord::Schema.verbose = false
-  config.active_record.schema_format = :none
-  config.active_support.test_order = :random
-
-  config.active_support.halt_callback_chains_on_return_false = false
-  config.active_record.time_zone_aware_types = [:time, :datetime]
-  config.active_record.belongs_to_required_by_default = false
-  if Rails::VERSION::MAJOR == 5 && Rails::VERSION::MINOR == 2
-    config.active_record.sqlite3.represent_boolean_as_integer = true
-  end
-end
 
 DatabaseCleaner.allow_remote_database_url = true
 DatabaseCleaner.strategy = :transaction
@@ -190,10 +182,6 @@ def show_queries
   end
 end
 
-TestApp.initialize!
-
-require File.expand_path('../fixtures/active_record', __FILE__)
-
 module Pets
   module V1
     class CatsController < JSONAPI::ResourceController
@@ -210,7 +198,7 @@ module Pets
 end
 
 JSONAPI.configuration.route_format = :underscored_route
-TestApp.routes.draw do
+Rails.application.routes.draw do
   jsonapi_resources :sessions
   jsonapi_resources :people
   jsonapi_resources :special_people
@@ -512,7 +500,7 @@ class ActiveSupport::TestCase
   self.fixture_path = "#{Rails.root}/fixtures"
   fixtures :all
   setup do
-    @routes = TestApp.routes
+    @routes = Rails.application.routes
   end
 end
 
