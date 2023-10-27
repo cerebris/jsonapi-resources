@@ -44,6 +44,7 @@ jobs:
           - '2.7'
           - '2.6'
         rails:
+          - '7.1'
           - '7.0'
           - '6.1'
           - '6.0'
@@ -62,6 +63,8 @@ jobs:
             rails: '6.0'
           - ruby: '2.6'
             rails: '7.0'
+          - ruby: '2.6'
+            rails: '7.1'
     env:
       RAILS_VERSION: ${{ matrix.rails }}
       DATABASE_URL: ${{ matrix.database_url }}
