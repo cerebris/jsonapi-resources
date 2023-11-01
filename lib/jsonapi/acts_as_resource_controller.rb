@@ -160,7 +160,7 @@ module JSONAPI
     end
 
     def base_url
-      @base_url ||= "#{request.protocol}#{request.host_with_port}#{Rails.application.config.relative_url_root}"
+      @base_url ||= "#{request.protocol}#{request.host_with_port}#{::Rails.application.config.relative_url_root}"
     end
 
     def resource_klass_name
@@ -286,7 +286,7 @@ module JSONAPI
             request.env['action_dispatch.exception'] ||= e
 
             internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
-            Rails.logger.error { "Internal Server Error: #{e.message} #{e.backtrace.join("\n")}" }
+            ::Rails.logger.error { "Internal Server Error: #{e.message} #{e.backtrace.join("\n")}" }
             errors = internal_server_error.errors
           end
       end
@@ -298,7 +298,7 @@ module JSONAPI
       begin
         callback.call(error)
       rescue => e
-        Rails.logger.error { "Error in error handling callback: #{e.message} #{e.backtrace.join("\n")}" }
+        ::Rails.logger.error { "Error in error handling callback: #{e.message} #{e.backtrace.join("\n")}" }
         internal_server_error = JSONAPI::Exceptions::InternalServerError.new(e)
         return JSONAPI::ErrorsOperationResult.new(internal_server_error.errors[0].code, internal_server_error.errors)
       end
@@ -324,7 +324,7 @@ module JSONAPI
             if self.respond_to? method
               send(method, error)
             else
-              Rails.logger.warn("#{method} not defined on #{self}, skipping error callback")
+              ::Rails.logger.warn("#{method} not defined on #{self}, skipping error callback")
             end
           end
         end.compact
