@@ -23,7 +23,6 @@ end
 ENV['DATABASE_URL'] ||= "sqlite3:test_db"
 
 require 'active_record/railtie'
-require 'rails/test_help'
 require 'minitest/mock'
 require 'jsonapi-resources'
 require 'pry'
@@ -66,6 +65,8 @@ class TestApp < Rails::Application
     config.active_record.sqlite3.represent_boolean_as_integer = true
   end
 end
+
+require 'rails/test_help'
 
 DatabaseCleaner.allow_remote_database_url = true
 DatabaseCleaner.strategy = :transaction
