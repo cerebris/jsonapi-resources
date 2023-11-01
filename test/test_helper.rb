@@ -64,6 +64,8 @@ class TestApp < Rails::Application
   if Rails::VERSION::MAJOR == 5 && Rails::VERSION::MINOR == 2
     config.active_record.sqlite3.represent_boolean_as_integer = true
   end
+
+  config.hosts << "www.example.com"
 end
 
 require 'rails/test_help'
