@@ -703,7 +703,7 @@ module JSONAPI
 
       # Assumes ActiveRecord's counting. Override if you need a different counting method
       def count_records(records)
-        if (Rails::VERSION::MAJOR == 5 && ActiveRecord::VERSION::MINOR >= 1) || Rails::VERSION::MAJOR >= 6
+        if (::Rails::VERSION::MAJOR == 5 && ActiveRecord::VERSION::MINOR >= 1) || ::Rails::VERSION::MAJOR >= 6
           records.count(:all)
         else
           records.count
@@ -847,7 +847,7 @@ module JSONAPI
       end
 
       def warn_about_unused_methods
-        if Rails.env.development?
+        if ::Rails.env.development?
           if !caching? && implements_class_method?(:records_for_populate)
             warn "#{self}: The `records_for_populate` method is not used when caching is disabled."
           end
