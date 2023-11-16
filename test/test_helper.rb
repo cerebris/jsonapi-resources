@@ -45,7 +45,7 @@ ActiveSupport::Deprecation.silenced = true
 
 puts "Testing With RAILS VERSION #{Rails.version}"
 
-class TestApp < Rails::Application
+class TestApp < ::Rails::Application
   config.eager_load = false
   config.root = File.dirname(__FILE__)
   config.session_store :cookie_store, key: 'session'
@@ -61,7 +61,7 @@ class TestApp < Rails::Application
   config.active_support.halt_callback_chains_on_return_false = false
   config.active_record.time_zone_aware_types = [:time, :datetime]
   config.active_record.belongs_to_required_by_default = false
-  if Rails::VERSION::MAJOR == 5 && Rails::VERSION::MINOR == 2
+  if ::Rails::VERSION::MAJOR == 5 && ::Rails::VERSION::MINOR == 2
     config.active_record.sqlite3.represent_boolean_as_integer = true
   end
 
