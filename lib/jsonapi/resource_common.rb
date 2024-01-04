@@ -431,19 +431,20 @@ module JSONAPI
 
     module ClassMethods
       def resource_retrieval_strategy(module_name = JSONAPI.configuration.default_resource_retrieval_strategy)
-        if @_resource_retrieval_strategy_loaded
-          warn "Resource retrieval strategy #{@_resource_retrieval_strategy_loaded} already loaded for #{self.name}"
-          return
-        end
-
         module_name = module_name.to_s
 
         return if module_name.blank? || module_name == 'self' || module_name == 'none'
 
-        class_eval do
-          resource_retrieval_module = module_name.safe_constantize
-          raise "Unable to find resource_retrieval_strategy #{module_name}" unless resource_retrieval_module
+        resource_retrieval_module = module_name.safe_constantize
 
+        raise "Unable to find resource_retrieval_strategy #{module_name}" unless resource_retrieval_module
+
+        if included_modules.include?(::JSONAPI::RelationRetrieval)
+          warn "Resource retrieval strategy #{module_name} already loaded for #{self.name}"
+          return
+        end
+
+        class_eval do
           include resource_retrieval_module
           extend "#{module_name}::ClassMethods".safe_constantize
           @_resource_retrieval_strategy_loaded = module_name
