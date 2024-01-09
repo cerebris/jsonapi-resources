@@ -465,7 +465,7 @@ module JSONAPI
 
           if connect_source_identity
             inverse_relationship = relationship._inverse_relationship
-            fragments[rid].add_related_identity(inverse_relationship.name, source_rid) if inverse_relationship``.present?
+            fragments[rid].add_related_identity(inverse_relationship.name, source_rid) if inverse_relationship.present?
           end
         end
 
