@@ -271,7 +271,7 @@ module JSONAPI
           source_resource_klasses.each do |resource_klass|
             inverse_direct_relationship = _relationship(resource_klass._type.to_s.singularize)
 
-            fragments.merge!(resource_klass.find_related_fragments_from_inverse([source_fragment], inverse_direct_relationship, options, true))
+            fragments.merge!(resource_klass.find_related_fragments_from_inverse([source_fragment], inverse_direct_relationship, options, false))
           end
           fragments
         else
@@ -317,9 +317,14 @@ module JSONAPI
         linkage_relationships = to_one_relationships_for_linkage(include_directives[:include_related])
 
         sort_criteria = []
-        options[:sort_criteria].try(:each) do |sort|
-          field = sort[:field].to_s == 'id' ? _primary_key : sort[:field]
-          sort_criteria << { field: field, direction: sort[:direction] }
+
+        # Do not sort the includes. Key off connect_source_identity to indicate wether this is a related resource
+        # primary step vs an include step
+        unless connect_source_identity
+          options[:sort_criteria].try(:each) do |sort|
+            field = sort[:field].to_s == 'id' ? _primary_key : sort[:field]
+            sort_criteria << { field: field, direction: sort[:direction] }
+          end
         end
 
         join_manager = ActiveRelation::JoinManager.new(resource_klass: self,

@@ -43,7 +43,8 @@ module JSONAPI
                 :resource_cache_usage_report_function,
                 :default_exclude_links,
                 :default_resource_retrieval_strategy,
-                :use_related_resource_records_for_joins
+                :use_related_resource_records_for_joins,
+                :sort_related_identities_by_primary_key
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -182,6 +183,10 @@ module JSONAPI
       # This setting allows included resources to account for permission scopes. It can be overridden explicitly per
       # relationship. Furthermore, specifying a `relation_name` on a relationship will cause this setting to be ignored.
       self.use_related_resource_records_for_joins = true
+
+      # Collect the include keys into a SortedSet. This carries a small performance cost in the rails app but produces
+      # consistent and more human navigable result sets.
+      self.sort_related_identities_by_primary_key = false
     end
 
     def cache_formatters=(bool)
@@ -327,6 +332,8 @@ module JSONAPI
     attr_writer :default_resource_retrieval_strategy
 
     attr_writer :use_related_resource_records_for_joins
+
+    attr_writer :sort_related_identities_by_primary_key
   end
 
   class << self

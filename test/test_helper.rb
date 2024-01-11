@@ -66,6 +66,8 @@ class TestApp < ::Rails::Application
   end
 
   config.hosts << "www.example.com"
+
+  config.sort_related_identities_by_primary_key = true
 end
 
 require 'rails/test_help'
