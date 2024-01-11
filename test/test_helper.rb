@@ -39,6 +39,7 @@ I18n.enforce_available_locales = false
 
 JSONAPI.configure do |config|
   config.json_key_format = :camelized_key
+  config.sort_related_identities_by_primary_key = true
 end
 
 ActiveSupport::Deprecation.silenced = true
