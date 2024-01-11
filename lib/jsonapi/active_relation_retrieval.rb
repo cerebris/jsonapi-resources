@@ -318,9 +318,11 @@ module JSONAPI
 
         sort_criteria = []
 
-        # Do not sort the includes. Key off connect_source_identity to indicate wether this is a related resource
-        # primary step vs an include step
-        unless connect_source_identity
+        # Do not sort the related_fragments. This can be keyed off `connect_source_identity` to indicate whether this
+        # is a related resource primary step vs. an include step.
+        sort_related_fragments = !connect_source_identity
+
+        if sort_related_fragments
           options[:sort_criteria].try(:each) do |sort|
             field = sort[:field].to_s == 'id' ? _primary_key : sort[:field]
             sort_criteria << { field: field, direction: sort[:direction] }
