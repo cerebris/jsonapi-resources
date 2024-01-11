@@ -39,6 +39,9 @@ I18n.enforce_available_locales = false
 
 JSONAPI.configure do |config|
   config.json_key_format = :camelized_key
+
+  require 'sorted_set'
+  config.related_identities_set = SortedSet
 end
 
 ActiveSupport::Deprecation.silenced = true
