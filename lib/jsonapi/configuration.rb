@@ -186,8 +186,9 @@ module JSONAPI
 
       # Collect the include keys into a Set or a SortedSet. SortedSet carries a small performance cost in the rails app
       # but produces consistent and more human navigable result sets.
-      # Note: If using SortedSet be sure to add `sorted_set` to your Gemfile and require 'sorted_set'`
+      # To use SortedSet be sure to add `sorted_set` to your Gemfile and the following two lines to your JR initializer:
       # require 'sorted_set'
+      # config.related_identities_set = SortedSet
       self.related_identities_set = Set
     end
 
