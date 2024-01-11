@@ -25,7 +25,7 @@ module JSONAPI
       @primary = primary
 
       @related = {}
-      @related_from = JSONAPI.configuration.sort_related_identities_by_primary_key ? SortedSet.new : Set.new
+      @related_from = JSONAPI.configuration.related_identities_set.new
     end
 
     def initialize_related(relationship_name)

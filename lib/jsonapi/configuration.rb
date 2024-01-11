@@ -44,7 +44,7 @@ module JSONAPI
                 :default_exclude_links,
                 :default_resource_retrieval_strategy,
                 :use_related_resource_records_for_joins,
-                :sort_related_identities_by_primary_key
+                :related_identities_set
 
     def initialize
       #:underscored_key, :camelized_key, :dasherized_key, or custom
@@ -184,9 +184,11 @@ module JSONAPI
       # relationship. Furthermore, specifying a `relation_name` on a relationship will cause this setting to be ignored.
       self.use_related_resource_records_for_joins = true
 
-      # Collect the include keys into a SortedSet. This carries a small performance cost in the rails app but produces
-      # consistent and more human navigable result sets.
-      self.sort_related_identities_by_primary_key = false
+      # Collect the include keys into a Set or a SortedSet. SortedSet carries a small performance cost in the rails app
+      # but produces consistent and more human navigable result sets.
+      # Note: If using SortedSet be sure to add `sorted_set` to your Gemfile and require 'sorted_set'`
+      # require 'sorted_set'
+      self.related_identities_set = Set
     end
 
     def cache_formatters=(bool)
@@ -333,7 +335,7 @@ module JSONAPI
 
     attr_writer :use_related_resource_records_for_joins
 
-    attr_writer :sort_related_identities_by_primary_key
+    attr_writer :related_identities_set
   end
 
   class << self

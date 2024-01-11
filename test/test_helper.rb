@@ -39,7 +39,9 @@ I18n.enforce_available_locales = false
 
 JSONAPI.configure do |config|
   config.json_key_format = :camelized_key
-  config.sort_related_identities_by_primary_key = true
+
+  require 'sorted_set'
+  config.related_identities_set = SortedSet
 end
 
 ActiveSupport::Deprecation.silenced = true
@@ -67,8 +69,6 @@ class TestApp < ::Rails::Application
   end
 
   config.hosts << "www.example.com"
-
-  config.sort_related_identities_by_primary_key = true
 end
 
 require 'rails/test_help'

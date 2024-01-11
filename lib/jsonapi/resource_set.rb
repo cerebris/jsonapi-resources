@@ -180,7 +180,7 @@ module JSONAPI
         flattened_tree[resource_klass][id][:resource] ||= fragment.resource if fragment.resource
 
         fragment.related.try(:each_pair) do |relationship_name, related_rids|
-          flattened_tree[resource_klass][id][:relationships][relationship_name] ||= JSONAPI.configuration.sort_related_identities_by_primary_key ? SortedSet.new : Set.new
+          flattened_tree[resource_klass][id][:relationships][relationship_name] ||= JSONAPI.configuration.related_identities_set.new
           flattened_tree[resource_klass][id][:relationships][relationship_name].merge(related_rids)
         end
       end
