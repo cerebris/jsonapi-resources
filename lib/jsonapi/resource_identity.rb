@@ -13,11 +13,17 @@ module JSONAPI
   # rid = ResourceIdentity.new(PostResource, 12)
   #
   class ResourceIdentity
-    attr_reader :resource_klass, :id
-
+    # Store the identity parts as an array to avoid allocating a new array for the hash method to work on
     def initialize(resource_klass, id)
-      @resource_klass = resource_klass
-      @id = id
+      @identity_parts = [resource_klass, id]
+    end
+
+    def resource_klass
+      @identity_parts[0]
+    end
+
+    def id
+      @identity_parts[1]
     end
 
     def ==(other)
@@ -27,11 +33,11 @@ module JSONAPI
     end
 
     def eql?(other)
-      other.is_a?(ResourceIdentity) && other.resource_klass == @resource_klass && other.id == @id
+      hash == other.hash
     end
 
     def hash
-      [@resource_klass, @id].hash
+      @identity_parts.hash
     end
 
     def <=>(other_identity)
