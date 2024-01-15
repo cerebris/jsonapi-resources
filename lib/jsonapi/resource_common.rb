@@ -511,6 +511,9 @@ module JSONAPI
         subclass._warned_missing_route = false
 
         subclass._clear_cached_attribute_options
+        subclass._clear_cached_resource_types_for_model
+        subclass._clear_cached_resource_klasses_for_type
+
         subclass._clear_fields_cache
 
         subclass._resource_retrieval_strategy_loaded = @_resource_retrieval_strategy_loaded
@@ -533,15 +536,19 @@ module JSONAPI
       end
 
       def resource_klass_for(type)
+        @_cached_resource_klasses_for_type ||= {}
         type = type.underscore
-        type_with_module = type.start_with?(module_path) ? type : module_path + type
 
-        resource_name = _resource_name_from_type(type_with_module)
-        resource = resource_name.safe_constantize if resource_name
-        if resource.nil?
-          fail NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
+        @_cached_resource_klasses_for_type.fetch(type) do
+          type_with_module = type.start_with?(module_path) ? type : module_path + type
+
+          resource_name = _resource_name_from_type(type_with_module)
+          resource_klass = resource_name.safe_constantize if resource_name
+          if resource_klass.nil?
+            fail NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
+          end
+          @_cached_resource_klasses_for_type[type] = resource_klass
         end
-        resource
       end
 
       def resource_klass_for_model(model)
@@ -553,11 +560,16 @@ module JSONAPI
       end
 
       def resource_type_for(model)
-        model_name = model.class.to_s.underscore
-        if _model_hints[model_name]
-          _model_hints[model_name]
-        else
-          model_name.rpartition('/').last
+        @_cached_resource_types_for_model.fetch(model.class) do
+          model_name = model.class.name.underscore
+
+          resource_type = if _model_hints[model_name]
+                            _model_hints[model_name]
+                          else
+                            model_name.rpartition('/').last
+                          end
+
+          @_cached_resource_types_for_model[model.class] = resource_type
         end
       end
 
@@ -1216,6 +1228,14 @@ module JSONAPI
 
       def _clear_cached_attribute_options
         @_cached_attribute_options = {}
+      end
+
+      def _clear_cached_resource_types_for_model
+        @_cached_resource_types_for_model = {}
+      end
+
+      def _clear_cached_resource_klasses_for_type
+        @_cached_resource_klasses_for_type = {}
       end
 
       def _clear_fields_cache
