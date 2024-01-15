@@ -1132,11 +1132,11 @@ module JSONAPI
       end
 
       def module_path
-        if name == 'JSONAPI::Resource'
-          ''
-        else
-          name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').underscore : ''
-        end
+        @module_path ||= if name == 'JSONAPI::Resource'
+                           ''
+                         else
+                           name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').underscore : ''
+                         end
       end
 
       def default_sort
