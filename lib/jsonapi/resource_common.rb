@@ -1181,18 +1181,6 @@ module JSONAPI
         end
       end
 
-      def _setup_relationship(klass, *attrs)
-        _clear_fields_cache
-
-        options = attrs.extract_options!
-        options[:parent_resource] = self
-
-        relationship_name = attrs[0].to_sym
-        check_duplicate_relationship_name(relationship_name)
-
-        define_relationship_methods(relationship_name.to_sym, klass, options)
-      end
-
       # ResourceBuilder methods
       def define_relationship_methods(relationship_name, relationship_klass, options)
         relationship = register_relationship(
