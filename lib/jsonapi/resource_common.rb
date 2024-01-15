@@ -927,11 +927,11 @@ module JSONAPI
       end
 
       def _updatable_attributes
-        _attributes.map { |key, options| key unless options[:readonly] }.compact
+        _attributes.map { |key, options| key unless options[:readonly] }.delete_if {|v| v.nil? }
       end
 
       def _updatable_relationships
-        @_relationships.map { |key, relationship| key unless relationship.readonly? }.compact
+        @_relationships.map { |key, relationship| key unless relationship.readonly? }.delete_if {|v| v.nil? }
       end
 
       def _relationship(type)
