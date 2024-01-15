@@ -39,7 +39,7 @@ module JSONAPI
     end
 
     def id
-      _model.public_send(self.class._primary_key)
+      @id ||= _model.public_send(self.class._primary_key)
     end
 
     def identity
