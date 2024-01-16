@@ -13,6 +13,8 @@ module JSONAPI
   # rid = ResourceIdentity.new(PostResource, 12)
   #
   class ResourceIdentity
+    include Comparable
+
     # Store the identity parts as an array to avoid allocating a new array for the hash method to work on
     def initialize(resource_klass, id)
       @identity_parts = [resource_klass, id]
@@ -41,7 +43,16 @@ module JSONAPI
     end
 
     def <=>(other_identity)
-      self.id <=> other_identity.id
+      return nil unless other_identity.is_a?(ResourceIdentity)
+
+      case self.resource_klass.name <=> other_identity.resource_klass.name
+      when -1
+        -1
+      when 1
+        1
+      else
+        self.id <=> other_identity.id
+      end
     end
 
     # Creates a string representation of the identifier.
