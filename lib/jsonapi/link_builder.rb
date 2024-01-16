@@ -49,8 +49,8 @@ module JSONAPI
 
     def relationships_related_link(source, relationship, query_params = {})
       if relationship._routed
-        url = "#{ self_link(source) }/#{ route_for_relationship(relationship) }"
-        url = "#{ url }?#{ query_params.to_query }" if query_params.present?
+        url = +"#{ self_link(source) }/#{ route_for_relationship(relationship) }"
+        url << "?#{ query_params.to_query }" if query_params.present?
         url
       else
         if JSONAPI.configuration.warn_on_missing_routes && !relationship._warned_missing_route
@@ -129,16 +129,12 @@ module JSONAPI
       @_resources_path[source_klass] ||= formatted_module_path_from_class(source_klass) + format_route(source_klass._type.to_s)
     end
 
-    def resource_path(source)
-      if source.class.singleton?
-        resources_path(source.class)
-      else
-        "#{resources_path(source.class)}/#{source.id}"
-      end
-    end
-
     def resource_url(source)
-      "#{ base_url }#{ engine_mount_point }#{ resource_path(source) }"
+      if source.class.singleton?
+        "#{ base_url }#{ engine_mount_point }#{ resources_path(source.class) }"
+      else
+        "#{ base_url }#{ engine_mount_point }#{resources_path(source.class)}/#{source.id}"
+      end
     end
 
     def route_for_relationship(relationship)

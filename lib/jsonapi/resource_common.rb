@@ -39,7 +39,7 @@ module JSONAPI
     end
 
     def id
-      _model.public_send(self.class._primary_key)
+      @id ||= _model.public_send(self.class._primary_key)
     end
 
     def identity
@@ -510,7 +510,10 @@ module JSONAPI
         subclass._routed = false
         subclass._warned_missing_route = false
 
-        subclass._clear_cached_attribute_options
+        subclass._attribute_options_cache = {}
+        subclass._model_class_to_resource_type_cache = {}
+        subclass._resource_type_to_class_cache = {}
+
         subclass._clear_fields_cache
 
         subclass._resource_retrieval_strategy_loaded = @_resource_retrieval_strategy_loaded
@@ -533,15 +536,19 @@ module JSONAPI
       end
 
       def resource_klass_for(type)
+        @_resource_type_to_class_cache ||= {}
         type = type.underscore
-        type_with_module = type.start_with?(module_path) ? type : module_path + type
 
-        resource_name = _resource_name_from_type(type_with_module)
-        resource = resource_name.safe_constantize if resource_name
-        if resource.nil?
-          fail NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
+        @_resource_type_to_class_cache.fetch(type) do
+          type_with_module = type.start_with?(module_path) ? type : module_path + type
+
+          resource_name = _resource_name_from_type(type_with_module)
+          resource_klass = resource_name.safe_constantize if resource_name
+          if resource_klass.nil?
+            fail NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
+          end
+          @_resource_type_to_class_cache[type] = resource_klass
         end
-        resource
       end
 
       def resource_klass_for_model(model)
@@ -553,17 +560,33 @@ module JSONAPI
       end
 
       def resource_type_for(model)
-        model_name = model.class.to_s.underscore
-        if _model_hints[model_name]
-          _model_hints[model_name]
-        else
-          model_name.rpartition('/').last
+        @_model_class_to_resource_type_cache.fetch(model.class) do
+          model_name = model.class.name.underscore
+
+          resource_type = if _model_hints[model_name]
+                            _model_hints[model_name]
+                          else
+                            model_name.rpartition('/').last
+                          end
+
+          @_model_class_to_resource_type_cache[model.class] = resource_type
         end
       end
 
-      attr_accessor :_attributes, :_relationships, :_type, :_model_hints, :_routed, :_warned_missing_route,
+      attr_accessor :_attributes,
+                    :_relationships,
+                    :_type,
+                    :_model_hints,
+                    :_routed,
+                    :_warned_missing_route,
                     :_resource_retrieval_strategy_loaded
-      attr_writer :_allowed_filters, :_paginator, :_allowed_sort
+
+      attr_writer :_allowed_filters,
+                  :_paginator,
+                  :_allowed_sort,
+                  :_model_class_to_resource_type_cache,
+                  :_resource_type_to_class_cache,
+                  :_attribute_options_cache
 
       def create(context)
         new(create_model, context)
@@ -590,7 +613,7 @@ module JSONAPI
       end
 
       def attribute(attribute_name, options = {})
-        _clear_cached_attribute_options
+        _clear_attribute_options_cache
         _clear_fields_cache
 
         attr = attribute_name.to_sym
@@ -903,7 +926,7 @@ module JSONAPI
 
       # quasi private class methods
       def _attribute_options(attr)
-        @_cached_attribute_options[attr] ||= default_attribute_options.merge(@_attributes[attr])
+        @_attribute_options_cache[attr] ||= default_attribute_options.merge(@_attributes[attr])
       end
 
       def _attribute_delegated_name(attr)
@@ -915,11 +938,11 @@ module JSONAPI
       end
 
       def _updatable_attributes
-        _attributes.map { |key, options| key unless options[:readonly] }.compact
+        _attributes.map { |key, options| key unless options[:readonly] }.delete_if {|v| v.nil? }
       end
 
       def _updatable_relationships
-        @_relationships.map { |key, relationship| key unless relationship.readonly? }.compact
+        @_relationships.map { |key, relationship| key unless relationship.readonly? }.delete_if {|v| v.nil? }
       end
 
       def _relationship(type)
@@ -1132,11 +1155,11 @@ module JSONAPI
       end
 
       def module_path
-        if name == 'JSONAPI::Resource'
-          ''
-        else
-          name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').underscore : ''
-        end
+        @module_path ||= if name == 'JSONAPI::Resource'
+                           ''
+                         else
+                           name =~ /::[^:]+\Z/ ? ($`.freeze.gsub('::', '/') + '/').underscore : ''
+                         end
       end
 
       def default_sort
@@ -1167,18 +1190,6 @@ module JSONAPI
 
           define_relationship_methods(relationship_name.to_sym, klass, options)
         end
-      end
-
-      def _setup_relationship(klass, *attrs)
-        _clear_fields_cache
-
-        options = attrs.extract_options!
-        options[:parent_resource] = self
-
-        relationship_name = attrs[0].to_sym
-        check_duplicate_relationship_name(relationship_name)
-
-        define_relationship_methods(relationship_name.to_sym, klass, options)
       end
 
       # ResourceBuilder methods
@@ -1214,8 +1225,16 @@ module JSONAPI
         @_relationships[name] = relationship_object
       end
 
-      def _clear_cached_attribute_options
-        @_cached_attribute_options = {}
+      def _clear_attribute_options_cache
+        @_attribute_options_cache&.clear
+      end
+
+      def _clear_model_to_resource_type_cache
+        @_model_class_to_resource_type_cache&.clear
+      end
+
+      def _clear_resource_type_to_klass_cache
+        @_resource_type_to_class_cache&.clear
       end
 
       def _clear_fields_cache

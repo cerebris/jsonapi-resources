@@ -262,7 +262,7 @@ module JSONAPI
       if !links.key?('self') && !source.class.exclude_link?(:self)
         links['self'] = link_builder.self_link(source)
       end
-      links.compact
+      links.delete_if {|k,v| v.nil? }
     end
 
     def custom_links_hash(source)
@@ -340,7 +340,7 @@ module JSONAPI
       links = {}
       links['self'] = self_link(source, relationship) unless relationship.exclude_link?(:self)
       links['related'] = related_link(source, relationship) unless relationship.exclude_link?(:related)
-      links.compact
+      links.delete_if {|k,v| v.nil? }
     end
 
     def to_many_linkage(rids)
