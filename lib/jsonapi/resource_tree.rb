@@ -68,13 +68,13 @@ module JSONAPI
     private
 
     def init_included_relationships(fragment, include_related)
-      include_related && include_related.each_key do |relationship_name|
+      include_related&.each_key do |relationship_name|
         fragment.initialize_related(relationship_name)
       end
     end
 
     def load_included(resource_klass, source_resource_tree, include_related, options)
-       include_related.try(:each_key) do |key|
+       include_related&.each_key do |key|
         relationship = resource_klass._relationship(key)
         relationship_name = relationship.name.to_sym
 
@@ -159,7 +159,6 @@ module JSONAPI
       @related_resource_trees ||= {}
 
       @parent_relationship = parent_relationship
-      @parent_relationship_name = parent_relationship.name.to_sym
       @source_resource_tree = source_resource_tree
     end
 

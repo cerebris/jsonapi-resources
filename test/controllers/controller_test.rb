@@ -4028,6 +4028,8 @@ end
 
 class Api::V7::ClientsControllerTest < ActionController::TestCase
   def test_get_namespaced_model_not_matching_resource_using_model_hint
+    Api::V7::ClientResource._clear_model_to_resource_type_cache
+    Api::V7::ClientResource._clear_resource_type_to_klass_cache
     assert_cacheable_get :index
     assert_response :success
     assert_equal 'clients', json_response['data'][0]['type']
@@ -4037,6 +4039,8 @@ class Api::V7::ClientsControllerTest < ActionController::TestCase
 
   def test_get_namespaced_model_not_matching_resource_not_using_model_hint
     Api::V7::ClientResource._model_hints.delete('api/v7/customer')
+    Api::V7::ClientResource._clear_model_to_resource_type_cache
+    Api::V7::ClientResource._clear_resource_type_to_klass_cache
     assert_cacheable_get :index
     assert_response :success
     assert_equal 'customers', json_response['data'][0]['type']
