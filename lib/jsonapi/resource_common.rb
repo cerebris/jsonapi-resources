@@ -510,9 +510,9 @@ module JSONAPI
         subclass._routed = false
         subclass._warned_missing_route = false
 
-        subclass._clear_cached_attribute_options
-        subclass._clear_cached_resource_types_for_model
-        subclass._clear_cached_resource_klasses_for_type
+        subclass._attribute_options_cache = {}
+        subclass._model_class_to_resource_type_cache = {}
+        subclass._resource_type_to_class_cache = {}
 
         subclass._clear_fields_cache
 
@@ -536,10 +536,10 @@ module JSONAPI
       end
 
       def resource_klass_for(type)
-        @_cached_resource_klasses_for_type ||= {}
+        @_resource_type_to_class_cache ||= {}
         type = type.underscore
 
-        @_cached_resource_klasses_for_type.fetch(type) do
+        @_resource_type_to_class_cache.fetch(type) do
           type_with_module = type.start_with?(module_path) ? type : module_path + type
 
           resource_name = _resource_name_from_type(type_with_module)
@@ -547,7 +547,7 @@ module JSONAPI
           if resource_klass.nil?
             fail NameError, "JSONAPI: Could not find resource '#{type}'. (Class #{resource_name} not found)"
           end
-          @_cached_resource_klasses_for_type[type] = resource_klass
+          @_resource_type_to_class_cache[type] = resource_klass
         end
       end
 
@@ -560,7 +560,7 @@ module JSONAPI
       end
 
       def resource_type_for(model)
-        @_cached_resource_types_for_model.fetch(model.class) do
+        @_model_class_to_resource_type_cache.fetch(model.class) do
           model_name = model.class.name.underscore
 
           resource_type = if _model_hints[model_name]
@@ -569,13 +569,24 @@ module JSONAPI
                             model_name.rpartition('/').last
                           end
 
-          @_cached_resource_types_for_model[model.class] = resource_type
+          @_model_class_to_resource_type_cache[model.class] = resource_type
         end
       end
 
-      attr_accessor :_attributes, :_relationships, :_type, :_model_hints, :_routed, :_warned_missing_route,
+      attr_accessor :_attributes,
+                    :_relationships,
+                    :_type,
+                    :_model_hints,
+                    :_routed,
+                    :_warned_missing_route,
                     :_resource_retrieval_strategy_loaded
-      attr_writer :_allowed_filters, :_paginator, :_allowed_sort
+
+      attr_writer :_allowed_filters,
+                  :_paginator,
+                  :_allowed_sort,
+                  :_model_class_to_resource_type_cache,
+                  :_resource_type_to_class_cache,
+                  :_attribute_options_cache
 
       def create(context)
         new(create_model, context)
@@ -602,7 +613,7 @@ module JSONAPI
       end
 
       def attribute(attribute_name, options = {})
-        _clear_cached_attribute_options
+        _clear_attribute_options_cache
         _clear_fields_cache
 
         attr = attribute_name.to_sym
@@ -915,7 +926,7 @@ module JSONAPI
 
       # quasi private class methods
       def _attribute_options(attr)
-        @_cached_attribute_options[attr] ||= default_attribute_options.merge(@_attributes[attr])
+        @_attribute_options_cache[attr] ||= default_attribute_options.merge(@_attributes[attr])
       end
 
       def _attribute_delegated_name(attr)
@@ -1214,16 +1225,16 @@ module JSONAPI
         @_relationships[name] = relationship_object
       end
 
-      def _clear_cached_attribute_options
-        @_cached_attribute_options = {}
+      def _clear_attribute_options_cache
+        @_attribute_options_cache&.clear
       end
 
-      def _clear_cached_resource_types_for_model
-        @_cached_resource_types_for_model = {}
+      def _clear_model_to_resource_type_cache
+        @_model_class_to_resource_type_cache&.clear
       end
 
-      def _clear_cached_resource_klasses_for_type
-        @_cached_resource_klasses_for_type = {}
+      def _clear_resource_type_to_klass_cache
+        @_resource_type_to_class_cache&.clear
       end
 
       def _clear_fields_cache
