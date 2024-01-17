@@ -3,6 +3,7 @@
 require 'jsonapi/resources/railtie'
 require 'jsonapi/naive_cache'
 require 'jsonapi/compiled_json'
+require 'jsonapi/relation_retrieval'
 require 'jsonapi/active_relation_retrieval'
 require 'jsonapi/active_relation_retrieval_v09'
 require 'jsonapi/active_relation_retrieval_v10'
