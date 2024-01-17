@@ -440,8 +440,12 @@ module JSONAPI
         raise "Unable to find resource_retrieval_strategy #{module_name}" unless resource_retrieval_module
 
         if included_modules.include?(::JSONAPI::RelationRetrieval)
-          warn "Resource retrieval strategy #{module_name} already loaded for #{self.name}"
-          return
+          if _resource_retrieval_strategy_loaded.nil? || module_name == _resource_retrieval_strategy_loaded
+            warn "Resource retrieval strategy #{module_name} already loaded for #{self.name}"
+            return
+          else
+            fail ArgumentError.new("Resource retrieval strategy #{_resource_retrieval_strategy_loaded} already loaded for #{self.name}. Cannot load #{module_name}")
+          end
         end
 
         class_eval do
