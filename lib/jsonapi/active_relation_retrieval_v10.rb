@@ -2,6 +2,8 @@
 
 module JSONAPI
   module ActiveRelationRetrievalV10
+    include ::JSONAPI::RelationRetrieval
+
     def find_related_ids(relationship, options = {})
       self.class.find_related_fragments(self, relationship, options).keys.collect { |rid| rid.id }
     end
