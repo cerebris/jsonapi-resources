@@ -5,7 +5,15 @@ module JSONAPI
     extend self
 
     def polymorphic_types(name)
-      @poly_hash ||= {}.tap do |hash|
+      polymorphic_types_lookup[name.to_sym]
+    end
+
+    def polymorphic_types_lookup
+      @polymorphic_types_lookup ||= build_polymorphic_types_lookup
+    end
+
+    def build_polymorphic_types_lookup
+      {}.tap do |hash|
         ObjectSpace.each_object do |klass|
           next unless Module === klass
           if ActiveRecord::Base > klass
@@ -15,7 +23,6 @@ module JSONAPI
           end
         end
       end
-      @poly_hash[name.to_sym]
     end
   end
 end
