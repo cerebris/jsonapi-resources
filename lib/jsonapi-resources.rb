@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'jsonapi/resources/railtie'
+require 'jsonapi/utils'
 require 'jsonapi/naive_cache'
 require 'jsonapi/compiled_json'
 require 'jsonapi/relation_retrieval'

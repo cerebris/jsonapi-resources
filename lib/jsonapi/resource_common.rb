@@ -1020,7 +1020,7 @@ module JSONAPI
       end
 
       def _polymorphic_types
-        JSONAPI::Relationship.polymorphic_types(_polymorphic_name.to_sym)
+        JSONAPI::Utils.polymorphic_types(_polymorphic_name.to_sym)
       end
 
       def _polymorphic_resource_klasses
