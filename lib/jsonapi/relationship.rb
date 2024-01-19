@@ -87,7 +87,7 @@ module JSONAPI
     end
 
     def self.polymorphic_types(name)
-      ::JSONAPI::Utils.polymorphic_types(name)
+      ::JSONAPI::Utils::PolymorphicTypesLookup.polymorphic_types(name)
     end
 
     def resource_types
