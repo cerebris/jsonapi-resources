@@ -1020,17 +1020,7 @@ module JSONAPI
       end
 
       def _polymorphic_types
-        @poly_hash ||= {}.tap do |hash|
-          ObjectSpace.each_object do |klass|
-            next unless Module === klass
-            if klass < ActiveRecord::Base
-              klass.reflect_on_all_associations(:has_many).select{|r| r.options[:as] }.each do |reflection|
-                (hash[reflection.options[:as]] ||= []) << klass.name.underscore
-              end
-            end
-          end
-        end
-        @poly_hash[_polymorphic_name.to_sym]
+        JSONAPI::Utils.polymorphic_types(_polymorphic_name.to_sym)
       end
 
       def _polymorphic_resource_klasses
