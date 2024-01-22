@@ -359,6 +359,47 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_equal Car, person.vehicles.fourth.class
   end
 
+  def test_post_sti_polymorphic_with_has_one_relationship
+    post '/cars', params:
+      {
+        'data' => {
+          'type' => 'cars',
+          'attributes' => {
+            'make' => 'Mazda',
+            'model' => 'Miata MX5',
+            'drive_layout' => 'Front Engine RWD',
+            'serial_number' => '32432adfsfdysua',
+          },
+          'relationships' => {
+            'person' => {
+              'data' => {
+                'type' => 'people', 'id' => '1001',
+              }
+            },
+            'imageable' => {
+              'data' => {
+                'type' => 'products', 'id' => '1',
+              }
+            },
+          }
+        }
+      }.to_json,
+      headers: {
+        'CONTENT_TYPE' => JSONAPI::MEDIA_TYPE,
+        'Accept' => JSONAPI::MEDIA_TYPE
+      }
+
+    assert_jsonapi_response 201
+
+    body = JSON.parse(response.body)
+    car = Vehicle.find(body.dig("data", "id"))
+
+    assert_equal "Car", car.type
+    assert_equal "Mazda", car.make
+    assert_equal Product, car.imageable.class
+    assert_equal Person, car.person.class
+  end
+
   def test_post_polymorphic_invalid_with_wrong_type
     post '/people', params:
       {
