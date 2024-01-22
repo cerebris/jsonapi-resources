@@ -561,7 +561,7 @@ module JSONAPI
       end
 
       def _resource_name_from_type(type)
-        "#{type.to_s.underscore.singularize}_resource".camelize
+        "#{type.to_s.classify}Resource"
       end
 
       def resource_type_for(model)
