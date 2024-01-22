@@ -463,7 +463,11 @@ class Minitest::Test
     true
   end
 
-  self.fixture_path = "#{Rails.root}/fixtures"
+  if respond_to?(:fixture_paths=)
+    self.fixture_paths |= ["#{Rails.root}/fixtures"]
+  else
+    self.fixture_path = "#{Rails.root}/fixtures"
+  end
   fixtures :all
 
   def adapter_name
@@ -515,7 +519,11 @@ class Minitest::Test
 end
 
 class ActiveSupport::TestCase
-  self.fixture_path = "#{Rails.root}/fixtures"
+  if respond_to?(:fixture_paths=)
+    self.fixture_paths |= ["#{Rails.root}/fixtures"]
+  else
+    self.fixture_path = "#{Rails.root}/fixtures"
+  end
   fixtures :all
   setup do
     @routes = TestApp.routes
@@ -523,7 +531,11 @@ class ActiveSupport::TestCase
 end
 
 class ActionDispatch::IntegrationTest
-  self.fixture_path = "#{Rails.root}/fixtures"
+  if respond_to?(:fixture_paths=)
+    self.fixture_paths |= ["#{Rails.root}/fixtures"]
+  else
+    self.fixture_path = "#{Rails.root}/fixtures"
+  end
   fixtures :all
 
   def assert_jsonapi_response(expected_status, msg = nil)
