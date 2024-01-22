@@ -73,13 +73,13 @@ class RequestTest < ActionDispatch::IntegrationTest
       'Accept' => JSONAPI::MEDIA_TYPE
     }
     assert_jsonapi_response 201
-    json_body = JSON.parse(response.body)
+    json_body = response.parsed_body
     session_id = json_body["data"]["id"]
 
     # Get what we just created
     get "/sessions/#{session_id}?include=responses"
     assert_jsonapi_response 200
-    json_body = JSON.parse(response.body)
+    json_body = response.parsed_body
 
     assert(json_body.is_a?(Object));
     assert(json_body["included"].is_a?(Array));
@@ -87,7 +87,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
     get "/sessions/#{session_id}?include=responses,responses.paragraph"
     assert_jsonapi_response 200
-    json_body = JSON.parse(response.body)
+    json_body = response.parsed_body
 
     assert_equal("single_textbox", json_body["included"][0]["attributes"]["response_type"]["single_textbox"]);
 
