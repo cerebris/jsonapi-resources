@@ -73,13 +73,13 @@ class RequestTest < ActionDispatch::IntegrationTest
       'Accept' => JSONAPI::MEDIA_TYPE
     }
     assert_jsonapi_response 201
-    json_body = JSON.parse(response.body)
+    json_body = response.parsed_body
     session_id = json_body["data"]["id"]
 
     # Get what we just created
     get "/sessions/#{session_id}?include=responses"
     assert_jsonapi_response 200
-    json_body = JSON.parse(response.body)
+    json_body = response.parsed_body
 
     assert(json_body.is_a?(Object));
     assert(json_body["included"].is_a?(Array));
@@ -87,7 +87,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
     get "/sessions/#{session_id}?include=responses,responses.paragraph"
     assert_jsonapi_response 200
-    json_body = JSON.parse(response.body)
+    json_body = response.parsed_body
 
     assert_equal("single_textbox", json_body["included"][0]["attributes"]["response_type"]["single_textbox"]);
 
@@ -348,7 +348,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
     assert_jsonapi_response 201
 
-    body = JSON.parse(response.body)
+    body = response.parsed_body
     person = Person.find(body.dig("data", "id"))
 
     assert_equal "Reo", person.name
@@ -690,7 +690,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
     assert_jsonapi_response 200
 
-    body = JSON.parse(response.body)
+    body = response.parsed_body
     person = Person.find(body.dig("data", "id"))
 
     assert_equal "Reo", person.name
@@ -1412,7 +1412,7 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_deprecated_include_message
-    ActiveSupport::Deprecation.silenced = false
+    silence_deprecations! false
     original_config = JSONAPI.configuration.dup
     _out, err = capture_io do
       eval <<-CODE
@@ -1422,7 +1422,7 @@ class RequestTest < ActionDispatch::IntegrationTest
     assert_match(/DEPRECATION WARNING: `allow_include` has been replaced by `default_allow_include_to_one` and `default_allow_include_to_many` options./, err)
   ensure
     JSONAPI.configuration = original_config
-    ActiveSupport::Deprecation.silenced = true
+    silence_deprecations! true
   end
 
 
