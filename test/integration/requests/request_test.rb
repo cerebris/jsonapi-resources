@@ -391,7 +391,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
     assert_jsonapi_response 201
 
-    body = JSON.parse(response.body)
+    body = response.parsed_body
     car = Vehicle.find(body.dig("data", "id"))
 
     assert_equal "Car", car.type
