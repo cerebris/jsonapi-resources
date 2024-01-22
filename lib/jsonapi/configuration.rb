@@ -256,8 +256,16 @@ module JSONAPI
         @exception_class_allowlist.flatten.any? { |k| e.class.ancestors.map(&:to_s).include?(k.to_s) }
     end
 
+    def deprecate(msg)
+      if defined?(ActiveSupport.deprecator)
+        ActiveSupport.deprecator.warn(msg)
+      else
+        ActiveSupport::Deprecation.warn(msg)
+      end
+    end
+
     def default_processor_klass=(default_processor_klass)
-      ActiveSupport::Deprecation.warn('`default_processor_klass` has been replaced by `default_processor_klass_name`.')
+      deprecate('`default_processor_klass` has been replaced by `default_processor_klass_name`.')
       @default_processor_klass = default_processor_klass
     end
 
@@ -271,7 +279,7 @@ module JSONAPI
     end
 
     def allow_include=(allow_include)
-      ActiveSupport::Deprecation.warn('`allow_include` has been replaced by `default_allow_include_to_one` and `default_allow_include_to_many` options.')
+      deprecate('`allow_include` has been replaced by `default_allow_include_to_one` and `default_allow_include_to_many` options.')
       @default_allow_include_to_one = allow_include
       @default_allow_include_to_many = allow_include
     end

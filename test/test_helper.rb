@@ -70,7 +70,7 @@ class TestApp < ::Rails::Application
 end
 
 def silence_deprecations!(bool = true)
-  if Rails.application.respond_to?(:deprecators)
+  if defined?(Rails.application) && Rails.application.respond_to?(:deprecators)
     Rails.application.deprecators.silenced = bool
   else
     ActiveSupport::Deprecation.silenced = bool
