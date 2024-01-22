@@ -44,8 +44,6 @@ JSONAPI.configure do |config|
   config.related_identities_set = SortedSet
 end
 
-ActiveSupport::Deprecation.silenced = true
-
 puts "Testing With RAILS VERSION #{Rails.version}"
 
 class TestApp < ::Rails::Application
@@ -69,6 +67,14 @@ class TestApp < ::Rails::Application
   end
 
   config.hosts << "www.example.com"
+end
+
+def silence_deprecations!(bool = true)
+  if Rails.application.respond_to?(:deprecators)
+    Rails.application.deprecators.silenced = bool
+  else
+    ActiveSupport::Deprecation.silenced = bool
+  end
 end
 
 require 'rails/test_help'
