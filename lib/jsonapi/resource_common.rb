@@ -1200,12 +1200,16 @@ module JSONAPI
       def define_foreign_key_setter(relationship)
         if relationship.polymorphic?
           define_on_resource "#{relationship.foreign_key}=" do |v|
-            _model.method("#{relationship.foreign_key}=").call(v[:id])
-            _model.public_send("#{relationship.polymorphic_type}=", v[:type])
+            _model.assign_attributes(
+              relationship.foreign_key => v[:id],
+              relationship.polymorphic_type => v[:type]&.to_s&.classify
+            )
           end
         else
           define_on_resource "#{relationship.foreign_key}=" do |value|
-            _model.method("#{relationship.foreign_key}=").call(value)
+            _model.assign_attributes(
+              relationship.foreign_key => value
+            )
           end
         end
         relationship.foreign_key
