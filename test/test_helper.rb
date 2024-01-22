@@ -44,8 +44,6 @@ JSONAPI.configure do |config|
   config.related_identities_set = SortedSet
 end
 
-ActiveSupport::Deprecation.silenced = true
-
 puts "Testing With RAILS VERSION #{Rails.version}"
 
 class TestApp < ::Rails::Application
@@ -69,6 +67,14 @@ class TestApp < ::Rails::Application
   end
 
   config.hosts << "www.example.com"
+end
+
+def silence_deprecations!(bool = true)
+  if defined?(Rails.application) && Rails.application.respond_to?(:deprecators)
+    Rails.application.deprecators.silenced = bool
+  else
+    ActiveSupport::Deprecation.silenced = bool
+  end
 end
 
 require 'rails/test_help'
@@ -463,7 +469,11 @@ class Minitest::Test
     true
   end
 
-  self.fixture_path = "#{Rails.root}/fixtures"
+  if respond_to?(:fixture_paths=)
+    self.fixture_paths |= ["#{Rails.root}/fixtures"]
+  else
+    self.fixture_path = "#{Rails.root}/fixtures"
+  end
   fixtures :all
 
   def adapter_name
@@ -515,7 +525,11 @@ class Minitest::Test
 end
 
 class ActiveSupport::TestCase
-  self.fixture_path = "#{Rails.root}/fixtures"
+  if respond_to?(:fixture_paths=)
+    self.fixture_paths |= ["#{Rails.root}/fixtures"]
+  else
+    self.fixture_path = "#{Rails.root}/fixtures"
+  end
   fixtures :all
   setup do
     @routes = TestApp.routes
@@ -523,7 +537,11 @@ class ActiveSupport::TestCase
 end
 
 class ActionDispatch::IntegrationTest
-  self.fixture_path = "#{Rails.root}/fixtures"
+  if respond_to?(:fixture_paths=)
+    self.fixture_paths |= ["#{Rails.root}/fixtures"]
+  else
+    self.fixture_path = "#{Rails.root}/fixtures"
+  end
   fixtures :all
 
   def assert_jsonapi_response(expected_status, msg = nil)
