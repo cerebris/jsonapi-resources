@@ -164,7 +164,7 @@ module JSONAPI
     end
 
     def resource_klass_name
-      @resource_klass_name ||= "#{self.class.name.underscore.sub(/_controller$/, '').singularize}_resource".camelize
+      @resource_klass_name ||= "#{self.class.name.underscore.sub(/_controller$/, '').classify}Resource"
     end
 
     def verify_content_type_header

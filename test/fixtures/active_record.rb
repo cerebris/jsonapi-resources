@@ -275,6 +275,7 @@ ActiveRecord::Schema.define do
     t.string :drive_layout
     t.string :serial_number
     t.integer :person_id
+    t.references :imageable, polymorphic: true, index: true
     t.timestamps null: false
   end
 
@@ -734,6 +735,9 @@ end
 
 class Vehicle < ActiveRecord::Base
   belongs_to :person
+  belongs_to :imageable, polymorphic: true
+  # belongs_to :document, -> { where( pictures: { imageable_type: 'Document' } ) }, foreign_key: 'imageable_id'
+  # belongs_to :product, -> { where( pictures: { imageable_type: 'Product' } ) }, foreign_key: 'imageable_id'
 end
 
 class Car < Vehicle
@@ -743,13 +747,13 @@ class Boat < Vehicle
 end
 
 class Document < ActiveRecord::Base
-  has_many :pictures, as: :imageable
+  has_many :pictures, as: :imageable # polymorphic
   belongs_to :author, class_name: 'Person', foreign_key: 'author_id'
   has_one :file_properties, as: :fileable
 end
 
 class Product < ActiveRecord::Base
-  has_many :pictures, as: :imageable
+  has_many :pictures, as: :imageable # polymorphic
   belongs_to :designer, class_name: 'Person', foreign_key: 'designer_id'
   has_one :file_properties, as: :fileable
 end
@@ -1338,6 +1342,7 @@ class VehicleResource < JSONAPI::Resource
   immutable
 
   has_one :person
+  has_one :imageable, polymorphic: true
   attributes :make, :model, :serial_number
 end
 
@@ -1917,6 +1922,8 @@ module Api
     class SectionResource < SectionResource; end
     class TagResource < TagResource; end
     class CommentResource < CommentResource; end
+    class DocumentResource < DocumentResource; end
+    class ProductResource < ProductResource; end
     class VehicleResource < VehicleResource; end
     class CarResource < CarResource; end
     class BoatResource < BoatResource; end
