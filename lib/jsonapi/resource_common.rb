@@ -561,7 +561,7 @@ module JSONAPI
       end
 
       def _resource_name_from_type(type)
-        "#{type.to_s.underscore.singularize}_resource".camelize
+        "#{type.to_s.classify}Resource"
       end
 
       def resource_type_for(model)
@@ -576,6 +576,10 @@ module JSONAPI
 
           @_model_class_to_resource_type_cache[model.class] = resource_type
         end
+      end
+
+      def polymorphic_type_for(model_name)
+        model_name&.to_s&.classify
       end
 
       attr_accessor :_attributes,
@@ -1200,12 +1204,12 @@ module JSONAPI
       def define_foreign_key_setter(relationship)
         if relationship.polymorphic?
           define_on_resource "#{relationship.foreign_key}=" do |v|
-            _model.method("#{relationship.foreign_key}=").call(v[:id])
-            _model.public_send("#{relationship.polymorphic_type}=", v[:type])
+            _model.public_send("#{relationship.foreign_key}=", v[:id])
+            _model.public_send("#{relationship.polymorphic_type}=", self.class.polymorphic_type_for(v[:type]))
           end
         else
           define_on_resource "#{relationship.foreign_key}=" do |value|
-            _model.method("#{relationship.foreign_key}=").call(value)
+            _model.public_send("#{relationship.foreign_key}=", value)
           end
         end
         relationship.foreign_key

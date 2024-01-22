@@ -92,7 +92,7 @@ module JSONAPI
 
       begin
         unless scopes.empty?
-          "#{ scopes.first.to_s.camelize }::Engine".safe_constantize
+          "#{ scopes.first.to_s.classify }::Engine".safe_constantize
         end
 
           # :nocov:
