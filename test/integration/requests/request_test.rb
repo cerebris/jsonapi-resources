@@ -348,7 +348,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
     assert_jsonapi_response 201
 
-    body = JSON.parse(response.body)
+    body = response.parsed_body
     person = Person.find(body.dig("data", "id"))
 
     assert_equal "Reo", person.name
@@ -649,7 +649,7 @@ class RequestTest < ActionDispatch::IntegrationTest
 
     assert_jsonapi_response 200
 
-    body = JSON.parse(response.body)
+    body = response.parsed_body
     person = Person.find(body.dig("data", "id"))
 
     assert_equal "Reo", person.name
