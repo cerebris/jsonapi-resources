@@ -28,18 +28,42 @@ module JSONAPI
       end
 
       def build_polymorphic_types_lookup
-        {}.tap do |hash|
+        public_send(build_polymorphic_types_lookup_strategy)
+      end
+
+      def build_polymorphic_types_lookup_strategy
+        :build_polymorphic_types_lookup_from_object_space
+      end
+
+      def build_polymorphic_types_lookup_from_descendants
+        {}.tap do |lookup|
+          ActiveRecord::Base
+            .descendants
+            .select(&:name)
+            .reject(&:abstract_class)
+            .select(&:model_name).map {|klass|
+              add_polymorphic_types_lookup(klass: klass, lookup: lookup)
+            }
+        end
+      end
+
+      def build_polymorphic_types_lookup_from_object_space
+        {}.tap do |lookup|
           ObjectSpace.each_object do |klass|
             next unless Module === klass
             is_active_record_inspectable = ActiveRecord::Base > klass
             is_active_record_inspectable &&= klass.respond_to?(:reflect_on_all_associations, true)
             is_active_record_inspectable &&= format_polymorphic_klass_type(klass).present?
             if is_active_record_inspectable
-              klass.reflect_on_all_associations(:has_many).select { |r| r.options[:as] }.each do |reflection|
-                (hash[reflection.options[:as]] ||= []) << format_polymorphic_klass_type(klass).underscore
-              end
+              add_polymorphic_types_lookup(klass: klass, lookup: lookup)
             end
           end
+        end
+      end
+
+      def add_polymorphic_types_lookup(klass:, lookup:)
+        klass.reflect_on_all_associations(:has_many).select { |r| r.options[:as] }.each do |reflection|
+          (lookup[reflection.options[:as]] ||= []) << format_polymorphic_klass_type(klass).underscore
         end
       end
 
