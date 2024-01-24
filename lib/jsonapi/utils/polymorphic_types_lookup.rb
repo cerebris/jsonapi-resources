@@ -5,8 +5,8 @@ module JSONAPI
     module PolymorphicTypesLookup
       extend self
 
-      def polymorphic_types(name)
-        polymorphic_types_lookup.fetch(name.to_sym) do
+      def polymorphic_types(name, rebuild: false)
+        polymorphic_types_lookup(rebuild: rebuild).fetch(name.to_sym) do
           klass = name.classify.safe_constantize
           if klass.nil?
             warn "[POLYMORPHIC TYPE NOT FOUND] No polymorphic types found for #{name}"
@@ -18,8 +18,13 @@ module JSONAPI
         end
       end
 
-      def polymorphic_types_lookup
+      def polymorphic_types_lookup(rebuild: false)
+        polymorphic_types_lookup_clear! if rebuild
         @polymorphic_types_lookup ||= build_polymorphic_types_lookup
+      end
+
+      def polymorphic_types_lookup_clear!
+        @polymorphic_types_lookup = nil
       end
 
       def build_polymorphic_types_lookup
