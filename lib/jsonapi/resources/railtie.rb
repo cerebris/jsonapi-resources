@@ -7,16 +7,15 @@ module JSONAPI
         load 'tasks/check_upgrade.rake'
       end
 
-
-      initializer "jsonapi_resources.testing", after: :initialize do
-        next unless Rails.env.test?
+      # https://guides.rubyonrails.org/v6.0/engines.html#available-hooks
+      ActiveSupport.on_load(:action_dispatch_integration_test) do
         # Make response.parsed_body work
-        ActionDispatch::IntegrationTest.register_encoder :api_json,
+        ::ActionDispatch::IntegrationTest.register_encoder :api_json,
           param_encoder: ->(params) {
             params
           },
           response_parser: ->(body) {
-            JSONAPI::MimeTypes.parser.call(body)
+            ::JSONAPI::MimeTypes.parser.call(body)
           }
       end
     end
