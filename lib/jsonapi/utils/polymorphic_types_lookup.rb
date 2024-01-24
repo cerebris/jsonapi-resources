@@ -5,6 +5,10 @@ module JSONAPI
     module PolymorphicTypesLookup
       extend self
 
+      singleton_class.attr_accessor :build_polymorphic_types_lookup_strategy
+      self.build_polymorphic_types_lookup_strategy =
+        :build_polymorphic_types_lookup_from_object_space
+
       def polymorphic_types(name, rebuild: false)
         polymorphic_types_lookup(rebuild: rebuild).fetch(name.to_sym, &handle_polymorphic_type_name_found)
       end
@@ -27,10 +31,6 @@ module JSONAPI
 
       def build_polymorphic_types_lookup
         public_send(build_polymorphic_types_lookup_strategy)
-      end
-
-      def build_polymorphic_types_lookup_strategy
-        :build_polymorphic_types_lookup_from_object_space
       end
 
       def build_polymorphic_types_lookup_from_descendants
