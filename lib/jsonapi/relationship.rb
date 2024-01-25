@@ -193,7 +193,7 @@ module JSONAPI
       def setup_implicit_relationships_for_polymorphic_types(exclude_linkage_data: true)
         types = self.class.polymorphic_types(_relation_name)
         unless types.present?
-          warn "No polymorphic types found for #{parent_resource.name} #{_relation_name}"
+          warn "[POLYMORPHIC TYPE] No polymorphic types found for #{parent_resource.name} #{_relation_name}"
           return
         end
 
