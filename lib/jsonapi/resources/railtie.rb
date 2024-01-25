@@ -18,6 +18,10 @@ module JSONAPI
             ::JSONAPI::MimeTypes.parser.call(body)
           }
       end
+
+      initializer "jsonapi_resources.initialize", after: :initialize do
+        JSONAPI::Utils::PolymorphicTypesLookup.polymorphic_types_lookup_clear!
+      end
     end
   end
 end
