@@ -262,7 +262,7 @@ module JSONAPI
       def find_related_fragments(source_fragment, relationship, options = {})
         if relationship.polymorphic? # && relationship.foreign_key_on == :self
           source_resource_klasses = if relationship.foreign_key_on == :self
-                                      relationship.class.polymorphic_types(relationship.name).collect do |polymorphic_type|
+                                      relationship.polymorphic_types.collect do |polymorphic_type|
                                         resource_klass_for(polymorphic_type)
                                       end
                                     else
@@ -284,7 +284,7 @@ module JSONAPI
       def find_included_fragments(source_fragments, relationship, options)
         if relationship.polymorphic? # && relationship.foreign_key_on == :self
           source_resource_klasses = if relationship.foreign_key_on == :self
-                                      relationship.class.polymorphic_types(relationship.name).collect do |polymorphic_type|
+                                      relationship.polymorphic_types.collect do |polymorphic_type|
                                         resource_klass_for(polymorphic_type)
                                       end
                                     else
