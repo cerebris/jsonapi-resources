@@ -532,10 +532,30 @@ module JSONAPI
 
         if original_relationships.is_a?(Hash)
           original_relationships.each_value do |relationship|
+            next if relationship.implicit_relationship?
             options = relationship.options.dup
             options[:parent_resource] = self
             options[:inverse_relationship] = relationship.options[:inverse_relationship]
             _add_relationship(relationship.class, relationship.name, options)
+          end
+        end
+      end
+
+      def initialize_relationship(relationship)
+
+        define_relationship_methods(relationship)
+      end
+
+      def initialize_all_relationships
+        resource_klasses = ObjectSpace.each_object(Class).select do |klass|
+          klass.included_modules.include?(JSONAPI::ResourceCommon)
+        end
+
+        resource_klasses.each do |klass|
+          next unless klass._relationships.is_a?(Hash)
+
+          klass._relationships.each_value do |relationship|
+            initialize_relationship(relationship)
           end
         end
       end
@@ -1182,22 +1202,21 @@ module JSONAPI
         options = attrs.extract_options!
         options[:parent_resource] = self
 
-        attrs.each do |name|
-          relationship_name = name.to_sym
-          check_reserved_relationship_name(relationship_name)
-          check_duplicate_relationship_name(relationship_name)
+        name = attrs.first
+        raise ArgumentError, 'You must specify a name for the relationship' unless name
 
-          define_relationship_methods(relationship_name.to_sym, klass, options)
-        end
+        relationship_name = name.to_sym
+        check_reserved_relationship_name(relationship_name)
+        check_duplicate_relationship_name(relationship_name)
+
+        relationship = klass.new(relationship_name, options)
+
+        register_relationship(relationship_name, relationship)
+        relationship
       end
 
       # ResourceBuilder methods
-      def define_relationship_methods(relationship_name, relationship_klass, options)
-        relationship = register_relationship(
-          relationship_name,
-          relationship_klass.new(relationship_name, options)
-        )
-
+      def define_relationship_methods(relationship)
         define_foreign_key_setter(relationship)
       end
 

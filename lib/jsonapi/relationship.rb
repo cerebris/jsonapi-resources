@@ -2,10 +2,23 @@
 
 module JSONAPI
   class Relationship
-    attr_reader :acts_as_set, :foreign_key, :options, :name,
-                :class_name, :polymorphic, :always_include_optional_linkage_data, :exclude_linkage_data,
-                :parent_resource, :eager_load_on_include, :custom_methods,
-                :inverse_relationship, :allow_include, :hidden, :use_related_resource_records_for_joins
+    attr_reader :acts_as_set,
+                :foreign_key,
+                :options,
+                :name,
+                :class_name,
+                :polymorphic,
+                :always_include_optional_linkage_data,
+                :exclude_linkage_data,
+                :parent_resource,
+                :eager_load_on_include,
+                :custom_methods,
+                :inverse_relationship,
+                :hidden,
+                :use_related_resource_records_for_joins,
+                :find_related_through,
+                :implicit_relationship,
+                :polymorphic_type_relationship_for
 
     attr_writer :allow_include
 
@@ -26,6 +39,8 @@ module JSONAPI
         @polymorphic_types_override ||= options[:polymorphic_relations]
       end
 
+      @implicit_relationship = options.fetch(:implicit_relationship, false) == true
+
       use_related_resource_records_for_joins_default = if options[:relation_name]
                                                          false
                                                        else
@@ -36,6 +51,8 @@ module JSONAPI
                                                               use_related_resource_records_for_joins_default) == true
 
       @hidden = options.fetch(:hidden, false) == true
+
+      @polymorphic_type_relationship_for = options[:polymorphic_type_relationship_for]
 
       @exclude_linkage_data = options[:exclude_linkage_data]
       @always_include_optional_linkage_data = options.fetch(:always_include_optional_linkage_data, false) == true
@@ -137,6 +154,10 @@ module JSONAPI
       @options[:readonly]
     end
 
+    def implicit_relationship?
+      @implicit_relationship
+    end
+
     def exclude_links(exclude)
       case exclude
       when :default, "default"
@@ -170,16 +191,11 @@ module JSONAPI
         @class_name = options.fetch(:class_name, name.to_s.classify)
         @foreign_key ||= "#{name}_id".to_sym
         @foreign_key_on = options.fetch(:foreign_key_on, :self)
-        # if parent_resource
-        #   @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type)
-        # end
 
         if options.fetch(:create_implicit_polymorphic_type_relationships, true) == true && polymorphic?
           # Setup the implicit relationships for the polymorphic types and exclude linkage data
           setup_implicit_relationships_for_polymorphic_types
         end
-
-        @polymorphic_type_relationship_for = options[:polymorphic_type_relationship_for]
       end
 
       def to_s
@@ -208,7 +224,8 @@ module JSONAPI
         types.each do |type|
           parent_resource.has_one(type.to_s.underscore.singularize,
                                   exclude_linkage_data: exclude_linkage_data,
-                                  polymorphic_type_relationship_for: name)
+                                  polymorphic_type_relationship_for: name,
+                                  implicit_relationship: true)
         end
       end
 

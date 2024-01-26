@@ -343,10 +343,8 @@ module JSONAPI
         records
       end
 
-      def define_relationship_methods(relationship_name, relationship_klass, options)
+      def define_relationship_methods(relationship)
         foreign_key = super
-
-        relationship = _relationship(relationship_name)
 
         case relationship
         when JSONAPI::Relationship::ToOne
