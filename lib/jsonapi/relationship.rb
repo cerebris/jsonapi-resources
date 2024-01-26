@@ -19,10 +19,11 @@ module JSONAPI
       @parent_resource = options[:parent_resource]
       @relation_name = options[:relation_name]
       @polymorphic = options.fetch(:polymorphic, false) == true
-      @polymorphic_types = options[:polymorphic_types]
+      @polymorphic_types_override = options[:polymorphic_types]
+
       if options[:polymorphic_relations]
         JSONAPI.configuration.deprecate('Use polymorphic_types instead of polymorphic_relations')
-        @polymorphic_types ||= options[:polymorphic_relations]
+        @polymorphic_types_override ||= options[:polymorphic_relations]
       end
 
       use_related_resource_records_for_joins_default = if options[:relation_name]
@@ -86,16 +87,27 @@ module JSONAPI
       @inverse_relationship
     end
 
-    def self.polymorphic_types(name)
-      ::JSONAPI::Utils::PolymorphicTypesLookup.polymorphic_types(name)
+    def polymorphic_types
+      return @polymorphic_types if @polymorphic_types
+
+      types = @polymorphic_types_override
+      types ||= ::JSONAPI::Utils::PolymorphicTypesLookup.polymorphic_types(_relation_name)
+
+      @polymorphic_types = types&.map { |t| t.to_s.pluralize } || []
+
+      if @polymorphic_types.blank?
+        warn "[POLYMORPHIC TYPE] No polymorphic types set or found for #{parent_resource.name} #{_relation_name}"
+      end
+
+      @polymorphic_types
     end
 
     def resource_types
-      if polymorphic? && belongs_to?
-        @polymorphic_types ||= self.class.polymorphic_types(_relation_name).collect { |t| t.pluralize }
-      else
-        [resource_klass._type.to_s.pluralize]
-      end
+      @resource_types ||= if polymorphic?
+                            polymorphic_types
+                          else
+                            [resource_klass._type.to_s.pluralize]
+                          end
     end
 
     def type
@@ -191,11 +203,7 @@ module JSONAPI
       end
 
       def setup_implicit_relationships_for_polymorphic_types(exclude_linkage_data: true)
-        types = self.class.polymorphic_types(_relation_name)
-        unless types.present?
-          warn "[POLYMORPHIC TYPE] No polymorphic types found for #{parent_resource.name} #{_relation_name}"
-          return
-        end
+        types = polymorphic_types
 
         types.each do |type|
           parent_resource.has_one(type.to_s.underscore.singularize,
