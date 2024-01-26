@@ -107,7 +107,12 @@ module JSONAPI
                                                        filters: filters,
                                                        sort_criteria: sort_criteria)
 
-        options[:_relation_helper_options] = { join_manager: join_manager, sort_fields: [] }
+        options[:_relation_helper_options] = {
+          context: context,
+          join_manager: join_manager,
+          sort_fields: []
+        }
+
         include_directives = options[:include_directives]
 
         records = records(options)
@@ -116,7 +121,7 @@ module JSONAPI
 
         records = filter_records(records, filters, options)
 
-        records = sort_records(records, order_options, context)
+        records = sort_records(records, order_options, options)
 
         records = apply_pagination(records, options[:paginator], order_options)
 
