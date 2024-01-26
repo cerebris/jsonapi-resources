@@ -202,9 +202,13 @@ def show_queries
   end
 end
 
+require File.expand_path('../fixtures/active_record', __FILE__)
+
 TestApp.initialize!
 
-require File.expand_path('../fixtures/active_record', __FILE__)
+# Load the database schema after initializing the application, otherwise we get a
+# "No connection pool for 'ActiveRecord::Base' found." error
+require File.expand_path('../fixtures/database', __FILE__)
 
 module Pets
   module V1
