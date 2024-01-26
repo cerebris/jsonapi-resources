@@ -19,8 +19,12 @@ module JSONAPI
           }
       end
 
-      initializer "jsonapi_resources.initialize", after: :initialize do
-        JSONAPI::Utils::PolymorphicTypesLookup.polymorphic_types_lookup_clear!
+      config.before_initialize do
+        if !Rails.application.config.eager_load && ::JSONAPI::configuration.warn_on_eager_loading_disabled
+          warn 'WARNING: jsonapi-resources may not load polymorphic types when Rails `eager_load` is disabled. ' \
+                 'Polymorphic types may be set per relationship . This warning may be disable in the configuration ' \
+                 'by setting `warn_on_eager_loading_disabled` to false.'
+        end
       end
     end
   end
