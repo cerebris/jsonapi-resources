@@ -170,12 +170,10 @@ module JSONAPI
         @class_name = options.fetch(:class_name, name.to_s.classify)
         @foreign_key ||= "#{name}_id".to_sym
         @foreign_key_on = options.fetch(:foreign_key_on, :self)
-        # if parent_resource
-        #   @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type)
-        # end
 
         if options.fetch(:create_implicit_polymorphic_type_relationships, true) == true && polymorphic?
-          # Setup the implicit relationships for the polymorphic types and exclude linkage data
+          # Setup the implicit relationships for the polymorphic types which are hidden, do not all including,
+          # and exclude linkage data
           setup_implicit_relationships_for_polymorphic_types
         end
 

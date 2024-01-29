@@ -1182,22 +1182,22 @@ module JSONAPI
         options = attrs.extract_options!
         options[:parent_resource] = self
 
-        attrs.each do |name|
-          relationship_name = name.to_sym
-          check_reserved_relationship_name(relationship_name)
-          check_duplicate_relationship_name(relationship_name)
+        name = attrs.first
+        raise ArgumentError, 'You must specify a name for the relationship' unless name
 
-          define_relationship_methods(relationship_name.to_sym, klass, options)
-        end
+        relationship_name = name.to_sym
+        check_reserved_relationship_name(relationship_name)
+        check_duplicate_relationship_name(relationship_name)
+
+        relationship = klass.new(relationship_name, options)
+
+        register_relationship(relationship_name, relationship)
+        define_relationship_methods(relationship)
+        relationship
       end
 
       # ResourceBuilder methods
-      def define_relationship_methods(relationship_name, relationship_klass, options)
-        relationship = register_relationship(
-          relationship_name,
-          relationship_klass.new(relationship_name, options)
-        )
-
+      def define_relationship_methods(relationship)
         define_foreign_key_setter(relationship)
       end
 
