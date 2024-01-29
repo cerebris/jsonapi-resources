@@ -532,6 +532,7 @@ module JSONAPI
 
         if original_relationships.is_a?(Hash)
           original_relationships.each_value do |relationship|
+            next if relationship.implicit_relationship?
             options = relationship.options.dup
             options[:parent_resource] = self
             options[:inverse_relationship] = relationship.options[:inverse_relationship]
