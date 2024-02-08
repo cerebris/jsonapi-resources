@@ -26,6 +26,10 @@ module JSONAPI
                  'by setting `warn_on_eager_loading_disabled` to false.'
         end
       end
+      config.to_prepare do
+        ::JSONAPI::Resource._clear_resource_type_to_klass_cache
+        ::JSONAPI::Resource._clear_model_to_resource_type_cache
+      end
     end
   end
 end
