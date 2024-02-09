@@ -1,6 +1,9 @@
 require 'simplecov'
 require 'database_cleaner'
 
+require "maxitest/autorun"
+require "maxitest/threads"
+
 # To run tests with coverage:
 # COVERAGE=true bundle exec rake test
 
