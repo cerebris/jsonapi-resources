@@ -284,15 +284,21 @@ module JSONAPI
             complete_linkages(fragment, linkage_relationships)
           end
 
+          relationship_name = if source_relationship.polymorphic?
+                                _relationship(related_resource.class._type.to_s.singularize.to_sym)&.inverse_relationship
+                              else
+                                source_relationship&.inverse_relationship
+                              end
+
           if source_resource
             source_resource.add_related_identity(source_relationship.name, related_resource.identity)
             fragment.add_related_from(source_resource.identity)
-            fragment.add_related_identity(source_relationship.inverse_relationship, source_resource.identity)
+            fragment.add_related_identity(relationship_name, source_resource.identity) if relationship_name
           end
         end
       end
 
-      def complete_linkages(fragment, linkage_relationships)
+        def complete_linkages(fragment, linkage_relationships)
         linkage_relationships.each do |linkage_relationship|
           related_id = fragment.resource._model.attributes[linkage_relationship.foreign_key.to_s]
 
@@ -343,26 +349,27 @@ module JSONAPI
         records
       end
 
-      def define_relationship_methods(relationship_name, relationship_klass, options)
+      def define_relationship_methods(relationship)
         foreign_key = super
-
-        relationship = _relationship(relationship_name)
 
         case relationship
         when JSONAPI::Relationship::ToOne
-          associated = define_resource_relationship_accessor(:one, relationship_name)
-          args = [relationship, foreign_key, associated, relationship_name]
+          associated = define_resource_relationship_accessor(:one, relationship)
+          args = [relationship, foreign_key, associated]
 
           relationship.belongs_to? ? build_belongs_to(*args) : build_has_one(*args)
         when JSONAPI::Relationship::ToMany
-          associated = define_resource_relationship_accessor(:many, relationship_name)
+          associated = define_resource_relationship_accessor(:many, relationship)
 
-          build_to_many(relationship, foreign_key, associated, relationship_name)
+          build_to_many(relationship, foreign_key, associated)
         end
       end
 
+      def define_resource_relationship_accessor(type, relationship)
+        # NOTE: We are using relationship_name vs. relationship so we always get the correct relationship
+        # in the case of derived resources.
+        relationship_name = relationship.name.to_sym
 
-      def define_resource_relationship_accessor(type, relationship_name)
         associated_records_method_name = {
           one:  "record_for_#{relationship_name}",
           many: "records_for_#{relationship_name}"
@@ -402,7 +409,11 @@ module JSONAPI
         associated_records_method_name
       end
 
-      def build_belongs_to(relationship, foreign_key, associated_records_method_name, relationship_name)
+      def build_belongs_to(relationship, foreign_key, associated_records_method_name)
+        # NOTE: We are using relationship_name vs. relationship so we always get the correct relationship
+        # in the case of derived resources.
+        relationship_name = relationship.name.to_sym
+
         # Calls method matching foreign key name on model instance
         define_on_resource foreign_key do
           @model.method(foreign_key).call
@@ -426,7 +437,11 @@ module JSONAPI
         end
       end
 
-      def build_has_one(relationship, foreign_key, associated_records_method_name, relationship_name)
+      def build_has_one(relationship, foreign_key, associated_records_method_name)
+        # NOTE: We are using relationship_name vs. relationship so we always get the correct relationship
+        # in the case of derived resources.
+        relationship_name = relationship.name.to_sym
+
         # Returns primary key name of related resource class
         define_on_resource foreign_key do
           relationship = self.class._relationships[relationship_name]
@@ -454,9 +469,15 @@ module JSONAPI
         end
       end
 
-      def build_to_many(relationship, foreign_key, associated_records_method_name, relationship_name)
+      def build_to_many(relationship, foreign_key, associated_records_method_name)
+        # NOTE: We are using relationship_name vs. relationship so we always get the correct relationship
+        # in the case of derived resources.
+        relationship_name = relationship.name.to_sym
+
         # Returns array of primary keys of related resource classes
         define_on_resource foreign_key do
+          relationship = self.class._relationships[relationship_name]
+
           records = public_send(associated_records_method_name)
           return records.collect do |record|
             record.public_send(relationship.resource_klass._primary_key)
