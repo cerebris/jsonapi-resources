@@ -47,9 +47,9 @@ jobs:
           - '7.0'
           - '6.1'
         database_url:
-          - sqlite3:test_db
-          - postgresql://postgres:password@localhost:5432/test
-          - mysql2://root:root@127.0.0.1:3306/test
+          - sqlite3:jr_test
+          - postgresql://postgres:password@localhost:5432/jr_test
+          - mysql2://root:root@127.0.0.1:3306/jr_test
 #        exclude:
 #          - ruby: '3.1'
 #            rails: '6.0'
@@ -65,4 +65,4 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
       - name: Run tests
-        run: bundle exec rake test
+        run: bundle exec rake

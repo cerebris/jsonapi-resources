@@ -8,17 +8,41 @@ Rake::TestTask.new do |t|
   t.test_files = FileList['test/**/*_test.rb']
 end
 
-task default: [:test]
-
-desc 'Run benchmarks'
 namespace :test do
+
+  desc 'prepare test database'
+  task :prepare_database do
+    database_url = ENV["DATABASE_URL"]
+    next if database_url.nil? || database_url.empty?
+    require "active_record/railtie"
+    connection_class = ActiveRecord::Base
+    connection_class.establish_connection(database_url)
+    database_config = connection_class
+      .connection_db_config
+      .configuration_hash
+    database_adapter = database_config.fetch(:adapter)
+    database_name = database_config.fetch(:database)
+    database_username = database_config[:username]
+    case database_adapter
+    when :postgresql, "postgresql"
+      sh "psql -c 'DROP DATABASE IF EXISTS #{database_name};' -U #{database_username};"
+      sh "psql -c 'CREATE DATABASE #{database_name};' -U #{database_username};"
+    when :mysql2, "mysql2"
+      sh "mysql -c 'DROP DATABASE IF EXISTS #{database_name};' -U #{database_username};"
+      sh "mysql -c 'CREATE DATABASE #{database_name};' -U #{database_username};"
+    else
+      nil # nothing to do for this database_adapter
+    end
+    puts "Preparing to run #{database_adapter} tests"
+    connection_class.connection.disconnect!
+  end
+
+  desc 'Run benchmarks'
   Rake::TestTask.new(:benchmark) do |t|
     t.pattern = 'test/benchmark/*_benchmark.rb'
   end
-end
 
-desc 'Test bug report template'
-namespace :test do
+  desc 'Test bug report template'
   namespace :bug_report_template do
     task :rails_5 do
       puts 'Test bug report templates'
@@ -33,3 +57,5 @@ namespace :test do
     end
   end
 end
+
+task default: [:"test:prepare_database", :test]
