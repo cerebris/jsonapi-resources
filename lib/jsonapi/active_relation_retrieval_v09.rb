@@ -287,7 +287,9 @@ module JSONAPI
           if source_resource
             source_resource.add_related_identity(source_relationship.name, related_resource.identity)
             fragment.add_related_from(source_resource.identity)
-            fragment.add_related_identity(source_relationship.inverse_relationship, source_resource.identity)
+
+            inverse_relationship = source_relationship._inverse_relationship
+            fragment.add_related_identity(inverse_relationship.name, source_resource.identity) if inverse_relationship.present?
           end
         end
       end

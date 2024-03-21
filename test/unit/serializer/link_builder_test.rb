@@ -248,7 +248,7 @@ class LinkBuilderTest < ActionDispatch::IntegrationTest
       link = builder.relationships_related_link(source, relationship)
       assert_nil link
     end
-    assert_equal(err, "related_link for Api::Secret::PostResource.author(BelongsToOne) could not be generated\n")
+    assert_equal("related_link for Api::Secret::PostResource.author(BelongsToOne) could not be generated\n", err)
 
     # should only warn once
     builder = JSONAPI::LinkBuilder.new(config)

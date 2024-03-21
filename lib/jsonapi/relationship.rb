@@ -9,7 +9,7 @@ module JSONAPI
 
     attr_writer :allow_include
 
-    attr_accessor :_routed, :_warned_missing_route
+    attr_accessor :_routed, :_warned_missing_route, :_warned_missing_inverse_relationship
 
     def initialize(name, options = {})
       @name = name.to_s
@@ -47,6 +47,7 @@ module JSONAPI
 
       @_routed = false
       @_warned_missing_route = false
+      @_warned_missing_inverse_relationship = false
 
       exclude_links(options.fetch(:exclude_links, JSONAPI.configuration.default_exclude_links))
 
@@ -162,6 +163,22 @@ module JSONAPI
       @relation_name || @name
     end
 
+    def to_s
+      display_name
+    end
+
+    def _inverse_relationship
+      @inverse_relationship_klass ||= self.resource_klass._relationship(self.inverse_relationship)
+      if @inverse_relationship_klass.blank?
+        message = "Missing inverse relationship detected for: #{self}"
+        warn message if JSONAPI.configuration.warn_on_missing_relationships && !@_warned_missing_inverse_relationship
+        @_warned_missing_inverse_relationship = true
+
+        raise message if JSONAPI.configuration.raise_on_missing_relationships
+      end
+      @inverse_relationship_klass
+    end
+
     class ToOne < Relationship
       attr_reader :foreign_key_on
 
@@ -182,9 +199,9 @@ module JSONAPI
         @polymorphic_type_relationship_for = options[:polymorphic_type_relationship_for]
       end
 
-      def to_s
+      def display_name
         # :nocov: useful for debugging
-        "#{parent_resource}.#{name}(#{belongs_to? ? 'BelongsToOne' : 'ToOne'})"
+        "#{parent_resource.name}.#{name}(#{belongs_to? ? 'BelongsToOne' : 'ToOne'})"
         # :nocov:
       end
 
@@ -247,9 +264,9 @@ module JSONAPI
         # end
       end
 
-      def to_s
+      def display_name
         # :nocov: useful for debugging
-        "#{parent_resource_klass}.#{name}(ToMany)"
+        "#{parent_resource.name}.#{name}(ToMany)"
         # :nocov:
       end
 
