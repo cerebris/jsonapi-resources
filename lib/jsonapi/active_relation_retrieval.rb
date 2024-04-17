@@ -304,10 +304,10 @@ module JSONAPI
       end
 
       def find_related_fragments_from_inverse(source, source_relationship, options, connect_source_identity)
-        relationship = source_relationship.resource_klass._relationship(source_relationship.inverse_relationship)
-        raise "missing inverse relationship" unless relationship.present?
+        inverse_relationship = source_relationship._inverse_relationship
+        return {} if inverse_relationship.blank?
 
-        parent_resource_klass = relationship.resource_klass
+        parent_resource_klass = inverse_relationship.resource_klass
 
         include_directives = options.fetch(:include_directives, {})
 
@@ -332,7 +332,7 @@ module JSONAPI
         end
 
         join_manager = ActiveRelation::JoinManager.new(resource_klass: self,
-                                                       source_relationship: relationship,
+                                                       source_relationship: inverse_relationship,
                                                        relationships: linkage_relationships.collect(&:name),
                                                        sort_criteria: sort_criteria,
                                                        filters: filters)
@@ -352,7 +352,7 @@ module JSONAPI
         if options[:cache]
           # This alias is going to be resolve down to the model's table name and will not actually be an alias
           resource_table_alias = self._table_name
-          parent_table_alias = join_manager.join_details_by_relationship(relationship)[:alias]
+          parent_table_alias = join_manager.join_details_by_relationship(inverse_relationship)[:alias]
 
           pluck_fields = [
             sql_field_with_alias(resource_table_alias, self._primary_key),
@@ -400,7 +400,7 @@ module JSONAPI
             fragments[rid].add_related_from(parent_rid)
 
             if connect_source_identity
-              fragments[rid].add_related_identity(relationship.name, parent_rid)
+              fragments[rid].add_related_identity(inverse_relationship.name, parent_rid)
             end
 
             attributes_offset = 2
@@ -452,7 +452,7 @@ module JSONAPI
             end
           end
 
-          parent_table_alias = join_manager.join_details_by_relationship(relationship)[:alias]
+          parent_table_alias = join_manager.join_details_by_relationship(inverse_relationship)[:alias]
           source_field = sql_field_with_fixed_alias(parent_table_alias, parent_resource_klass._primary_key, "jr_source_id")
 
           records = records.select(concat_table_field(_table_name, Arel.star), source_field)
@@ -471,7 +471,7 @@ module JSONAPI
             parent_rid = JSONAPI::ResourceIdentity.new(parent_resource_klass, resource._model.attributes['jr_source_id'])
 
             if connect_source_identity
-              fragments[rid].add_related_identity(relationship.name, parent_rid)
+              fragments[rid].add_related_identity(inverse_relationship.name, parent_rid)
             end
 
             fragments[rid].add_related_from(parent_rid)
@@ -503,15 +503,16 @@ module JSONAPI
       end
 
       def count_related_from_inverse(source_resource, source_relationship, options = {})
-        relationship = source_relationship.resource_klass._relationship(source_relationship.inverse_relationship)
+        inverse_relationship = source_relationship._inverse_relationship
+        return -1 if inverse_relationship.blank?
 
-        related_klass = relationship.resource_klass
+        related_klass = inverse_relationship.resource_klass
 
         filters = options.fetch(:filters, {})
 
         # Joins in this case are related to the related_klass
         join_manager = ActiveRelation::JoinManager.new(resource_klass: self,
-                                                       source_relationship: relationship,
+                                                       source_relationship: inverse_relationship,
                                                        filters: filters)
 
         records = apply_request_settings_to_records(records: records(options),
@@ -521,7 +522,7 @@ module JSONAPI
                                                     filters: filters,
                                                     options: options)
 
-        related_alias = join_manager.join_details_by_relationship(relationship)[:alias]
+        related_alias = join_manager.join_details_by_relationship(inverse_relationship)[:alias]
 
         records = records.select(Arel.sql("#{concat_table_field(related_alias, related_klass._primary_key)}"))
 

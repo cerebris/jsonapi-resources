@@ -464,10 +464,8 @@ module JSONAPI
           end
 
           if connect_source_identity
-            related_relationship = resource_klass._relationship(relationship.inverse_relationship)
-            if related_relationship
-              fragments[rid].add_related_identity(related_relationship.name, source_rid)
-            end
+            inverse_relationship = relationship._inverse_relationship
+            fragments[rid].add_related_identity(inverse_relationship.name, source_rid) if inverse_relationship``.present?
           end
         end
 
@@ -598,10 +596,8 @@ module JSONAPI
             related_fragments[rid].add_related_from(source_rid)
 
             if connect_source_identity
-              related_relationship = related_klass._relationship(relationship.inverse_relationship)
-              if related_relationship
-                related_fragments[rid].add_related_identity(related_relationship.name, source_rid)
-              end
+              inverse_relationship = relationship._inverse_relationship
+              related_fragments[rid].add_related_identity(inverse_relationship.name, source_rid) if inverse_relationship.present?
             end
 
             relation_position = relation_positions[row[2].underscore.pluralize]
