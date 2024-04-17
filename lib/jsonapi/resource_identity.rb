@@ -58,7 +58,7 @@ module JSONAPI
     # Creates a string representation of the identifier.
     def to_s
       # :nocov:
-      "#{resource_klass}:#{id}"
+      "#{resource_klass.name}:#{id}"
       # :nocov:
     end
   end
