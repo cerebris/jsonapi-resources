@@ -2,25 +2,25 @@ require 'simplecov'
 require 'database_cleaner'
 
 # To run tests with coverage:
-# COVERAGE=true bundle exec rake test
+# COVERAGE=true bundle exec rake
 
 # To test on a specific rails version use this:
-# export RAILS_VERSION=5.2.4.4; bundle update; bundle exec rake test
-# export RAILS_VERSION=6.0.3.4; bundle update; bundle exec rake test
-# export RAILS_VERSION=6.1.1; bundle update; bundle exec rake test
+# export RAILS_VERSION=5.2.4.4; bundle update; bundle exec rake
+# export RAILS_VERSION=6.0.3.4; bundle update; bundle exec rake
+# export RAILS_VERSION=6.1.1; bundle update; bundle exec rake
 
-# We are no longer having Travis test Rails 4.2.11., but you can try it with:
-# export RAILS_VERSION=4.2.11; bundle update rails; bundle exec rake test
+# We are no longer having CI test Rails 4.2.11., but you can try it with:
+# export RAILS_VERSION=4.2.11; bundle update rails; bundle exec rake
 
 # To Switch rails versions and run a particular test order:
-# export RAILS_VERSION=6.1.1; bundle update; bundle exec rake TESTOPTS="--seed=39333" test
+# export RAILS_VERSION=6.1.1; bundle update; bundle exec rake TESTOPTS="--seed=39333"
 
 if ENV['COVERAGE']
   SimpleCov.start do
   end
 end
 
-ENV['DATABASE_URL'] ||= "sqlite3:test_db"
+ENV['DATABASE_URL'] ||= "sqlite3:jr_test"
 
 require 'active_record/railtie'
 require 'minitest/mock'

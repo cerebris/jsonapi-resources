@@ -21,6 +21,8 @@ coverage
 test/log
 test_db
 test_db-journal
+jr_test
+jr_test-journal
 .idea
 *.iml
 *.override.yml
