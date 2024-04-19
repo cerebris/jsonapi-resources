@@ -20,9 +20,9 @@ module JSONAPI
       def find(filters, options)
         sort_criteria = options.fetch(:sort_criteria) { [] }
 
-        join_manager = ActiveRelation::JoinManagerV10.new(resource_klass: self,
-                                                       filters: filters,
-                                                       sort_criteria: sort_criteria)
+        join_manager = ActiveRelation::JoinManagerThroughPrimary.new(resource_klass: self,
+                                                                     filters: filters,
+                                                                     sort_criteria: sort_criteria)
 
         paginator = options[:paginator]
 
@@ -42,8 +42,8 @@ module JSONAPI
       #
       # @return [Integer] the count
       def count(filters, options)
-        join_manager = ActiveRelation::JoinManagerV10.new(resource_klass: self,
-                                                       filters: filters)
+        join_manager = ActiveRelation::JoinManagerThroughPrimary.new(resource_klass: self,
+                                                                     filters: filters)
 
         records = apply_request_settings_to_records(records: records(options),
                                filters: filters,
@@ -103,11 +103,11 @@ module JSONAPI
 
         sort_criteria = options.fetch(:sort_criteria) { [] }
 
-        join_manager = ActiveRelation::JoinManagerV10.new(resource_klass: resource_klass,
-                                                       source_relationship: nil,
-                                                       relationships: linkage_relationships.collect(&:name),
-                                                       sort_criteria: sort_criteria,
-                                                       filters: filters)
+        join_manager = ActiveRelation::JoinManagerThroughPrimary.new(resource_klass: resource_klass,
+                                                                     source_relationship: nil,
+                                                                     relationships: linkage_relationships.collect(&:name),
+                                                                     sort_criteria: sort_criteria,
+                                                                     filters: filters)
 
         paginator = options[:paginator]
 
@@ -234,9 +234,9 @@ module JSONAPI
         filters = options.fetch(:filters, {})
 
         # Joins in this case are related to the related_klass
-        join_manager = ActiveRelation::JoinManagerV10.new(resource_klass: self,
-                                                       source_relationship: relationship,
-                                                       filters: filters)
+        join_manager = ActiveRelation::JoinManagerThroughPrimary.new(resource_klass: self,
+                                                                     source_relationship: relationship,
+                                                                     filters: filters)
 
         records = apply_request_settings_to_records(records: records(options),
                                resource_klass: related_klass,
@@ -377,11 +377,11 @@ module JSONAPI
           sort_criteria << { field: field, direction: sort[:direction] }
         end
 
-        join_manager = ActiveRelation::JoinManagerV10.new(resource_klass: self,
-                                                       source_relationship: relationship,
-                                                       relationships: linkage_relationships.collect(&:name),
-                                                       sort_criteria: sort_criteria,
-                                                       filters: filters)
+        join_manager = ActiveRelation::JoinManagerThroughPrimary.new(resource_klass: self,
+                                                                     source_relationship: relationship,
+                                                                     relationships: linkage_relationships.collect(&:name),
+                                                                     sort_criteria: sort_criteria,
+                                                                     filters: filters)
 
         paginator = options[:paginator]
 
@@ -493,10 +493,10 @@ module JSONAPI
           end
         end
 
-        join_manager = ActiveRelation::JoinManagerV10.new(resource_klass: self,
-                                                       source_relationship: relationship,
-                                                       relationships: linkage_relationship_paths,
-                                                       filters: filters)
+        join_manager = ActiveRelation::JoinManagerThroughPrimary.new(resource_klass: self,
+                                                                     source_relationship: relationship,
+                                                                     relationships: linkage_relationship_paths,
+                                                                     filters: filters)
 
         paginator = options[:paginator]
 
@@ -626,7 +626,7 @@ module JSONAPI
       end
 
       def apply_request_settings_to_records(records:,
-                                            join_manager: ActiveRelation::JoinManagerV10.new(resource_klass: self),
+                                            join_manager: ActiveRelation::JoinManagerThroughPrimary.new(resource_klass: self),
                                             resource_klass: self,
                                             filters: {},
                                             primary_keys: nil,

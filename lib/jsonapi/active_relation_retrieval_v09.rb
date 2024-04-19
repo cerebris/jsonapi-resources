@@ -103,9 +103,9 @@ module JSONAPI
         sort_criteria = options.fetch(:sort_criteria) { [] }
         order_options = construct_order_options(sort_criteria)
 
-        join_manager = ActiveRelation::JoinManager.new(resource_klass: self,
-                                                       filters: filters,
-                                                       sort_criteria: sort_criteria)
+        join_manager = ActiveRelation::JoinManagerThroughInverse.new(resource_klass: self,
+                                                                     filters: filters,
+                                                                     sort_criteria: sort_criteria)
 
         options[:_relation_helper_options] = {
           context: context,
