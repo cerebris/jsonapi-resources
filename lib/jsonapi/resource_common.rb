@@ -430,6 +430,10 @@ module JSONAPI
     end
 
     module ClassMethods
+      def default_find_related_through(_polymorphic = false)
+        nil
+      end
+
       def resource_retrieval_strategy(module_name = JSONAPI.configuration.default_resource_retrieval_strategy)
         module_name = module_name.to_s
 

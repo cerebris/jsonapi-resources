@@ -3,12 +3,23 @@
 module JSONAPI
   module ActiveRelationRetrieval
     include ::JSONAPI::RelationRetrieval
+    include ::JSONAPI::ActiveRelationRetrieval::FindRelatedThroughPrimary
 
     def find_related_ids(relationship, options)
       self.class.find_related_fragments(self, relationship, options).keys.collect { |rid| rid.id }
     end
 
     module ClassMethods
+      include JSONAPI::ActiveRelationRetrieval::FindRelatedThroughPrimary::ClassMethods
+
+      def default_find_related_through(polymorphic = false)
+        if polymorphic
+          JSONAPI.configuration.default_find_related_through_polymorphic
+        else
+          JSONAPI.configuration.default_find_related_through
+        end
+      end
+
       # Finds Resources using the `filters`. Pagination and sort options are used when provided
       #
       # @param filters [Hash] the filters hash
@@ -119,6 +130,11 @@ module JSONAPI
                                options: options)
 
         if options[:cache]
+          # When using caching the a two step process is used. First the records ids are retrieved and then the
+          # records are retrieved using the ids. Then the ids are used to query the database again to get the
+          # cache misses. In the second phase the records are not sorted or paginated and the `records_for_populate`
+          # method is used to ensure any dependent includes or custom database fields are calculated.
+
           # This alias is going to be resolve down to the model's table name and will not actually be an alias
           resource_table_alias = resource_klass._table_name
 
@@ -189,6 +205,10 @@ module JSONAPI
             warn "Performance issue detected: `#{self.name.to_s}.records` returned non-normalized results in `#{self.name.to_s}.find_fragments`."
           end
         else
+          # When not using caching resources can be generated after querying. The `records_for_populate`
+          # method is merged in to ensure any dependent includes or custom database fields are calculated.
+          records = records.merge(records_for_populate(options))
+
           linkage_fields = []
 
           linkage_relationships.each do |linkage_relationship|
@@ -260,50 +280,74 @@ module JSONAPI
       #    the ResourceInstances matching the filters, sorting, and pagination rules along with any request
       #    additional_field values
       def find_related_fragments(source_fragment, relationship, options)
-        if relationship.polymorphic? # && relationship.foreign_key_on == :self
-          source_resource_klasses = if relationship.foreign_key_on == :self
-                                      relationship.polymorphic_types.collect do |polymorphic_type|
-                                        resource_klass_for(polymorphic_type)
-                                      end
-                                    else
-                                      source.collect { |fragment| fragment.identity.resource_klass }.to_set
-                                    end
-
-          fragments = {}
-          source_resource_klasses.each do |resource_klass|
-            inverse_direct_relationship = _relationship(resource_klass._type.to_s.singularize)
-
-            fragments.merge!(resource_klass.find_related_fragments_from_inverse([source_fragment], inverse_direct_relationship, options, false))
+        case relationship.find_related_through
+        when :primary
+          if relationship.polymorphic?
+            find_related_polymorphic_fragments_through_primary([source_fragment], relationship, options, false)
+          else
+            find_related_monomorphic_fragments_through_primary([source_fragment], relationship, options, false)
           end
-          fragments
+        when :inverse
+          if relationship.polymorphic? # && relationship.foreign_key_on == :self
+            source_resource_klasses = if relationship.foreign_key_on == :self
+                                        relationship.polymorphic_types.collect do |polymorphic_type|
+                                          resource_klass_for(polymorphic_type)
+                                        end
+                                      else
+                                        source.collect { |fragment| fragment.identity.resource_klass }.to_set
+                                      end
+
+            fragments = {}
+            source_resource_klasses.each do |resource_klass|
+              inverse_direct_relationship = _relationship(resource_klass._type.to_s.singularize)
+
+              fragments.merge!(resource_klass.find_related_fragments_through_inverse([source_fragment], inverse_direct_relationship, options, false))
+            end
+            fragments
+          else
+            relationship.resource_klass.find_related_fragments_through_inverse([source_fragment], relationship, options, false)
+          end
         else
-          relationship.resource_klass.find_related_fragments_from_inverse([source_fragment], relationship, options, false)
+          raise "Unknown find_related_through: #{relationship.find_related_through}"
+          {}
         end
       end
 
       def find_included_fragments(source_fragments, relationship, options)
-        if relationship.polymorphic? # && relationship.foreign_key_on == :self
-          source_resource_klasses = if relationship.foreign_key_on == :self
-                                      relationship.polymorphic_types.collect do |polymorphic_type|
-                                        resource_klass_for(polymorphic_type)
-                                      end
-                                    else
-                                      source_fragments.collect { |fragment| fragment.identity.resource_klass }.to_set
-                                    end
-
-          fragments = {}
-          source_resource_klasses.each do |resource_klass|
-            inverse_direct_relationship = _relationship(resource_klass._type.to_s.singularize)
-
-            fragments.merge!(resource_klass.find_related_fragments_from_inverse(source_fragments, inverse_direct_relationship, options, true))
+        case relationship.find_related_through
+        when :primary
+          if relationship.polymorphic?
+            find_related_polymorphic_fragments_through_primary(source_fragments, relationship, options, true)
+          else
+            find_related_monomorphic_fragments_through_primary(source_fragments, relationship, options, true)
           end
-          fragments
+        when :inverse
+          if relationship.polymorphic? # && relationship.foreign_key_on == :self
+            source_resource_klasses = if relationship.foreign_key_on == :self
+                                        relationship.polymorphic_types.collect do |polymorphic_type|
+                                          resource_klass_for(polymorphic_type)
+                                        end
+                                      else
+                                        source.collect { |fragment| fragment.identity.resource_klass }.to_set
+                                      end
+
+            fragments = {}
+            source_resource_klasses.each do |resource_klass|
+              inverse_direct_relationship = _relationship(resource_klass._type.to_s.singularize)
+
+              fragments.merge!(resource_klass.find_related_fragments_through_inverse(source_fragments, inverse_direct_relationship, options, true))
+            end
+            fragments
+          else
+            relationship.resource_klass.find_related_fragments_through_inverse(source_fragments, relationship, options, true)
+          end
         else
-          relationship.resource_klass.find_related_fragments_from_inverse(source_fragments, relationship, options, true)
+          raise "Unknown find_related_through: #{relationship.options[:find_related_through]}"
+          {}
         end
       end
 
-      def find_related_fragments_from_inverse(source, source_relationship, options, connect_source_identity)
+      def find_related_fragments_through_inverse(source, source_relationship, options, connect_source_identity)
         inverse_relationship = source_relationship._inverse_relationship
         return {} if inverse_relationship.blank?
 
@@ -499,10 +543,10 @@ module JSONAPI
       # @return [Integer] the count
 
       def count_related(source, relationship, options)
-        relationship.resource_klass.count_related_from_inverse(source, relationship, options)
+        relationship.resource_klass.count_related_through_inverse(source, relationship, options)
       end
 
-      def count_related_from_inverse(source_resource, source_relationship, options)
+      def count_related_through_inverse(source_resource, source_relationship, options)
         inverse_relationship = source_relationship._inverse_relationship
         return -1 if inverse_relationship.blank?
 
